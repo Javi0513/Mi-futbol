@@ -4,6 +4,6 @@ window.APP_CONFIG={
   legalNombre:'Francisco Javier Casado García',
   legalNif:'15471491N',
   legalDir:'Granada, España',
-  contactEmail:'javiadsense@gmail.com',
+  contactEmail:'mifutboljv32@gmail.com',
   proUrl:''
 };
