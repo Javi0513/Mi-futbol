@@ -2308,16 +2308,39 @@
   const APP_VERSION =
     (document.querySelector('meta[name="app-version"]') || {}).content || "0";
   let lastCheck = 0;
-  function showUpdate(v) {
+  function showUpdate(v, notas) {
     if ($("upd")) return;
     let d = document.createElement("div");
     d.id = "upd";
     d.setAttribute("role", "status");
-    d.innerHTML =
-      '<span>Hay una versión nueva de Mi Fútbol JV32.</span><button type="button">Actualizar</button>';
-    d.querySelector("button").onclick = () => {
+    let sp = document.createElement("span");
+    let t = document.createElement("b");
+    t.textContent = "Hay una versión nueva de Mi Fútbol JV32.";
+    sp.appendChild(t);
+    if (notas) {
+      let n = document.createElement("small");
+      n.textContent = notas;
+      sp.appendChild(n);
+    }
+    let bt = document.createElement("button");
+    bt.type = "button";
+    bt.textContent = "Actualizar";
+    bt.onclick = async () => {
+      if (!leaveDraft()) return;
+      bt.disabled = true;
+      bt.textContent = "Actualizando…";
+      /* Borra las copias guardadas para que se descargue todo de nuevo */
+      try {
+        const ks = await caches.keys();
+        await Promise.all(ks.map((k) => caches.delete(k)));
+      } catch (e) {}
+      try {
+        const rs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(rs.map((r) => r.update().catch(() => {})));
+      } catch (e) {}
       location.replace(location.pathname + "?v=" + encodeURIComponent(v));
     };
+    d.append(sp, bt);
     document.body.appendChild(d);
   }
   async function checkUpdate(force) {
@@ -2329,10 +2352,13 @@
       });
       if (!r.ok) return;
       let j = await r.json();
-      if (j && j.version && j.version !== APP_VERSION) showUpdate(j.version);
+      if (j && j.version && j.version !== APP_VERSION)
+        showUpdate(j.version, j.notas);
     } catch (e) {}
   }
   setTimeout(() => checkUpdate(true), 2500);
+  setInterval(() => checkUpdate(false), 600000);
+  window.addEventListener("focus", () => checkUpdate(false));
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") checkUpdate(false);
   });

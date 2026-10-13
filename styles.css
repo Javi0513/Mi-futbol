@@ -1925,3 +1925,13 @@ img.avatar.zoomable {
   -webkit-appearance: none;
   display: none;
 }
+
+#upd span {
+  display: grid;
+  gap: 2px;
+}
+#upd small {
+  color: var(--mut);
+  font-size: 13px;
+  font-weight: 500;
+}
