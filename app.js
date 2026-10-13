@@ -349,7 +349,7 @@
         ? r
             .map((p) => {
               let t = totals(p.id);
-              return `<div class="row">${avatar(p, true)}<div class="info"><strong>${esc(p.nombre)}</strong>${mini(t)}</div><div class="actions"><button class="ib" data-action="edit-player" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-player" data-id="${p.id}" aria-label="Borrar ${esc(p.nombre)}" title="Borrar">${ic("trash")}</button></div></div>`;
+              return `<div class="row" data-pid="${p.id}">${avatar(p, true)}<div class="info"><strong>${esc(p.nombre)}</strong>${mini(t)}</div><div class="actions"><button class="ib" data-action="edit-player" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-player" data-id="${p.id}" aria-label="Borrar ${esc(p.nombre)}" title="Borrar">${ic("trash")}</button></div></div>`;
             })
             .join("")
         : empty(
@@ -367,7 +367,7 @@
             .map((m) => {
               let e = entries(m),
                 a = m.alineacion || {};
-              return `<div class="row mrow">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong><small>${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small><small class="cl">Inicial: ${
+              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong><small>${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small><small class="cl">Inicial: ${
                 e
                   .filter((x) => x.starter)
                   .map((x) => esc(name(x.id)))
@@ -1476,6 +1476,134 @@
     location.reload();
   }
   $("logout").onclick = doLogout;
+  /* Buscador: jugadores y partidos de todas las modalidades */
+  const fold = (t) =>
+    String(t || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  function closeSearch() {
+    let d = $("srch");
+    if (d) d.remove();
+  }
+  function searchResults(q) {
+    q = fold(q).trim();
+    if (!q) return [];
+    let out = [];
+    state.players.forEach((p) => {
+      if (fold(p.nombre).includes(q))
+        out.push({
+          k: "p",
+          id: p.id,
+          mod: p.modalidad,
+          t: p.nombre,
+          s: MODES[p.modalidad].name + " · Plantilla",
+          foto: p.foto,
+        });
+    });
+    state.matches.forEach((m) => {
+      if (
+        fold(m.rival).includes(q) ||
+        fold(m.fecha).includes(q) ||
+        fold(fmtDate(m.fecha)).includes(q)
+      )
+        out.push({
+          k: "m",
+          id: m.id,
+          mod: m.modalidad,
+          t: "vs " + m.rival,
+          s: MODES[m.modalidad].name + " · " + fmtDate(m.fecha),
+        });
+    });
+    return out.slice(0, 40);
+  }
+  function drawSearch() {
+    let q = $("sq").value,
+      box = $("sres"),
+      r = searchResults(q);
+    box.innerHTML = "";
+    if (!q.trim()) {
+      box.innerHTML =
+        '<p class="muted">Escribe el nombre de un jugador, un rival o una fecha.</p>';
+      return;
+    }
+    if (!r.length) {
+      box.innerHTML =
+        '<p class="muted">No hay resultados para «' + esc(q) + "».</p>";
+      return;
+    }
+    r.forEach((x) => {
+      let b = document.createElement("button");
+      b.type = "button";
+      b.className = "sitem";
+      b.dataset.k = x.k;
+      b.dataset.id = x.id;
+      b.innerHTML =
+        (x.k === "p"
+          ? avatar({ foto: x.foto, nombre: x.t })
+          : '<div class="avatar">⚽</div>') +
+        '<span class="info"><strong>' +
+        esc(x.t) +
+        "</strong><small>" +
+        esc(x.s) +
+        "</small></span>";
+      box.appendChild(b);
+    });
+  }
+  function goToResult(k, id) {
+    let it = (k === "p" ? state.players : state.matches).find(
+      (x) => x.id === id,
+    );
+    if (!it || !leaveDraft()) return;
+    closeSearch();
+    state.mode = it.modalidad;
+    state.tab = k === "p" ? "plantilla" : "partidos";
+    state.draft = null;
+    render();
+    let el = document.querySelector(
+      k === "p" ? '[data-pid="' + id + '"]' : '[data-mid="' + id + '"]',
+    );
+    if (el) {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.classList.add("flash");
+      setTimeout(() => el.classList.remove("flash"), 2400);
+    }
+  }
+  function openSearch() {
+    closeSearch();
+    let d = document.createElement("div");
+    d.id = "srch";
+    d.setAttribute("role", "dialog");
+    d.setAttribute("aria-modal", "true");
+    d.setAttribute("aria-label", "Buscar");
+    d.innerHTML =
+      '<div class="spanel"><div class="sbar"><input id="sq" type="search" placeholder="Buscar jugador, rival o fecha" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Buscar"><button type="button" class="ib" data-sclose aria-label="Cerrar búsqueda">×</button></div><div id="sres"></div></div>';
+    document.body.appendChild(d);
+    drawSearch();
+    $("sq").focus();
+  }
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "sq") drawSearch();
+  });
+  document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest("#sbtn")) return openSearch();
+    if (
+      e.target.id === "srch" ||
+      (e.target.closest && e.target.closest("[data-sclose]"))
+    )
+      return closeSearch();
+    let it = e.target.closest && e.target.closest("#srch .sitem");
+    if (it) goToResult(it.dataset.k, it.dataset.id);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!$("srch")) return;
+    if (e.key === "Escape") closeSearch();
+    if (e.key === "Enter" && e.target.id === "sq") {
+      e.preventDefault();
+      let f = document.querySelector("#srch .sitem");
+      if (f) goToResult(f.dataset.k, f.dataset.id);
+    }
+  });
   function closeZoom() {
     let z = $("zoom");
     if (z) z.remove();
