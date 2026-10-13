@@ -1,4 +1,56 @@
 (() => {
+  /* Autorreparación: borra el modo sin conexión y las copias guardadas y recarga */
+  const EYE =
+    '<svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF =
+    '<svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>';
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest(".eye");
+    if (!b) return;
+    e.preventDefault();
+    const inp = b.parentElement.querySelector("input");
+    const show = inp.type === "password";
+    inp.type = show ? "text" : "password";
+    b.innerHTML = show ? EYE_OFF : EYE;
+    b.setAttribute("aria-pressed", show ? "true" : "false");
+    b.setAttribute(
+      "aria-label",
+      show ? "Ocultar contraseña" : "Mostrar contraseña",
+    );
+  });
+  async function repairApp() {
+    try {
+      const rs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map((r) => r.unregister()));
+    } catch (e) {}
+    try {
+      const ks = await caches.keys();
+      await Promise.all(ks.map((k) => caches.delete(k)));
+    } catch (e) {}
+    location.replace(location.pathname + "?r=" + Date.now());
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest("[data-repair]")) {
+      e.preventDefault();
+      repairApp();
+    }
+  });
+  if (!window.supabase) {
+    let tried = false;
+    try {
+      tried = sessionStorage.getItem("repaired");
+      sessionStorage.setItem("repaired", "1");
+    } catch (e) {}
+    if (!tried) {
+      repairApp();
+      return;
+    }
+    const m = document.getElementById("loginmsg");
+    if (m)
+      m.innerHTML =
+        '<div class="message" role="alert"><span>No se han cargado todos los archivos de la app.</span><button type="button" class="lnk" data-repair>Reparar</button></div>';
+    return;
+  }
   const c = window.APP_CONFIG || {};
   const TERMS_VERSION = "2026-10";
   const db = window.supabase.createClient(c.supabaseUrl, c.supabaseAnonKey);
@@ -16,9 +68,9 @@
     busy: false,
   };
   const MODES = {
-    7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 10, cap: 14 },
-    11: { name: "Fútbol 11", n: 11, maxP: 25, maxM: 10, cap: 0 },
-    fs: { name: "Fútbol sala", n: 5, maxP: 16, maxM: 10, cap: 14 },
+    7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, cap: 14 },
+    11: { name: "Fútbol 11", n: 11, maxP: 25, maxM: 5, cap: 0 },
+    fs: { name: "Fútbol sala", n: 5, maxP: 16, maxM: 5, cap: 14 },
   };
   const MN = (k) => (MODES[k || state.mode] || MODES["7"]).name,
     MFN = (k) => (k === "fs" ? "fs" : "f" + k);
@@ -1485,7 +1537,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, hasta 10 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites existe el plan Pro, de 5,99 € al mes (IVA incluido). Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites existe el plan Pro, de 5,99 € al mes (IVA incluido). Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   function proBtn() {

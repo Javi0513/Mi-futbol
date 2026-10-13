@@ -30,7 +30,7 @@
 | | Gratis | Pro (5,99 €/mes, IVA incluido) |
 |---|---|---|
 | Jugadores | Fútbol 11: 25 · Fútbol 7: 14 · Fútbol sala: 16 | Sin límite |
-| Partidos | 10 por modalidad | Sin límite |
+| Partidos | 5 por modalidad | Sin límite |
 
 Los límites se aplican en la base de datos (no se pueden saltar desde la app).
 

@@ -1819,3 +1819,30 @@ img.avatar.zoomable {
   font-size: 28px;
   line-height: 1;
 }
+
+/* Ojo para ver la contraseña */
+.pw {
+  position: relative;
+  display: block;
+}
+.pw input {
+  padding-right: 52px;
+}
+.eye {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  color: var(--mut);
+}
+.eye:hover,
+.eye[aria-pressed="true"] {
+  color: var(--lime);
+}

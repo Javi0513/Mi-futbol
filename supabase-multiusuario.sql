@@ -71,7 +71,7 @@ alter table public.futbol_personal_partidos add constraint futbol_personal_parti
   check (modalidad in ('7','11','fs'));
 
 -- 6) Límites del plan GRATIS, por modalidad (el plan pro no tiene límites):
---    jugadores: Fútbol 11 = 25 · Fútbol 7 = 14 · Fútbol sala = 16   |   partidos: 10 en cada modalidad
+--    jugadores: Fútbol 11 = 25 · Fútbol 7 = 14 · Fútbol sala = 16   |   partidos: 5 en cada modalidad
 --    Se aplican al CREAR y también al MOVER filas a otra modalidad (así no se pueden saltar).
 create or replace function public.limite_plan()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -86,7 +86,7 @@ begin
   if tg_table_name = 'futbol_personal_jugadores' then
     lim := case new.modalidad when '11' then 25 when '7' then 14 else 16 end;
   else
-    lim := 10;
+    lim := 5;
   end if;
   execute format('select count(*) from public.%I
                   where owner_id = $1 and modalidad = $2 and id <> $3', tg_table_name)
