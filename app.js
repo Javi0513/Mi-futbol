@@ -1661,7 +1661,7 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea) y <b>GitHub Pages</b> (alojamiento de la web).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web) y <b>Resend</b> (envío de correo).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
@@ -1669,13 +1669,27 @@
     ];
   }
   function proBtn() {
-    let u = c.proUrl,
-      m = c.contactEmail;
+    let u = c.proUrl;
     return u
       ? `<a class="primary" href="${esc(u)}" target="_blank" rel="noopener">Quiero el plan Pro</a>`
-      : m
-        ? `<a class="primary" href="mailto:${esc(m)}?subject=${encodeURIComponent("Quiero el plan Pro de Mi Fútbol JV32")}">Quiero el plan Pro</a>`
-        : `<p>Escríbenos para activar el plan Pro.</p>`;
+      : `<button type="button" class="primary" id="wl" data-acct="waitlist">Avísame cuando esté disponible</button><p class="muted" id="wlmsg">Te avisaremos por correo a <b>${esc(curEmail)}</b>. Sin compromiso.</p>`;
+  }
+  async function checkWaitlist() {
+    try {
+      let r = await db.from("interesados_pro").select("id");
+      if (r.data && r.data.length) markWaitlisted();
+    } catch (e) {}
+  }
+  function markWaitlisted() {
+    let b = $("wl"),
+      m = $("wlmsg");
+    if (b) {
+      b.disabled = true;
+      b.textContent = "✓ Estás en la lista";
+    }
+    if (m)
+      m.innerHTML =
+        "Te avisaremos por correo en cuanto el plan Pro esté disponible. ¡Gracias!";
   }
   function usageHtml() {
     return `<div class="usage">${Object.keys(MODES)
@@ -1700,6 +1714,7 @@
     $("infoBody").innerHTML = h;
     $("info").classList.remove("hidden");
     $("infoBody").scrollTop = 0;
+    if (k === "pro" && !c.proUrl) checkWaitlist();
   }
   $("acct").onclick = () => showInfo("account");
   $("closeInfo").onclick = () => $("info").classList.add("hidden");
@@ -1722,6 +1737,24 @@
     let ac = e.target.closest("#info [data-acct]");
     if (!ac) return;
     let w = ac.dataset.acct;
+    if (w === "waitlist") {
+      let b = $("wl");
+      if (b.disabled) return;
+      b.disabled = true;
+      let r = await db.from("interesados_pro").insert({ email: curEmail });
+      if (
+        r.error &&
+        !/duplicate|23505|unique/i.test(
+          (r.error.code || "") + (r.error.message || ""),
+        )
+      ) {
+        b.disabled = false;
+        note(r.error.message);
+        return;
+      }
+      markWaitlisted();
+      return;
+    }
     if (w === "logout") {
       $("info").classList.add("hidden");
       doLogout();
