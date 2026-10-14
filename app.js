@@ -54,6 +54,13 @@
   const c = window.APP_CONFIG || {};
   const TERMS_VERSION = "2026-10";
   const db = window.supabase.createClient(c.supabaseUrl, c.supabaseAnonKey);
+  /* Enlace público de un directo: ?directo=<código>. Se ve sin cuenta. */
+  const PUB = (() => {
+    let t = new URLSearchParams(location.search).get("directo") || "";
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t)
+      ? t
+      : null;
+  })();
   const state = {
     mode: "7",
     tab: "plantilla",
@@ -66,6 +73,8 @@
     justDragged: false,
     playerId: null,
     busy: false,
+    live: null,
+    livePick: false,
   };
   const MODES = {
     7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, cap: 14 },
@@ -159,6 +168,8 @@
     penline:
       '<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7.4 18.6a2 2 0 0 1-.9.5l-3 .9a.5.5 0 0 1-.6-.6l.9-3a2 2 0 0 1 .5-.9z"/>',
     arrow: '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>',
+    live: '<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.5M7.8 16.2a6 6 0 0 1 0-8.5M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/>',
+    share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
     undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
     maximize:
       '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
@@ -277,6 +288,7 @@
       participaciones: parseJson(m.participaciones, []),
       alineacion: parseJson(m.alineacion, {}),
     }));
+    await loadLive();
     render();
   }
   function totals(pid) {
@@ -318,14 +330,17 @@
       )
       .join("");
     let v = $("view"),
-      key = state.mode + state.tab + (state.draft ? "e" : "");
+      key =
+        state.mode + state.tab + (state.draft ? "e" : "") + (state.live ? "l" : "");
     if (state.tab !== "pizarra" || state.draft) state.present = false;
     document.body.classList.toggle(
       "tab-pizarra",
       state.tab === "pizarra" && !state.draft,
     );
     document.body.style.overflow = state.present ? "hidden" : "";
-    v.innerHTML = state.draft
+    v.innerHTML = state.live
+      ? liveView()
+      : state.draft
       ? editor()
       : state.tab === "plantilla"
         ? players()
@@ -367,12 +382,12 @@
             .map((m) => {
               let e = entries(m),
                 a = m.alineacion || {};
-              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong><small>${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small><small class="cl">Inicial: ${
+              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong><small>${liveChip(m.id)}${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small><small class="cl">Inicial: ${
                 e
                   .filter((x) => x.starter)
                   .map((x) => esc(name(x.id)))
                   .join(", ") || "—"
-              }</small></div><div class="actions"><button class="ib" data-img="${m.id}" aria-label="Descargar imagen de la alineación" title="Descargar imagen">${ic("image")}</button><button class="ib" data-action="edit-match" data-id="${m.id}" aria-label="Editar partido contra ${esc(m.rival)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-match" data-id="${m.id}" aria-label="Borrar partido contra ${esc(m.rival)}" title="Borrar">${ic("trash")}</button></div></div>`;
+              }</small></div><div class="actions"><button class="ib lvb" data-action="live" data-id="${m.id}" aria-label="Directo del partido contra ${esc(m.rival)}" title="Directo">${ic("live")}</button><button class="ib" data-img="${m.id}" aria-label="Descargar imagen de la alineación" title="Descargar imagen">${ic("image")}</button><button class="ib" data-action="edit-match" data-id="${m.id}" aria-label="Editar partido contra ${esc(m.rival)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-match" data-id="${m.id}" aria-label="Borrar partido contra ${esc(m.rival)}" title="Borrar">${ic("trash")}</button></div></div>`;
             })
             .join("")
         : empty(
@@ -1187,6 +1202,8 @@
     if (!confirm("¿Borrar este registro?")) return;
     let result = await db.from(table).delete().eq("id", id);
     if (result.error) return note(result.error.message);
+    if (table === "futbol_personal_partidos" && liveRows[id])
+      await db.from("directos").delete().eq("partido_id", id);
     await load();
     note("Registro borrado.", true);
   }
@@ -1661,7 +1678,7 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web) y <b>Resend</b> (envío de correo).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web) y <b>Resend</b> (envío de correo).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
@@ -1765,6 +1782,7 @@
           email: curEmail,
           jugadores: state.players,
           partidos: state.matches,
+          directos: Object.values(liveRows),
         },
         url = URL.createObjectURL(
           new Blob([JSON.stringify(data, null, 1)], {
@@ -1851,11 +1869,13 @@
       state.mode = mode.dataset.mode;
       state.tab = "plantilla";
       state.draft = null;
+      state.live = null;
       render();
     } else if (tab) {
       if (!leaveDraft()) return;
       state.tab = tab.dataset.tab;
       state.draft = null;
+      state.live = null;
       render();
     } else if (a) {
       let id = a.dataset.id;
@@ -1892,6 +1912,7 @@
       }
       if (a.dataset.action === "delete-match")
         remove("futbol_personal_partidos", id);
+      if (a.dataset.action === "live") openLive(id);
       if (a.dataset.action === "cancel") {
         state.draft = null;
         state.editing = null;
@@ -1954,6 +1975,418 @@
     if (e.target.id === "gf" && state.draft) state.draft.gf = e.target.value;
     if (e.target.id === "gc" && state.draft) state.draft.gc = e.target.value;
   });
+
+  /* ===== Directo: marcador en vivo con enlace para compartir ===== */
+  let liveRows = {},
+    liveSkew = 0,
+    liveQ = Promise.resolve(),
+    pubRow = null;
+  const LIVE_PARTE = { 11: 45, 7: 30, fs: 20 },
+    LIVE_EST = {
+      pre: "Sin empezar",
+      "1T": "1ª parte",
+      DES: "Descanso",
+      "2T": "2ª parte",
+      FIN: "Final",
+    },
+    liveOn = (x) => !!x && ["1T", "DES", "2T"].includes(x.estado),
+    serverNow = () => Date.now() + liveSkew,
+    liveUrl = (x) => location.origin + location.pathname + "?directo=" + x.id,
+    liveErr = (t) =>
+      /directos|does not exist|schema cache|ver_directo/i.test(t || "")
+        ? "El directo aún no está activado en la base de datos (falta ejecutar supabase-directo.sql en Supabase)."
+        : t;
+  async function loadLive() {
+    liveRows = {};
+    try {
+      let r = await db.from("directos").select("*");
+      (r.data || []).forEach((x) => (liveRows[x.partido_id] = x));
+    } catch (e) {}
+  }
+  function liveChip(id) {
+    let x = liveRows[id];
+    return liveOn(x)
+      ? `<span class="res lv">● En directo ${x.gf}-${x.gc}</span> `
+      : "";
+  }
+  function liveSync(row) {
+    if (row && row.actualizado)
+      liveSkew = Date.parse(row.actualizado) - Date.now();
+  }
+  function liveElapsed(x, now) {
+    let t = Number(x.acum_ms) || 0;
+    if (x.desde) t += Math.max(0, now - Date.parse(x.desde));
+    return t;
+  }
+  function liveClock(x, now) {
+    if (x.estado === "pre") return ["0'", "00:00"];
+    if (x.estado === "DES") return ["Descanso", ""];
+    if (x.estado === "FIN") return ["Final", ""];
+    let ms = liveElapsed(x, now),
+      min = Math.floor(ms / 60000) + (x.estado === "2T" ? x.parte_min : 0),
+      ss = Math.floor(ms / 1000) % 60;
+    return [
+      min + 1 + "'",
+      String(min).padStart(2, "0") + ":" + String(ss).padStart(2, "0"),
+    ];
+  }
+  function liveMin(x) {
+    if (x.estado === "pre") return 0;
+    if (x.estado === "DES") return x.parte_min;
+    if (x.estado === "FIN") return x.parte_min * 2;
+    return (
+      Math.floor(liveElapsed(x, serverNow()) / 60000) +
+      1 +
+      (x.estado === "2T" ? x.parte_min : 0)
+    );
+  }
+  function liveBoard(x, now, own) {
+    let c = liveClock(x, now);
+    return `<div class="lv-board"><div class="lv-team">${own ? `<input id="lvTeam" value="${esc(x.equipo)}" maxlength="60" aria-label="Nombre de tu equipo" title="Toca para cambiar el nombre de tu equipo">` : `<span>${esc(x.equipo)}</span>`}</div><div class="lv-score" role="img" aria-label="Marcador ${x.gf} a ${x.gc}"><b>${x.gf}</b><i>-</i><b>${x.gc}</b></div><div class="lv-team"><span>${esc(x.rival)}</span></div></div><div class="lv-clock${x.desde ? " run" : ""}"><span class="lv-st">${x.estado === "1T" || x.estado === "2T" ? "● " + LIVE_EST[x.estado] : x.estado === "pre" ? LIVE_EST.pre : ""}</span><b data-lvmin>${c[0]}</b><small data-lvss>${c[1]}</small></div>`;
+  }
+  function liveEvents(x, own) {
+    let ev = (Array.isArray(x.eventos) ? x.eventos : []).slice().reverse();
+    return `<div class="lv-ev">${
+      ev.length
+        ? ev
+            .map(
+              (e) =>
+                `<div class="lv-e ${e.t === "c" ? "c" : "f"}"><b>${Number(e.m) || 0}'</b><span>⚽ ${esc(e.t === "c" ? x.rival : e.n || x.equipo)}${e.t !== "c" && e.n ? ` <small>${esc(x.equipo)}</small>` : ""}</span>${own ? `<button class="ib d" data-lvdel="${esc(e.id)}" aria-label="Quitar el gol del minuto ${Number(e.m) || 0}" title="Quitar gol">${ic("x", 18)}</button>` : ""}</div>`,
+            )
+            .join("")
+        : '<p class="muted">Aún no hay goles.</p>'
+    }</div>`;
+  }
+  function liveView() {
+    let m = state.matches.find((z) => z.id === state.live),
+      x = liveRows[state.live];
+    if (!m || !x) return "";
+    let st = x.estado,
+      run = !!x.desde,
+      B = (k, t, cl = "secondary") =>
+        `<button class="${cl}" data-live="${k}">${t}</button>`,
+      ctl =
+        st === "pre"
+          ? `<label class="lv-dur">Minutos por parte<input id="lvDur" type="number" min="5" max="60" inputmode="numeric" value="${x.parte_min}"></label>` +
+            B("start", "Empezar partido", "primary")
+          : st === "1T" || st === "2T"
+            ? B(run ? "pause" : "resume", run ? "Pausar" : "Reanudar") +
+              B(
+                st === "1T" ? "half" : "end",
+                st === "1T" ? "Descanso" : "Terminar partido",
+                "primary",
+              )
+            : st === "DES"
+              ? B("start2", "Empezar 2ª parte", "primary")
+              : B("reopen", "Reabrir partido"),
+      adj =
+        st === "1T" || st === "2T"
+          ? `<div class="lv-adj"><span class="muted">Ajustar minuto</span>${B("m-", "−1'")}${B("m+", "+1'")}</div>`
+          : "",
+      pick = state.livePick
+        ? `<div class="lv-pick"><h3>¿Quién ha marcado?</h3><div class="slotmenu">${entries(
+            m,
+          )
+            .map((e) => [e.id, name(e.id)])
+            .sort((a, b) => a[1].localeCompare(b[1], "es"))
+            .map(
+              (e) =>
+                `<button data-scorer="${esc(e[0])}">${esc(e[1])}</button>`,
+            )
+            .join(
+              "",
+            )}<button data-scorer="">Sin asignar</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`
+        : "";
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${pick}<h3 class="lv-h">Goles</h3>${liveEvents(x, true)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto y los goleadores, sin necesidad de cuenta. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+  }
+  async function openLive(id) {
+    let m = state.matches.find((z) => z.id === id);
+    if (!m) return;
+    let x = liveRows[id];
+    if (!x) {
+      let r0 = m.alineacion && m.alineacion.resultado,
+        eq = "";
+      try {
+        eq = localStorage.getItem("mf_equipo") || "";
+      } catch (e) {}
+      let row = {
+          id: crypto.randomUUID(),
+          owner_id: curUser,
+          partido_id: id,
+          modalidad: m.modalidad,
+          equipo: eq || "Mi equipo",
+          rival: String(m.rival || "").slice(0, 100),
+          gf: r0 ? r0.gf : 0,
+          gc: r0 ? r0.gc : 0,
+          estado: "pre",
+          parte_min: LIVE_PARTE[m.modalidad] || 30,
+          acum_ms: 0,
+          desde: null,
+          eventos: [],
+        },
+        r = await db.from("directos").insert(row).select();
+      if (r.error) return note(liveErr(r.error.message));
+      x = liveRows[id] = (r.data && r.data[0]) || row;
+      liveSync(x);
+    } else if (x.rival !== m.rival) {
+      x.rival = String(m.rival || "").slice(0, 100);
+      liveSave(x);
+    }
+    state.live = id;
+    state.livePick = false;
+    render();
+    window.scrollTo(0, 0);
+  }
+  /* Guarda en orden (una petición detrás de otra) para que no se pisen */
+  function liveSave(x, after) {
+    liveQ = liveQ
+      .then(async () => {
+        let r = await db
+          .from("directos")
+          .update({
+            equipo: x.equipo,
+            rival: x.rival,
+            gf: x.gf,
+            gc: x.gc,
+            estado: x.estado,
+            parte_min: x.parte_min,
+            acum_ms: Math.round(Number(x.acum_ms) || 0),
+            desde: x.desde,
+            eventos: x.eventos,
+          })
+          .eq("id", x.id)
+          .select();
+        if (r.error) return note(liveErr(r.error.message));
+        let s = r.data && r.data[0];
+        if (s) {
+          liveSync(s);
+          x.desde = s.desde;
+          x.actualizado = s.actualizado;
+        }
+        if (after) await after();
+      })
+      .catch((e) => note(e.message));
+    return liveQ;
+  }
+  /* Pasa el resultado y los goles al partido (estadísticas) */
+  async function liveMatch(x, pid, d) {
+    let m = state.matches.find((z) => z.id === x.partido_id);
+    if (!m) return;
+    if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
+    m.alineacion.resultado = { gf: x.gf, gc: x.gc };
+    let e = pid && entries(m).find((z) => z.id === pid);
+    if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + d);
+    let r = await db
+      .from("futbol_personal_partidos")
+      .update({
+        participaciones: JSON.stringify(entries(m)),
+        alineacion: JSON.stringify(m.alineacion),
+      })
+      .eq("id", m.id);
+    if (r.error) note(r.error.message);
+  }
+  const livePause = (x) => {
+      x.acum_ms = liveElapsed(x, serverNow());
+      x.desde = null;
+    },
+    liveStart = (x) => {
+      x.desde = new Date(serverNow()).toISOString();
+    };
+  function liveGoal(x, t, pid) {
+    if (!Array.isArray(x.eventos)) x.eventos = [];
+    if (x.eventos.length >= 60) return note("Demasiados goles en este partido.");
+    let e = { id: Math.random().toString(36).slice(2, 10), m: liveMin(x), t };
+    if (t === "f") {
+      x.gf = Math.min(99, x.gf + 1);
+      if (pid) {
+        e.pid = pid;
+        e.n = name(pid);
+      }
+    } else x.gc = Math.min(99, x.gc + 1);
+    x.eventos.push(e);
+    liveSave(x, () => liveMatch(x, e.pid, 1));
+  }
+  function liveDel(x, id) {
+    let e = (x.eventos || []).find((z) => z.id === id);
+    if (!e || !confirm(`¿Quitar el gol del minuto ${e.m}?`)) return;
+    x.eventos = x.eventos.filter((z) => z !== e);
+    if (e.t === "c") x.gc = Math.max(0, x.gc - 1);
+    else x.gf = Math.max(0, x.gf - 1);
+    liveSave(x, () => liveMatch(x, e.pid, -1));
+  }
+  async function liveShare(x) {
+    let url = liveUrl(x),
+      t = `${x.equipo} - ${x.rival} · en directo`;
+    if (navigator.share)
+      try {
+        await navigator.share({ title: t, text: t, url });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
+      }
+    try {
+      await navigator.clipboard.writeText(url);
+      note("Enlace copiado. Pégalo en WhatsApp o donde quieras.", true);
+    } catch (e) {
+      $("lvUrl").select();
+      note("Copia el enlace de la casilla.", true);
+    }
+  }
+  async function liveOff(x) {
+    if (
+      !confirm(
+        "El enlace dejará de funcionar y se borrará el directo de este partido. El resultado y los goles ya guardados en el partido se mantienen. ¿Seguir?",
+      )
+    )
+      return;
+    await liveQ;
+    let r = await db.from("directos").delete().eq("id", x.id);
+    if (r.error) return note(r.error.message);
+    delete liveRows[x.partido_id];
+    state.live = null;
+    render();
+    note("Enlace desactivado.", true);
+  }
+  document.addEventListener("click", (e) => {
+    let x = state.live && liveRows[state.live];
+    if (!x) return;
+    let b = e.target.closest("[data-live]"),
+      sc = e.target.closest("[data-scorer]"),
+      dl = e.target.closest("[data-lvdel]");
+    if (sc) {
+      state.livePick = false;
+      liveGoal(x, "f", sc.dataset.scorer);
+      return render();
+    }
+    if (dl) {
+      liveDel(x, dl.dataset.lvdel);
+      return render();
+    }
+    if (!b) return;
+    let k = b.dataset.live,
+      m = state.matches.find((z) => z.id === state.live);
+    if (k === "close") {
+      state.live = null;
+      state.livePick = false;
+      return render();
+    }
+    if (k === "share") return liveShare(x);
+    if (k === "off") return liveOff(x);
+    if (k === "nopick") state.livePick = false;
+    if (k === "gf") {
+      if (m && entries(m).length) state.livePick = true;
+      else liveGoal(x, "f", "");
+    }
+    if (k === "gc") liveGoal(x, "c");
+    if (["start", "pause", "resume", "half", "start2", "end", "reopen", "m-", "m+"].includes(k)) {
+      if (k === "end" && !confirm("¿Terminar el partido?")) return;
+      if (k === "start") {
+        let d = parseInt(($("lvDur") || {}).value);
+        if (d >= 5 && d <= 60) x.parte_min = d;
+        x.estado = "1T";
+        x.acum_ms = 0;
+        liveStart(x);
+      }
+      if (k === "pause") livePause(x);
+      if (k === "resume") liveStart(x);
+      if (k === "half") {
+        livePause(x);
+        x.estado = "DES";
+      }
+      if (k === "start2") {
+        x.estado = "2T";
+        x.acum_ms = 0;
+        liveStart(x);
+      }
+      if (k === "end") {
+        livePause(x);
+        x.estado = "FIN";
+      }
+      if (k === "reopen") x.estado = "2T";
+      if (k === "m-" || k === "m+") {
+        let run = !!x.desde;
+        livePause(x);
+        x.acum_ms = Math.max(0, x.acum_ms + (k === "m+" ? 60000 : -60000));
+        if (run) liveStart(x);
+      }
+      liveSave(x, k === "end" ? () => liveMatch(x, null, 0) : null);
+    }
+    render();
+  });
+  $("view").addEventListener("change", (e) => {
+    let x = state.live && liveRows[state.live];
+    if (!x) return;
+    if (e.target.id === "lvTeam") {
+      x.equipo = e.target.value.trim().slice(0, 60) || "Mi equipo";
+      try {
+        localStorage.setItem("mf_equipo", x.equipo);
+      } catch (z) {}
+      liveSave(x);
+      render();
+    }
+    if (e.target.id === "lvDur") {
+      let d = parseInt(e.target.value);
+      if (d >= 5 && d <= 60) {
+        x.parte_min = d;
+        liveSave(x);
+      }
+    }
+  });
+  setInterval(() => {
+    let x = state.live ? liveRows[state.live] : pubRow;
+    if (!x || !x.desde) return;
+    let c = liveClock(x, serverNow());
+    document
+      .querySelectorAll("[data-lvmin]")
+      .forEach((n) => (n.textContent = c[0]));
+    document
+      .querySelectorAll("[data-lvss]")
+      .forEach((n) => (n.textContent = c[1]));
+  }, 1000);
+  /* Página pública del enlace (sin cuenta): se actualiza sola cada 10 s */
+  const pubShell = (h) =>
+    `<div class="pub-in"><div class="brand"><span class="mark" role="img" aria-label="Logo JV32"></span><span class="word">Mi Fútbol <i>JV32</i></span></div><section class="panel live">${h}</section><p class="legal-links"><a href="${esc(location.pathname)}">¿Eres entrenador? Lleva tu equipo con Mi Fútbol JV32</a></p></div>`;
+  async function pubLoad() {
+    let r;
+    try {
+      r = await db.rpc("ver_directo", { codigo: PUB });
+    } catch (e) {
+      r = { error: e };
+    }
+    if (r.error) {
+      if (!pubRow)
+        $("pub").innerHTML = pubShell(
+          '<h2 class="h2s">Directo</h2><p class="muted">No se ha podido cargar el directo. Revisa tu conexión; lo volvemos a intentar solos.</p>',
+        );
+      return;
+    }
+    pubRow = r.data || null;
+    if (pubRow && pubRow.ahora)
+      liveSkew = Date.parse(pubRow.ahora) - Date.now();
+    $("pub").innerHTML = pubShell(
+      pubRow
+        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}</div>${liveBoard(pubRow, serverNow(), false)}<h3 class="lv-h">Goles</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
+        : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>',
+    );
+  }
+  function startPub() {
+    $("login").classList.add("hidden");
+    $("app").classList.add("hidden");
+    let box = document.createElement("main");
+    box.id = "pub";
+    box.className = "pub";
+    document.body.appendChild(box);
+    document.title = "Directo · Mi Fútbol JV32";
+    box.innerHTML = pubShell('<p class="muted">Cargando el directo…</p>');
+    pubLoad();
+    setInterval(() => {
+      if (document.visibilityState === "visible") pubLoad();
+    }, 10000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") pubLoad();
+    });
+  }
+  if (PUB) startPub();
 
   const boardState = {};
   try {
@@ -2310,6 +2743,7 @@
   });
 
   db.auth.onAuthStateChange((event, session) => {
+    if (PUB) return;
     if (event === "PASSWORD_RECOVERY") recovering = true;
     if (session && recovering) {
       $("login").classList.remove("hidden");
@@ -2330,6 +2764,7 @@
         matches: [],
         draft: null,
         editing: null,
+        live: null,
         tab: "plantilla",
       });
       $("info").classList.add("hidden");

@@ -21,6 +21,7 @@
 - **Alineaciones** con formaciones, arrastrando a los jugadores al campo. Cada modalidad tiene su propio campo (el de fútbol sala es una pista con áreas semicirculares).
 - **Pizarra táctica** para dibujar jugadas con lápiz y flechas, sobre un campo vacío o sobre una alineación.
 - **Imágenes para compartir:** descarga la alineación o la pizarra como PNG listo para WhatsApp o redes.
+- **Directo:** marcador, minuto y goleadores durante el partido, con un enlace para que familias y jugadores lo sigan en vivo sin cuenta.
 - **Estadísticas** del equipo y de cada jugador (victorias, empates, derrotas, goles, minutos…).
 - **Cuentas de usuario:** cada entrenador ve solo sus datos. Puede descargarlos o borrar su cuenta desde «Mi cuenta».
 - **Se instala como app** en el móvil y **abre sin conexión**.
@@ -54,13 +55,14 @@ version.json          Versión actual (para el aviso «hay una versión nueva»)
 supabase.js, *.woff2  Librería de Supabase y tipografías (Barlow) en local
 manifest.webmanifest  Instalación como app + iconos
 supabase-multiusuario.sql   Tablas, seguridad y límites de la base de datos
+supabase-directo.sql        Directo de partidos y su enlace público
 doc-*.png             Capturas de este README
 ```
 
 ## Puesta en marcha (para tu propia copia)
 
 1. Crea un proyecto en [Supabase](https://supabase.com).
-2. En **SQL Editor**, ejecuta `supabase-multiusuario.sql` (se puede repetir sin riesgo). Las tablas `futbol_personal_jugadores` y `futbol_personal_partidos` deben existir antes.
+2. En **SQL Editor**, ejecuta `supabase-multiusuario.sql` (se puede repetir sin riesgo). Las tablas `futbol_personal_jugadores` y `futbol_personal_partidos` deben existir antes. Después ejecuta `supabase-avisos-pro.sql` y `supabase-directo.sql` (también se pueden repetir).
 3. En **Authentication → URL Configuration**, pon la dirección de tu web como *Site URL* y en *Redirect URLs*.
 4. Crea `config.js` junto a `index.html`:
 

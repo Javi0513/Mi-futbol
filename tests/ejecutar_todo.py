@@ -1,8 +1,8 @@
 """Ejecuta todas las pruebas. Uso:  python tests/ejecutar_todo.py   (desde la carpeta del repositorio)"""
 import subprocess, sys, os, re, time
 T = os.path.dirname(os.path.abspath(__file__))
-ORDEN = ['board','feat','dnd2','auth','modes','upd','sw','cap','vis','srch','eye','wl','e2e']
-ESPERADO = {'board':29,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'e2e':5}
+ORDEN = ['board','feat','dnd2','auth','modes','upd','sw','cap','vis','srch','eye','wl','live','e2e']
+ESPERADO = {'board':29,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'live':27,'e2e':5}
 malas = 0
 for n in ORDEN:
     t = time.time()
