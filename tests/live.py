@@ -93,7 +93,7 @@ with sync_playwright() as p:
     check('la 2ª parte empieza en el minuto 31 (partes de 30)',pg.locator('[data-lvmin]').inner_text()=="31'")
     pg.click('[data-live=gf]');pg.click('.lv-pick [data-scorer=""]');wait(pg,"d.gf===1&&d.eventos.length===2")
     check('gol sin asignar en la 2ª parte',D(pg,"d.eventos[1].m===31&&!d.eventos[1].n"))
-    pg.screenshot(path=OUT+'/live_2t.png',full_page=True)
+    pg.set_viewport_size({'width':390,'height':1340});pg.evaluate('scrollTo(0,0)');pg.wait_for_timeout(800);pg.screenshot(path=OUT+'/live_2t.png');pg.set_viewport_size({'width':390,'height':844})
     pg.click('[data-live=end]');wait(pg,"d.estado==='FIN'&&d.desde===null")
     pg.wait_for_timeout(300)
     check('al terminar queda el resultado en el partido',M(pg)['r']=={'gf':1,'gc':1} and pg.locator('[data-lvmin]').inner_text()=='Final')
