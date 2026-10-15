@@ -19,11 +19,11 @@ with sync_playwright() as p:
         pg.goto('http://127.0.0.1:8798/index.html');return pg
     pg=mk(None);pg.wait_for_timeout(3500)
     check('misma versión: no aparece aviso',pg.locator('#upd').count()==0)
-    pg=mk('7.9');pg.wait_for_timeout(3500)
+    pg=mk('99.0');pg.wait_for_timeout(3500)
     check('versión nueva en el servidor: aparece aviso',pg.locator('#upd').count()==1 and 'versión nueva' in pg.locator('#upd').inner_text())
     pg.screenshot(path=OUT+'/upd.png')
     check('el aviso muestra las novedades','Novedades: prueba' in pg.locator('#upd').inner_text())
     pg.click('#upd button');pg.wait_for_timeout(1500)
-    check('Actualizar recarga con ?v=7.9',('?v=7.9' in pg.url),pg.url)
+    check('Actualizar recarga con ?v=99.0',('?v=99.0' in pg.url),pg.url)
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)

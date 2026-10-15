@@ -1,4 +1,15 @@
 (() => {
+  /* Antisuplantación: la app no se deja meter dentro de otra web (clickjacking) */
+  try {
+    if (window.top !== window.self && window.top.location.origin !== location.origin)
+      throw 0;
+  } catch (e) {
+    document.documentElement.style.display = "none";
+    try {
+      window.top.location = location.href;
+    } catch (x) {}
+    return;
+  }
   /* Autorreparación: borra el modo sin conexión y las copias guardadas y recarga */
   const EYE =
     '<svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -1122,6 +1133,8 @@
   async function resize(file) {
     if (!file.type.startsWith("image/"))
       throw Error("Selecciona una imagen válida.");
+    if (file.size > 25 * 1024 * 1024)
+      throw Error("La foto es demasiado grande. Prueba con otra.");
     let b = await createImageBitmap(file),
       canvas = document.createElement("canvas"),
       r = Math.min(1, 400 / Math.max(b.width, b.height));
