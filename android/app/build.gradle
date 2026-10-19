@@ -55,7 +55,7 @@ android {
     namespace "com.monetizaplus.mifutbol"
     defaultConfig {
         applicationId "com.monetizaplus.mifutbol"
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 36
         versionCode 1
         versionName "7.9"
