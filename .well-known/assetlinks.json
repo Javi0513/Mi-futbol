@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.monetizaplus.mifutbol",
+      "sha256_cert_fingerprints": [
+        "52:1E:E2:7B:3B:11:B1:25:55:88:CB:A7:68:A0:A1:36:A9:78:3F:4B:FA:2F:7E:3D:3E:29:55:27:37:A1:3E:AE"
+      ]
+    }
+  }
+]
