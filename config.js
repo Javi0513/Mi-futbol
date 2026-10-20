@@ -5,5 +5,6 @@ window.APP_CONFIG={
   legalNif:'15471491N',
   legalDir:'Granada, España',
   contactEmail:'mifutboljv32@gmail.com',
-  proUrl:''
+  proUrl:'',
+  portalUrl:''
 };
