@@ -10,6 +10,8 @@ alter table public.perfiles add column if not exists stripe_subscription text;
 alter table public.perfiles add column if not exists stripe_estado text;
 alter table public.perfiles add column if not exists plan_actualizado_at timestamptz;
 alter table public.perfiles add column if not exists stripe_evento_at bigint;
+-- Si el usuario cancela, el día en que se le acaba el Pro (v8.2)
+alter table public.perfiles add column if not exists pro_hasta timestamptz;
 
 create unique index if not exists perfiles_stripe_customer_key
   on public.perfiles (stripe_customer) where stripe_customer is not null;
