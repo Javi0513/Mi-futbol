@@ -63,6 +63,16 @@
     return;
   }
   const c = window.APP_CONFIG || {};
+  /* Dentro de la app Android (Google Play) no se puede cobrar con Stripe: allí no se muestra el pago */
+  const enAndroid = (() => {
+    try {
+      if (/^android-app:\/\/com\.monetizaplus\.mifutbol/.test(document.referrer))
+        sessionStorage.setItem("mf_twa", "1");
+      return sessionStorage.getItem("mf_twa") === "1";
+    } catch (e) {
+      return /^android-app:/.test(document.referrer);
+    }
+  })();
   const TERMS_VERSION = "2026-10";
   const db = window.supabase.createClient(c.supabaseUrl, c.supabaseAnonKey);
   /* Enlace público de un directo: ?directo=<código>. Se ve sin cuenta. */
@@ -1333,6 +1343,11 @@
     try {
       await loadPlan();
       await load();
+      if (/[?&]pro=ok/.test(location.search)) {
+        history.replaceState(null, "", location.pathname);
+        payPending = true;
+        refreshPlan();
+      }
     } catch (e) {
       note(e.message);
     }
@@ -1379,6 +1394,25 @@
       plan = (r.data && r.data[0] && r.data[0].plan) || "gratis";
     } catch (e) {}
   }
+  /* Tras pagar en Stripe, el plan se activa en unos segundos: se vuelve a mirar al regresar a la app */
+  let payPending = false;
+  async function refreshPlan() {
+    if (!curUser || plan === "pro") return;
+    for (let i = 0; i < 6 && plan !== "pro"; i++) {
+      await loadPlan();
+      if (plan === "pro") {
+        payPending = false;
+        $("info").classList.add("hidden");
+        render();
+        note("¡Plan Pro activado! Ya no tienes límites.", true);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 2500));
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && payPending) refreshPlan();
+  });
   function useUser(u) {
     curUser = u.id;
     curEmail = u.email || "";
@@ -1691,17 +1725,39 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web) y <b>Resend</b> (envío de correo).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
       `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites existe el plan Pro, de 5,99 € al mes (IVA incluido). Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
+  /* Mientras Stripe esté en modo prueba (enlace test_), el pago solo se ve abriendo la app con ?probarpago */
+  const probarPago = (() => {
+    try {
+      if (/[?&]probarpago/.test(location.search)) sessionStorage.setItem("mf_probarpago", "1");
+      return sessionStorage.getItem("mf_probarpago") === "1";
+    } catch (e) {
+      return false;
+    }
+  })();
+  const pagoActivo = !!c.proUrl && (!/\/test_/.test(c.proUrl) || probarPago);
+  function proLink() {
+    let u = pagoActivo ? c.proUrl : "";
+    if (!u || !curUser) return "";
+    return (
+      u +
+      (u.includes("?") ? "&" : "?") +
+      "client_reference_id=" + encodeURIComponent(curUser) +
+      "&prefilled_email=" + encodeURIComponent(curEmail) +
+      "&locale=es"
+    );
+  }
   function proBtn() {
-    let u = c.proUrl;
+    if (enAndroid) return "";
+    let u = proLink();
     return u
-      ? `<a class="primary" href="${esc(u)}" target="_blank" rel="noopener">Quiero el plan Pro</a>`
+      ? `<a class="primary" href="${esc(u)}" target="_blank" rel="noopener" data-pro-pay>Quiero el plan Pro</a><p class="muted">El pago se hace en Stripe, de forma segura. Al volver a la app, el plan Pro se activa solo.</p>`
       : `<button type="button" class="primary" id="wl" data-acct="waitlist">Avísame cuando esté disponible</button><p class="muted" id="wlmsg">Te avisaremos por correo a <b>${esc(curEmail)}</b>. Sin compromiso.</p>`;
   }
   async function checkWaitlist() {
@@ -1734,21 +1790,22 @@
     if (k === "pro") {
       let M = MODES[state.mode];
       t = "Plan Pro";
-      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p><p class="price">5,99 € <small>al mes · IVA incluido · cancela cuando quieras</small></p><div class="stack">${proBtn()}</div>`;
+      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${enAndroid ? "" : `<p class="price">5,99 € <small>al mes · IVA incluido · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" ? "" : usageHtml()}<div class="stack">${plan === "pro" ? "" : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && pagoActivo ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener">Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
     $("info").classList.remove("hidden");
     $("infoBody").scrollTop = 0;
-    if (k === "pro" && !c.proUrl) checkWaitlist();
+    if (k === "pro" && !pagoActivo && !enAndroid) checkWaitlist();
   }
   $("acct").onclick = () => showInfo("account");
   $("closeInfo").onclick = () => $("info").classList.add("hidden");
   document.addEventListener("click", async (e) => {
+    if (e.target.closest("[data-pro-pay]")) payPending = true;
     let lg = e.target.closest("[data-legal]");
     if (lg) {
       e.preventDefault();
@@ -1814,7 +1871,7 @@
     if (w === "delete") {
       $("infoTitle").textContent = "Borrar mi cuenta";
       $("infoBody").innerHTML =
-        `<p>Se borrarán <b>para siempre</b> tu cuenta, tus jugadores, partidos y estadísticas. No se puede deshacer. Si quieres conservar algo, descarga antes tus datos.</p><label>Escribe BORRAR para confirmar<input id="delConf" autocomplete="off"></label><div class="stack"><button type="button" class="danger" data-acct="delete2">Borrar definitivamente</button></div>`;
+        `<p>Se borrarán <b>para siempre</b> tu cuenta, tus jugadores, partidos y estadísticas. No se puede deshacer. Si quieres conservar algo, descarga antes tus datos.</p>${plan === "pro" && c.portalUrl && pagoActivo ? "<p><b>Si pagas el plan Pro</b>, cancela antes la suscripción en «Gestionar o cancelar mi suscripción»; borrar la cuenta no la cancela.</p>" : ""}<label>Escribe BORRAR para confirmar<input id="delConf" autocomplete="off"></label><div class="stack"><button type="button" class="danger" data-acct="delete2">Borrar definitivamente</button></div>`;
     }
     if (w === "delete2") {
       if ($("delConf").value.trim().toUpperCase() !== "BORRAR")
