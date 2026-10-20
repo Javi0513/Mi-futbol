@@ -1278,6 +1278,7 @@
     curEmail = "",
     plan = "gratis",
     proHasta = null,
+    stripeCliente = false,
     delStep = false;
   const AM = {
     login: ["Entrar", "Entrando…", "Acceso"],
@@ -1395,6 +1396,7 @@
       let f = (r.data && r.data[0]) || {};
       plan = f.plan || "gratis";
       proHasta = f.pro_hasta || null;
+      stripeCliente = !!f.stripe_customer;
     } catch (e) {}
   }
   /* Tras pagar en Stripe, el plan se activa en unos segundos: se vuelve a mirar al regresar a la app */
@@ -1816,7 +1818,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && pagoActivo ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
@@ -1894,7 +1896,7 @@
     if (w === "delete") {
       $("infoTitle").textContent = "Borrar mi cuenta";
       $("infoBody").innerHTML =
-        `<p>Se borrarán <b>para siempre</b> tu cuenta, tus jugadores, partidos y estadísticas. No se puede deshacer. Si quieres conservar algo, descarga antes tus datos.</p>${plan === "pro" && c.portalUrl && pagoActivo ? "<p><b>Si pagas el plan Pro</b>, cancela antes la suscripción en «Gestionar o cancelar mi suscripción»; borrar la cuenta no la cancela.</p>" : ""}<label>Escribe BORRAR para confirmar<input id="delConf" autocomplete="off"></label><div class="stack"><button type="button" class="danger" data-acct="delete2">Borrar definitivamente</button></div>`;
+        `<p>Se borrarán <b>para siempre</b> tu cuenta, tus jugadores, partidos y estadísticas. No se puede deshacer. Si quieres conservar algo, descarga antes tus datos.</p>${plan === "pro" && c.portalUrl && (pagoActivo || stripeCliente) ? "<p><b>Si pagas el plan Pro</b>, cancela antes la suscripción en «Gestionar o cancelar mi suscripción»; borrar la cuenta no la cancela.</p>" : ""}<label>Escribe BORRAR para confirmar<input id="delConf" autocomplete="off"></label><div class="stack"><button type="button" class="danger" data-acct="delete2">Borrar definitivamente</button></div>`;
     }
     if (w === "delete2") {
       if ($("delConf").value.trim().toUpperCase() !== "BORRAR")
