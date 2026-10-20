@@ -1732,8 +1732,18 @@
       `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites existe el plan Pro, de 5,99 € al mes (IVA incluido). Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
+  /* Mientras Stripe esté en modo prueba (enlace test_), el pago solo se ve abriendo la app con ?probarpago */
+  const probarPago = (() => {
+    try {
+      if (/[?&]probarpago/.test(location.search)) sessionStorage.setItem("mf_probarpago", "1");
+      return sessionStorage.getItem("mf_probarpago") === "1";
+    } catch (e) {
+      return false;
+    }
+  })();
+  const pagoActivo = !!c.proUrl && (!/\/test_/.test(c.proUrl) || probarPago);
   function proLink() {
-    let u = c.proUrl;
+    let u = pagoActivo ? c.proUrl : "";
     if (!u || !curUser) return "";
     return (
       u +
@@ -1784,13 +1794,13 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener">Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && pagoActivo ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener">Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
     $("info").classList.remove("hidden");
     $("infoBody").scrollTop = 0;
-    if (k === "pro" && !c.proUrl && !enAndroid) checkWaitlist();
+    if (k === "pro" && !pagoActivo && !enAndroid) checkWaitlist();
   }
   $("acct").onclick = () => showInfo("account");
   $("closeInfo").onclick = () => $("info").classList.add("hidden");
@@ -1861,7 +1871,7 @@
     if (w === "delete") {
       $("infoTitle").textContent = "Borrar mi cuenta";
       $("infoBody").innerHTML =
-        `<p>Se borrarán <b>para siempre</b> tu cuenta, tus jugadores, partidos y estadísticas. No se puede deshacer. Si quieres conservar algo, descarga antes tus datos.</p>${plan === "pro" && c.portalUrl ? "<p><b>Si pagas el plan Pro</b>, cancela antes la suscripción en «Gestionar o cancelar mi suscripción»; borrar la cuenta no la cancela.</p>" : ""}<label>Escribe BORRAR para confirmar<input id="delConf" autocomplete="off"></label><div class="stack"><button type="button" class="danger" data-acct="delete2">Borrar definitivamente</button></div>`;
+        `<p>Se borrarán <b>para siempre</b> tu cuenta, tus jugadores, partidos y estadísticas. No se puede deshacer. Si quieres conservar algo, descarga antes tus datos.</p>${plan === "pro" && c.portalUrl && pagoActivo ? "<p><b>Si pagas el plan Pro</b>, cancela antes la suscripción en «Gestionar o cancelar mi suscripción»; borrar la cuenta no la cancela.</p>" : ""}<label>Escribe BORRAR para confirmar<input id="delConf" autocomplete="off"></label><div class="stack"><button type="button" class="danger" data-acct="delete2">Borrar definitivamente</button></div>`;
     }
     if (w === "delete2") {
       if ($("delConf").value.trim().toUpperCase() !== "BORRAR")

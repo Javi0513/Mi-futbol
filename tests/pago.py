@@ -8,14 +8,14 @@ srv=http.server.ThreadingHTTPServer(('127.0.0.1',8812),functools.partial(type('Q
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {proUrl:'https://buy.stripe.com/test_abc',portalUrl:'https://billing.stripe.com/p/login/test_xyz',")
-def abrir(b,android=False):
+def abrir(b,android=False,prueba=True):
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block')
     if android: ctx.add_init_script("Object.defineProperty(document,'referrer',{get:()=>'android-app://com.monetizaplus.mifutbol/'})")
     pg=ctx.new_page()
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:errs.append(m.text) if m.type=='error' else None)
     pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
     pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=CFG))
-    pg.goto('http://127.0.0.1:8812/index.html')
+    pg.goto('http://127.0.0.1:8812/index.html'+('?probarpago' if prueba else ''))
     pg.fill('input[name=email]','ana@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')
     return pg
 with sync_playwright() as p:
@@ -42,6 +42,10 @@ with sync_playwright() as p:
     pg.evaluate("document.querySelector('#infoBody').insertAdjacentHTML('beforeend','<button id=tpro data-info=pro>x</button>')")
     pg.click('#tpro');pg.wait_for_timeout(200)
     check('Android: aviso Pro sin precio ni botón de pago',pg.locator('#info [data-pro-pay]').count()==0 and pg.locator('#info .price').count()==0 and pg.locator('#wl').count()==0)
+    pg.context.close()
+    pg=abrir(b,prueba=False)
+    pg.click('#acct');pg.click('#info [data-info=pro]');pg.wait_for_timeout(300)
+    check('enlace de prueba oculto sin ?probarpago (sale la lista de espera)',pg.locator('[data-pro-pay]').count()==0 and pg.locator('#wl').count()==1)
     pg.context.close()
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
