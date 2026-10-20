@@ -24,6 +24,8 @@ with sync_playwright() as p:
     pg.click('#acct');pg.click('#info [data-info=pro]');pg.wait_for_selector('[data-pro-pay]')
     href=pg.get_attribute('[data-pro-pay]','href')
     check('enlace de pago lleva el usuario y el email',href.startswith('https://buy.stripe.com/test_abc?client_reference_id=u1&prefilled_email=ana%40x.es'),href)
+    col=pg.evaluate("(()=>{let a=document.querySelector('[data-pro-pay]'),s=getComputedStyle(a);return [s.color,s.backgroundColor]})()")
+    check('texto del botón de pago visible (no del color del fondo)',col[0]!=col[1],str(col))
     check('se ve el precio',pg.locator('#info .price').count()==1)
     pg.evaluate("document.querySelector('[data-pro-pay]').addEventListener('click',e=>e.preventDefault(),{once:true})")
     pg.click('[data-pro-pay]')

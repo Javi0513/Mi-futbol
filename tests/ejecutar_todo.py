@@ -2,7 +2,7 @@
 import subprocess, sys, os, re, time
 T = os.path.dirname(os.path.abspath(__file__))
 ORDEN = ['board','feat','dnd2','auth','modes','upd','sw','cap','vis','srch','eye','wl','pago','live','e2e']
-ESPERADO = {'board':29,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'pago':7,'live':27,'e2e':5}
+ESPERADO = {'board':29,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'pago':8,'live':27,'e2e':5}
 malas = 0
 for n in ORDEN:
     t = time.time()

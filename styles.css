@@ -1529,6 +1529,14 @@ label.chk input {
 label.chk a {
   color: var(--lime);
 }
+/* los botones-enlace (pago, gestionar suscripción) dentro de textos legales mantienen su color */
+.legal a.primary {
+  color: var(--on-lime);
+}
+.legal a.secondary {
+  color: var(--ink);
+  text-decoration: none;
+}
 .legal {
   max-height: 58vh;
   overflow: auto;
