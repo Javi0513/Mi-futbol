@@ -8,8 +8,9 @@ srv=http.server.ThreadingHTTPServer(('127.0.0.1',8812),functools.partial(type('Q
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {proUrl:'https://buy.stripe.com/test_abc',portalUrl:'https://billing.stripe.com/p/login/test_xyz',")
-def abrir(b,android=False,prueba=True):
+def abrir(b,android=False,prueba=True,seed=None):
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block')
+    if seed: ctx.add_init_script('window.__seed='+seed)
     if android: ctx.add_init_script("Object.defineProperty(document,'referrer',{get:()=>'android-app://com.monetizaplus.mifutbol/'})")
     pg=ctx.new_page()
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:errs.append(m.text) if m.type=='error' else None)
@@ -57,6 +58,10 @@ with sync_playwright() as p:
     pg=abrir(b,prueba=False)
     pg.click('#acct');pg.click('#info [data-info=pro]');pg.wait_for_timeout(300)
     check('enlace de prueba oculto sin ?probarpago (sale la lista de espera)',pg.locator('[data-pro-pay]').count()==0 and pg.locator('#wl').count()==1)
+    pg.context.close()
+    pg=abrir(b,prueba=False,seed="{futbol_personal_jugadores:[],futbol_personal_partidos:[],perfiles:[{id:'u1',plan:'pro',stripe_customer:'cus_1'}]}")
+    pg.click('#acct');pg.wait_for_timeout(300)
+    check('sin ?probarpago, quien paga con Stripe ve "Gestionar o cancelar"',pg.locator('#info [data-pro-portal]').count()==1)
     pg.context.close()
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
