@@ -1277,6 +1277,7 @@
     curUser = null,
     curEmail = "",
     plan = "gratis",
+    proHasta = null,
     delStep = false;
   const AM = {
     login: ["Entrar", "Entrando…", "Acceso"],
@@ -1390,8 +1391,10 @@
   initCaptcha();
   async function loadPlan() {
     try {
-      let r = await db.from("perfiles").select("plan");
-      plan = (r.data && r.data[0] && r.data[0].plan) || "gratis";
+      let r = await db.from("perfiles").select("*");
+      let f = (r.data && r.data[0]) || {};
+      plan = f.plan || "gratis";
+      proHasta = f.pro_hasta || null;
     } catch (e) {}
   }
   /* Tras pagar en Stripe, el plan se activa en unos segundos: se vuelve a mirar al regresar a la app */
@@ -1410,9 +1413,28 @@
       await new Promise((r) => setTimeout(r, 2500));
     }
   }
+  /* Al volver del portal de Stripe (p. ej. tras cancelar) se vuelve a mirar el plan y se refresca Mi cuenta */
+  let portalPending = false;
+  async function refreshPortal() {
+    portalPending = false;
+    for (let i = 0; i < 3; i++) {
+      let antes = plan + proHasta;
+      await loadPlan();
+      if (plan + proHasta !== antes) {
+        render();
+        if (!$("info").classList.contains("hidden") && $("infoTitle").textContent === "Mi cuenta") showInfo("account");
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 2500));
+    }
+  }
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && payPending) refreshPlan();
+    if (document.visibilityState !== "visible") return;
+    if (payPending) refreshPlan();
+    else if (portalPending) refreshPortal();
   });
+  const fechaLarga = (iso) =>
+    new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
   function useUser(u) {
     curUser = u.id;
     curEmail = u.email || "";
@@ -1794,7 +1816,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && pagoActivo ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener">Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && pagoActivo ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
@@ -1806,6 +1828,7 @@
   $("closeInfo").onclick = () => $("info").classList.add("hidden");
   document.addEventListener("click", async (e) => {
     if (e.target.closest("[data-pro-pay]")) payPending = true;
+    if (e.target.closest("[data-pro-portal]")) portalPending = true;
     let lg = e.target.closest("[data-legal]");
     if (lg) {
       e.preventDefault();

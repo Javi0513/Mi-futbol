@@ -36,6 +36,15 @@ with sync_playwright() as p:
     pg.click('#acct');pg.wait_for_timeout(200)
     t=pg.locator('#infoBody').inner_html()
     check('Mi cuenta: plan Pro y enlace para gestionar',"Pro · sin límites" in t and 'billing.stripe.com/p/login/test_xyz?prefilled_email=ana%40x.es' in t and 'data-info="pro"' not in t)
+    check('Mi cuenta: sin aviso de fin si no ha cancelado',pg.locator('#info .pro-fin').count()==0)
+    # cancela en el portal de Stripe: el webhook guarda pro_hasta y, al volver, Mi cuenta muestra la fecha
+    pg.evaluate("document.querySelector('[data-pro-portal]').addEventListener('click',e=>e.preventDefault(),{once:true})")
+    pg.click('[data-pro-portal]')
+    pg.evaluate("window.__db.perfiles[0].pro_hasta='2026-11-20T19:00:00Z'")
+    pg.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+    pg.wait_for_timeout(800)
+    t=pg.locator('#info .pro-fin').inner_text() if pg.locator('#info .pro-fin').count() else ''
+    check('tras cancelar: "activo hasta el 20 de noviembre de 2026"','activo hasta el 20 de noviembre de 2026' in t,t)
     pg.context.close()
     pg=abrir(b,android=True)
     pg.click('#acct');pg.wait_for_timeout(200)

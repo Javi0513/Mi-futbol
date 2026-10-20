@@ -78,10 +78,14 @@ Deno.serve(async (req) => {
       ev.type === "customer.subscription.deleted"
     ) {
       const activo = ev.type !== "customer.subscription.deleted" && ACTIVOS.includes(o.status);
+      // Si está cancelada pero sigue pagada, el día en que acaba el Pro (para mostrarlo en la app)
+      const fin = o.cancel_at ??
+        (o.cancel_at_period_end ? (o.current_period_end ?? o.items?.data?.[0]?.current_period_end) : null);
       await actualizar(`stripe_customer=eq.${encodeURIComponent(o.customer)}`, cuando, {
         stripe_subscription: o.id,
         stripe_estado: o.status,
         plan: activo ? "pro" : "gratis",
+        pro_hasta: activo && fin ? new Date(fin * 1000).toISOString() : null,
       });
     }
   } catch (e) {
