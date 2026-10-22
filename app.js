@@ -96,6 +96,9 @@
     busy: false,
     live: null,
     livePick: false,
+    teams: [],
+    teamsOk: false,
+    team: {},
   };
   const MODES = {
     7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, cap: 14 },
@@ -240,13 +243,35 @@
         ? `<img class="avatar${z ? " zoomable" : ""}" src="${esc(p.foto)}" alt="${z ? "Ampliar foto de " + esc(p.nombre) : ""}"${z ? ' tabindex="0" role="button"' : ""}>`
         : `<div class="avatar">${esc((p?.nombre || "?")[0].toUpperCase())}</div>`,
     modeCount = () => MODES[state.mode].n,
+    /* Equipos: varios por modalidad. Sin equipo guardado = el primero de su modalidad. */
+    teamsOf = (k) =>
+      state.teams
+        .filter((t) => t.modalidad === (k || state.mode))
+        .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))),
+    curTeam = (k) => {
+      let L = teamsOf(k),
+        id = state.team[k || state.mode];
+      return L.some((t) => t.id === id) ? id : L[0] ? L[0].id : null;
+    },
+    teamOf = (x) => {
+      let L = teamsOf(x.modalidad);
+      return L.some((t) => t.id === x.equipo_id)
+        ? x.equipo_id
+        : L[0]
+          ? L[0].id
+          : null;
+    },
+    inTeam = (x) => x.modalidad === state.mode && teamOf(x) === curTeam(),
+    teamName = (k, id) =>
+      (state.teams.find((t) => t.id === (id === undefined ? curTeam(k) : id)) || {})
+        .nombre || "Mi equipo",
     roster = () =>
       state.players
-        .filter((p) => p.modalidad === state.mode)
+        .filter(inTeam)
         .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
     games = () =>
       state.matches
-        .filter((m) => m.modalidad === state.mode)
+        .filter(inTeam)
         .sort((a, b) => b.fecha.localeCompare(a.fecha)),
     entries = (m) =>
       Array.isArray(m.participaciones) ? m.participaciones : [],
@@ -292,17 +317,29 @@
       }, 4500);
   }
   async function load() {
-    let [{ data: ps, error: pe }, { data: ms, error: me }] = await Promise.all([
+    let [{ data: ps, error: pe }, { data: ms, error: me }, tr] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
-        .select("id,modalidad,nombre,foto")
+        .select("*")
         .order("nombre"),
       db
         .from("futbol_personal_partidos")
-        .select("id,modalidad,fecha,rival,participaciones,alineacion")
+        .select("*")
         .order("fecha", { ascending: false }),
+      (async () => {
+        try {
+          return await db.from("equipos").select("*").order("created_at");
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      })(),
     ]);
     if (pe || me) throw pe || me;
+    state.teamsOk = !tr.error;
+    state.teams = tr.data || [];
+    try {
+      state.team = JSON.parse(localStorage.getItem("mf_equipo_sel") || "{}") || {};
+    } catch (e) {}
     state.players = ps || [];
     state.matches = (ms || []).map((m) => ({
       ...m,
@@ -339,6 +376,7 @@
       if (on) b.setAttribute("aria-current", "page");
       else b.removeAttribute("aria-current");
     });
+    $("teams").innerHTML = teamBar();
     let all = games().flatMap(entries);
     $("stats").innerHTML = [
       ["Jugadores", roster().length],
@@ -376,6 +414,129 @@
       v.classList.remove("enter");
       void v.offsetWidth;
       v.classList.add("enter");
+    }
+  }
+  function teamBar() {
+    let L = teamsOf(),
+      cur = curTeam(),
+      chips = L.length
+        ? L.map(
+            (t) =>
+              `<button type="button" data-team="${esc(t.id)}" class="${t.id === cur ? "on" : ""}" aria-pressed="${t.id === cur}">${esc(t.nombre)}</button>`,
+          ).join("")
+        : `<button type="button" class="on" aria-pressed="true">Mi equipo</button>`;
+    return `<div class="team-chips" role="group" aria-label="Equipos de ${esc(MN())}">${chips}</div><button type="button" class="ib" data-teamact="rename" aria-label="Cambiar el nombre del equipo" title="Cambiar nombre">${ic("pencil", 18)}</button>${L.length > 1 ? `<button type="button" class="ib d" data-teamact="del" aria-label="Borrar este equipo" title="Borrar equipo">${ic("trash", 18)}</button>` : ""}<button type="button" class="ib add" data-teamact="add" aria-label="Añadir otro equipo" title="Añadir equipo">${ic("plus", 18)}<span>Equipo</span></button>`;
+  }
+  function pickTeam(id) {
+    state.team[state.mode] = id;
+    try {
+      localStorage.setItem("mf_equipo_sel", JSON.stringify(state.team));
+    } catch (e) {}
+  }
+  function teamName_ask(def) {
+    let n = prompt("Nombre del equipo", def || "");
+    if (n === null) return null;
+    n = n.trim().slice(0, 40);
+    if (!n) {
+      note("Escribe un nombre para el equipo.");
+      return null;
+    }
+    return n;
+  }
+  /* Crea en la base de datos el equipo «virtual» de una modalidad y le pasa sus jugadores y partidos */
+  async function firstTeam(nombre) {
+    let row = {
+        id: crypto.randomUUID(),
+        owner_id: curUser,
+        modalidad: state.mode,
+        nombre: nombre || "Mi equipo",
+      },
+      r = await db.from("equipos").insert(row);
+    if (r.error) throw r.error;
+    await Promise.all(
+      ["futbol_personal_jugadores", "futbol_personal_partidos"].map((tb) =>
+        db
+          .from(tb)
+          .update({ equipo_id: row.id })
+          .eq("modalidad", state.mode)
+          .is("equipo_id", null),
+      ),
+    );
+    return row.id;
+  }
+  async function teamAct(k) {
+    if (!state.teamsOk)
+      return note(
+        "Para tener varios equipos falta un paso en el servidor (supabase-equipos.sql).",
+      );
+    if (!leaveDraft()) return;
+    try {
+      if (k === "add") {
+        if (plan !== "pro") return showInfo("proteam");
+        let n = teamName_ask("");
+        if (!n) return;
+        if (!teamsOf().length) await firstTeam();
+        let row = {
+            id: crypto.randomUUID(),
+            owner_id: curUser,
+            modalidad: state.mode,
+            nombre: n,
+          },
+          r = await db.from("equipos").insert(row);
+        if (r.error) throw r.error;
+        pickTeam(row.id);
+        state.draft = null;
+        state.live = null;
+        await load();
+        note(`Equipo «${n}» creado.`, true);
+      } else if (k === "rename") {
+        let n = teamName_ask(teamName());
+        if (!n) return;
+        let id = curTeam();
+        if (!id) id = await firstTeam(n);
+        else {
+          let r = await db.from("equipos").update({ nombre: n }).eq("id", id);
+          if (r.error) throw r.error;
+        }
+        await load();
+        note("Nombre del equipo guardado.", true);
+      } else if (k === "del") {
+        let L = teamsOf(),
+          id = curTeam();
+        if (L.length < 2) return;
+        let ps = roster().length,
+          ms = games(),
+          nm = teamName();
+        if (
+          !confirm(
+            `¿Borrar el equipo «${nm}»? Se borrarán también sus ${ps} jugadores y ${ms.length} partidos. No se puede deshacer.`,
+          )
+        )
+          return;
+        let ids = ms.map((m) => m.id);
+        if (ids.length)
+          await db.from("directos").delete().in("partido_id", ids);
+        if (L[0].id === id)
+          await Promise.all(
+            ["futbol_personal_jugadores", "futbol_personal_partidos"].map((tb) =>
+              db
+                .from(tb)
+                .delete()
+                .eq("modalidad", state.mode)
+                .is("equipo_id", null),
+            ),
+          );
+        let r = await db.from("equipos").delete().eq("id", id);
+        if (r.error) throw r.error;
+        pickTeam(null);
+        state.tab = "plantilla";
+        state.draft = null;
+        state.live = null;
+        await load();
+        note(`Equipo «${nm}» borrado.`, true);
+      }
+    } catch (x) {
+      note(x.message || String(x));
     }
   }
   function players() {
@@ -1118,6 +1279,7 @@
       foto = original?.foto || "";
     if (file) foto = await resize(file);
     let payload = { modalidad: state.mode, nombre: name, foto };
+    if (!original && curTeam()) payload.equipo_id = curTeam();
     if (!original && full("p")) {
       $("modal").classList.add("hidden");
       showInfo("pro");
@@ -1205,6 +1367,7 @@
     if (!state.editing) {
       payload.id = crypto.randomUUID();
       payload.owner_id = (await db.auth.getUser()).data.user.id;
+      if (curTeam()) payload.equipo_id = curTeam();
     }
     state.busy = true;
     render();
@@ -1345,6 +1508,12 @@
     try {
       await loadPlan();
       await load();
+      if (tutPending() && !state.players.length && !state.matches.length)
+        tutOpen();
+      else if (tutPending())
+        try {
+          localStorage.setItem(tutKey(), "1");
+        } catch (e) {}
       if (/[?&]pro=ok/.test(location.search)) {
         history.replaceState(null, "", location.pathname);
         payPending = true;
@@ -1585,7 +1754,10 @@
           id: p.id,
           mod: p.modalidad,
           t: p.nombre,
-          s: MODES[p.modalidad].name + " · Plantilla",
+          s:
+            MODES[p.modalidad].name +
+            (teamsOf(p.modalidad).length > 1 ? " · " + teamName(p.modalidad, teamOf(p)) : "") +
+            " · Plantilla",
           foto: p.foto,
         });
     });
@@ -1600,7 +1772,10 @@
           id: m.id,
           mod: m.modalidad,
           t: "vs " + m.rival,
-          s: MODES[m.modalidad].name + " · " + fmtDate(m.fecha),
+          s:
+            MODES[m.modalidad].name +
+            (teamsOf(m.modalidad).length > 1 ? " · " + teamName(m.modalidad, teamOf(m)) : "") +
+            " · " + fmtDate(m.fecha),
         });
     });
     return out.slice(0, 40);
@@ -1645,6 +1820,7 @@
     if (!it || !leaveDraft()) return;
     closeSearch();
     state.mode = it.modalidad;
+    if (teamOf(it)) pickTeam(teamOf(it));
     state.tab = k === "p" ? "plantilla" : "partidos";
     state.draft = null;
     render();
@@ -1753,7 +1929,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites existe el plan Pro, de 5,99 € al mes (IVA incluido). Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 5,99 € al mes (IVA incluido). Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Mientras Stripe esté en modo prueba (enlace test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -1809,22 +1985,174 @@
       })
       .join("")}</div>`;
   }
+  /* Tutorial de bienvenida: ventana flotante paso a paso que señala cada parte de la app */
+  const TUT = [
+    {
+      t: "¡Bienvenido a Mi Fútbol JV32!",
+      p: "Aquí llevas tu equipo: plantilla, partidos, alineaciones, minutos, goles, pizarra táctica y marcador en directo. Te lo enseño en un minuto.",
+    },
+    {
+      el: ".switch",
+      t: "Elige la modalidad",
+      p: "Fútbol 7, Fútbol 11 o Fútbol sala. Cada modalidad tiene sus jugadores y sus partidos por separado.",
+    },
+    {
+      el: "#teams",
+      t: "Tu equipo",
+      p: "Con el lápiz le pones nombre a tu equipo. Con el botón + puedes llevar varios equipos en la misma modalidad (plan Pro).",
+    },
+    {
+      el: "#stats",
+      t: "El resumen de un vistazo",
+      p: "Jugadores, partidos, minutos y goles del equipo que tienes elegido.",
+    },
+    {
+      el: '[data-tab="plantilla"]',
+      t: "Plantilla",
+      p: "Pulsa «+ Jugador» para añadir a cada jugador con su nombre y, si quieres, su foto. Toca el lápiz para editarlo y la foto para verla en grande.",
+    },
+    {
+      el: '[data-tab="partidos"]',
+      t: "Partidos",
+      p: "Pulsa «+ Partido»: pon fecha y rival, marca convocados y titulares, elige la formación y arrastra a cada jugador a su sitio en el campo. Después apunta minutos, goles y el resultado.",
+    },
+    {
+      el: '[data-tab="partidos"]',
+      t: "Comparte y juega en directo",
+      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto y goleadores en vivo, con un enlace para que la familia lo siga sin cuenta.",
+    },
+    {
+      el: '[data-tab="pizarra"]',
+      t: "Pizarra táctica",
+      p: "Mueve las fichas, dibuja jugadas con el dedo, ponla a pantalla completa para explicarla y guárdala como imagen.",
+    },
+    {
+      el: '[data-tab="resumen"]',
+      t: "Estadísticas",
+      p: "Ranking de tus jugadores por goles, minutos, partidos y titularidades.",
+    },
+    {
+      el: "#sbtn",
+      t: "Buscador",
+      p: "Encuentra cualquier jugador o partido de todas tus modalidades.",
+    },
+    {
+      el: "#acct",
+      t: "Mi cuenta",
+      p: "Tu plan, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+    },
+    {
+      t: "¡Listo para empezar!",
+      p: "Empieza añadiendo a tus jugadores en la Plantilla. Luego crea tu primer partido.",
+    },
+  ];
+  let tutI = -1;
+  const tutKey = () => "mf_tut_v1:" + (curUser || "");
+  function tutPending() {
+    if (c.noTutorial) return false;
+    try {
+      return !localStorage.getItem(tutKey());
+    } catch (e) {
+      return false;
+    }
+  }
+  function tutOpen() {
+    state.tab = "plantilla";
+    state.draft = null;
+    state.live = null;
+    render();
+    tutI = 0;
+    tutShow();
+  }
+  function tutClose() {
+    tutI = -1;
+    let b = $("tut");
+    if (b) b.remove();
+    try {
+      localStorage.setItem(tutKey(), "1");
+    } catch (e) {}
+  }
+  function tutShow() {
+    let s = TUT[tutI],
+      box = $("tut");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "tut";
+      box.className = "tut";
+      box.innerHTML =
+        '<div class="tut-hole"></div><div class="tut-card" role="dialog" aria-modal="true" aria-labelledby="tutT"></div>';
+      document.body.appendChild(box);
+    }
+    let hole = box.querySelector(".tut-hole"),
+      card = box.querySelector(".tut-card"),
+      el = s.el && document.querySelector(s.el),
+      last = tutI === TUT.length - 1;
+    if (el) {
+      el.scrollIntoView({ block: "center", inline: "nearest" });
+      let r = el.getBoundingClientRect(),
+        pad = 6;
+      Object.assign(hole.style, {
+        display: "block",
+        left: r.left - pad + "px",
+        top: r.top - pad + "px",
+        width: r.width + pad * 2 + "px",
+        height: r.height + pad * 2 + "px",
+      });
+      box.classList.add("on-el");
+      card.classList.toggle("top", r.top + r.height / 2 > innerHeight / 2);
+    } else {
+      hole.style.display = "none";
+      box.classList.remove("on-el");
+      card.classList.remove("top");
+    }
+    card.innerHTML = `<div class="kicker">Paso ${tutI + 1} de ${TUT.length}</div><h2 id="tutT">${esc(s.t)}</h2><p>${esc(s.p)}</p><div class="tut-dots" aria-hidden="true">${TUT.map((_, i) => `<i class="${i === tutI ? "on" : ""}"></i>`).join("")}</div><div class="tut-btns">${last ? "" : '<button type="button" class="lnk" data-tut="skip">Saltar</button>'}<span></span>${tutI ? '<button type="button" class="secondary small" data-tut="prev">Atrás</button>' : ""}<button type="button" class="primary small" data-tut="next">${last ? "Empezar" : "Siguiente"}</button></div>`;
+    card.querySelector('[data-tut="next"]').focus();
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest && e.target.closest("[data-tut]");
+    if (!b || tutI < 0) return;
+    e.stopPropagation();
+    let k = b.dataset.tut;
+    if (k === "skip") return tutClose();
+    if (k === "prev") tutI = Math.max(0, tutI - 1);
+    else if (tutI === TUT.length - 1) return tutClose();
+    else tutI++;
+    tutShow();
+  }, true);
+  document.addEventListener("keydown", (e) => {
+    if (tutI < 0) return;
+    if (e.key === "Escape") tutClose();
+    else if (e.key === "ArrowRight" && tutI < TUT.length - 1) {
+      tutI++;
+      tutShow();
+    } else if (e.key === "ArrowLeft" && tutI > 0) {
+      tutI--;
+      tutShow();
+    }
+  });
+  window.addEventListener("resize", () => {
+    if (tutI >= 0) tutShow();
+  });
   function showInfo(k) {
     let t, h;
-    if (k === "pro") {
+    if (k === "proteam") {
+      t = "Plan Pro";
+      h = `<p>En el plan gratuito tienes <b>un equipo</b> en cada modalidad.</p><p>Con el <b>plan Pro</b> puedes llevar <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, cada uno con su plantilla y sus partidos, y además jugadores y partidos ilimitados.</p>${enAndroid ? "" : `<p class="price">5,99 € <small>al mes · IVA incluido · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
+    } else if (k === "pro") {
       let M = MODES[state.mode];
       t = "Plan Pro";
-      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${enAndroid ? "" : `<p class="price">5,99 € <small>al mes · IVA incluido · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
+      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${enAndroid ? "" : `<p class="price">5,99 € <small>al mes · IVA incluido · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
     $("info").classList.remove("hidden");
     $("infoBody").scrollTop = 0;
-    if (k === "pro" && !pagoActivo && !enAndroid) checkWaitlist();
+    if ((k === "pro" || k === "proteam") && !pagoActivo && !enAndroid)
+      checkWaitlist();
   }
   $("acct").onclick = () => showInfo("account");
   $("closeInfo").onclick = () => $("info").classList.add("hidden");
@@ -1849,6 +2177,11 @@
     let ac = e.target.closest("#info [data-acct]");
     if (!ac) return;
     let w = ac.dataset.acct;
+    if (w === "tutorial") {
+      $("info").classList.add("hidden");
+      tutOpen();
+      return;
+    }
     if (w === "waitlist") {
       let b = $("wl");
       if (b.disabled) return;
@@ -1875,6 +2208,7 @@
       let data = {
           exportado: new Date().toISOString(),
           email: curEmail,
+          equipos: state.teams,
           jugadores: state.players,
           partidos: state.matches,
           directos: Object.values(liveRows),
@@ -1954,6 +2288,20 @@
       imgExport(im.dataset.img).catch((x) =>
         note("No se pudo crear la imagen: " + x.message),
       );
+      return;
+    }
+    let tm = e.target.closest("[data-team]");
+    if (tm) {
+      if (tm.dataset.team === curTeam() || !leaveDraft()) return;
+      pickTeam(tm.dataset.team);
+      state.draft = null;
+      state.live = null;
+      render();
+      return;
+    }
+    let ta = e.target.closest("[data-teamact]");
+    if (ta) {
+      teamAct(ta.dataset.teamact);
       return;
     }
     let mode = e.target.closest("[data-mode]"),
@@ -2200,9 +2548,9 @@
     let x = liveRows[id];
     if (!x) {
       let r0 = m.alineacion && m.alineacion.resultado,
-        eq = "";
+        eq = teamOf(m) ? teamName(m.modalidad, teamOf(m)) : "";
       try {
-        eq = localStorage.getItem("mf_equipo") || "";
+        if (!eq) eq = localStorage.getItem("mf_equipo") || "";
       } catch (e) {}
       let row = {
           id: crypto.randomUUID(),

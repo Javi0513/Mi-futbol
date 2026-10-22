@@ -16,7 +16,7 @@ im=Image.frombytes('RGB',(1600,1200),bytes(random.getrandbits(8) for _ in range(
 with sync_playwright() as p:
     b=p.chromium.launch();ctx=b.new_context(service_workers='block');pg=ctx.new_page();pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=WRAP))
-    pg.route('**/config.js',lambda r:r.fulfill(content_type='application/javascript',body="window.APP_CONFIG={supabaseUrl:'https://x.supabase.co',supabaseAnonKey:'k',turnstileSiteKey:'1x00000000000000000000AA'}"))
+    pg.route('**/config.js',lambda r:r.fulfill(content_type='application/javascript',body="window.APP_CONFIG={supabaseUrl:'https://x.supabase.co',supabaseAnonKey:'k',turnstileSiteKey:'1x00000000000000000000AA',noTutorial:true}"))
     pg.route('https://challenges.cloudflare.com/**',lambda r:r.fulfill(content_type='application/javascript',body="window.turnstile={render:(el,o)=>{setTimeout(()=>o.callback('TOK123'),50);return 'w1'},reset:()=>{}}"))
     pg.goto('http://127.0.0.1:8802/index.html');pg.wait_for_timeout(500)
     pg.fill('input[name=email]','c@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')

@@ -2133,3 +2133,145 @@ img.avatar.zoomable {
   text-align: center;
   margin: 12px 0 0;
 }
+/* equipos de la modalidad */
+.teams {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 12px;
+}
+.team-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+  scrollbar-width: none;
+}
+.team-chips::-webkit-scrollbar {
+  display: none;
+}
+.team-chips button {
+  flex: none;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--s1);
+  border: 1px solid var(--line);
+  color: var(--mut);
+  font-weight: 700;
+  white-space: nowrap;
+  max-width: 60vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team-chips button.on {
+  color: var(--ink);
+  border-color: var(--lime);
+  box-shadow: inset 0 0 0 1px var(--lime);
+}
+.teams .ib {
+  flex: none;
+}
+.teams .ib.add {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  padding: 0 12px;
+  gap: 4px;
+  font-weight: 700;
+}
+body.tab-pizarra .teams {
+  margin-top: 8px;
+}
+.teams .ib {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+}
+@media (max-width: 480px) {
+  .teams .ib.add {
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .teams .ib.add span {
+    display: none;
+  }
+}
+/* tutorial de bienvenida */
+.tut {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(2, 8, 5, 0.78);
+}
+.tut.on-el {
+  background: transparent;
+}
+.tut-hole {
+  position: fixed;
+  display: none;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 3px var(--lime),
+    0 0 0 9999px rgba(2, 8, 5, 0.78);
+  pointer-events: none;
+  transition: all 0.25s var(--ease);
+}
+.tut-card {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(440px, calc(100vw - 32px));
+  background: var(--s2);
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  padding: 18px 18px 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  color: var(--ink);
+}
+.tut:not(.on-el) .tut-card {
+  bottom: auto;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.tut-card.top {
+  bottom: auto;
+  top: calc(18px + env(safe-area-inset-top));
+}
+.tut-card h2 {
+  margin: 4px 0 8px;
+  font: 800 26px/1.05 var(--fd);
+  text-transform: uppercase;
+}
+.tut-card p {
+  margin: 0;
+  color: var(--mut);
+  line-height: 1.45;
+}
+.tut-dots {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin: 14px 0 10px;
+}
+.tut-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 9px;
+  background: var(--line2);
+}
+.tut-dots i.on {
+  width: 18px;
+  background: var(--lime);
+}
+.tut-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tut-btns span {
+  flex: 1;
+}

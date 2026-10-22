@@ -56,13 +56,14 @@ supabase.js, *.woff2  Librería de Supabase y tipografías (Barlow) en local
 manifest.webmanifest  Instalación como app + iconos
 supabase-multiusuario.sql   Tablas, seguridad y límites de la base de datos
 supabase-directo.sql        Directo de partidos y su enlace público
+supabase-equipos.sql        Varios equipos por modalidad (plan Pro)
 doc-*.png             Capturas de este README
 ```
 
 ## Puesta en marcha (para tu propia copia)
 
 1. Crea un proyecto en [Supabase](https://supabase.com).
-2. En **SQL Editor**, ejecuta `supabase-multiusuario.sql` (se puede repetir sin riesgo). Las tablas `futbol_personal_jugadores` y `futbol_personal_partidos` deben existir antes. Después ejecuta `supabase-avisos-pro.sql` y `supabase-directo.sql` (también se pueden repetir).
+2. En **SQL Editor**, ejecuta `supabase-multiusuario.sql` (se puede repetir sin riesgo). Las tablas `futbol_personal_jugadores` y `futbol_personal_partidos` deben existir antes. Después ejecuta `supabase-avisos-pro.sql`, `supabase-directo.sql` y `supabase-equipos.sql` (también se pueden repetir).
 3. En **Authentication → URL Configuration**, pon la dirección de tu web como *Site URL* y en *Redirect URLs*.
 4. Crea `config.js` junto a `index.html`:
 
