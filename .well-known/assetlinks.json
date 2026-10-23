@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.monetizaplus.mifutbol",
       "sha256_cert_fingerprints": [
-        "52:1E:E2:7B:3B:11:B1:25:55:88:CB:A7:68:A0:A1:36:A9:78:3F:4B:FA:2F:7E:3D:3E:29:55:27:37:A1:3E:AE"
+        "52:1E:E2:7B:3B:11:B1:25:55:88:CB:A7:68:A0:A1:36:A9:78:3F:4B:FA:2F:7E:3D:3E:29:55:27:37:A1:3E:AE",
+        "A0:2B:D3:A6:58:E6:03:0F:94:B3:F6:49:41:AA:2E:82:D7:F0:F5:E5:33:DE:E4:12:9F:0B:07:1B:C8:C5:D4:DB"
       ]
     }
   }
