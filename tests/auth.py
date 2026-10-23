@@ -57,7 +57,7 @@ with sync_playwright() as p:
     # cuenta
     pg.click('#acct');pg.wait_for_timeout(150)
     check('cuenta: abre modal con email',vis(pg,'#info') and 'nuevo@x.es' in pg.locator('#infoBody').inner_text(),pg.locator('#infoBody').inner_text()[:80])
-    check('cuenta: plan gratuito',('Prueba gratuita' in pg.locator('#infoBody').inner_text()))
+    check('cuenta: plan gratuito',('Gratuito' in pg.locator('#infoBody').inner_text()))
     pg.screenshot(path=OUT+'/a_cuenta.png')
     with pg.expect_download() as d:pg.click('[data-acct=export]')
     data=json.load(open(d.value.path()));check('exportar: JSON con claves',set(data)>={'exportado','email','jugadores','partidos'} and data['email']=='nuevo@x.es',list(data))
@@ -65,9 +65,9 @@ with sync_playwright() as p:
     pg.screenshot(path=OUT+'/a_priv.png')
     pg.click('#closeInfo');check('cierra modal',not vis(pg,'#info'))
     pg.click('#acct');pg.click('[data-acct=delete]');pg.wait_for_timeout(100);pg.click('[data-acct=delete2]');pg.wait_for_timeout(100)
-    check('borrar: exige escribir BORRAR',pg.evaluate("window.__calls.filter(c=>c[0]==='rpc').length")==0 and vis(pg,'#info'))
+    check('borrar: exige escribir BORRAR',pg.evaluate("window.__calls.filter(c=>c[0]==='rpc'&&c[1]!=='revisar_prueba_pro').length")==0 and vis(pg,'#info'))
     pg.fill('#delConf','borrar');pg.click('[data-acct=delete2]');pg.wait_for_timeout(300)
-    check('borrar: llama rpc borrar_mi_cuenta',pg.evaluate("window.__calls.filter(c=>c[0]==='rpc')")==[['rpc','borrar_mi_cuenta']])
+    check('borrar: llama rpc borrar_mi_cuenta',pg.evaluate("window.__calls.filter(c=>c[0]==='rpc'&&c[1]!=='revisar_prueba_pro')")==[['rpc','borrar_mi_cuenta']])
     check('borrar: vuelve al login con aviso',vis(pg,'#login') and not vis(pg,'#app') and not vis(pg,'#info') and 'borrado' in msg(pg),msg(pg))
     # login normal + límite + logout desde cuenta + pizarra por usuario
     pg.click('[data-am=login]');pg.fill('input[name=email]','ana@x.es');pg.fill('input[name=password]','mala');pg.click('#goBtn');pg.wait_for_timeout(150)
