@@ -8,7 +8,7 @@ window.supabase={createClient:()=>{let cb=null,session=null;
  const q=(t)=>{let rows=window.__db[t]||[],op='select',payload=null;
   const o={select(){return o},order(){return o},eq(){return o},insert(p){op='insert';payload=p;return o},update(){return o},delete(){return o},
    then(res){let out;if(op==='insert'){if(window.__cfg.limit)out={error:{message:'LIMITE_PLAN'}};else{rows.push(payload);out={error:null}}}else out={data:rows.map(r=>({...r})),error:null};return Promise.resolve(out).then(res)}};return o};
- return{from:q,rpc:async(n)=>{window.__calls.push(['rpc',n]);return{error:null}},auth:{
+ return{from:q,rpc:async(n)=>{window.__calls.push(['rpc',n]);let d=(window.__cfg.rpcData||{})[n];if(typeof d==='function')d=d();return{error:null,data:d}},auth:{
   getSession:async()=>({data:{session}}),
   onAuthStateChange(c){cb=c;setTimeout(()=>{if(window.__cfg.recovery){session={user:window.__cfg.user};c('PASSWORD_RECOVERY',session)}else c('INITIAL_SESSION',null)},0);return{data:{subscription:{}}}},
   signInWithPassword:async(a)=>{window.__calls.push(['login',a.email]);if(a.password==='mala')return{data:{},error:{message:'Invalid login credentials'}};session={user:window.__cfg.user};cb('SIGNED_IN',session);return{data:{session},error:null}},

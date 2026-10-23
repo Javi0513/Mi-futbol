@@ -1441,6 +1441,7 @@
     curEmail = "",
     plan = "gratis",
     proHasta = null,
+    pruebaHasta = null,
     stripeCliente = false,
     delStep = false;
   const AM = {
@@ -1502,11 +1503,26 @@
       return "La nueva contraseña debe ser distinta a la anterior.";
     return m || "No se pudo completar. Inténtalo de nuevo.";
   }
+  /* Testers: el servidor activa o termina la prueba gratis del plan Pro (supabase-testers.sql) */
+  async function revisarPrueba() {
+    try {
+      let r = await db.rpc("revisar_prueba_pro");
+      return (r && !r.error && r.data) || "";
+    } catch (e) {
+      return "";
+    }
+  }
+  const diasQuedan = (iso) => Math.max(1, Math.ceil((Date.parse(iso) - Date.now()) / 864e5));
   async function enterApp() {
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
     try {
+      let prueba = await revisarPrueba();
       await loadPlan();
+      if (prueba === "activada" && pruebaHasta)
+        note(`¡Gracias por probar la app! Tienes el plan Pro gratis en modo prueba durante ${diasQuedan(pruebaHasta)} días, hasta el ${fechaLarga(pruebaHasta)}.`, true);
+      else if (prueba === "terminada")
+        note("Tu prueba del plan Pro ha terminado. Ahora tienes el plan gratuito.");
       await load();
       if (tutPending() && !state.players.length && !state.matches.length)
         tutOpen();
@@ -1565,6 +1581,7 @@
       let f = (r.data && r.data[0]) || {};
       plan = f.plan || "gratis";
       proHasta = f.pro_hasta || null;
+      pruebaHasta = f.prueba_hasta || null;
       stripeCliente = !!f.stripe_customer;
     } catch (e) {}
   }
@@ -1604,6 +1621,7 @@
     if (payPending) refreshPlan();
     else if (portalPending) refreshPortal();
   });
+  const enPrueba = () => plan === "pro" && !!pruebaHasta && !stripeCliente;
   const fechaLarga = (iso) =>
     new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
   function useUser(u) {
@@ -2145,7 +2163,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? "Pro · sin límites" : "Prueba gratuita"}</b></p>${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
