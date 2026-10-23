@@ -1943,7 +1943,7 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
@@ -2558,7 +2558,7 @@
               "",
             )}<button data-scorer="">Sin asignar</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`
         : "";
-    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${pick}<h3 class="lv-h">Goles</h3>${liveEvents(x, true)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto y los goleadores, sin necesidad de cuenta. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${pick}<h3 class="lv-h">Goles</h3>${liveEvents(x, true)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto y los goleadores, sin necesidad de cuenta. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
   }
   async function openLive(id) {
     let m = state.matches.find((z) => z.id === id);
@@ -2731,6 +2731,7 @@
       state.livePick = false;
       return render();
     }
+    if (k === "cam") return camAbre(x.partido_id);
     if (k === "share") return liveShare(x);
     if (k === "off") return liveOff(x);
     if (k === "nopick") state.livePick = false;
@@ -2804,6 +2805,412 @@
       .querySelectorAll("[data-lvss]")
       .forEach((n) => (n.textContent = c[1]));
   }, 1000);
+  /* ===== Cámara del directo: graba el partido con el marcador encima y lo guarda en el móvil ===== */
+  let cam = null;
+  /* Vídeo en directo: Edge Function "video-directo" (Cloudflare Realtime reparte el vídeo) */
+  const VID_ICE = [{ urls: "stun:stun.cloudflare.com:3478" }];
+  /* Espera a tener los candidatos de red en la descripción (máx. 2 s) */
+  const vidIce = (pc) =>
+    pc.iceGatheringState === "complete"
+      ? Promise.resolve()
+      : new Promise((ok) => {
+          let t = setTimeout(ok, 2000);
+          pc.addEventListener("icegatheringstatechange", () => pc.iceGatheringState === "complete" && (clearTimeout(t), ok()));
+        });
+  async function vidFn(body, auth) {
+    let h = { "Content-Type": "application/json", apikey: c.supabaseAnonKey };
+    if (auth) {
+      let s = await db.auth.getSession(),
+        t = s && s.data && s.data.session && s.data.session.access_token;
+      if (t) h.Authorization = "Bearer " + t;
+    }
+    let r = await fetch(c.supabaseUrl + "/functions/v1/video-directo", { method: "POST", headers: h, body: JSON.stringify(body) }),
+      d = await r.json().catch(() => ({}));
+    if (!r.ok || d.error) throw new Error(d.error || "No se ha podido conectar con el vídeo (" + r.status + ").");
+    return d;
+  }
+  const camTipo = () =>
+      ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find(
+        (t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t),
+      ) || "",
+    camHora = (ms) => {
+      let s = Math.floor(ms / 1000);
+      return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    };
+  function camPinta() {
+    let c = cam;
+    if (!c) return;
+    let v = c.video,
+      cv = c.canvas,
+      w = v.videoWidth,
+      h = v.videoHeight;
+    if (w && h) {
+      if (cv.width !== w || cv.height !== h) {
+        cv.width = w;
+        cv.height = h;
+      }
+      let g = c.ctx,
+        x = liveRows[c.id];
+      g.drawImage(v, 0, 0, w, h);
+      if (x) {
+        /* Marcador arriba a la izquierda, a escala del vídeo */
+        let u = Math.min(w, h) / 360,
+          clk = liveClock(x, serverNow())[0],
+          t1 = String(x.equipo || "").slice(0, 16).toUpperCase(),
+          t2 = String(x.rival || "").slice(0, 16).toUpperCase(),
+          sc = x.gf + " - " + x.gc,
+          pad = 8 * u,
+          fs = 15 * u,
+          y0 = 10 * u;
+        g.font = `700 ${fs}px "Barlow Condensed", Arial, sans-serif`;
+        g.textBaseline = "middle";
+        let wt1 = g.measureText(t1).width,
+          wt2 = g.measureText(t2).width,
+          wsc = g.measureText(sc).width + 2 * pad,
+          wck = g.measureText(clk).width + 2 * pad,
+          bh = fs + 2 * pad,
+          xx = 10 * u;
+        g.fillStyle = "rgba(5,15,10,.82)";
+        g.fillRect(xx, y0, wt1 + wt2 + 4 * pad + wsc + wck, bh);
+        g.fillStyle = "#fff";
+        g.fillText(t1, xx + pad, y0 + bh / 2);
+        xx += wt1 + 2 * pad;
+        g.fillStyle = "#2be36a";
+        g.fillRect(xx, y0, wsc, bh);
+        g.fillStyle = "#03140a";
+        g.fillText(sc, xx + pad, y0 + bh / 2);
+        g.fillStyle = "#fff";
+        xx += wsc;
+        g.fillText(t2, xx + pad, y0 + bh / 2);
+        xx += wt2 + 2 * pad;
+        g.fillStyle = "#facc15";
+        g.fillRect(xx, y0, wck, bh);
+        g.fillStyle = "#111";
+        g.fillText(clk, xx + pad, y0 + bh / 2);
+      }
+    }
+    if (c.rec) {
+      let n = c.box.querySelector("[data-camt]");
+      if (n) n.textContent = "● " + camHora(Date.now() - c.t0);
+    }
+    /* requestAnimationFrame se para con la pantalla apagada; el temporizador sigue grabando */
+    c.raf = setTimeout(camPinta, 1000 / 30);
+  }
+  function camBotones() {
+    let c = cam;
+    if (!c) return;
+    let m = state.matches.find((z) => z.id === c.id),
+      pick = c.pick && m
+        ? `<div class="cam-pick">${entries(m)
+            .map((e) => [e.id, name(e.id)])
+            .sort((a, b) => a[1].localeCompare(b[1], "es"))
+            .map((e) => `<button data-camsc="${esc(e[0])}">${esc(e[1])}</button>`)
+            .join("")}<button data-camsc="">Sin asignar</button><button class="danger" data-cam="nopick">Cancelar</button></div>`
+        : "";
+    let em = c.emite
+      ? `<button class="danger" data-cam="unemit">${c.emite === "on" ? "● En directo · Cortar" : "Conectando… · Cortar"}</button>`
+      : `<button class="secondary" data-cam="emit">${ic("live", 18)}Emitir para la familia${plan === "pro" ? "" : " (Pro)"}</button>`;
+    c.box.querySelector(".cam-ui").innerHTML = c.listo
+      ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
+      : `${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal. El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor.</p>'}`;
+  }
+  async function camAbre(id, frente) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream)
+      return note("Este móvil o navegador no permite grabar vídeo desde la app.");
+    let s;
+    try {
+      s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: frente ? "user" : "environment", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+        audio: true,
+      });
+    } catch (e) {
+      return note(
+        e && e.name === "NotAllowedError"
+          ? "No hay permiso para usar la cámara. Actívalo en los ajustes del móvil (permisos de la app o de Chrome) y vuelve a intentarlo."
+          : "No se ha podido abrir la cámara.",
+      );
+    }
+    let box = document.createElement("div");
+    box.className = "cam";
+    box.innerHTML = '<canvas class="cam-cv" aria-label="Vista de la cámara con el marcador"></canvas><div class="cam-ui"></div>';
+    let v = document.createElement("video");
+    v.muted = true;
+    v.playsInline = true;
+    v.srcObject = new MediaStream(s.getVideoTracks());
+    document.body.appendChild(box);
+    document.body.classList.add("cam-on");
+    cam = { id, s, v, video: v, box, canvas: box.querySelector("canvas"), frente: !!frente, rec: null, listo: null, pick: false };
+    cam.ctx = cam.canvas.getContext("2d");
+    cam.out = cam.canvas.captureStream(30);
+    s.getAudioTracks().forEach((t) => cam.out.addTrack(t));
+    try {
+      await v.play();
+    } catch (e) {}
+    camPinta();
+    camBotones();
+  }
+  /* Cambia de cámara sin cortar la grabación ni el directo (solo se cambia la imagen que se pinta) */
+  async function camGira() {
+    let c = cam,
+      n;
+    try {
+      n = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: c.frente ? "environment" : "user", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      });
+    } catch (e) {
+      return note("No se ha podido cambiar de cámara.");
+    }
+    if (cam !== c) return n.getTracks().forEach((t) => t.stop());
+    c.s.getVideoTracks().forEach((t) => {
+      t.stop();
+      c.s.removeTrack(t);
+    });
+    n.getVideoTracks().forEach((t) => c.s.addTrack(t));
+    c.v.srcObject = new MediaStream(n.getVideoTracks());
+    c.v.play().catch(() => {});
+    c.frente = !c.frente;
+  }
+  function camSuelta() {
+    if (!cam) return;
+    camCorta();
+    clearTimeout(cam.raf);
+    cam.s.getTracks().forEach((t) => t.stop());
+    if (cam.lock) cam.lock.release().catch(() => {});
+  }
+  function camCierra() {
+    if (!cam) return;
+    if (cam.rec && !confirm("Se está grabando. Si cierras, se pierde lo grabado. ¿Cerrar?")) return;
+    if (cam.emite && !cam.rec && !confirm("Se cortará el vídeo en directo. ¿Cerrar?")) return;
+    if (cam.listo && !cam.guardado && !confirm("Aún no has guardado el vídeo. Si cierras, se pierde. ¿Cerrar?")) return;
+    if (cam.rec) {
+      cam.rec.ondataavailable = cam.rec.onstop = null;
+      try {
+        cam.rec.stop();
+      } catch (e) {}
+    }
+    camSuelta();
+    cam.box.remove();
+    document.body.classList.remove("cam-on");
+    cam = null;
+    render();
+  }
+  async function camGraba() {
+    let c = cam,
+      tipo = camTipo(),
+      out = c.out,
+      r;
+    try {
+      r = new MediaRecorder(out, { mimeType: tipo || undefined, videoBitsPerSecond: 2500000, audioBitsPerSecond: 96000 });
+    } catch (e) {
+      return note("Este móvil no permite grabar vídeo desde la app.");
+    }
+    c.trozos = [];
+    c.tipo = r.mimeType || tipo || "video/webm";
+    r.ondataavailable = (e) => e.data && e.data.size && c.trozos.push(e.data);
+    r.onstop = () => {
+      c.listo = new Blob(c.trozos, { type: c.tipo });
+      c.trozos = [];
+      c.dur = Date.now() - c.t0;
+      c.rec = null;
+      c.guardado = false;
+      camLuz();
+      camBotones();
+    };
+    r.start(2000);
+    c.rec = r;
+    c.t0 = Date.now();
+    camLuz();
+    camBotones();
+  }
+  /* Que no se apague la pantalla mientras graba o emite */
+  async function camLuz() {
+    let c = cam;
+    if (!c) return;
+    let on = !!(c.rec || c.emite);
+    if (on && !c.lock)
+      try {
+        c.lock = await navigator.wakeLock.request("screen");
+        c.lock.addEventListener("release", () => cam && (cam.lock = null));
+      } catch (e) {}
+    if (!on && c.lock) c.lock.release().catch(() => {});
+  }
+  async function camEmite() {
+    let c = cam;
+    if (plan !== "pro") return note("El vídeo en directo para la familia es del plan Pro. Grabar en el móvil es gratis.");
+    if (!window.RTCPeerConnection) return note("Este móvil no permite emitir vídeo en directo.");
+    c.emite = "con";
+    camBotones();
+    camLuz();
+    try {
+      let pc = new RTCPeerConnection({ iceServers: VID_ICE, bundlePolicy: "max-bundle" }),
+        tr = c.out.getTracks().map((t) => pc.addTransceiver(t, { direction: "sendonly" }));
+      c.pc = pc;
+      let vs = tr.find((t) => t.sender.track.kind === "video");
+      if (vs) {
+        let pr = vs.sender.getParameters();
+        pr.encodings = pr.encodings && pr.encodings.length ? pr.encodings : [{}];
+        pr.encodings[0].maxBitrate = 1500000;
+        vs.sender.setParameters(pr).catch(() => {});
+      }
+      await pc.setLocalDescription(await pc.createOffer());
+      await vidIce(pc);
+      let d = await vidFn(
+        {
+          accion: "emitir",
+          directo: liveRows[c.id].id,
+          sdp: pc.localDescription.sdp,
+          pistas: tr.map((t) => ({ mid: t.mid, trackName: t.sender.track.kind === "video" ? "v" : "a" })),
+        },
+        true,
+      );
+      if (cam !== c || c.pc !== pc) return pc.close();
+      await pc.setRemoteDescription({ type: "answer", sdp: d.sdp });
+      pc.onconnectionstatechange = () => {
+        if (cam !== c || c.pc !== pc) return;
+        if (pc.connectionState === "connected") c.emite = "on";
+        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+          c.emite = "con";
+          /* Se ha cortado (cobertura): se vuelve a conectar sola */
+          clearTimeout(c.reint);
+          c.reint = setTimeout(() => cam === c && c.emite && c.pc === pc && (pc.close(), camEmite()), pc.connectionState === "failed" ? 1000 : 8000);
+        }
+        camBotones();
+      };
+    } catch (e) {
+      if (c.pc) c.pc.close();
+      c.pc = null;
+      c.emite = null;
+      camLuz();
+      camBotones();
+      note(e.message);
+    }
+  }
+  function camCorta(aviso) {
+    let c = cam;
+    if (!c || !c.emite) return;
+    clearTimeout(c.reint);
+    if (c.pc) c.pc.close();
+    c.pc = null;
+    c.emite = null;
+    camLuz();
+    let x = liveRows[c.id];
+    if (x && aviso !== false) vidFn({ accion: "parar", directo: x.id }, true).catch(() => {});
+  }
+  function camArchivo() {
+    let c = cam,
+      x = liveRows[c.id] || {},
+      m = state.matches.find((z) => z.id === c.id) || {},
+      lim = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 30),
+      ext = /mp4/.test(c.tipo) ? "mp4" : "webm",
+      n = ["partido", lim(x.equipo), lim(x.rival), m.fecha || "", new Date().toTimeString().slice(0, 5).replace(":", "h")].filter(Boolean).join("-");
+    return new File([c.listo], n + "." + ext, { type: c.tipo.split(";")[0] });
+  }
+  function camGuarda() {
+    let f = camArchivo(),
+      u = URL.createObjectURL(f),
+      a = document.createElement("a");
+    a.href = u;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 60000);
+    cam.guardado = true;
+    note("Vídeo guardado en Descargas del móvil (" + f.name + ").", true);
+  }
+  async function camComparte() {
+    let f = camArchivo();
+    if (!navigator.canShare || !navigator.canShare({ files: [f] })) return camGuarda();
+    try {
+      await navigator.share({ files: [f], title: f.name });
+      cam.guardado = true;
+    } catch (e) {
+      if (!e || e.name !== "AbortError") camGuarda();
+    }
+  }
+  document.addEventListener("click", async (e) => {
+    if (!cam) return;
+    let b = e.target.closest("[data-cam]"),
+      sc = e.target.closest("[data-camsc]"),
+      x = liveRows[cam.id];
+    if (sc) {
+      cam.pick = false;
+      if (x) liveGoal(x, "f", sc.dataset.camsc);
+      return camBotones();
+    }
+    if (!b) return;
+    let k = b.dataset.cam,
+      m = state.matches.find((z) => z.id === cam.id);
+    if (k === "close") return camCierra();
+    if (k === "rec") return camGraba();
+    if (k === "stop") return cam.rec && cam.rec.stop();
+    if (k === "save") return camGuarda();
+    if (k === "emit") return camEmite();
+    if (k === "unemit") {
+      camCorta();
+      return camBotones();
+    }
+    if (k === "share") return camComparte();
+    if (k === "again") {
+      if (!cam.guardado && !confirm("Aún no has guardado este vídeo. Si sigues, se pierde. ¿Seguir?")) return;
+      cam.listo = null;
+      return camBotones();
+    }
+    if (k === "flip") return camGira();
+    if (k === "nopick") cam.pick = false;
+    if (k === "gf" && x) {
+      if (m && entries(m).length) cam.pick = true;
+      else liveGoal(x, "f", "");
+    }
+    if (k === "gc" && x) liveGoal(x, "c");
+    camBotones();
+  });
+  window.addEventListener("beforeunload", (e) => {
+    if (cam && (cam.rec || cam.emite || (cam.listo && !cam.guardado))) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+  /* Vídeo en la página pública: se conecta cuando el entrenador emite y se reconecta si cambia */
+  let pubVid = { desde: null, pc: null };
+  async function pubVideo(desde) {
+    let box = $("pubVid");
+    if (!box || desde === pubVid.desde) return;
+    pubVid.desde = desde;
+    if (pubVid.pc) pubVid.pc.close();
+    pubVid.pc = null;
+    let v = box.querySelector("video");
+    if (!desde) {
+      box.classList.add("hidden");
+      v.srcObject = null;
+      return;
+    }
+    try {
+      let d = await vidFn({ accion: "ver", codigo: PUB });
+      if (!d.video || pubVid.desde !== desde) {
+        if (pubVid.desde === desde) pubVid.desde = null;
+        return;
+      }
+      let pc = new RTCPeerConnection({ iceServers: VID_ICE, bundlePolicy: "max-bundle" }),
+        ms = new MediaStream();
+      pubVid.pc = pc;
+      pc.ontrack = (e) => {
+        ms.addTrack(e.track);
+        v.srcObject = ms;
+        v.play().catch(() => {});
+        box.classList.remove("hidden");
+      };
+      pc.onconnectionstatechange = () => {
+        if (pubVid.pc === pc && pc.connectionState === "failed") pubVid.desde = null; /* reintenta en la próxima vuelta */
+      };
+      await pc.setRemoteDescription({ type: "offer", sdp: d.sdp });
+      await pc.setLocalDescription(await pc.createAnswer());
+      await vidIce(pc);
+      await vidFn({ accion: "responder", sesion: d.sesion, sdp: pc.localDescription.sdp });
+    } catch (e) {
+      if (pubVid.desde === desde) pubVid.desde = null;
+    }
+  }
   /* Página pública del enlace (sin cuenta): se actualiza sola cada 10 s */
   const pubShell = (h) =>
     `<div class="pub-in"><div class="brand"><span class="mark" role="img" aria-label="Logo JV32"></span><span class="word">Mi Fútbol <i>JV32</i></span></div><section class="panel live">${h}</section><p class="legal-links"><a href="${esc(location.pathname)}">¿Eres entrenador? Lleva tu equipo con Mi Fútbol JV32</a></p></div>`;
@@ -2816,19 +3223,17 @@
     }
     if (r.error) {
       if (!pubRow)
-        $("pub").innerHTML = pubShell(
-          '<h2 class="h2s">Directo</h2><p class="muted">No se ha podido cargar el directo. Revisa tu conexión; lo volvemos a intentar solos.</p>',
-        );
+        $("pubData").innerHTML =
+          '<h2 class="h2s">Directo</h2><p class="muted">No se ha podido cargar el directo. Revisa tu conexión; lo volvemos a intentar solos.</p>';
       return;
     }
     pubRow = r.data || null;
     if (pubRow && pubRow.ahora)
       liveSkew = Date.parse(pubRow.ahora) - Date.now();
-    $("pub").innerHTML = pubShell(
-      pubRow
+    pubVideo((pubRow && pubRow.video_desde) || null);
+    $("pubData").innerHTML = pubRow
         ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}</div>${liveBoard(pubRow, serverNow(), false)}<h3 class="lv-h">Goles</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
-        : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>',
-    );
+        : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>';
   }
   function startPub() {
     $("login").classList.add("hidden");
@@ -2838,7 +3243,17 @@
     box.className = "pub";
     document.body.appendChild(box);
     document.title = "Directo · Mi Fútbol JV32";
-    box.innerHTML = pubShell('<p class="muted">Cargando el directo…</p>');
+    box.innerHTML = pubShell(
+      '<div id="pubVid" class="pub-vid hidden"><video playsinline autoplay muted controls aria-label="Vídeo del partido en directo"></video><button class="secondary small" data-pubsound>🔊 Activar sonido</button></div><div id="pubData"><p class="muted">Cargando el directo…</p></div>',
+    );
+    box.addEventListener("click", (e) => {
+      let b = e.target.closest("[data-pubsound]");
+      if (!b) return;
+      let v = box.querySelector("#pubVid video");
+      v.muted = false;
+      v.play().catch(() => {});
+      b.remove();
+    });
     pubLoad();
     setInterval(() => {
       if (document.visibilityState === "visible") pubLoad();
