@@ -2359,3 +2359,11 @@ body.cam-on {
   top: 8px;
   right: 8px;
 }
+.novedades {
+  margin: 0 0 16px;
+  padding-left: 20px;
+}
+.novedades li {
+  margin: 0 0 10px;
+  line-height: 1.45;
+}

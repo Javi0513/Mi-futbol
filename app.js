@@ -1530,6 +1530,7 @@
         try {
           localStorage.setItem(tutKey(), "1");
         } catch (e) {}
+      novedadesRevisa();
       if (/[?&]pro=ok/.test(location.search)) {
         history.replaceState(null, "", location.pathname);
         payPending = true;
@@ -1947,7 +1948,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 5,99 € al mes (IVA incluido). Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 34,99 € al año (IVA incluido), con renovación anual. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Mientras Stripe esté en modo prueba (enlace test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -2064,6 +2065,53 @@
       p: "Empieza añadiendo a tus jugadores en la Plantilla. Luego crea tu primer partido.",
     },
   ];
+  /* Novedades: tras cada actualización se muestra una vez lo que ha cambiado.
+     El texto sale de "novedades" en version.json (soloWeb: no se muestra en la app de Android). */
+  const NOV_KEY = "mf_novedades_visto";
+  const appVer = () =>
+    (document.querySelector('meta[name="app-version"]') || {}).content || "0";
+  let novedades = null;
+  async function novedadesCarga() {
+    if (novedades && novedades.version === appVer()) return novedades;
+    try {
+      let r = await fetch("version.json?_=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) return null;
+      let j = await r.json();
+      if (!j || j.version !== appVer()) return null;
+      let l = (Array.isArray(j.novedades) ? j.novedades : [])
+        .map((x) => (typeof x === "string" ? { texto: x } : x || {}))
+        .filter((x) => x.texto && !(x.soloWeb && enAndroid))
+        .map((x) => x.texto);
+      if (!l.length && j.notas) l = [j.notas];
+      novedades = { version: j.version, lista: l };
+      return novedades;
+    } catch (e) {
+      return null;
+    }
+  }
+  function novedadesMarca() {
+    try {
+      localStorage.setItem(NOV_KEY, appVer());
+    } catch (e) {}
+  }
+  async function novedadesRevisa() {
+    let visto;
+    try {
+      visto = localStorage.getItem(NOV_KEY);
+    } catch (e) {
+      return;
+    }
+    if (visto === appVer()) return;
+    /* Las pruebas automáticas no lo muestran salvo que lo pidan */
+    if (navigator.webdriver && !window.__probarNovedades) return;
+    /* Quien estrena la app ve el tutorial, no las novedades */
+    if ($("tut")) return novedadesMarca();
+    let n = await novedadesCarga();
+    if (!n || !n.lista.length) return;
+    if ($("tut") || !$("info").classList.contains("hidden")) return;
+    showInfo("novedades");
+    novedadesMarca();
+  }
   let tutI = -1;
   const tutKey = () => "mf_tut_v1:" + (curUser || "");
   function tutPending() {
@@ -2155,15 +2203,19 @@
     let t, h;
     if (k === "proteam") {
       t = "Plan Pro";
-      h = `<p>En el plan gratuito tienes <b>un equipo</b> en cada modalidad.</p><p>Con el <b>plan Pro</b> puedes llevar <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, cada uno con su plantilla y sus partidos, y además jugadores y partidos ilimitados.</p>${enAndroid ? "" : `<p class="price">5,99 € <small>al mes · IVA incluido · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
+      h = `<p>En el plan gratuito tienes <b>un equipo</b> en cada modalidad.</p><p>Con el <b>plan Pro</b> puedes llevar <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, cada uno con su plantilla y sus partidos, y además jugadores y partidos ilimitados.</p>${enAndroid ? "" : `<p class="price">34,99 € <small>al año · IVA incluido · menos de 3 € al mes · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
     } else if (k === "pro") {
       let M = MODES[state.mode];
       t = "Plan Pro";
-      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${enAndroid ? "" : `<p class="price">5,99 € <small>al mes · IVA incluido · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
+      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${enAndroid ? "" : `<p class="price">34,99 € <small>al año · IVA incluido · menos de 3 € al mes · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}</div>`;
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 5,99 €/mes</button>'}<button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 34,99 €/año</button>'}<button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+    } else if (k === "novedades") {
+      let n = novedades || { version: appVer(), lista: [] };
+      t = "Novedades · versión " + n.version;
+      h = `<p>Esto es lo nuevo en Mi Fútbol JV32:</p><ul class="novedades">${n.lista.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><div class="stack"><button type="button" class="primary" data-acct="novedades-ok">Entendido</button></div>`;
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
@@ -2198,6 +2250,16 @@
     if (w === "tutorial") {
       $("info").classList.add("hidden");
       tutOpen();
+      return;
+    }
+    if (w === "novedades-ok") {
+      $("info").classList.add("hidden");
+      return;
+    }
+    if (w === "novedades") {
+      let n = await novedadesCarga();
+      if (n && n.lista.length) showInfo("novedades");
+      else note("No hay novedades que mostrar ahora mismo.");
       return;
     }
     if (w === "waitlist") {
