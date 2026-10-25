@@ -5,6 +5,6 @@ window.APP_CONFIG={
   legalNif:'15471491N',
   legalDir:'Granada, España',
   contactEmail:'mifutboljv32@gmail.com',
-  proUrl:'https://buy.stripe.com/test_00w4gz4S06fBaMC2NAcbC00',
+  proUrl:'https://buy.stripe.com/test_7sY6oH3NWavR3kaewicbC01',
   portalUrl:'https://billing.stripe.com/p/login/test_00w4gz4S06fBaMC2NAcbC00'
 };
