@@ -2275,3 +2275,87 @@ body.tab-pizarra .teams {
 .tut-btns span {
   flex: 1;
 }
+/* cámara del directo (pantalla completa) */
+body.cam-on {
+  overflow: hidden;
+}
+.cam {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+.cam-cv {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+}
+.cam-ui {
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(5, 15, 10, 0.92);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.cam-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cam-row > * {
+  flex: 1 1 auto;
+}
+.cam-g {
+  background: var(--s3);
+  color: var(--ink);
+  border: 1px solid var(--line2);
+}
+.cam-rec {
+  font-weight: 700;
+}
+.cam-tip {
+  color: var(--mut);
+  font-size: 13px;
+  margin: 2px 0 0;
+}
+.cam-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cam-fin {
+  display: grid;
+  gap: 8px;
+}
+.cam-fin p {
+  margin: 0;
+  color: var(--ink);
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .cam {
+    flex-direction: row;
+  }
+  .cam-ui {
+    width: 260px;
+    max-height: none;
+  }
+}
+.pub-vid {
+  position: relative;
+  margin-bottom: 12px;
+}
+.pub-vid video {
+  width: 100%;
+  border-radius: 12px;
+  background: #000;
+  aspect-ratio: 16 / 9;
+}
+.pub-vid [data-pubsound] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
