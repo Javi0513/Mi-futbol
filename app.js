@@ -2106,7 +2106,7 @@
     {
       el: '[data-tab="partidos"]',
       t: "Comparte y juega en directo",
-      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto y goleadores en vivo, con un enlace para que la familia lo siga sin cuenta.",
+      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto y goleadores en vivo, con un enlace para que la familia lo siga sin cuenta. Con la cámara del Directo grabas el partido con el marcador encima.",
     },
     {
       el: '[data-tab="pizarra"]',
@@ -2126,7 +2126,7 @@
     {
       el: "#acct",
       t: "Mi cuenta",
-      p: "Tu plan, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+      p: "Tu plan, el plan para clubes, la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
     },
     {
       t: "¡Listo para empezar!",
@@ -2181,6 +2181,108 @@
     novedadesMarca();
   }
   let tutI = -1;
+  /* Guía de uso (Mi cuenta › Guía de uso). Cada cambio que se note en la app o
+     traiga opciones nuevas debe actualizar también esta guía y, si hace falta, el tutorial.
+     soloWeb: el texto no se muestra en la app de Android (precios y pagos). */
+  const AYUDA = [
+    {
+      t: "Empezar",
+      p: [
+        "Arriba eliges la modalidad: <b>Fútbol 7</b>, <b>Fútbol 11</b> o <b>Fútbol sala</b>. Cada una tiene sus jugadores y partidos por separado.",
+        "Añade a tus jugadores en <b>Plantilla</b> y luego crea tu primer partido en <b>Partidos</b>.",
+        "Puedes volver a ver el tutorial de bienvenida en «Mi cuenta › Ver el tutorial».",
+      ],
+    },
+    {
+      t: "Tus equipos",
+      p: [
+        "Con el lápiz junto al nombre del equipo le cambias el nombre.",
+        "Con el botón <b>+</b> creas otro equipo en la misma modalidad, cada uno con su plantilla y sus partidos. Tener varios equipos es del plan Pro; en el plan gratuito tienes un equipo por modalidad.",
+        "Toca el nombre de un equipo para cambiar de uno a otro. Con la papelera borras un equipo.",
+      ],
+    },
+    {
+      t: "Plantilla",
+      p: [
+        "Pulsa «+ Jugador» y escribe el nombre. Si quieres, añade su foto.",
+        "Toca el lápiz para editar a un jugador y su foto para verla en grande.",
+      ],
+    },
+    {
+      t: "Partidos y alineaciones",
+      p: [
+        "Pulsa «+ Partido»: pon la fecha y el rival, marca convocados y titulares y elige la formación.",
+        "Arrastra a cada jugador a su sitio en el campo.",
+        "Después del partido apunta los minutos, los goles y el resultado.",
+        "Puedes sacar una imagen de la alineación para mandarla por WhatsApp.",
+      ],
+    },
+    {
+      t: "Directo",
+      p: [
+        "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
+        "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta. Con «Desactivar enlace» deja de funcionar.",
+        "«Cámara: grabar el partido» graba vídeo con el marcador y el minuto dentro. Pon el móvil en horizontal. El vídeo se guarda solo en tu móvil. Grabar es gratis.",
+        "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
+        "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
+      ],
+    },
+    {
+      t: "Pizarra táctica",
+      p: [
+        "Mueve las fichas, dibuja jugadas con el dedo y ponla a pantalla completa para explicarla.",
+        "Puedes guardarla como imagen.",
+      ],
+    },
+    {
+      t: "Estadísticas y buscador",
+      p: [
+        "En <b>Estadísticas</b> ves el ranking de tus jugadores por goles, minutos, partidos y titularidades.",
+        "Con la lupa buscas cualquier jugador o partido de todas tus modalidades.",
+      ],
+    },
+    {
+      t: "Plan gratuito y plan Pro",
+      p: [
+        "El plan gratuito tiene un límite de jugadores y partidos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
+        "El plan Pro quita los límites, permite varios equipos y emitir vídeo en el Directo.",
+        { texto: "El plan Pro cuesta 34,99 € al año (IVA incluido). Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
+      ],
+    },
+    {
+      t: "Plan para clubes",
+      p: [
+        "El club paga una sola suscripción y <b>todos sus entrenadores tienen el plan Pro</b>.",
+        "Cada entrenador sigue con su cuenta privada: ni el club ni los demás entrenadores pueden ver ni tocar sus equipos, jugadores o partidos.",
+        "<b>Si eres entrenador:</b> entra en «Mi cuenta › Plan para clubes», escribe el código que te ha dado tu club y pulsa «Unirme al club». Puedes salir del club cuando quieras; tus datos se quedan contigo.",
+        "<b>Si eres el encargado del club:</b> en «Mi cuenta › Plan para clubes» escribe el nombre del club, pulsa «Crear el club» y elige el pack. Comparte el código con tus entrenadores (Copiar o WhatsApp). Desde ahí ves quién se ha unido, puedes quitar entrenadores y cambiar el código.",
+        { texto: "Packs anuales: 5 entrenadores por 119 €, 10 por 199 €, 20 por 349 € y 30 por 469 € (IVA incluido).", soloWeb: true },
+      ],
+    },
+    {
+      t: "Actualizaciones",
+      p: [
+        "La app se actualiza sola. Al abrir una versión nueva verás un momento «Actualizando…» y después «¡App actualizada!».",
+        "Si tienes la app abierta cuando sale una versión nueva, aparece un aviso con el botón «Actualizar».",
+        "Lo que ha cambiado lo ves en «Mi cuenta › Novedades de esta versión».",
+      ],
+    },
+    {
+      t: "Tu cuenta y tus datos",
+      p: [
+        "En «Mi cuenta» puedes descargar todos tus datos, leer la política de privacidad, cerrar sesión o borrar tu cuenta y tus datos.",
+      ],
+    },
+  ];
+  function ayudaHtml() {
+    return `<p>Toca un apartado para ver cómo funciona.</p><div class="ayuda">${AYUDA.map(
+      (a) =>
+        `<details><summary>${a.t}</summary><ul>${a.p
+          .filter((x) => !(x && x.soloWeb && enAndroid))
+          .map((x) => `<li>${typeof x === "string" ? x : x.texto}</li>`)
+          .join("")}</ul></details>`,
+    ).join("")}</div>`;
+  }
   const tutKey = () => "mf_tut_v1:" + (curUser || "");
   function tutPending() {
     if (c.noTutorial) return false;
@@ -2279,10 +2381,13 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 34,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 34,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
+    } else if (k === "ayuda") {
+      t = "Guía de uso";
+      h = ayudaHtml();
     } else if (k === "novedades") {
       let n = novedades || { version: appVer(), lista: [] };
       t = "Novedades · versión " + n.version;

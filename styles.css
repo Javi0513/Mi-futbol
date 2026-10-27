@@ -2367,6 +2367,29 @@ body.cam-on {
   margin: 0 0 10px;
   line-height: 1.45;
 }
+/* guía de uso (Mi cuenta › Guía de uso) */
+.ayuda {
+  margin: 0 0 8px;
+}
+.ayuda details {
+  border-top: 1px solid var(--line);
+}
+.ayuda details:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.ayuda summary {
+  padding: 12px 2px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ayuda ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+.ayuda li {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
 /* aviso «Actualizando…» al abrir una versión nueva */
 #actu {
   position: fixed;
