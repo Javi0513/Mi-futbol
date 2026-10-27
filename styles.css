@@ -2431,3 +2431,85 @@ body.cam-on {
     width: 100%;
   }
 }
+/* Plan para clubes (v8.9) */
+.packs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+.pack {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  color: var(--ink);
+  text-decoration: none;
+}
+a.pack {
+  border-color: var(--lime);
+}
+.pk-n {
+  font-size: 13px;
+  color: var(--mut);
+}
+.pk-p {
+  font: 800 24px/1.1 var(--fd);
+}
+.pk-p small,
+.pk-u {
+  font: 500 12px var(--fb);
+  color: var(--mut);
+}
+.club-cod {
+  font: 800 30px/1 var(--fd);
+  letter-spacing: 0.12em;
+  color: var(--ink) !important;
+  text-align: center;
+  padding: 12px;
+  border: 1px dashed var(--lime);
+  border-radius: 12px;
+  margin: 6px 0;
+  user-select: all;
+}
+.hbtns > .secondary {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.club-lista {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.cm {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.cm span {
+  display: grid;
+  min-width: 0;
+}
+.cm b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.cm small {
+  color: var(--mut);
+}
+#info h3 {
+  margin: 18px 0 6px;
+}
