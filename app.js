@@ -3762,6 +3762,40 @@
         showUpdate(j.version, j.notas);
     } catch (e) {}
   }
+  /* Al abrir la app ya actualizada (sin pasar por el botón «Actualizar») se enseña
+     un momento «Actualizando…» para que se note que hay versión nueva.
+     Quien la abre por primera vez no lo ve. */
+  const VER_KEY = "mf_version_abierta";
+  function actualizaRevisa() {
+    let antes;
+    try {
+      antes =
+        localStorage.getItem(VER_KEY) ||
+        localStorage.getItem("mf_novedades_visto");
+      localStorage.setItem(VER_KEY, APP_VERSION);
+    } catch (e) {
+      return;
+    }
+    if (!antes || antes === APP_VERSION) return;
+    if (navigator.webdriver && !window.__probarActualiza) return;
+    let d = document.createElement("div");
+    d.id = "actu";
+    d.setAttribute("role", "status");
+    d.innerHTML = `<div class="actu-box"><b>Actualizando Mi Fútbol JV32…</b><div class="actu-bar"><i></i></div><small>Versión ${esc(antes)} → ${esc(APP_VERSION)}</small></div>`;
+    document.body.appendChild(d);
+    setTimeout(() => {
+      d.querySelector("b").textContent = "¡App actualizada!";
+      d.querySelector("small").textContent =
+        "Ya tienes la versión " + APP_VERSION + ". Sigo mejorando la app cada semana.";
+      d.classList.add("ok");
+    }, 1800);
+    setTimeout(() => {
+      d.classList.add("fuera");
+      setTimeout(() => d.remove(), 400);
+    }, 3600);
+    d.addEventListener("click", () => d.remove());
+  }
+  actualizaRevisa();
   setTimeout(() => checkUpdate(true), 2500);
   setInterval(() => checkUpdate(false), 600000);
   window.addEventListener("focus", () => checkUpdate(false));
