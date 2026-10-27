@@ -2499,7 +2499,12 @@ a.pack {
 }
 .cm span {
   display: grid;
+  flex: 1;
   min-width: 0;
+}
+.cm .lnk {
+  flex: none;
+  width: auto;
 }
 .cm b {
   overflow: hidden;
