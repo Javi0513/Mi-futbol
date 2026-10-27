@@ -1,0 +1,105 @@
+import sys,os;sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from paths import *
+import http.server,threading,functools,json
+from playwright.sync_api import sync_playwright
+from fake2 import FAKE2
+# Plan para clubes: unirse con código, vista del entrenador, vista del encargado, packs y privacidad
+srv=http.server.ThreadingHTTPServer(('127.0.0.1',8814),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
+res=[];errs=[]
+def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
+PACKS="clubPacks:[{plazas:5,precio:'119',url:'https://buy.stripe.com/test_c5'},{plazas:10,precio:'199',url:'https://buy.stripe.com/test_c10'},{plazas:20,precio:'349',url:'https://buy.stripe.com/test_c20'},{plazas:30,precio:'469',url:'https://buy.stripe.com/test_c30'}],portalUrl:'https://billing.stripe.com/p/login/test_x',contactEmail:'club@x.es',"
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,"+PACKS)
+ADMIN={'id':'c1','nombre':'CD Granada Norte','activo':False,'soy_admin':True,'codigo':'K7M2Q9XA4P','plazas':0,'usadas':2,'pagado':False,
+       'miembros':[{'id':'u1','email':'ana@x.es','desde':'2026-10-27T10:00:00Z','admin':True},{'id':'u9','email':'luis@x.es','desde':'2026-10-27T11:00:00Z','admin':False}]}
+def abrir(b,club,plan='gratis',q='',android=False,extra=None):
+    ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block')
+    ctx.add_init_script('window.__seed='+json.dumps({'futbol_personal_jugadores':[],'futbol_personal_partidos':[],'perfiles':[{'id':'u1','plan':plan}]}))
+    if android: ctx.add_init_script("Object.defineProperty(document,'referrer',{get:()=>'android-app://com.monetizaplus.mifutbol'});")
+    pg=ctx.new_page()
+    pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:errs.append(m.text) if m.type=='error' else None)
+    pg.on('dialog',lambda d:d.accept())
+    pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
+    pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=CFG))
+    pg.goto('http://127.0.0.1:8814/index.html'+q)
+    pg.evaluate("c=>{window.__club=c;window.__cfg.rpcData=Object.assign({mi_club:()=>window.__club},window.__extra||{})}",club)
+    if extra: pg.evaluate(extra)
+    pg.fill('input[name=email]','ana@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')
+    pg.wait_for_timeout(400)
+    if pg.locator('#info').is_visible() and 'Novedades' in pg.locator('#infoTitle').inner_text(): pg.click('#closeInfo')
+    return ctx,pg
+body=lambda pg:pg.locator('#infoBody').inner_text()
+calls=lambda pg,n:pg.evaluate("n=>window.__calls.filter(c=>c[0]==='rpc'&&c[1]===n)",n)
+with sync_playwright() as p:
+    b=p.chromium.launch()
+    # 1) Sin club: Mi cuenta ofrece el plan para clubes y se puede unir con código
+    ctx,pg=abrir(b,None)
+    check('se pregunta por el club al entrar',len(calls(pg,'mi_club'))>=1)
+    pg.click('#acct');pg.wait_for_timeout(200)
+    check('Mi cuenta tiene «Plan para clubes»',pg.locator('#info [data-info=club]').count()==1)
+    pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
+    t=body(pg)
+    check('explica que cada cuenta es privada','cuenta privada' in t)
+    check('muestra los 4 packs con precio','119 €' in t and '199 €' in t and '349 €' in t and '469 €' in t,t.replace('\n',' | ')[:300])
+    check('sin club no hay enlaces de pago',pg.locator('#info a.pack').count()==0)
+    pg.evaluate("window.__cfg.rpcData.unirse_club=a=>{window.__club={id:'c1',nombre:'CD Granada Norte',activo:true,soy_admin:false};return 'CD Granada Norte'}")
+    pg.fill('#clubCod','k7m2q9xa4p');pg.click('[data-acct=club-unirse]');pg.wait_for_timeout(400)
+    check('unirse llama a unirse_club con el código',calls(pg,'unirse_club')==[['rpc','unirse_club',{'codigo':'k7m2q9xa4p'}]])
+    t=body(pg)
+    check('tras unirse se ve el club como entrenador','cd granada norte' in pg.locator('#infoTitle').inner_text().lower() and 'activo' in t,t[:120])
+    check('el entrenador no ve código ni emails de otros','K7M2Q9XA4P' not in t and '@' not in t and pg.locator('[data-acct=club-quitar]').count()==0)
+    check('el entrenador puede salir del club',pg.locator('[data-acct=club-salir]').count()==1)
+    ctx.close()
+    # 2) Errores de código
+    ctx,pg=abrir(b,None,extra="window.__cfg.rpcData.unirse_club={__error:'CODIGO_NO_VALIDO'}")
+    pg.click('#acct');pg.click('#info [data-info=club]');pg.fill('#clubCod','MAL');pg.click('[data-acct=club-unirse]');pg.wait_for_timeout(300)
+    check('código erróneo: aviso claro','no es de ningún club' in pg.locator('#message').inner_text(),pg.locator('#message').inner_text())
+    ctx.close()
+    # 3) Entrenador de un club pagado: Mi cuenta dice que el Pro viene del club
+    ctx,pg=abrir(b,{'id':'c1','nombre':'CD Granada Norte','activo':True,'soy_admin':False},plan='pro')
+    pg.click('#acct');pg.wait_for_timeout(200)
+    check('Mi cuenta: «Pro · gracias a tu club»','gracias a tu club' in body(pg))
+    check('Mi cuenta: botón «Mi club: …»','mi club: cd granada norte' in body(pg).lower())
+    pg.click('#info [data-info=club]');pg.wait_for_timeout(100);pg.click('[data-acct=club-salir]');pg.wait_for_timeout(300)
+    check('salir del club llama a salir_club',len(calls(pg,'salir_club'))==1)
+    ctx.close()
+    # 4) Encargado sin pagar, sin ?probarpago: ve código y entrenadores, packs sin enlace
+    ctx,pg=abrir(b,ADMIN)
+    pg.click('#acct');pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
+    t=body(pg)
+    check('encargado ve el código','K7M2Q9XA4P' in t)
+    check('encargado ve solo los emails de los entrenadores','luis@x.es' in t and 'ana@x.es' in t)
+    check('sin ?probarpago los packs no se pueden pagar aún',pg.locator('#info a.pack').count()==0 and 'club@x.es' in t)
+    check('compartir por WhatsApp con el código',pg.locator('#info a[href*="wa.me"]').count()==1 and 'K7M2Q9XA4P' in (pg.locator('#info a[href*="wa.me"]').get_attribute('href') or ''))
+    check('el encargado no se puede quitar a sí mismo',pg.locator('[data-acct=club-quitar]').count()==1 and pg.locator('[data-acct=club-quitar]').get_attribute('data-id')=='u9')
+    pg.click('[data-acct=club-quitar]');pg.wait_for_timeout(300)
+    check('«Quitar» llama a quitar_del_club con ese entrenador',calls(pg,'quitar_del_club')==[['rpc','quitar_del_club',{'entrenador':'u9'}]])
+    check('club sin pagar se puede borrar',pg.locator('[data-acct=club-borrar]').count()==1)
+    ctx.close()
+    # 5) Encargado con ?probarpago: los packs llevan al pago de Stripe con el club
+    ctx,pg=abrir(b,ADMIN,q='?probarpago')
+    pg.click('#acct');pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
+    hrefs=pg.eval_on_selector_all('#info a.pack','e=>e.map(a=>a.href)')
+    check('4 packs con enlace de pago',len(hrefs)==4,hrefs)
+    check('el pago va a nombre del club',all('client_reference_id=club_c1' in h for h in hrefs) and 'test_c10' in hrefs[1])
+    ctx.close()
+    # 6) Encargado de club pagado: plazas usadas y gestionar suscripción, no se puede borrar
+    A=dict(ADMIN,activo=True,plazas=10,pagado=True)
+    ctx,pg=abrir(b,A,plan='pro')
+    pg.click('#acct');pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
+    t=body(pg)
+    check('club pagado: «2 de 10 entrenadores»','2 de 10 entrenadores' in t,t[:150])
+    check('club pagado: gestionar la suscripción y sin borrar',pg.locator('#info [data-pro-portal]').count()==1 and pg.locator('[data-acct=club-borrar]').count()==0 and pg.locator('#info .pack').count()==0)
+    ctx.close()
+    # 7) Enlace de invitación ?club=CÓDIGO: abre el club con el código puesto
+    ctx,pg=abrir(b,None,q='?club=K7M2Q9XA4P')
+    check('enlace de invitación rellena el código',pg.locator('#clubCod').count()==1 and pg.input_value('#clubCod')=='K7M2Q9XA4P')
+    ctx.close()
+    # 8) App de Android: sin precios ni pagos
+    ctx,pg=abrir(b,ADMIN,q='?probarpago',android=True)
+    pg.click('#acct');pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
+    t=body(pg)
+    check('Android: sin precios ni packs','€' not in t and pg.locator('#info .pack').count()==0,t[:200])
+    ctx.close()
+    b.close()
+print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
+sys.exit(0 if all(res) and not errs else 1)

@@ -1,6 +1,7 @@
 // Mi Fútbol JV32 · Edge Function "stripe-webhook"
 // Stripe avisa aquí cuando alguien paga, renueva o cancela el plan Pro, y esta
-// función cambia perfiles.plan. Necesita el secreto STRIPE_WEBHOOK_SECRET (whsec_...).
+// función cambia perfiles.plan. También gestiona los packs de club (tabla clubes, v8.9):
+// el enlace de pago del club lleva client_reference_id=club_<id> y metadata.plazas. Necesita el secreto STRIPE_WEBHOOK_SECRET (whsec_...).
 // Desplegar con "Verify JWT" DESACTIVADO (Stripe no manda token de Supabase).
 
 const SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
@@ -34,9 +35,9 @@ async function firmaValida(body: string, cabecera: string) {
 }
 
 // Solo se aplica si el aviso es más nuevo que el último aplicado (Stripe puede desordenarlos).
-async function actualizar(filtro: string, cuando: number, datos: Record<string, unknown>) {
+async function actualizar(filtro: string, cuando: number, datos: Record<string, unknown>, tabla = "perfiles") {
   const orden = `or=(stripe_evento_at.is.null,stripe_evento_at.lte.${cuando})`;
-  const r = await fetch(`${URL_DB}/rest/v1/perfiles?${filtro}&${orden}`, {
+  const r = await fetch(`${URL_DB}/rest/v1/${tabla}?${filtro}&${orden}`, {
     method: "PATCH",
     headers: {
       apikey: KEY,
@@ -47,11 +48,17 @@ async function actualizar(filtro: string, cuando: number, datos: Record<string, 
     body: JSON.stringify({
       ...datos,
       stripe_evento_at: cuando,
-      plan_actualizado_at: new Date().toISOString(),
+      ...(tabla === "perfiles" ? { plan_actualizado_at: new Date().toISOString() } : {}),
     }),
   });
-  if (!r.ok) throw new Error(`perfiles ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new Error(`${tabla} ${r.status}: ${await r.text()}`);
 }
+
+// Número de entrenadores del pack (metadata.plazas del enlace de pago o de la suscripción)
+const plazasDe = (m: Record<string, string> | undefined) => {
+  const n = parseInt(m?.plazas ?? "", 10);
+  return n > 0 && n <= 500 ? { plazas: n } : {};
+};
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("ok");
@@ -63,7 +70,17 @@ Deno.serve(async (req) => {
   const o = ev.data?.object ?? {};
   const cuando = Number(ev.created) || Math.floor(Date.now() / 1000);
   try {
-    if (ev.type === "checkout.session.completed") {
+    if (ev.type === "checkout.session.completed" && String(o.client_reference_id ?? "").startsWith("club_")) {
+      const cid = String(o.client_reference_id).slice(5);
+      if (!UUID.test(cid)) return new Response("sin club", { status: 200 });
+      const pagado = o.payment_status === "paid" || o.payment_status === "no_payment_required";
+      await actualizar(`id=eq.${cid}`, cuando, {
+        stripe_customer: o.customer ?? null,
+        stripe_subscription: o.subscription ?? null,
+        stripe_estado: pagado ? "active" : "incomplete",
+        ...plazasDe(o.metadata),
+      }, "clubes");
+    } else if (ev.type === "checkout.session.completed") {
       const uid = String(o.client_reference_id ?? "");
       if (!UUID.test(uid)) return new Response("sin usuario", { status: 200 });
       const pagado = o.payment_status === "paid" || o.payment_status === "no_payment_required";
@@ -81,12 +98,23 @@ Deno.serve(async (req) => {
       // Si está cancelada pero sigue pagada, el día en que acaba el Pro (para mostrarlo en la app)
       const fin = o.cancel_at ??
         (o.cancel_at_period_end ? (o.current_period_end ?? o.items?.data?.[0]?.current_period_end) : null);
-      await actualizar(`stripe_customer=eq.${encodeURIComponent(o.customer)}`, cuando, {
-        stripe_subscription: o.id,
-        stripe_estado: o.status,
-        plan: activo ? "pro" : "gratis",
-        pro_hasta: activo && fin ? new Date(fin * 1000).toISOString() : null,
-      });
+      const hasta = activo && fin ? new Date(fin * 1000).toISOString() : null;
+      const filtro = `stripe_customer=eq.${encodeURIComponent(o.customer)}`;
+      if (o.metadata?.club) {
+        await actualizar(filtro, cuando, {
+          stripe_subscription: o.id,
+          stripe_estado: o.status,
+          pro_hasta: hasta,
+          ...plazasDe(o.metadata),
+        }, "clubes");
+      } else {
+        await actualizar(filtro, cuando, {
+          stripe_subscription: o.id,
+          stripe_estado: o.status,
+          plan: activo ? "pro" : "gratis",
+          pro_hasta: hasta,
+        });
+      }
     }
   } catch (e) {
     console.error(e);
