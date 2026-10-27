@@ -1,8 +1,8 @@
 """Ejecuta todas las pruebas. Uso:  python tests/ejecutar_todo.py   (desde la carpeta del repositorio)"""
 import subprocess, sys, os, re, time
 T = os.path.dirname(os.path.abspath(__file__))
-ORDEN = ['board','feat','dnd2','auth','modes','upd','sw','cap','vis','srch','eye','wl','pago','live','video','teams','tut','prueba','nov','actu','club','e2e']
-ESPERADO = {'board':29,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'pago':11,'live':27,'video':21,'teams':18,'tut':13,'prueba':7,'nov':7,'actu':6,'club':26,'e2e':5}
+ORDEN = ['board','feat','dnd2','auth','modes','upd','sw','cap','vis','srch','eye','wl','pago','live','video','teams','tut','prueba','nov','actu','club','ayuda','e2e']
+ESPERADO = {'board':29,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'pago':11,'live':27,'video':21,'teams':18,'tut':13,'prueba':7,'nov':7,'actu':6,'club':26,'ayuda':13,'e2e':5}
 malas = 0
 for n in ORDEN:
     t = time.time()
