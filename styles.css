@@ -2541,3 +2541,172 @@ a.pack {
 #info h3 {
   margin: 18px 0 6px;
 }
+/* control de entrenamientos */
+@media (max-width: 899px) {
+  .dock.d5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .dock.d5 button {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+}
+.cal {
+  margin-top: 14px;
+}
+.cal-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cal-h b {
+  font: 800 22px/1 var(--fd);
+  letter-spacing: 0.03em;
+  text-transform: capitalize;
+}
+.cal-h .flip svg {
+  transform: scaleX(-1);
+}
+.cal-w,
+.cal-g {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.cal-w span {
+  text-align: center;
+  color: var(--mut);
+  font: 600 12px/1 var(--fb);
+  padding-bottom: 6px;
+}
+.cal-g button {
+  position: relative;
+  aspect-ratio: 1;
+  min-height: 38px;
+  border-radius: 10px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: 700 15px/1 var(--fd);
+}
+.cal-g button.hoy {
+  border-color: var(--lime);
+}
+.cal-g button.on {
+  background: var(--lime);
+  color: var(--on-lime);
+  border-color: var(--lime);
+}
+.cal-g button i {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: var(--mut);
+}
+.cal-g button.w i,
+.cal-ley i.w {
+  background: var(--win);
+}
+.cal-g button.d i,
+.cal-ley i.d {
+  background: var(--draw);
+}
+.cal-g button.l i,
+.cal-ley i.l {
+  background: var(--loss);
+}
+.cal-g button.on i {
+  box-shadow: 0 0 0 2px var(--on-lime);
+}
+.cal-g button.has {
+  background: var(--s3);
+  border-color: var(--line2);
+}
+.cal-g button.has.on {
+  background: var(--lime);
+}
+.cal-ley {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 12px;
+  color: var(--mut);
+  font-size: 12px;
+}
+.cal-ley i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background: var(--mut);
+}
+.trs + .trs {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.trsum b.w {
+  color: var(--win);
+}
+.trsum b.l {
+  color: var(--loss);
+}
+.trsum b.d {
+  color: var(--draw);
+}
+.trow .info {
+  min-width: 0;
+}
+.asis {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.asis button {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--s2);
+  border: 1px solid var(--line2);
+  color: var(--mut);
+  font: 800 17px/1 var(--fd);
+}
+.asis .si.on {
+  color: var(--on-lime);
+  background: var(--win);
+  border-color: var(--win);
+}
+.asis .no.on {
+  color: #2a0a10;
+  background: var(--loss);
+  border-color: var(--loss);
+}
+.asis .jus.on {
+  color: #2a1d02;
+  background: var(--draw);
+  border-color: var(--draw);
+}
+.trbar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--s3);
+  overflow: hidden;
+  margin-top: 6px;
+  max-width: 220px;
+}
+.trbar i {
+  display: block;
+  height: 100%;
+  background: var(--lime);
+}
+.trdel {
+  margin-top: 14px;
+}
