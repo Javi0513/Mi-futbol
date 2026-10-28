@@ -2710,3 +2710,56 @@ a.pack {
 .trdel {
   margin-top: 14px;
 }
+/* supervisor del club: mirando los datos de otro entrenador (solo lectura) */
+.ver-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--lime);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+}
+.ver-bar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ver-bar .small {
+  width: auto;
+}
+.solo-ver [data-action="add-player"],
+.solo-ver [data-action="edit-player"],
+.solo-ver [data-action="delete-player"],
+.solo-ver [data-action="add-match"],
+.solo-ver [data-action="delete-match"],
+.solo-ver [data-action="live"],
+.solo-ver [data-action="save"],
+.solo-ver [data-teamact],
+.solo-ver [data-tr="new"],
+.solo-ver [data-tr="del"],
+.solo-ver [data-tr="all"] {
+  display: none !important;
+}
+.solo-ver [data-tr="mark"],
+.solo-ver [data-trf] {
+  pointer-events: none;
+}
+.cm-b {
+  display: flex !important;
+  flex: none !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 12px;
+  max-width: 55%;
+}
+.cm-b:empty {
+  display: none !important;
+}
