@@ -75,6 +75,26 @@
   })();
   const TERMS_VERSION = "2026-10";
   const db = window.supabase.createClient(c.supabaseUrl, c.supabaseAnonKey);
+  /* Supervisor del club: mientras miras los datos de otro entrenador (viendo),
+     la app no puede guardar, cambiar ni borrar nada en la base de datos. */
+  let viendo = null;
+  const SOLO_VER = "Estás viendo los datos de otro entrenador: solo puedes mirar, no cambiar nada.";
+  const dbFrom = db.from.bind(db);
+  db.from = (t) => {
+    let q = dbFrom(t);
+    if (!viendo) return q;
+    const no = new Proxy(() => {}, {
+      get: (o, k) => (k === "then" ? (ok) => ok({ data: null, error: { message: SOLO_VER } }) : () => no),
+    });
+    return new Proxy(q, {
+      get: (o, k) =>
+        ["insert", "update", "upsert", "delete"].includes(k)
+          ? () => no
+          : typeof o[k] === "function"
+            ? o[k].bind(o)
+            : o[k],
+    });
+  };
   /* Enlace público de un directo: ?directo=<código>. Se ve sin cuenta. */
   const PUB = (() => {
     let t = new URLSearchParams(location.search).get("directo") || "";
@@ -191,6 +211,7 @@
     logout:
       '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
     back: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
     penline:
@@ -323,6 +344,7 @@
       }, 4500);
   }
   async function load() {
+    if (viendo) return render();
     let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
@@ -453,7 +475,7 @@
   }
   function pickTeam(id) {
     state.team[state.mode] = id;
-    try {
+    if (!viendo) try {
       localStorage.setItem("mf_equipo_sel", JSON.stringify(state.team));
     } catch (e) {}
   }
@@ -728,6 +750,7 @@
     };
   let trQ = Promise.resolve();
   function entrenosOn() {
+    if (viendo) return state.trainings.length > 0;
     try {
       let v = localStorage.getItem(trKey());
       if (v !== null) return v === "1";
@@ -856,6 +879,7 @@
     }</section>${trPlayers()}`;
   }
   function trSave(t, patch) {
+    if (viendo) return note(SOLO_VER), render();
     Object.assign(t, patch);
     trQ = trQ.then(async () => {
       let r = await db.from("entrenamientos").update(patch).eq("id", t.id);
@@ -951,7 +975,7 @@
         return `<div class="checkline"><span>${esc(p.nombre)}</span><input type="checkbox" data-field="called" data-id="${p.id}" aria-label="Convocado: ${esc(p.nombre)}" ${x ? "checked" : ""}><input type="checkbox" data-field="starter" data-id="${p.id}" aria-label="Titular: ${esc(p.nombre)}" ${x?.starter ? "checked" : ""}><input type="number" data-field="minutes" data-id="${p.id}" aria-label="Minutos de ${esc(p.nombre)}" min="0" value="${x?.minutes || 0}" ${x ? "" : "disabled"}><input type="number" data-field="goals" data-id="${p.id}" aria-label="Goles de ${esc(p.nombre)}" min="0" value="${x?.goals || 0}" ${x ? "" : "disabled"}></div>`;
       })
       .join("");
-    return `<section class="panel"><div class="bar"><div><div class="kicker">${state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
+    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
 <div class="lineup-layout"><div><div class="position-help"><h3>Campo y posiciones</h3><select id="formation" aria-label="Formación">${Object.keys(
       formations[state.mode],
     )
@@ -1896,14 +1920,20 @@
     CLUB_PAGADO: "El club tiene una suscripción en marcha. Cancélala antes en «Gestionar la suscripción del club».",
     CLUB_NOMBRE: "Escribe el nombre del club (entre 2 y 60 letras).",
     NO_ERES_ENCARGADO: "Solo el encargado del club puede hacer eso.",
+    NO_ERES_SUPERVISOR: "Solo el supervisor de un club pagado puede ver los datos de los entrenadores.",
+    NO_COMPARTE: "Ese entrenador aún no ha aceptado compartir sus datos con el supervisor.",
+    NO_EN_CLUB: "Esa persona ya no está en el club.",
   };
   const clubMsg = (e) => {
     let m = (e && e.message) || "";
     let k = Object.keys(CLUB_ERR).find((x) => m.includes(x));
     return k ? CLUB_ERR[k] : authMsg(m);
   };
-  async function clubRpc(n, args) {
+  async function clubRpc(n, args, antiguo) {
     let r = await db.rpc(n, args);
+    /* Servidor aún sin supabase-supervisor.sql: unirse_club solo acepta el código */
+    if (antiguo && r && r.error && /PGRST202|could not find the function|schema cache/i.test((r.error.code || "") + " " + (r.error.message || "")))
+      r = await db.rpc(n, { codigo: args.codigo });
     if (r && r.error) {
       note(clubMsg(r.error));
       return null;
@@ -2290,11 +2320,11 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve solo tu email y la fecha en que te uniste, para poder gestionar las plazas. No ve ni puede tocar tus equipos, jugadores, partidos ni ningún otro dato tuyo, y los demás entrenadores del club tampoco. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 34,99 € al año (IVA incluido), con renovación anual. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club, pero no acceder a sus datos. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 34,99 € al año (IVA incluido), con renovación anual. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Mientras Stripe esté en modo prueba (enlace test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -2404,7 +2434,7 @@
     {
       el: "#acct",
       t: "Mi cuenta",
-      p: "Tu plan, el plan para clubes, el control de entrenamientos (actívalo aquí si quieres pasar lista en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+      p: "Tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
     },
     {
       t: "¡Listo para empezar!",
@@ -2544,9 +2574,10 @@
       t: "Plan para clubes",
       p: [
         "El club paga una sola suscripción y <b>todos sus entrenadores tienen el plan Pro</b>.",
-        "Cada entrenador sigue con su cuenta privada: ni el club ni los demás entrenadores pueden ver ni tocar sus equipos, jugadores o partidos.",
-        "<b>Si eres entrenador:</b> entra en «Mi cuenta › Plan para clubes», escribe el código que te ha dado tu club y pulsa «Unirme al club». Puedes salir del club cuando quieras; tus datos se quedan contigo.",
+        "Los entrenadores <b>no ven nada de los demás</b>. Solo el <b>supervisor del club</b> puede ver, sin cambiar nada, los equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos de cada entrenador que lo acepte. Nunca ve contraseñas ni datos de la cuenta.",
+        "<b>Si eres entrenador:</b> entra en «Mi cuenta › Plan para clubes», escribe el código que te ha dado tu club, marca que aceptas que el supervisor vea tus datos y pulsa «Unirme al club». Puedes dejar de compartirlos o salir del club cuando quieras; tus datos se quedan contigo.",
         "<b>Si eres el encargado del club:</b> en «Mi cuenta › Plan para clubes» escribe el nombre del club, pulsa «Crear el club» y elige el pack. Comparte el código con tus entrenadores (Copiar o WhatsApp). Desde ahí ves quién se ha unido, puedes quitar entrenadores y cambiar el código.",
+        "<b>Supervisor del club:</b> el encargado es siempre supervisor y puede pulsar «Hacer supervisor» junto a otra persona del club (por ejemplo, el gerente o el director deportivo). Con el club pagado, el supervisor pulsa «Ver» junto a un entrenador y la app le enseña su plantilla, partidos, alineaciones y entrenamientos en <b>solo lectura</b>: arriba sale «Viendo a…» y el botón «Volver a mis datos».",
         { texto: "Packs anuales: 5 entrenadores por 119 €, 10 por 199 €, 20 por 349 € y 30 por 469 € (IVA incluido).", soloWeb: true },
       ],
     },
@@ -2722,18 +2753,18 @@
   }
   function clubHtml() {
     const privado =
-      '<p class="pro-fin">Cada entrenador tiene su <b>cuenta privada</b>: ni el club ni los demás entrenadores pueden ver ni tocar sus equipos, jugadores o partidos.</p>';
+      '<p class="pro-fin">Los entrenadores <b>no ven nada de los demás</b>. Solo el <b>supervisor del club</b> (el encargado y quien él nombre) puede <b>ver, sin cambiar nada</b>, los equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos de cada entrenador que lo acepte. Nunca ve tu contraseña ni los datos de tu cuenta.</p>';
     if (!club)
-      return `<p>Con el <b>plan para clubes</b>, el club paga una sola suscripción y <b>todos sus entrenadores tienen el plan Pro</b>.</p>${privado}<h3>Me ha dado un código mi club</h3><label>Código del club<input id="clubCod" autocomplete="off" autocapitalize="characters" maxlength="14" placeholder="Ej.: K7M2Q9XA4P"></label><div class="stack"><button type="button" class="primary" data-acct="club-unirse">Unirme al club</button></div><h3>Soy el encargado del club</h3><p>Crea el club, elige el pack y comparte el código con tus entrenadores.</p>${clubPacksHtml(false)}<label>Nombre del club<input id="clubNom" maxlength="60" autocomplete="organization"></label><div class="stack"><button type="button" class="secondary" data-acct="club-crear">Crear el club</button></div>`;
+      return `<p>Con el <b>plan para clubes</b>, el club paga una sola suscripción y <b>todos sus entrenadores tienen el plan Pro</b>.</p>${privado}<h3>Me ha dado un código mi club</h3><label>Código del club<input id="clubCod" autocomplete="off" autocapitalize="characters" maxlength="14" placeholder="Ej.: K7M2Q9XA4P"></label><label class="chk"><input type="checkbox" id="clubAcepto"><span>Acepto que el supervisor del club vea mis equipos, jugadores, partidos y entrenamientos (solo mirar, sin poder cambiarlos). Puedo dejar de compartirlos cuando quiera.</span></label><div class="stack"><button type="button" class="primary" data-acct="club-unirse">Unirme al club</button></div><h3>Soy el encargado del club</h3><p>Crea el club, elige el pack y comparte el código con tus entrenadores.</p>${clubPacksHtml(false)}<label>Nombre del club<input id="clubNom" maxlength="60" autocomplete="organization"></label><div class="stack"><button type="button" class="secondary" data-acct="club-crear">Crear el club</button></div>`;
     let estado = club.activo
       ? `<p>Estado: <b>activo</b>${club.soy_admin ? ` · ${club.usadas} de ${club.plazas} entrenadores` : ""}. ${club.soy_admin ? "Todos los entrenadores del club tienen el plan Pro." : "Tienes el plan Pro gracias a tu club."}</p>${club.pro_hasta ? `<p class="pro-fin">La suscripción del club está cancelada. El plan Pro del club estará activo hasta el <b>${esc(fechaLarga(club.pro_hasta))}</b>.</p>` : ""}`
       : `<p>Estado: <b>pendiente de pago</b>. ${club.soy_admin ? "Cuando el club pague, todos sus entrenadores tendrán el plan Pro." : "Cuando el club pague, tendrás el plan Pro."}</p>`;
     if (!club.soy_admin)
-      return `${estado}${privado}<div class="stack"><button type="button" class="danger" data-acct="club-salir">Salir del club</button></div>`;
+      return `${estado}${compartirHtml()}${club.soy_supervisor ? supervisarHtml() : privado}<div class="stack"><button type="button" class="danger" data-acct="club-salir">Salir del club</button></div>`;
     let enlace = location.origin + location.pathname + "?club=" + encodeURIComponent(club.codigo);
     let wa = "https://wa.me/?text=" + encodeURIComponent(`Únete al club ${club.nombre} en Mi Fútbol JV32 y tendrás el plan Pro. Entra en Mi cuenta › Plan para clubes y escribe este código: ${club.codigo}\n${enlace}`);
     let lista = (club.miembros || [])
-      .map((m) => `<div class="cm"><span><b>${esc(m.email || "")}</b><small>${m.admin ? "Encargado" : "Desde el " + esc(fechaLarga(m.desde))}</small></span>${m.admin ? "" : `<button type="button" class="lnk" data-acct="club-quitar" data-id="${esc(m.id)}" data-mail="${esc(m.email || "")}">Quitar</button>`}</div>`)
+      .map((m) => `<div class="cm"><span><b>${esc(m.email || "")}</b><small>${m.admin ? "Encargado" : (m.supervisor ? "Supervisor · " : "") + "Desde el " + esc(fechaLarga(m.desde))}${verEstado(m)}</small></span><span class="cm-b">${verBtn(m)}${m.admin || m.supervisor === undefined ? "" : `<button type="button" class="lnk" data-acct="club-sup" data-id="${esc(m.id)}" data-si="${m.supervisor ? "" : "1"}" data-mail="${esc(m.email || "")}">${m.supervisor ? "Quitar supervisor" : "Hacer supervisor"}</button>`}${m.admin ? "" : `<button type="button" class="lnk" data-acct="club-quitar" data-id="${esc(m.id)}" data-mail="${esc(m.email || "")}">Quitar</button>`}</span></div>`)
       .join("");
     let pago = enAndroid
       ? ""
@@ -2742,14 +2773,106 @@
           ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar la suscripción del club</a>`
           : ""
         : "";
-    return `${estado}<h3>Código para tus entrenadores</h3><p class="club-cod">${esc(club.codigo)}</p><p class="muted">Cada entrenador entra con su propia cuenta en «Mi cuenta › Plan para clubes» y escribe este código.</p><div class="hbtns"><button type="button" class="secondary" data-acct="club-copiar">Copiar</button><a class="secondary" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="secondary" data-acct="club-codigo">Cambiar</button></div>${club.activo ? "" : `<h3>Elige el pack del club</h3>${clubPacksHtml(true)}`}<h3>Entrenadores del club</h3>${privado}<div class="club-lista">${lista}</div><div class="stack">${pago}${club.activo ? "" : '<button type="button" class="danger" data-acct="club-borrar">Borrar el club</button>'}</div>`;
+    return `${estado}<h3>Código para tus entrenadores</h3><p class="club-cod">${esc(club.codigo)}</p><p class="muted">Cada entrenador entra con su propia cuenta en «Mi cuenta › Plan para clubes» y escribe este código.</p><div class="hbtns"><button type="button" class="secondary" data-acct="club-copiar">Copiar</button><a class="secondary" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="secondary" data-acct="club-codigo">Cambiar</button></div>${club.activo ? "" : `<h3>Elige el pack del club</h3>${clubPacksHtml(true)}`}<h3>Entrenadores del club</h3>${privado}${club.soy_supervisor && club.activo ? '<p class="muted">Pulsa «Ver» para mirar los datos de un entrenador. Pulsa «Hacer supervisor» para que otra persona del club (por ejemplo, el director deportivo) también pueda verlos.</p>' : ""}<div class="club-lista">${lista}</div>${compartirHtml()}<div class="stack">${pago}${club.activo ? "" : '<button type="button" class="danger" data-acct="club-borrar">Borrar el club</button>'}</div>`;
   }
+  /* Supervisor del club (supabase-supervisor.sql). Si el servidor aún no lo tiene,
+     mi_club no trae «comparto» y no se muestra nada de esto. */
+  function compartirHtml() {
+    if (!club || club.comparto === undefined) return "";
+    if (club.soy_admin && club.comparto === false && !(club.miembros || []).some((m) => m.supervisor && !m.admin)) return "";
+    return club.comparto
+      ? `<h3>Supervisor del club</h3><p>Compartes tus datos con el supervisor del club: puede ver tus equipos, jugadores, partidos y entrenamientos, pero no cambiarlos. Los demás entrenadores no ven nada.</p><div class="stack"><button type="button" class="secondary" data-acct="club-nocompartir">Dejar de compartir mis datos</button></div>`
+      : `<h3>Supervisor del club</h3><p class="pro-fin">El supervisor de tu club (el encargado y quien él nombre) puede ver, sin cambiar nada, los equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos de los entrenadores que lo aceptan. Nunca ve tu contraseña ni los datos de tu cuenta, y los demás entrenadores no ven nada. <b>Ahora mismo no compartes tus datos.</b></p><div class="stack"><button type="button" class="primary" data-acct="club-compartir">Aceptar y compartir mis datos</button></div>`;
+  }
+  const verEstado = (m) =>
+    m.comparte === undefined || m.id === curUser ? "" : m.comparte ? "" : " · Aún no comparte sus datos";
+  const verBtn = (m) =>
+    club.soy_supervisor && club.activo && m.comparte && m.id !== curUser
+      ? `<button type="button" class="lnk" data-acct="club-ver" data-id="${esc(m.id)}">Ver</button>`
+      : "";
+  function supervisarHtml() {
+    let lista = (club.miembros || [])
+      .filter((m) => m.id !== curUser)
+      .map((m) => `<div class="cm"><span><b>${esc(m.email || "")}</b><small>${m.admin ? "Encargado" : m.supervisor ? "Supervisor" : "Entrenador"}${verEstado(m)}</small></span><span class="cm-b">${verBtn(m)}</span></div>`)
+      .join("");
+    return `<h3>Eres supervisor del club</h3><p class="muted">${club.activo ? "Pulsa «Ver» para mirar los equipos, jugadores, partidos y entrenamientos de un entrenador. Solo puedes mirar: no puedes cambiar nada." : "Podrás ver los datos de los entrenadores cuando el club esté pagado."}</p><div class="club-lista">${lista || '<p class="muted">Aún no hay más entrenadores en el club.</p>'}</div>`;
+  }
+  async function verEntrenador(id) {
+    let r = await db.rpc("club_datos_entrenador", { entrenador: id });
+    if (!r || r.error || !r.data) return note(clubMsg(r && r.error));
+    let d = r.data;
+    if (!viendo)
+      viendo = {
+        guardado: {
+          players: state.players, matches: state.matches, teams: state.teams, teamsOk: state.teamsOk,
+          trainings: state.trainings, trOk: state.trOk, team: state.team, tab: state.tab,
+        },
+      };
+    viendo.id = id;
+    viendo.email = d.email || "";
+    state.players = d.jugadores || [];
+    state.matches = (d.partidos || []).map((m) => ({
+      ...m,
+      participaciones: parseJson(m.participaciones, []),
+      alineacion: parseJson(m.alineacion, {}),
+    }));
+    state.teams = d.equipos || [];
+    state.teamsOk = true;
+    state.trainings = (d.entrenamientos || []).map((x) => ({ ...x, asistencia: parseJson(x.asistencia, {}) }));
+    state.trOk = true;
+    state.team = {};
+    state.tab = "plantilla";
+    state.draft = state.live = null;
+    state.editing = null;
+    document.body.classList.add("solo-ver");
+    let bar = $("verBar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "verBar";
+      bar.className = "ver-bar";
+      document.querySelector("main.wrap").prepend(bar);
+    }
+    bar.innerHTML = `<span>${ic("eye", 18)}Viendo a <b>${esc(viendo.email)}</b> · solo lectura</span><button type="button" class="secondary small" data-ver-salir>Volver a mis datos</button>`;
+    $("info").classList.add("hidden");
+    render();
+    window.scrollTo(0, 0);
+  }
+  function salirVer() {
+    if (!viendo) return;
+    Object.assign(state, viendo.guardado);
+    state.draft = state.live = null;
+    state.editing = null;
+    viendo = null;
+    document.body.classList.remove("solo-ver");
+    let bar = $("verBar");
+    if (bar) bar.remove();
+    render();
+  }
+  /* Mientras se mira a otro entrenador, los botones que cambian datos no hacen nada */
+  const VER_BLOQUEA =
+    '[data-action="add-player"],[data-action="edit-player"],[data-action="delete-player"],[data-action="add-match"],[data-action="delete-match"],[data-action="live"],[data-action="save"],[data-teamact],[data-tr="new"],[data-tr="del"],[data-tr="mark"],[data-tr="all"],[data-acct="export"]';
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (!viendo || !e.target.closest) return;
+      if (e.target.closest("[data-ver-salir]")) return salirVer();
+      if (e.target.closest("#acct")) return salirVer();
+      if (e.target.closest(VER_BLOQUEA)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        note(SOLO_VER);
+      }
+    },
+    true,
+  );
   async function clubAccion(w, ac) {
     if (w === "club-unirse") {
       let v = ($("clubCod").value || "").trim();
       if (!v) return note("Escribe el código que te ha dado tu club.");
+      if ($("clubAcepto") && !$("clubAcepto").checked)
+        return note("Para unirte al club tienes que aceptar que el supervisor del club pueda ver tus datos.");
       ac.disabled = true;
-      let r = await clubRpc("unirse_club", { codigo: v });
+      let r = await clubRpc("unirse_club", { codigo: v, acepto: true }, true);
       if (r) note(club && club.activo ? "¡Ya estás en el club! Tienes el plan Pro." : "¡Ya estás en el club! Tendrás el plan Pro cuando el club pague.", true);
       else ac.disabled = false;
     } else if (w === "club-crear") {
@@ -2758,6 +2881,20 @@
       ac.disabled = true;
       if (!(await clubRpc("crear_club", { nombre: v }))) ac.disabled = false;
       else note("Club creado. Ahora elige el pack y comparte el código con tus entrenadores.", true);
+    } else if (w === "club-compartir") {
+      if (await clubRpc("club_compartir", { si: true })) note("Gracias. El supervisor del club ya puede ver tus datos (sin cambiarlos).", true);
+    } else if (w === "club-nocompartir") {
+      if (!confirm("¿Dejar de compartir tus datos con el supervisor del club? El club puede decidir quitarte del club si no los compartes.")) return;
+      if (await clubRpc("club_compartir", { si: false })) note("Has dejado de compartir tus datos con el supervisor.", true);
+    } else if (w === "club-sup") {
+      let si = !!ac.dataset.si;
+      if (si && !confirm(`¿Hacer supervisor a ${ac.dataset.mail}? Podrá ver (sin cambiar) los datos de los entrenadores del club que los compartan.`)) return;
+      if (await clubRpc("club_hacer_supervisor", { entrenador: ac.dataset.id, si }))
+        note(si ? "Ahora es supervisor del club." : "Ya no es supervisor del club.", true);
+    } else if (w === "club-ver") {
+      ac.disabled = true;
+      await verEntrenador(ac.dataset.id);
+      ac.disabled = false;
     } else if (w === "club-salir") {
       if (!confirm("¿Salir del club? Perderás el plan Pro del club. Tus equipos, jugadores y partidos se quedan en tu cuenta.")) return;
       if (await clubRpc("salir_club")) note("Has salido del club.", true);
@@ -2910,7 +3047,7 @@
   $("closeModal").onclick = () => $("modal").classList.add("hidden");
   function leaveDraft() {
     let d = state.draft;
-    if (!d || !(d.players.length || d.rival || d.gf || d.gc)) return true;
+    if (viendo || !d || !(d.players.length || d.rival || d.gf || d.gc)) return true;
     return confirm("Tienes un partido sin guardar. ¿Salir sin guardar?");
   }
   function openModal() {
@@ -4270,6 +4407,7 @@
       /* No esperar aquí: dentro de este aviso Supabase mantiene un bloqueo y cualquier consulta quedaría colgada */
       if (first) setTimeout(enterApp, 0);
     } else {
+      salirVer();
       curUser = null;
       Object.assign(state, {
         players: [],
