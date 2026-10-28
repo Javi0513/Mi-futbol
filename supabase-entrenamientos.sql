@@ -36,7 +36,7 @@ create trigger equipo_valido
   before insert or update of equipo_id, modalidad on public.entrenamientos
   for each row execute function public.equipo_valido();
 
--- 4) Plan gratuito: hasta 10 entrenamientos por modalidad. Plan Pro: sin límite.
+-- 4) Plan gratuito: hasta 5 entrenamientos por modalidad. Plan Pro: sin límite.
 --    (El mismo número está en MODES.maxE de app.js.)
 create or replace function public.limite_entrenamientos()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -49,7 +49,7 @@ begin
   if coalesce(p, 'gratis') = 'pro' then return new; end if;
   select count(*) into n from public.entrenamientos
    where owner_id = new.owner_id and modalidad = new.modalidad and id <> new.id;
-  if n >= 10 then raise exception 'LIMITE_PLAN'; end if;
+  if n >= 5 then raise exception 'LIMITE_PLAN'; end if;
   return new;
 end $$;
 revoke all on function public.limite_entrenamientos() from public, anon, authenticated;

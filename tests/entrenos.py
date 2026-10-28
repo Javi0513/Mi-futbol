@@ -94,7 +94,7 @@ with sync_playwright() as p:
     pg.click('.cal-g button[data-f$="-15"]');pg.wait_for_timeout(100)
     check('al tocar otro día se ve sin entrenamiento',pg.locator('.trs').count()==0)
     pg.click('#acct')
-    check('Mi cuenta enseña lo que llevas de entrenamientos',pg.locator('#info .usage').inner_text().find('1/10 entr.')>=0)
+    check('Mi cuenta enseña lo que llevas de entrenamientos',pg.locator('#info .usage').inner_text().find('1/5 entr.')>=0)
     pg.click('#closeInfo')
     pg.click('.cal-h [data-tr=prev]');pg.click(f'.cal-g button[data-f="{HOY}"]');pg.click('.trs [data-tr=del]');pg.wait_for_timeout(250)
     check('se puede borrar un entrenamiento',DB(pg,"d.entrenamientos.length")==0 and pg.locator('.trs').count()==0)
@@ -102,15 +102,15 @@ with sync_playwright() as p:
     check('se puede desactivar y vuelve a Plantilla',not vis(pg) and pg.locator('[data-tab=plantilla].on').count()==1)
     pg.context.close()
     # --- límite del plan gratuito y activado solo si ya hay entrenamientos ---
-    T=[{'id':f't{i}','owner_id':'u1','modalidad':'7','fecha':f'2026-09-{i+1:02d}','asistencia':{}} for i in range(10)]
+    T=[{'id':f't{i}','owner_id':'u1','modalidad':'7','fecha':f'2026-09-{i+1:02d}','asistencia':{}} for i in range(5)]
     pg=page(b,seed('gratis',CP(T)));login(pg)
     check('si ya tienes entrenamientos sale la pestaña sola',vis(pg))
     pg.click('[data-tab=entrenos]');pg.click('#view [data-tr=new] >> nth=0');pg.wait_for_selector('#info:not(.hidden)')
-    check('gratis: con 10 entrenamientos enseña el plan Pro',pg.locator('#infoBody').inner_text().find('10 entrenamientos')>=0 and DB(pg,"d.entrenamientos.length")==10)
+    check('gratis: con 5 entrenamientos enseña el plan Pro',pg.locator('#infoBody').inner_text().find('5 entrenamientos')>=0 and DB(pg,"d.entrenamientos.length")==5)
     pg.context.close()
     pg=page(b,seed('pro',CP(T)));login(pg)
     pg.click('[data-tab=entrenos]');pg.click('#view [data-tr=new] >> nth=0');pg.wait_for_timeout(250)
-    check('Pro: entrenamientos ilimitados',DB(pg,"d.entrenamientos.length")==11)
+    check('Pro: entrenamientos ilimitados',DB(pg,"d.entrenamientos.length")==6)
     pg.context.close()
     # --- sin la tabla en el servidor la app sigue funcionando ---
     pg=page(b,{'futbol_personal_jugadores':CP(P),'perfiles':[{'id':'u1','plan':'gratis'}]},"localStorage.setItem('mf_entrenos:u1','1');")

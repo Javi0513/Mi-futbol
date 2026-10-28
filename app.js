@@ -105,9 +105,9 @@
     trDay: "",
   };
   const MODES = {
-    7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, maxE: 10, cap: 14 },
-    11: { name: "Fútbol 11", n: 11, maxP: 25, maxM: 5, maxE: 10, cap: 0 },
-    fs: { name: "Fútbol sala", n: 5, maxP: 16, maxM: 5, maxE: 10, cap: 14 },
+    7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, maxE: 5, cap: 14 },
+    11: { name: "Fútbol 11", n: 11, maxP: 25, maxM: 5, maxE: 5, cap: 0 },
+    fs: { name: "Fútbol sala", n: 5, maxP: 16, maxM: 5, maxE: 5, cap: 14 },
   };
   const MN = (k) => (MODES[k || state.mode] || MODES["7"]).name,
     MFN = (k) => (k === "fs" ? "fs" : "f" + k);
@@ -2514,7 +2514,7 @@
         "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
         "Puedes apuntar la hora y una nota (por ejemplo, «táctica» o «físico»). Cada día del calendario sale de un color según la asistencia.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido, faltado o justificado, y su porcentaje.",
-        "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 10 entrenamientos por modalidad; con el plan Pro, ilimitados.",
+        "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
         "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
       ],
     },
