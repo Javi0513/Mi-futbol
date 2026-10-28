@@ -99,11 +99,15 @@
     teams: [],
     teamsOk: false,
     team: {},
+    trainings: [],
+    trOk: false,
+    trMonth: "",
+    trDay: "",
   };
   const MODES = {
-    7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, cap: 14 },
-    11: { name: "Fútbol 11", n: 11, maxP: 25, maxM: 5, cap: 0 },
-    fs: { name: "Fútbol sala", n: 5, maxP: 16, maxM: 5, cap: 14 },
+    7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, maxE: 5, cap: 14 },
+    11: { name: "Fútbol 11", n: 11, maxP: 25, maxM: 5, maxE: 5, cap: 0 },
+    fs: { name: "Fútbol sala", n: 5, maxP: 16, maxM: 5, maxE: 5, cap: 14 },
   };
   const MN = (k) => (MODES[k || state.mode] || MODES["7"]).name,
     MFN = (k) => (k === "fs" ? "fs" : "f" + k);
@@ -195,6 +199,8 @@
     live: '<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.5M7.8 16.2a6 6 0 0 1 0-8.5M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/>',
     share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
     undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+    whistle:
+      '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
     maximize:
       '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   };
@@ -303,7 +309,7 @@
   function note(t, ok = false) {
     if (/LIMITE_PLAN/.test(t || "")) {
       $("modal").classList.add("hidden");
-      showInfo("pro");
+      showInfo(state.tab === "entrenos" ? "proentreno" : "pro");
       return;
     }
     if (!ok) t = friendly(t);
@@ -317,7 +323,7 @@
       }, 4500);
   }
   async function load() {
-    let [{ data: ps, error: pe }, { data: ms, error: me }, tr] = await Promise.all([
+    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
         .select("*")
@@ -333,10 +339,22 @@
           return { data: null, error: e };
         }
       })(),
+      (async () => {
+        try {
+          return await db.from("entrenamientos").select("*").order("fecha");
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      })(),
     ]);
     if (pe || me) throw pe || me;
     state.teamsOk = !tr.error;
     state.teams = tr.data || [];
+    state.trOk = !en.error;
+    state.trainings = (en.data || []).map((x) => ({
+      ...x,
+      asistencia: parseJson(x.asistencia, {}),
+    }));
     try {
       state.team = JSON.parse(localStorage.getItem("mf_equipo_sel") || "{}") || {};
     } catch (e) {}
@@ -365,6 +383,8 @@
     );
   }
   function render() {
+    let eo = entrenosOn();
+    if (!eo && state.tab === "entrenos") state.tab = "plantilla";
     document.querySelectorAll("[data-mode]").forEach((b) => {
       let on = b.dataset.mode === state.mode;
       b.classList.toggle("on", on);
@@ -376,6 +396,8 @@
       if (on) b.setAttribute("aria-current", "page");
       else b.removeAttribute("aria-current");
     });
+    $("trTab").classList.toggle("hidden", !eo);
+    document.querySelector(".dock").classList.toggle("d5", eo);
     $("teams").innerHTML = teamBar();
     let all = games().flatMap(entries);
     $("stats").innerHTML = [
@@ -407,7 +429,9 @@
           ? matches()
           : state.tab === "pizarra"
             ? boardView()
-            : summary();
+            : state.tab === "entrenos"
+              ? entrenosView()
+              : summary();
     if (!state.draft && state.tab === "pizarra") initBoard();
     if (key !== lastKey) {
       lastKey = key;
@@ -454,7 +478,9 @@
       r = await db.from("equipos").insert(row);
     if (r.error) throw r.error;
     await Promise.all(
-      ["futbol_personal_jugadores", "futbol_personal_partidos"].map((tb) =>
+      ["futbol_personal_jugadores", "futbol_personal_partidos"]
+        .concat(state.trOk ? ["entrenamientos"] : [])
+        .map((tb) =>
         db
           .from(tb)
           .update({ equipo_id: row.id })
@@ -509,7 +535,7 @@
           nm = teamName();
         if (
           !confirm(
-            `¿Borrar el equipo «${nm}»? Se borrarán también sus ${ps} jugadores y ${ms.length} partidos. No se puede deshacer.`,
+            `¿Borrar el equipo «${nm}»? Se borrarán también sus ${ps} jugadores y ${ms.length} partidos${trainings().length ? ` y ${trainings().length} entrenamientos` : ""}. No se puede deshacer.`,
           )
         )
           return;
@@ -518,7 +544,9 @@
           await db.from("directos").delete().in("partido_id", ids);
         if (L[0].id === id)
           await Promise.all(
-            ["futbol_personal_jugadores", "futbol_personal_partidos"].map((tb) =>
+            ["futbol_personal_jugadores", "futbol_personal_partidos"]
+              .concat(state.trOk ? ["entrenamientos"] : [])
+              .map((tb) =>
               db
                 .from(tb)
                 .delete()
@@ -656,6 +684,256 @@
       );
     return `<section class="panel"><h2 class="h2s">Jugadores</h2><p class="muted">Ordenados por goles y minutos · ${MN()}</p><div style="height:6px"></div>${r.length ? r.map((x, i) => `<div class="row"><div class="rank">${i + 1}</div>${avatar(x.p)}<div class="info"><strong>${esc(x.p.nombre)}</strong>${mini(x.t)}</div><div class="big"><b>${x.t.goals}</b><small>goles</small></div></div>`).join("") : empty("chart", "Aún no hay datos.", "Añade jugadores y partidos para ver el resumen.")}</section>`;
   }
+  /* ===== Control de entrenamientos (opcional: se activa en Mi cuenta) =====
+     Un calendario por equipo; en cada entrenamiento se marca quién vino, quién faltó
+     y quién tuvo falta justificada. Asistencia: {id del jugador: "si" | "no" | "jus"}. */
+  const MESES = [
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
+    ],
+    ymd = (d) =>
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0"),
+    trKey = () => "mf_entrenos:" + (curUser || ""),
+    trainings = () =>
+      state.trainings
+        .filter(inTeam)
+        .sort((a, b) =>
+          (a.fecha + (a.hora || "")).localeCompare(b.fecha + (b.hora || "")),
+        ),
+    trCount = (t) => {
+      let r = { si: 0, no: 0, jus: 0 },
+        ids = new Set(roster().map((p) => p.id));
+      Object.entries(t.asistencia || {}).forEach(([id, v]) => {
+        if (ids.has(id) && r[v] !== undefined) r[v]++;
+      });
+      return r;
+    },
+    pct = (r) => {
+      let n = r.si + r.no + r.jus;
+      return n ? Math.round((r.si * 100) / n) : null;
+    };
+  let trQ = Promise.resolve();
+  function entrenosOn() {
+    try {
+      let v = localStorage.getItem(trKey());
+      if (v !== null) return v === "1";
+    } catch (e) {}
+    return state.trainings.length > 0;
+  }
+  function setEntrenos(on) {
+    try {
+      localStorage.setItem(trKey(), on ? "1" : "0");
+    } catch (e) {}
+  }
+  function trDayLabel(f) {
+    let d = new Date(f + "T12:00:00");
+    return `${["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"][d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
+  }
+  function trCalendar() {
+    let [y, m] = state.trMonth.split("-").map(Number),
+      first = new Date(y, m - 1, 1),
+      days = new Date(y, m, 0).getDate(),
+      skip = (first.getDay() + 6) % 7,
+      hoy = ymd(new Date()),
+      byDay = {};
+    trainings().forEach((t) => (byDay[t.fecha] = byDay[t.fecha] || []).push(t));
+    let cells = "";
+    for (let i = 0; i < skip; i++) cells += "<span></span>";
+    for (let d = 1; d <= days; d++) {
+      let f = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+        L = byDay[f] || [],
+        r = L.reduce(
+          (a, t) => {
+            let c = trCount(t);
+            a.si += c.si;
+            a.no += c.no;
+            a.jus += c.jus;
+            return a;
+          },
+          { si: 0, no: 0, jus: 0 },
+        ),
+        p = pct(r),
+        k = !L.length ? "" : p === null ? "p" : p >= 80 ? "w" : p >= 50 ? "d" : "l";
+      cells += `<button type="button" data-tr="day" data-f="${f}" class="${k ? "has " + k : ""}${f === hoy ? " hoy" : ""}${f === state.trDay ? " on" : ""}" aria-pressed="${f === state.trDay}" aria-label="${esc(trDayLabel(f))}${L.length ? ", entrenamiento" + (p === null ? " sin marcar" : ", asistencia " + p + "%") : ""}">${d}${L.length ? "<i></i>" : ""}</button>`;
+    }
+    return `<div class="cal"><div class="cal-h"><button type="button" class="ib" data-tr="prev" aria-label="Mes anterior">${ic("back", 18)}</button><b>${MESES[m - 1]} ${y}</b><button type="button" class="ib flip" data-tr="next" aria-label="Mes siguiente">${ic("back", 18)}</button></div><div class="cal-w" aria-hidden="true">${["L", "M", "X", "J", "V", "S", "D"].map((x) => `<span>${x}</span>`).join("")}</div><div class="cal-g">${cells}</div><div class="cal-ley"><span><i class="w"></i>80% o más</span><span><i class="d"></i>50-79%</span><span><i class="l"></i>menos del 50%</span><span><i class="p"></i>sin marcar</span></div></div>`;
+  }
+  function trSession(t) {
+    let c = trCount(t),
+      r = roster(),
+      a = t.asistencia || {},
+      B = [
+        ["si", "Vino", "check"],
+        ["no", "Faltó", "x"],
+        ["jus", "Justificada", ""],
+      ];
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div><p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
+      r.length
+        ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
+            .map(
+              (p) =>
+                `<div class="row trow">${avatar(p)}<div class="info"><strong>${esc(p.nombre)}</strong></div><div class="asis" role="group" aria-label="Asistencia de ${esc(p.nombre)}">${B.map(
+                  (b) =>
+                    `<button type="button" class="${b[0]}${a[p.id] === b[0] ? " on" : ""}" data-tr="mark" data-id="${t.id}" data-pid="${p.id}" data-v="${b[0]}" aria-pressed="${a[p.id] === b[0]}" aria-label="${b[1]}" title="${b[1]}">${b[2] ? ic(b[2], 18) : "J"}</button>`,
+                ).join("")}</div></div>`,
+            )
+            .join("")}`
+        : empty(
+            "users",
+            "Todavía no hay jugadores.",
+            "Añade a tus jugadores con su nombre para pasar lista.",
+          ) +
+          `<div class="stack"><button type="button" class="primary" data-action="add-player">${ic("plus")}Añadir jugador</button></div>`
+    }<div class="btools trdel"><button type="button" class="danger small" data-tr="del" data-id="${t.id}">${ic("trash", 18)}Borrar este entrenamiento</button></div></div>`;
+  }
+  function trPlayers() {
+    let T = trainings(),
+      r = roster()
+        .map((p) => {
+          let x = { si: 0, no: 0, jus: 0 };
+          T.forEach((t) => {
+            let v = (t.asistencia || {})[p.id];
+            if (x[v] !== undefined) x[v]++;
+          });
+          return { p, x, pc: pct(x) };
+        })
+        .sort(
+          (a, b) =>
+            (b.pc ?? -1) - (a.pc ?? -1) ||
+            b.x.si - a.x.si ||
+            a.p.nombre.localeCompare(b.p.nombre, "es"),
+        );
+    return `<section class="panel"><h2 class="h2s">Asistencia por jugador</h2><p class="muted">${T.length} ${T.length === 1 ? "entrenamiento" : "entrenamientos"} · ${esc(teamName())}</p><div style="height:6px"></div>${
+      r.length
+        ? r
+            .map(
+              (o) =>
+                `<div class="row">${avatar(o.p)}<div class="info"><strong>${esc(o.p.nombre)}</strong><small>${o.x.si} vino · ${o.x.no} faltó · ${o.x.jus} justificada${o.x.jus === 1 ? "" : "s"}</small><div class="trbar" aria-hidden="true"><i style="width:${o.pc || 0}%"></i></div></div><div class="big"><b>${o.pc === null ? "–" : o.pc + "%"}</b><small>asistencia</small></div></div>`,
+            )
+            .join("")
+        : empty("chart", "Aún no hay datos.", "Añade jugadores y pasa lista en tus entrenamientos.")
+    }</section>`;
+  }
+  function entrenosView() {
+    if (!state.trMonth) {
+      let d = new Date();
+      state.trMonth = ymd(d).slice(0, 7);
+      state.trDay = ymd(d);
+    }
+    let T = trainings(),
+      tot = T.reduce(
+        (a, t) => {
+          let c = trCount(t);
+          a.si += c.si;
+          a.no += c.no;
+          a.jus += c.jus;
+          return a;
+        },
+        { si: 0, no: 0, jus: 0 },
+      ),
+      tp = pct(tot),
+      dayT = T.filter((t) => t.fecha === state.trDay);
+    if (!state.trOk)
+      return `<section class="panel"><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">El control de entrenamientos aún no está activado en el servidor (falta ejecutar supabase-entrenamientos.sql en Supabase).</p></section>`;
+    return `<section class="panel"><div class="bar"><div><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : state.trainings.filter((t) => t.modalidad === state.mode).length + " / " + MODES[state.mode].maxE + " · "}${T.length} ${T.length === 1 ? "entrenamiento" : "entrenamientos"}${tp === null ? "" : " · " + tp + "% de asistencia"}</p></div><button class="primary" data-tr="new">${ic("plus")}Entreno</button></div>${trCalendar()}</section><section class="panel"><div class="bar"><div><div class="kicker">${esc(trDayLabel(state.trDay))}</div><h2 class="h2s">${dayT.length ? (dayT.length > 1 ? dayT.length + " entrenamientos" : "Pasar lista") : "Sin entrenamiento"}</h2></div>${dayT.length ? `<button type="button" class="secondary small" data-tr="new">${ic("plus", 18)}Otro</button>` : ""}</div>${
+      dayT.length
+        ? dayT.map(trSession).join("")
+        : `<p class="muted">Este día no hay entrenamiento.</p><div class="stack"><button type="button" class="primary" data-tr="new">${ic("plus")}Crear entrenamiento este día</button></div>`
+    }</section>${trPlayers()}`;
+  }
+  function trSave(t, patch) {
+    Object.assign(t, patch);
+    trQ = trQ.then(async () => {
+      let r = await db.from("entrenamientos").update(patch).eq("id", t.id);
+      if (r.error) note(r.error.message);
+    });
+    return trQ;
+  }
+  async function trAct(b) {
+    let k = b.dataset.tr,
+      t = state.trainings.find((x) => x.id === b.dataset.id);
+    if (k === "prev" || k === "next") {
+      let [y, m] = state.trMonth.split("-").map(Number),
+        d = new Date(y, m - 1 + (k === "next" ? 1 : -1), 1);
+      state.trMonth = ymd(d).slice(0, 7);
+      return render();
+    }
+    if (k === "day") {
+      state.trDay = b.dataset.f;
+      return render();
+    }
+    if (k === "new") {
+      if (
+        plan !== "pro" &&
+        state.trainings.filter((x) => x.modalidad === state.mode).length >= MODES[state.mode].maxE
+      )
+        return showInfo("proentreno");
+      let row = {
+        id: crypto.randomUUID(),
+        owner_id: curUser,
+        modalidad: state.mode,
+        fecha: state.trDay,
+        asistencia: {},
+      };
+      if (curTeam()) row.equipo_id = curTeam();
+      b.disabled = true;
+      let r = await db.from("entrenamientos").insert(row);
+      b.disabled = false;
+      if (r.error) return note(r.error.message);
+      state.trainings.push(row);
+      render();
+      return note("Entrenamiento creado. Marca quién ha venido.", true);
+    }
+    if (!t) return;
+    if (k === "mark") {
+      let a = { ...t.asistencia },
+        v = b.dataset.v;
+      if (a[b.dataset.pid] === v) delete a[b.dataset.pid];
+      else a[b.dataset.pid] = v;
+      trSave(t, { asistencia: a });
+      return render();
+    }
+    if (k === "all") {
+      let a = { ...t.asistencia };
+      roster().forEach((p) => (a[p.id] = "si"));
+      trSave(t, { asistencia: a });
+      return render();
+    }
+    if (k === "del") {
+      if (!confirm(`¿Borrar el entrenamiento del ${trDayLabel(t.fecha)}?`)) return;
+      let r = await db.from("entrenamientos").delete().eq("id", t.id);
+      if (r.error) return note(r.error.message);
+      state.trainings = state.trainings.filter((x) => x.id !== t.id);
+      render();
+      note("Entrenamiento borrado.", true);
+    }
+  }
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-tr]");
+    if (b) trAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("view").addEventListener("change", (e) => {
+    let f = e.target.dataset.trf,
+      t = f && state.trainings.find((x) => x.id === e.target.dataset.id);
+    if (!t) return;
+    let v = e.target.value.trim().slice(0, 300) || null;
+    if ((t[f] || null) === v) return;
+    trSave(t, { [f]: v });
+  });
   function blankAlign() {
     let f = Object.keys(formations[state.mode])[0];
     return { formation: f, slots: {} };
@@ -2068,7 +2346,7 @@
     return `<div class="usage">${Object.keys(MODES)
       .map((k) => {
         let M = MODES[k];
-        return `<div><span>${esc(M.name)}</span><span><b>${state.players.filter((p) => p.modalidad === k).length}</b>/${M.maxP} jug. · <b>${state.matches.filter((m) => m.modalidad === k).length}</b>/${M.maxM} part.</span></div>`;
+        return `<div><span>${esc(M.name)}</span><span><b>${state.players.filter((p) => p.modalidad === k).length}</b>/${M.maxP} jug. · <b>${state.matches.filter((m) => m.modalidad === k).length}</b>/${M.maxM} part.${entrenosOn() ? ` · <b>${state.trainings.filter((t) => t.modalidad === k).length}</b>/${M.maxE} entr.` : ""}</span></div>`;
       })
       .join("")}</div>`;
   }
@@ -2126,7 +2404,7 @@
     {
       el: "#acct",
       t: "Mi cuenta",
-      p: "Tu plan, el plan para clubes, la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+      p: "Tu plan, el plan para clubes, el control de entrenamientos (actívalo aquí si quieres pasar lista en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
     },
     {
       t: "¡Listo para empezar!",
@@ -2228,6 +2506,19 @@
       ],
     },
     {
+      t: "Control de entrenamientos",
+      p: [
+        "Es opcional: actívalo en «Mi cuenta › Activar el control de entrenamientos». Aparece la pestaña <b>Entrenos</b> abajo.",
+        "Verás un calendario del mes. Toca un día y pulsa «Crear entrenamiento este día» (o «+ Entreno»). Con las flechas cambias de mes.",
+        "Pasa lista con los jugadores de tu plantilla: <b>✓</b> vino, <b>✗</b> faltó y <b>J</b> falta justificada. Se guarda solo. «Todos vinieron» los marca a todos de una vez.",
+        "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
+        "Puedes apuntar la hora y una nota (por ejemplo, «táctica» o «físico»). Cada día del calendario sale de un color según la asistencia.",
+        "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido, faltado o justificado, y su porcentaje.",
+        "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
+        "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
+      ],
+    },
+    {
       t: "Pizarra táctica",
       p: [
         "Mueve las fichas, dibuja jugadas con el dedo y ponla a pantalla completa para explicarla.",
@@ -2244,7 +2535,7 @@
     {
       t: "Plan gratuito y plan Pro",
       p: [
-        "El plan gratuito tiene un límite de jugadores y partidos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
+        "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
         "El plan Pro quita los límites, permite varios equipos y emitir vídeo en el Directo.",
         { texto: "El plan Pro cuesta 34,99 € al año (IVA incluido). Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
       ],
@@ -2374,6 +2665,9 @@
     if (k === "proteam") {
       t = "Plan Pro";
       h = `<p>En el plan gratuito tienes <b>un equipo</b> en cada modalidad.</p><p>Con el <b>plan Pro</b> puedes llevar <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, cada uno con su plantilla y sus partidos, y además jugadores y partidos ilimitados.</p>${enAndroid ? "" : `<p class="price">34,99 € <small>al año · IVA incluido · menos de 3 € al mes · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
+    } else if (k === "proentreno") {
+      t = "Plan Pro";
+      h = `<p>En el plan gratuito puedes guardar hasta <b>${MODES[state.mode].maxE} entrenamientos</b> en cada modalidad. Para hacer sitio, borra alguno antiguo.</p><p>Con el <b>plan Pro</b> tienes <b>entrenamientos ilimitados</b> para llevar la asistencia de toda la temporada, además de jugadores y partidos ilimitados y varios equipos.</p>${enAndroid ? "" : `<p class="price">34,99 € <small>al año · IVA incluido · menos de 3 € al mes · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
     } else if (k === "pro") {
       let M = MODES[state.mode];
       t = "Plan Pro";
@@ -2381,7 +2675,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 34,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 34,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button><button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
@@ -2515,6 +2809,22 @@
       tutOpen();
       return;
     }
+    if (w === "entrenos") {
+      let on = !entrenosOn();
+      if (!on && state.trainings.length &&
+        !confirm("¿Quitar la pestaña «Entrenos»? Tus entrenamientos no se borran: si la vuelves a activar, seguirán ahí."))
+        return;
+      setEntrenos(on);
+      $("info").classList.add("hidden");
+      if (on && leaveDraft()) {
+        state.tab = "entrenos";
+        state.draft = null;
+        state.live = null;
+      }
+      render();
+      note(on ? "Control de entrenamientos activado: lo tienes en la pestaña «Entrenos»." : "Control de entrenamientos desactivado.", true);
+      return;
+    }
     if (w === "novedades-ok") {
       $("info").classList.add("hidden");
       return;
@@ -2554,6 +2864,7 @@
           equipos: state.teams,
           jugadores: state.players,
           partidos: state.matches,
+          entrenamientos: state.trainings,
           directos: Object.values(liveRows),
         },
         url = URL.createObjectURL(
