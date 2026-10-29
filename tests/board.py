@@ -26,6 +26,8 @@ with sync_playwright() as p:
     pg.goto('http://127.0.0.1:8795/index.html');pg.evaluate(SEED,[N7,N11])
     pg.fill('input[name=email]','c@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')
     pg.click('[data-tab=pizarra]');pg.wait_for_selector('#bcanvas');pg.wait_for_timeout(500)
+    check('empieza con «Mover» (tocar no pinta)',pg.get_attribute('[data-b=tool][data-v=move]','aria-pressed')=='true')
+    pg.click('[data-b=tool][data-v=pen]')
     pg.evaluate("document.getElementById('bfield').scrollIntoView({block:'start'})");pg.wait_for_timeout(200)
     bx=box(pg);fb=pg.locator('#bfield').bounding_box()
     check('canvas cubre el campo',abs(bx['width']-fb['width'])<3 and abs(bx['height']-fb['height'])<3,(bx,fb))
@@ -80,7 +82,7 @@ with sync_playwright() as p:
     m=b.new_context(viewport={'width':375,'height':812},device_scale_factor=2,has_touch=True,is_mobile=True).new_page()
     m.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE))
     m.goto('http://127.0.0.1:8795/index.html');m.evaluate(SEED,[N7,N11]);m.fill('input[name=email]','c@x.es');m.fill('input[name=password]','secreto1');m.tap('[data-auth=login]');m.wait_for_selector('#app:not(.hidden)')
-    m.tap('[data-tab=pizarra]');m.wait_for_selector('#bcanvas');m.wait_for_timeout(500)
+    m.tap('[data-tab=pizarra]');m.wait_for_selector('#bcanvas');m.wait_for_timeout(500);m.tap('[data-b=tool][data-v=pen]');m.wait_for_timeout(200)
     m.evaluate("document.getElementById('bfield').scrollIntoView({block:'center'})");m.wait_for_timeout(300)
     bb=m.locator('#bcanvas').bounding_box();cdp=m.context.new_cdp_session(m)
     def tpts(pts):

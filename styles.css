@@ -2966,6 +2966,9 @@ a.pack {
 .board.playing #bcanvas {
   cursor: default;
 }
+.board.tool-move #bcanvas {
+  cursor: grab;
+}
 /* Marcas del campo dentro de .fm: en horizontal se gira solo el dibujo de las líneas. */
 .board .field:before {
   display: none;
@@ -3130,6 +3133,18 @@ a.pack {
   .br .sw i {
     width: 24px;
     height: 24px;
+  }
+  .br-t {
+    gap: 2px;
+  }
+  .br-t .brs {
+    display: none;
+  }
+  .br-t .bi {
+    width: 36px;
+  }
+  .br-t .sw {
+    width: 28px;
   }
   .bpc {
     flex: 1 1 0;
