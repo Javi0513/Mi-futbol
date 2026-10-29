@@ -25,7 +25,7 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('las novedades explican el arreglo del iPad','iPad' in body)
+    check('las novedades explican el nuevo precio y el porqué','39,99' in body and 'Por qué' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)
@@ -34,11 +34,11 @@ with sync_playwright() as p:
     check('se pueden ver otra vez desde Mi cuenta','novedades' in pg.locator('#infoTitle').inner_text().lower())
     pg.click('#closeInfo');pg.wait_for_timeout(200)
     pg.click('#acct');pg.wait_for_timeout(300)
-    check('Mi cuenta muestra el precio anual','34,99 €/año' in pg.locator('#infoBody').inner_text().lower(),pg.locator('#infoBody').inner_text().replace(chr(10),' | '))
+    check('Mi cuenta muestra el precio anual','39,99 €/año' in pg.locator('#infoBody').inner_text().lower(),pg.locator('#infoBody').inner_text().replace(chr(10),' | '))
     ctx.close()
     ctx,pg=abre(b,android=True)
     body=pg.locator('#infoBody').inner_text() if pg.locator('#info').is_visible() else ''
-    check('en la app de Android no se habla del precio',body and '34,99' not in body and '€' not in body,body[:80])
+    check('en la app de Android no se habla del precio',body and '39,99' not in body and '€' not in body,body[:80])
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 sys.exit(0 if all(res) and not errs else 1)

@@ -9,6 +9,12 @@
 //   parar     {directo}                                   entrenador dueño del directo
 //   ver       {codigo}                                    cualquiera con el enlace
 //   responder {sesion, sdp}                               el espectador acepta la oferta
+//   sigo      {codigo, sesion}                            el espectador sigue mirando (cada 30 s)
+//   salgo     {codigo, sesion}                            el espectador cierra la página
+//
+// Máximo MAX_ESPECTADORES personas a la vez por directo, para que el coste de Cloudflare
+// por partido tenga techo. Se apuntan en directos.video.e = {sesión: última vez visto (ms)};
+// quien no avisa en ESPERA ms deja su sitio libre.
 
 const CF_APP = Deno.env.get("CF_APP_ID") ?? "";
 const CF_TOKEN = Deno.env.get("CF_APP_TOKEN") ?? "";
@@ -18,6 +24,8 @@ const CF = `https://rtc.live.cloudflare.com/v1/apps/${CF_APP}`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SESION = /^[0-9a-zA-Z_-]{8,128}$/;
 const PISTA = /^[0-9a-zA-Z_-]{1,64}$/;
+const MAX_ESPECTADORES = 25;
+const ESPERA = 120000;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -66,6 +74,19 @@ async function miDirecto(req: Request, id: unknown) {
   return uid;
 }
 
+// Espectadores que siguen mirando (quita los que llevan más de ESPERA sin avisar)
+function vivos(v: { e?: Record<string, number> }) {
+  const ahora = Date.now(), e: Record<string, number> = {};
+  for (const [k, t] of Object.entries(v.e ?? {})) if (typeof t === "number" && ahora - t < ESPERA) e[k] = t;
+  return e;
+}
+async function guardaEspectadores(codigo: string, v: Record<string, unknown>, e: Record<string, number>) {
+  await db(`directos?id=eq.${codigo}&video->>s=eq.${encodeURIComponent(String(v.s))}`, {
+    method: "PATCH",
+    body: JSON.stringify({ video: { ...v, e } }),
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return res("ok");
   if (req.method !== "POST") return res({ error: "Solo POST" }, 405);
@@ -106,17 +127,38 @@ Deno.serve(async (req) => {
       const f = await db(`directos?id=eq.${b.codigo}&select=video`);
       const v = f?.[0]?.video;
       if (!v?.s || !Array.isArray(v.p)) return res({ video: false });
+      const e = vivos(v);
+      if (Object.keys(e).length >= MAX_ESPECTADORES) return res({ video: false, lleno: true, max: MAX_ESPECTADORES });
       const s = await cf("/sessions/new", "POST");
       const r = await cf(`/sessions/${s.sessionId}/tracks/new`, "POST", {
         tracks: v.p.map((t: string) => ({ location: "remote", sessionId: v.s, trackName: t })),
       });
       if (r.tracks?.some((t: { errorCode?: string }) => t.errorCode)) return res({ video: false });
+      e[s.sessionId] = Date.now();
+      await guardaEspectadores(b.codigo, v, e);
       return res({ video: true, sesion: s.sessionId, sdp: r.sessionDescription?.sdp, renegociar: !!r.requiresImmediateRenegotiation });
     }
     if (b.accion === "responder") {
       if (typeof b.sesion !== "string" || !SESION.test(b.sesion) || typeof b.sdp !== "string" || b.sdp.length > 20000)
         return res({ error: "Datos no válidos." }, 400);
       await cf(`/sessions/${b.sesion}/renegotiate`, "PUT", { sessionDescription: { type: "answer", sdp: b.sdp } });
+      return res({ ok: true });
+    }
+    if (b.accion === "sigo" || b.accion === "salgo") {
+      if (typeof b.codigo !== "string" || !UUID.test(b.codigo) || typeof b.sesion !== "string" || !SESION.test(b.sesion))
+        return res({ error: "Datos no válidos." }, 400);
+      const f = await db(`directos?id=eq.${b.codigo}&select=video`);
+      const v = f?.[0]?.video;
+      if (!v?.s) return res({ fuera: true });
+      const e = vivos(v);
+      if (b.accion === "salgo") {
+        delete e[b.sesion];
+        await guardaEspectadores(b.codigo, v, e);
+        return res({ ok: true });
+      }
+      if (!(b.sesion in e) && Object.keys(e).length >= MAX_ESPECTADORES) return res({ fuera: true });
+      e[b.sesion] = Date.now();
+      await guardaEspectadores(b.codigo, v, e);
       return res({ ok: true });
     }
     return res({ error: "Acción desconocida." }, 400);

@@ -28,7 +28,7 @@
 
 ## Planes
 
-| | Gratis | Pro (34,99 €/año, IVA incluido) |
+| | Gratis | Pro (39,99 €/año, IVA incluido) |
 |---|---|---|
 | Jugadores | Fútbol 11: 25 · Fútbol 7: 14 · Fútbol sala: 16 | Sin límite |
 | Partidos | 5 por modalidad | Sin límite |

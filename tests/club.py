@@ -7,7 +7,7 @@ from fake2 import FAKE2
 srv=http.server.ThreadingHTTPServer(('127.0.0.1',8814),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
-PACKS="clubPacks:[{plazas:5,precio:'119',url:'https://buy.stripe.com/test_c5'},{plazas:10,precio:'199',url:'https://buy.stripe.com/test_c10'},{plazas:20,precio:'349',url:'https://buy.stripe.com/test_c20'},{plazas:30,precio:'469',url:'https://buy.stripe.com/test_c30'}],portalUrl:'https://billing.stripe.com/p/login/test_x',contactEmail:'club@x.es',"
+PACKS="clubPacks:[{plazas:5,precio:'149',url:'https://buy.stripe.com/test_c5'},{plazas:10,precio:'259',url:'https://buy.stripe.com/test_c10'},{plazas:20,precio:'459',url:'https://buy.stripe.com/test_c20'},{plazas:30,precio:'599',url:'https://buy.stripe.com/test_c30'}],portalUrl:'https://billing.stripe.com/p/login/test_x',contactEmail:'club@x.es',"
 CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,"+PACKS)
 ADMIN={'id':'c1','nombre':'CD Granada Norte','activo':False,'soy_admin':True,'codigo':'K7M2Q9XA4P','plazas':0,'usadas':2,'pagado':False,
        'miembros':[{'id':'u1','email':'ana@x.es','desde':'2026-10-27T10:00:00Z','admin':True},{'id':'u9','email':'luis@x.es','desde':'2026-10-27T11:00:00Z','admin':False}]}
@@ -39,7 +39,7 @@ with sync_playwright() as p:
     pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
     t=body(pg)
     check('explica que los entrenadores no ven nada de los demás','no ven nada de los demás' in t and 'solo el supervisor' in t.lower())
-    check('muestra los 4 packs con precio','119 €' in t and '199 €' in t and '349 €' in t and '469 €' in t,t.replace('\n',' | ')[:300])
+    check('muestra los 4 packs con precio','149 €' in t and '259 €' in t and '459 €' in t and '599 €' in t,t.replace('\n',' | ')[:300])
     check('sin club no hay enlaces de pago',pg.locator('#info a.pack').count()==0)
     pg.evaluate("window.__cfg.rpcData.unirse_club=a=>{window.__club={id:'c1',nombre:'CD Granada Norte',activo:true,soy_admin:false};return 'CD Granada Norte'}")
     pg.fill('#clubCod','k7m2q9xa4p');pg.click('[data-acct=club-unirse]');pg.wait_for_timeout(300)

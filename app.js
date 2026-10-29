@@ -2384,7 +2384,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 34,99 € al año (IVA incluido), con renovación anual. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Mientras Stripe esté en modo prueba (enlace test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -2552,6 +2552,13 @@
   /* Guía de uso (Mi cuenta › Guía de uso). Cada cambio que se note en la app o
      traiga opciones nuevas debe actualizar también esta guía y, si hace falta, el tutorial.
      soloWeb: el texto no se muestra en la app de Android (precios y pagos). */
+  /* Precio del plan Pro y por qué cuesta eso (se explica para ser transparentes) */
+  const POR_QUE_PRECIO =
+    "¿Por qué 39,99 €? Desde que salió el plan Pro la app ha crecido mucho: vídeo en directo, control de entrenamientos, grabar el entreno, pizarra con jugadas animadas, varios equipos, plan para clubes y supervisor. El vídeo en directo y los servidores donde se guardan tus datos tienen un coste que sube con cada partido que se emite. Con este precio cubrimos esos costes y podemos seguir mejorando la app sin anuncios y sin vender tus datos. Quien ya pagaba un precio anterior lo mantiene mientras no cancele.";
+  const precioProHtml = () =>
+    enAndroid
+      ? ""
+      : `<p class="price">39,99 € <small>al año · IVA incluido · unos 3,33 € al mes · cancela cuando quieras</small></p><details class="porque"><summary>¿Por qué cuesta esto?</summary><p>${POR_QUE_PRECIO.replace(/^¿Por qué 39,99 €\? /, "")}</p></details>`;
   const AYUDA = [
     {
       t: "Empezar",
@@ -2593,6 +2600,7 @@
         "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta. Con «Desactivar enlace» deja de funcionar.",
         "«Cámara: grabar el partido» graba vídeo con el marcador y el minuto dentro. Pon el móvil en horizontal. El vídeo se guarda solo en tu móvil. Grabar es gratis.",
         "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
+        "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
       ],
     },
@@ -2635,7 +2643,8 @@
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
         "El plan Pro quita los límites, permite varios equipos y emitir vídeo en el Directo.",
-        { texto: "El plan Pro cuesta 34,99 € al año (IVA incluido). Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
+        { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
+        { texto: POR_QUE_PRECIO, soloWeb: true },
       ],
     },
     {
@@ -2646,7 +2655,7 @@
         "<b>Si eres entrenador:</b> entra en «Mi cuenta › Plan para clubes», escribe el código que te ha dado tu club, marca que aceptas que el supervisor vea tus datos y pulsa «Unirme al club». Puedes dejar de compartirlos o salir del club cuando quieras; tus datos se quedan contigo.",
         "<b>Si eres el encargado del club:</b> en «Mi cuenta › Plan para clubes» escribe el nombre del club, pulsa «Crear el club» y elige el pack. Comparte el código con tus entrenadores (Copiar o WhatsApp). Desde ahí ves quién se ha unido, puedes quitar entrenadores y cambiar el código.",
         "<b>Supervisor del club:</b> el encargado es siempre supervisor y puede pulsar «Hacer supervisor» junto a otra persona del club (por ejemplo, el gerente o el director deportivo). Con el club pagado, el supervisor pulsa «Ver» junto a un entrenador y la app le enseña su plantilla, partidos, alineaciones y entrenamientos en <b>solo lectura</b>: arriba sale «Viendo a…» y el botón «Volver a mis datos».",
-        { texto: "Packs anuales: 5 entrenadores por 119 €, 10 por 199 €, 20 por 349 € y 30 por 469 € (IVA incluido).", soloWeb: true },
+        { texto: "Packs anuales: 5 entrenadores por 149 €, 10 por 259 €, 20 por 459 € y 30 por 599 € (IVA incluido). Cuantos más entrenadores, menos cuesta cada uno (de 29,80 € a 19,97 €).", soloWeb: true },
       ],
     },
     {
@@ -2763,18 +2772,18 @@
     let t, h;
     if (k === "proteam") {
       t = "Plan Pro";
-      h = `<p>En el plan gratuito tienes <b>un equipo</b> en cada modalidad.</p><p>Con el <b>plan Pro</b> puedes llevar <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, cada uno con su plantilla y sus partidos, y además jugadores y partidos ilimitados.</p>${enAndroid ? "" : `<p class="price">34,99 € <small>al año · IVA incluido · menos de 3 € al mes · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
+      h = `<p>En el plan gratuito tienes <b>un equipo</b> en cada modalidad.</p><p>Con el <b>plan Pro</b> puedes llevar <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, cada uno con su plantilla y sus partidos, y además jugadores y partidos ilimitados.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
     } else if (k === "proentreno") {
       t = "Plan Pro";
-      h = `<p>En el plan gratuito puedes guardar hasta <b>${MODES[state.mode].maxE} entrenamientos</b> en cada modalidad. Para hacer sitio, borra alguno antiguo.</p><p>Con el <b>plan Pro</b> tienes <b>entrenamientos ilimitados</b> para llevar la asistencia de toda la temporada, además de jugadores y partidos ilimitados y varios equipos.</p>${enAndroid ? "" : `<p class="price">34,99 € <small>al año · IVA incluido · menos de 3 € al mes · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
+      h = `<p>En el plan gratuito puedes guardar hasta <b>${MODES[state.mode].maxE} entrenamientos</b> en cada modalidad. Para hacer sitio, borra alguno antiguo.</p><p>Con el <b>plan Pro</b> tienes <b>entrenamientos ilimitados</b> para llevar la asistencia de toda la temporada, además de jugadores y partidos ilimitados y varios equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
     } else if (k === "pro") {
       let M = MODES[state.mode];
       t = "Plan Pro";
-      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${enAndroid ? "" : `<p class="price">34,99 € <small>al año · IVA incluido · menos de 3 € al mes · cancela cuando quieras</small></p>`}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
+      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 34,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button><button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button><button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
@@ -4045,25 +4054,35 @@
     }
   });
   /* Vídeo en la página pública: se conecta cuando el entrenador emite y se reconecta si cambia */
-  let pubVid = { desde: null, pc: null };
+  /* Máximo de personas viendo el vídeo a la vez (lo controla la Edge Function); cada espectador
+     avisa cada 30 s de que sigue mirando y, si lo deja, su sitio queda libre para otro. */
+  let pubVid = { desde: null, pc: null, sesion: null };
+  const pubLleno = (on) => {
+    let n = $("pubLleno");
+    if (n) n.classList.toggle("hidden", !on);
+  };
   async function pubVideo(desde) {
     let box = $("pubVid");
     if (!box || desde === pubVid.desde) return;
     pubVid.desde = desde;
     if (pubVid.pc) pubVid.pc.close();
     pubVid.pc = null;
+    pubVid.sesion = null;
     let v = box.querySelector("video");
     if (!desde) {
       box.classList.add("hidden");
+      pubLleno(false);
       v.srcObject = null;
       return;
     }
     try {
       let d = await vidFn({ accion: "ver", codigo: PUB });
+      if (pubVid.desde === desde) pubLleno(!!d.lleno);
       if (!d.video || pubVid.desde !== desde) {
         if (pubVid.desde === desde) pubVid.desde = null;
         return;
       }
+      pubVid.sesion = d.sesion;
       let pc = new RTCPeerConnection({ iceServers: VID_ICE, bundlePolicy: "max-bundle" }),
         ms = new MediaStream();
       pubVid.pc = pc;
@@ -4117,7 +4136,7 @@
     document.body.appendChild(box);
     document.title = "Directo · Mi Fútbol JV32";
     box.innerHTML = pubShell(
-      '<div id="pubVid" class="pub-vid hidden"><video playsinline autoplay muted controls aria-label="Vídeo del partido en directo"></video><button class="secondary small" data-pubsound>🔊 Activar sonido</button></div><div id="pubData"><p class="muted">Cargando el directo…</p></div>',
+      '<div id="pubVid" class="pub-vid hidden"><video playsinline autoplay muted controls aria-label="Vídeo del partido en directo"></video><button class="secondary small" data-pubsound>🔊 Activar sonido</button></div><p id="pubLleno" class="pro-fin hidden">El vídeo ya lo están viendo 25 personas, que es el máximo por partido. Sigue aquí el marcador; el vídeo te entrará solo en cuanto quede un sitio libre.</p><div id="pubData"><p class="muted">Cargando el directo…</p></div>',
     );
     box.addEventListener("click", (e) => {
       let b = e.target.closest("[data-pubsound]");
@@ -4131,6 +4150,32 @@
     setInterval(() => {
       if (document.visibilityState === "visible") pubLoad();
     }, 10000);
+    setInterval(async () => {
+      let ses = pubVid.sesion;
+      if (!ses) return;
+      try {
+        let d = await vidFn({ accion: "sigo", codigo: PUB, sesion: ses });
+        if (d.fuera && pubVid.sesion === ses) {
+          if (pubVid.pc) pubVid.pc.close();
+          pubVid.pc = null;
+          pubVid.sesion = null;
+          pubVid.desde = null;
+          $("pubVid").classList.add("hidden");
+          pubLleno(true);
+        }
+      } catch (e) {}
+    }, 30000);
+    window.addEventListener("pagehide", () => {
+      if (!pubVid.sesion) return;
+      try {
+        fetch(c.supabaseUrl + "/functions/v1/video-directo", {
+          method: "POST",
+          keepalive: true,
+          headers: { "Content-Type": "application/json", apikey: c.supabaseAnonKey },
+          body: JSON.stringify({ accion: "salgo", codigo: PUB, sesion: pubVid.sesion }),
+        });
+      } catch (e) {}
+    });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") pubLoad();
     });
