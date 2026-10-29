@@ -17,7 +17,7 @@ window.fetch=async(u,o)=>{if(!String(u).includes('/functions/v1/video-directo'))
   await pc.setRemoteDescription({type:'offer',sdp:b.sdp});await pc.setLocalDescription(await pc.createAnswer());await new Promise(r=>{if(pc.iceGatheringState==='complete')return r();pc.onicegatheringstatechange=()=>pc.iceGatheringState==='complete'&&r()});
   return J({sdp:pc.localDescription.sdp})}
  if(b.accion==='parar')return J({ok:true});
- if(b.accion==='ver'){if(!window.__hayVideo)return J({video:false});
+ if(b.accion==='ver'){if(window.__lleno)return J({video:false,lleno:true,max:25});if(!window.__hayVideo)return J({video:false});
   const cv=document.createElement('canvas');cv.width=320;cv.height=180;const g=cv.getContext('2d');
   setInterval(()=>{g.fillStyle='#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0');g.fillRect(0,0,320,180)},50);
   const pc=new RTCPeerConnection();window.__sfu.push(pc);cv.captureStream(20).getTracks().forEach(t=>pc.addTransceiver(t,{direction:'sendonly'}));
@@ -112,6 +112,13 @@ with sync_playwright() as p:
     check('botón para activar el sonido',pub.evaluate("!document.querySelector('#pubVid video').muted"))
     sin=page(b,pg.evaluate('window.__db'));sin.goto(URL+'?directo='+did);sin.wait_for_selector('#pub .lv-board');sin.wait_for_timeout(300)
     check('sin emisión no se pide vídeo ni se ve el reproductor',sin.evaluate('window.__fn.length')==0 and sin.locator('#pubVid').is_hidden())
+    ll=page(b,db,'window.__hayVideo=true;window.__lleno=true;');ll.goto(URL+'?directo='+did);ll.wait_for_selector('#pub .lv-board')
+    ll.wait_for_selector('#pubLleno:not(.hidden)',timeout=5000)
+    check('con 25 personas viendo el vídeo avisa y deja ver el marcador','25 personas' in ll.locator('#pubLleno').inner_text() and ll.locator('#pubVid').is_hidden() and ll.locator('.lv-score').count()==1)
+    ll.screenshot(path=OUT+'/video_lleno.png')
+    ll.evaluate("window.__lleno=false;document.dispatchEvent(new Event('visibilitychange'))")
+    ll.wait_for_selector('#pubVid:not(.hidden)',timeout=8000)
+    check('cuando queda un sitio libre el vídeo entra solo',ll.locator('#pubLleno').is_hidden())
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 if errs:print('\n'.join('FALLA consola: '+e for e in errs))

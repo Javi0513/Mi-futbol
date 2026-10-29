@@ -32,7 +32,7 @@ with sync_playwright() as p:
         pg.click('[data-action=add-player]');pg.wait_for_timeout(120)
         check(f'{name}: al llegar al límite sale el plan Pro (sin abrir formulario)',vis(pg,'#info') and pg.locator('#infoTitle').inner_text().lower()=='plan pro' and not vis(pg,'#modal'))
         txt=pg.locator('#infoBody').inner_text()
-        check(f'{name}: el aviso cita límites y precio',f'{mx} jugadores' in txt and '5 partidos' in txt and '34,99' in txt,txt[:90])
+        check(f'{name}: el aviso cita límites y precio',f'{mx} jugadores' in txt and '5 partidos' in txt and '39,99' in txt,txt[:90])
         pg.click('#closeInfo')
     pg.click('[data-mode="7"]');pg.click('[data-tab=partidos]');pg.wait_for_timeout(100)
     check('F7 partidos: contador 5/5',('5 / 5 partidos' in pg.locator('#view .muted').first.inner_text()),pg.locator('#view .muted').first.inner_text())
@@ -59,6 +59,6 @@ with sync_playwright() as p:
     pg3.click('[data-action=add-player]');pg3.wait_for_timeout(100);check('Pro: se abre el formulario aunque haya 14',vis(pg3,'#modal') and not vis(pg3,'#info'))
     pg3.click('#closeModal');pg3.click('#acct');check('Pro: cuenta dice sin límites',('sin límites' in pg3.locator('#infoBody').inner_text()) and 'pasar a pro' not in pg3.locator('#infoBody').inner_text().lower())
     # términos con precio
-    pg3.click('#info [data-info=terms]');tt=pg3.locator('#infoBody').inner_text();check('términos: plan Pro y límites',('34,99' in tt and 'Fútbol sala' in tt and '5 partidos' in tt))
+    pg3.click('#info [data-info=terms]');tt=pg3.locator('#infoBody').inner_text();check('términos: plan Pro y límites',('39,99' in tt and 'Fútbol sala' in tt and '5 partidos' in tt))
     b.close()
 print('\nPASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)

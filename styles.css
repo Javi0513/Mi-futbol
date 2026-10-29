@@ -1624,6 +1624,19 @@ label.chk a {
   font: 500 14px var(--fb);
   color: var(--mut);
 }
+.porque {
+  margin: 4px 0 12px;
+  color: var(--mut);
+  font-size: 14px;
+}
+.porque summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 600;
+}
+.porque p {
+  margin: 6px 0 0;
+}
 .pro-fin {
   border: 1px solid var(--line2);
   border-left: 4px solid var(--lime);

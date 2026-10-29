@@ -9,9 +9,9 @@ window.APP_CONFIG={
   portalUrl:'https://billing.stripe.com/p/login/test_00w4gz4S06fBaMC2NAcbC00',
   // Plan para clubes (v8.9): un enlace de pago de Stripe por cada pack anual
   clubPacks:[
-    {plazas:5, precio:'119', url:'https://buy.stripe.com/test_4gM00j3NW7jF7Aq5ZMcbC02'},
-    {plazas:10, precio:'199', url:'https://buy.stripe.com/test_14A28r3NWfQb2g687UcbC03'},
-    {plazas:20, precio:'349', url:'https://buy.stripe.com/test_cNi8wP1FO0Vh9Iybk6cbC04'},
-    {plazas:30, precio:'469', url:'https://buy.stripe.com/test_aFafZh2JSeM7g6WfAmcbC05'}
+    {plazas:5, precio:'149', url:'https://buy.stripe.com/test_4gM00j3NW7jF7Aq5ZMcbC02'},
+    {plazas:10, precio:'259', url:'https://buy.stripe.com/test_14A28r3NWfQb2g687UcbC03'},
+    {plazas:20, precio:'459', url:'https://buy.stripe.com/test_cNi8wP1FO0Vh9Iybk6cbC04'},
+    {plazas:30, precio:'599', url:'https://buy.stripe.com/test_aFafZh2JSeM7g6WfAmcbC05'}
   ]
 };
