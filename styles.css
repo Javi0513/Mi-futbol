@@ -3391,3 +3391,52 @@ body.presenting .dock {
 .lv-sub .out {
   color: var(--loss);
 }
+/* rival: cambios y tarjetas */
+.mdrow.r4 {
+  grid-template-columns: 52px 58px 1fr 64px 36px;
+}
+.lv-side {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.lv-side button {
+  flex: 1;
+  min-height: 42px;
+  border-radius: 12px;
+  background: var(--s2);
+  color: var(--mut);
+  border: 1px solid var(--line);
+  font: 700 16px var(--fd);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lv-side button.on {
+  background: var(--lime);
+  color: var(--on-lime);
+  border-color: var(--lime);
+}
+.lv-rf input {
+  font-size: 18px;
+  text-align: center;
+}
+.lv-e.rv {
+  border-style: dashed;
+  border-left-style: solid;
+}
+.lv-rv {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--s3, #1a3a2b);
+  color: var(--mut);
+  font-size: 12px;
+}
+.lv-sub > span,
+.lv-sub > small {
+  flex: none;
+  white-space: nowrap;
+}
+.lv-sub > small {
+  align-self: center;
+}

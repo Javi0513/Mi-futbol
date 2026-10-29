@@ -1125,8 +1125,23 @@
           (z, i) =>
             `<div class="mdrow">${min("tarjetas", i, z)}<label><small>Jugador</small><select data-md="tarjetas" data-i="${i}" data-k="pid" aria-label="Jugador de la tarjeta">${opt(z.pid, "Jugador…")}</select></label><label><small>Tarjeta</small><select data-md="tarjetas" data-i="${i}" data-k="c" aria-label="Color de la tarjeta"><option value="a" ${z.c !== "r" ? "selected" : ""}>🟨 Amarilla</option><option value="r" ${z.c === "r" ? "selected" : ""}>🟥 Roja</option></select></label>${del("tarjetas", i, "Quitar tarjeta")}</div>`,
         )
-        .join("");
-    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div></div>`;
+        .join(""),
+      rnum = (k, i, f, v, l) =>
+        `<label><small>${l}</small><input type="number" min="0" max="99" inputmode="numeric" data-md="${k}" data-i="${i}" data-k="${f}" value="${esc(v || "")}" placeholder="Nº" aria-label="${l}"></label>`,
+      cbR = mdList(al, "cambiosR")
+        .map(
+          (z, i) =>
+            `<div class="mdrow cb">${min("cambiosR", i, z)}${rnum("cambiosR", i, "sale", z.sale, "▼ Sale (dorsal)")}${rnum("cambiosR", i, "entra", z.entra, "▲ Entra (dorsal)")}${del("cambiosR", i, "Quitar cambio del rival")}</div>`,
+        )
+        .join(""),
+      tjR = mdList(al, "tarjetasR")
+        .map(
+          (z, i) =>
+            `<div class="mdrow r4">${min("tarjetasR", i, z)}${rnum("tarjetasR", i, "d", z.d, "Dorsal")}<label><small>Nombre</small><input data-md="tarjetasR" data-i="${i}" data-k="n" value="${esc(z.n || "")}" maxlength="30" placeholder="Opcional" aria-label="Nombre del jugador rival"></label><label><small>Tarjeta</small><select data-md="tarjetasR" data-i="${i}" data-k="c" aria-label="Color de la tarjeta"><option value="a" ${z.c !== "r" ? "selected" : ""}>🟨</option><option value="r" ${z.c === "r" ? "selected" : ""}>🟥</option></select></label>${del("tarjetasR", i, "Quitar tarjeta del rival")}</div>`,
+        )
+        .join(""),
+      rv = esc(d.rival || "Rival");
+    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div><h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
   }
   /* Duración del partido para calcular minutos: la del Directo si lo hay, si no la normal. */
   const mdTotal = (id) => {
@@ -1146,7 +1161,13 @@
       let k = a.dataset.mdadd;
       al[k] = mdList(al, k);
       if (al[k].length >= 40) return note("Demasiados en este partido.");
-      al[k].push(k === "cambios" ? { id: rid(), m: "", sale: "", entra: "" } : { id: rid(), m: "", pid: "", c: "a" });
+      al[k].push(
+        k === "cambios" || k === "cambiosR"
+          ? { id: rid(), m: "", sale: "", entra: "" }
+          : k === "tarjetasR"
+            ? { id: rid(), m: "", d: "", n: "", c: "a" }
+            : { id: rid(), m: "", pid: "", c: "a" },
+      );
     }
     if (r) {
       let k = r.dataset.mddel;
@@ -1855,7 +1876,15 @@
         .filter((z) => ok(z.pid))
         .map((z) => ({ ...z, m: Number(z.m) || 0, c: z.c === "r" ? "r" : "a" }))
         .sort(byMin);
-      ["cambios", "tarjetas"].forEach((k) => {
+      al.cambiosR = mdList(al, "cambiosR")
+        .filter((z) => z.sale || z.entra)
+        .map((z) => ({ ...z, m: Number(z.m) || 0 }))
+        .sort(byMin);
+      al.tarjetasR = mdList(al, "tarjetasR")
+        .filter((z) => z.d || z.n)
+        .map((z) => ({ ...z, m: Number(z.m) || 0, c: z.c === "r" ? "r" : "a" }))
+        .sort(byMin);
+      ["cambios", "tarjetas", "cambiosR", "tarjetasR"].forEach((k) => {
         if (!al[k].length) delete al[k];
       });
       ["capitan", "portero"].forEach((k) => {
@@ -2535,7 +2564,7 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
@@ -2624,7 +2653,7 @@
     {
       el: '[data-tab="partidos"]',
       t: "Partidos",
-      p: "Pulsa «+ Partido»: pon fecha y rival, marca convocados y titulares, elige la formación y arrastra a cada jugador a su sitio en el campo. Elige capitán y portero, y después apunta minutos, goles, cambios, tarjetas y el resultado.",
+      p: "Pulsa «+ Partido»: pon fecha y rival, marca convocados y titulares, elige la formación y arrastra a cada jugador a su sitio en el campo. Elige capitán y portero, y después apunta minutos, goles, cambios, tarjetas (también las del rival) y el resultado.",
     },
     {
       el: '[data-tab="partidos"]',
@@ -2747,6 +2776,7 @@
         "Después del partido apunta los minutos, los goles y el resultado.",
         "En <b>Datos del partido</b> (al crear o editar un partido) eliges el <b>capitán</b> y el <b>portero</b>. El capitán lleva una «C» y el portero sale de otro color en el campo y en la imagen. Si no eliges portero, es el que pongas en la portería (POR).",
         "Ahí mismo apuntas los <b>cambios</b> (minuto, quién sale y quién entra, con su dorsal) y las <b>tarjetas</b> amarillas y rojas. «Calcular minutos» rellena los minutos de cada jugador con los titulares, los cambios y las expulsiones.",
+        "Más abajo está el apartado del <b>rival</b>: sus cambios (dorsal que sale y dorsal que entra) y sus tarjetas (dorsal y nombre opcional), cada uno con su minuto.",
         "Los cambios y tarjetas que apuntes en el Directo aparecen solos aquí. Las tarjetas de cada jugador salen en su ficha de Plantilla y en Estadísticas.",
         "Puedes sacar una imagen de la alineación para mandarla por WhatsApp.",
       ],
@@ -2756,6 +2786,7 @@
       p: [
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
         "<b>Cambios</b>: pulsa «🔄 Cambio», elige quién sale y luego quién entra (salen con su dorsal). <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
+        "<b>Del rival</b>: al pulsar «🔄 Cambio», «Amarilla» o «Roja», elige arriba el nombre del rival. Pon el dorsal (en las tarjetas, también el nombre si quieres) y pulsa «Apuntar». Salen marcados con el nombre del rival.",
         "Debajo eliges el <b>capitán</b> y el <b>portero</b>. Al pulsar «Terminar partido», los minutos de cada jugador se calculan solos con los cambios.",
         "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta: ve el marcador, el minuto, los goles, los cambios y las tarjetas. Con «Desactivar enlace» deja de funcionar.",
         "«Cámara: grabar el partido» graba vídeo con el marcador y el minuto dentro. Pon el móvil en horizontal. El vídeo se guarda solo en tu móvil. Grabar es gratis.",
@@ -3449,7 +3480,10 @@
       if (k === "m") {
         let v = parseInt(e.target.value);
         z.m = v >= 0 ? Math.min(130, v) : "";
-      } else z[k] = e.target.value;
+      } else if (md.endsWith("R") && k !== "n" && k !== "c") {
+        let v = parseInt(e.target.value);
+        z[k] = v >= 0 && v <= 99 ? String(v) : "";
+      } else z[k] = k === "n" ? e.target.value.trim().slice(0, 30) : e.target.value;
       delete z.lv;
     }
   });
@@ -3535,12 +3569,13 @@
     let c = liveClock(x, now);
     return `<div class="lv-board"><div class="lv-team">${own ? `<input id="lvTeam" value="${esc(x.equipo)}" maxlength="60" aria-label="Nombre de tu equipo" title="Toca para cambiar el nombre de tu equipo">` : `<span>${esc(x.equipo)}</span>`}</div><div class="lv-score" role="img" aria-label="Marcador ${x.gf} a ${x.gc}"><b>${x.gf}</b><i>-</i><b>${x.gc}</b></div><div class="lv-team"><span>${esc(x.rival)}</span></div></div><div class="lv-clock${x.desde ? " run" : ""}"><span class="lv-st">${x.estado === "1T" || x.estado === "2T" ? "● " + LIVE_EST[x.estado] : x.estado === "pre" ? LIVE_EST.pre : ""}</span><b data-lvmin>${c[0]}</b><small data-lvss>${c[1]}</small></div>`;
   }
-  const lvN = (n, d) => (d ? d + " " : "") + (n || "Jugador");
+  const lvN = (n, d) => (n ? (d ? d + " " : "") + n : d ? "Dorsal " + d : "—");
   function liveEvents(x, own) {
     let am = {},
       all = (Array.isArray(x.eventos) ? x.eventos : []).map((e) => {
-        if (e.t === "a") am[e.pid || e.n] = (am[e.pid || e.n] || 0) + 1;
-        return { e, a2: e.t === "a" && am[e.pid || e.n] === 2 };
+        let q = e.r ? "r:" + (e.d || e.n) : e.pid || e.n;
+        if (e.t === "a") am[q] = (am[q] || 0) + 1;
+        return { e, a2: e.t === "a" && am[q] === 2 };
       }),
       ev = all.reverse(),
       Q = { s: "el cambio", a: "la tarjeta", r: "la tarjeta" };
@@ -3549,13 +3584,14 @@
         ? ev
             .map(({ e, a2 }) => {
               let m = Number(e.m) || 0,
+                rv = e.r ? ` <small class="lv-rv">${esc(x.rival)}</small>` : "",
                 body =
                   e.t === "s"
-                    ? `<span class="lv-sub"><span class="in">▲ ${esc(lvN(e.ni, e.di))}</span><span class="out">▼ ${esc(lvN(e.n, e.d))}</span></span>`
+                    ? `<span class="lv-sub"><span class="in">▲ ${esc(lvN(e.ni, e.di))}</span><span class="out">▼ ${esc(lvN(e.n, e.d))}</span>${rv}</span>`
                     : e.t === "a" || e.t === "r"
-                      ? `<span><i class="tj ${e.t}" aria-label="Tarjeta ${e.t === "r" ? "roja" : "amarilla"}"></i>${a2 ? '<i class="tj r" aria-label="y expulsión"></i>' : ""} ${esc(lvN(e.n, e.d))}${a2 ? " <small>2ª amarilla · expulsado</small>" : e.t === "r" ? " <small>expulsado</small>" : ""}</span>`
+                      ? `<span><i class="tj ${e.t}" aria-label="Tarjeta ${e.t === "r" ? "roja" : "amarilla"}"></i>${a2 ? '<i class="tj r" aria-label="y expulsión"></i>' : ""} ${esc(lvN(e.n, e.d))}${a2 ? " <small>2ª amarilla · expulsado</small>" : e.t === "r" ? " <small>expulsado</small>" : ""}${rv}</span>`
                       : `<span>⚽ ${esc(e.t === "c" ? x.rival : e.n ? lvN(e.n, e.d) : x.equipo)}${e.t !== "c" && e.n ? ` <small>${esc(x.equipo)}</small>` : ""}</span>`;
-              return `<div class="lv-e ${e.t === "c" ? "c" : e.t === "s" ? "s" : e.t === "a" || e.t === "r" ? "t " + e.t : "f"}"><b>${m}'</b>${body}${own ? `<button class="ib d" data-lvdel="${esc(e.id)}" aria-label="Quitar ${Q[e.t] || "el gol"} del minuto ${m}" title="Quitar">${ic("x", 18)}</button>` : ""}</div>`;
+              return `<div class="lv-e ${e.t === "c" ? "c" : e.t === "s" ? "s" : e.t === "a" || e.t === "r" ? "t " + e.t : "f"}${e.r ? " rv" : ""}"><b>${m}'</b>${body}${own ? `<button class="ib d" data-lvdel="${esc(e.id)}" aria-label="Quitar ${Q[e.t] || "el gol"} del minuto ${m}" title="Quitar">${ic("x", 18)}</button>` : ""}</div>`;
             })
             .join("")
         : '<p class="muted">Aún no hay goles, cambios ni tarjetas.</p>'
@@ -3567,6 +3603,7 @@
       fuera = new Set(),
       am = {};
     (Array.isArray(x.eventos) ? x.eventos : []).forEach((e) => {
+      if (e.r) return;
       if (e.t === "s") {
         on.delete(e.pid);
         if (e.pin && !fuera.has(e.pin)) on.add(e.pin);
@@ -3652,7 +3689,19 @@
           )
           .join(""),
       t,
-      list;
+      list,
+      side = k === "sub" || k === "a" || k === "r"
+        ? `<div class="lv-side" role="group" aria-label="¿De qué equipo?"><button class="${state.lvSide === "r" ? "" : "on"}" data-lvside="n">${esc(x.equipo)}</button><button class="${state.lvSide === "r" ? "on" : ""}" data-lvside="r">${esc(x.rival || "Rival")}</button></div>`
+        : "",
+      num = (id, l) => `<label>${l}<input id="${id}" type="number" min="0" max="99" inputmode="numeric" placeholder="Nº"></label>`;
+    if (side && state.lvSide === "r") {
+      t = k === "sub" ? "Cambio del rival" : `<i class="tj ${k}"></i>Tarjeta ${k === "r" ? "roja" : "amarilla"} al rival`;
+      return `<div class="lv-pick"><h3>${t}</h3>${side}<div class="formgrid lv-rf">${
+        k === "sub"
+          ? num("lvRs", "Dorsal que sale") + num("lvRe", "Dorsal que entra")
+          : num("lvRd", "Dorsal") + '<label>Nombre (opcional)<input id="lvRn" maxlength="30" autocomplete="off"></label>'
+      }</div><div class="lv-ctl"><button class="primary" data-live="rok">Apuntar</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`;
+    }
     if (k === "sub") {
       t = "Cambio · ¿Quién sale?";
       list = L([...c.on]) || '<span class="muted">No hay nadie en el campo.</span>';
@@ -3663,7 +3712,34 @@
       t = `<i class="tj ${k}"></i>Tarjeta ${k === "r" ? "roja" : "amarilla"} · ¿A quién?`;
       list = L(ids.filter((id) => !c.fuera.has(id)));
     }
-    return `<div class="lv-pick"><h3>${t}</h3><div class="slotmenu">${list}<button class="danger" data-live="nopick">Cancelar</button></div></div>`;
+    return `<div class="lv-pick"><h3>${t}</h3>${side}<div class="slotmenu">${list}<button class="danger" data-live="nopick">Cancelar</button></div></div>`;
+  }
+  /* Cambio o tarjeta del rival: solo dorsales (y nombre opcional) */
+  function liveRival(x) {
+    let k = state.lvPick,
+      v = (id) => {
+        let n = parseInt(($(id) || {}).value);
+        return n >= 0 && n <= 99 ? String(n) : "";
+      },
+      e = { id: rid(), m: liveMin(x), t: k === "sub" ? "s" : k, r: 1 };
+    if (k === "sub") {
+      e.d = v("lvRs");
+      e.di = v("lvRe");
+      if (!e.d && !e.di) return note("Pon el dorsal del que sale o del que entra.");
+    } else {
+      e.d = v("lvRd");
+      let n = (($("lvRn") || {}).value || "").trim().slice(0, 30);
+      if (n) e.n = n;
+      if (!e.d && !n) return note("Pon el dorsal o el nombre del jugador.");
+    }
+    if (!e.d) delete e.d;
+    if (!e.di) delete e.di;
+    if (!Array.isArray(x.eventos)) x.eventos = [];
+    if (x.eventos.length >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
+    x.eventos.push(e);
+    state.lvPick = null;
+    liveSave(x, () => liveMatch(x, null, 0));
+    render();
   }
   async function openLive(id) {
     let m = state.matches.find((z) => z.id === id);
@@ -3747,19 +3823,27 @@
     let al = m.alineacion,
       ev = Array.isArray(x.eventos) ? x.eventos : [],
       mano = (k) => mdList(al, k).filter((z) => !z.lv),
-      hay = new Set(mano("cambios").concat(mano("tarjetas")).map((z) => z.id)),
-      byMin = (a, b) => (Number(a.m) || 0) - (Number(b.m) || 0);
+      hay = new Set(["cambios", "tarjetas", "cambiosR", "tarjetasR"].flatMap(mano).map((z) => z.id)),
+      byMin = (a, b) => (Number(a.m) || 0) - (Number(b.m) || 0),
+      dv = (v) => (v == null ? "" : String(v));
     al.cambios = mano("cambios")
-      .concat(ev.filter((z) => z.t === "s" && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, sale: z.pid || "", entra: z.pin || "", lv: 1 })))
+      .concat(ev.filter((z) => z.t === "s" && !z.r && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, sale: z.pid || "", entra: z.pin || "", lv: 1 })))
       .sort(byMin);
     al.tarjetas = mano("tarjetas")
-      .concat(ev.filter((z) => (z.t === "a" || z.t === "r") && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, pid: z.pid || "", c: z.t, lv: 1 })))
+      .concat(ev.filter((z) => (z.t === "a" || z.t === "r") && !z.r && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, pid: z.pid || "", c: z.t, lv: 1 })))
       .sort(byMin);
-    ["cambios", "tarjetas"].forEach((k) => {
+    /* Del rival no hay plantilla: se guarda el dorsal (y el nombre si lo pones) */
+    al.cambiosR = mano("cambiosR")
+      .concat(ev.filter((z) => z.t === "s" && z.r && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, sale: dv(z.d), entra: dv(z.di), lv: 1 })))
+      .sort(byMin);
+    al.tarjetasR = mano("tarjetasR")
+      .concat(ev.filter((z) => (z.t === "a" || z.t === "r") && z.r && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, d: dv(z.d), n: z.n || "", c: z.t, lv: 1 })))
+      .sort(byMin);
+    ["cambios", "tarjetas", "cambiosR", "tarjetasR"].forEach((k) => {
       if (!al[k].length) delete al[k];
     });
     /* Al terminar, los minutos de cada jugador salen solos de los cambios */
-    if (fin && (ev.some((z) => z.t !== "f" && z.t !== "c") || entries(m).every((z) => !Number(z.minutes)))) {
+    if (fin && (ev.some((z) => z.t !== "f" && z.t !== "c" && !z.r) || entries(m).every((z) => !Number(z.minutes)))) {
       let mins = calcMin(entries(m), mdList(al, "cambios"), mdList(al, "tarjetas"), (Number(x.parte_min) || 30) * 2);
       entries(m).forEach((z) => (z.minutes = Math.round(mins[z.id] || 0)));
     }
@@ -3856,7 +3940,12 @@
     let b = e.target.closest("[data-live]"),
       sc = e.target.closest("[data-scorer]"),
       dl = e.target.closest("[data-lvdel]"),
-      lp = e.target.closest("[data-lvp]");
+      lp = e.target.closest("[data-lvp]"),
+      sd = e.target.closest("[data-lvside]");
+    if (sd) {
+      state.lvSide = sd.dataset.lvside;
+      return render();
+    }
     if (lp && state.lvPick) {
       let k = state.lvPick,
         id = lp.dataset.lvp;
@@ -3886,8 +3975,10 @@
       state.lvPick = null;
       return render();
     }
+    if (k === "rok") return liveRival(x);
     if (k === "sub" || k === "ta" || k === "tr") {
       state.livePick = false;
+      state.lvSide = "n";
       state.lvPick = k === "sub" ? "sub" : k === "ta" ? "a" : "r";
       return render();
     }
