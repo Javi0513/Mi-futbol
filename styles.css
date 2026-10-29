@@ -2763,3 +2763,188 @@ a.pack {
 .cm-b:empty {
   display: none !important;
 }
+/* dorsales */
+.dor {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 5px;
+  margin-right: 7px;
+  border-radius: 7px;
+  background: var(--lime);
+  color: var(--on-lime);
+  font: 800 16px/1 var(--fd);
+  vertical-align: 2px;
+}
+.slot button.fill {
+  position: relative;
+}
+.slot button .dn {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1px 0 3px;
+  background: rgba(3, 20, 10, 0.8);
+  color: var(--lime);
+  font: 800 13px/1 var(--fd);
+  font-style: normal;
+  pointer-events: none;
+}
+/* pizarra: fichas y jugada */
+.badd,
+.bsteps {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0 0 10px;
+}
+.badd-l {
+  font: 800 13px/1 var(--fd);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mut);
+  margin-right: 2px;
+}
+.badd > button {
+  min-height: 40px;
+  padding: 0 10px 0 6px;
+  border-radius: 12px;
+  background: var(--s3);
+  color: var(--ink);
+  border: 1px solid var(--line2);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 700 15px/1 var(--fd);
+  letter-spacing: 0.03em;
+}
+.badd > button:hover,
+.badd > button[aria-expanded="true"] {
+  border-color: var(--lime);
+}
+.bmenu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 230px;
+  max-width: calc(100vw - 40px);
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--s2);
+  border: 1px solid var(--line2);
+  box-shadow: 0 14px 30px #000a;
+  display: grid;
+  gap: 2px;
+}
+.bmenu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: 600 16px/1.2 var(--fb);
+}
+.bmenu button:hover {
+  background: var(--s3);
+}
+.bdn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--on-lime);
+  border: 2px solid #fff;
+  font: 800 14px/1 var(--fd);
+  font-style: normal;
+  flex: none;
+}
+.bst-n {
+  min-width: 92px;
+  text-align: center;
+  font: 800 18px/1 var(--fd);
+  letter-spacing: 0.04em;
+}
+.bsteps .ib[disabled],
+.bsteps button[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+.board.playing #bcanvas {
+  cursor: default;
+}
+.board.present .badd,
+.board.present .bsteps {
+  margin-bottom: 6px;
+}
+@media (max-width: 700px) {
+  .badd {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .badd > button {
+    flex: none;
+  }
+  .bmenu {
+    position: fixed;
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom) + 90px);
+    left: 16px;
+    right: 16px;
+    max-width: none;
+  }
+  .bst-n {
+    min-width: 76px;
+    font-size: 16px;
+  }
+}
+.btools .seg {
+  display: flex;
+  margin-bottom: 0;
+}
+.bst-go {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+@media (max-width: 700px) {
+  .btools .seg button {
+    padding: 0 8px;
+  }
+  .bst-go {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+  .bst-go .small {
+    flex: 1 1 0;
+  }
+  .bsteps > .badd-l {
+    display: none;
+  }
+  .bsteps .small[data-b="addstep"] {
+    flex: 1 1 auto;
+    padding: 0 8px;
+  }
+  .bst-n {
+    min-width: 70px;
+  }
+}
+/* Presentar: la pizarra ocupa toda la pantalla (sin cabecera ni barra de abajo encima). */
+body.presenting .head,
+body.presenting .dock {
+  visibility: hidden;
+}

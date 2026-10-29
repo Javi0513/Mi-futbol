@@ -123,6 +123,7 @@
     trOk: false,
     trMonth: "",
     trDay: "",
+    boardMenu: false,
   };
   const MODES = {
     7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, maxE: 5, cap: 14 },
@@ -222,6 +223,11 @@
     undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
     whistle:
       '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+    play: '<path d="M7 4.5v15l12-7.5z"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+    left: '<path d="m15 18-6-6 6-6"/>',
+    right: '<path d="m9 18 6-6-6-6"/>',
+    film: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>',
     maximize:
       '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   };
@@ -303,6 +309,11 @@
     entries = (m) =>
       Array.isArray(m.participaciones) ? m.participaciones : [],
     name = (id) => state.players.find((p) => p.id === id)?.nombre || "Jugador";
+  /* Dorsal del jugador como texto ("" si no tiene). */
+  const dorsal = (p) => {
+    let n = p ? parseInt(p.dorsal) : NaN;
+    return n >= 0 && n <= 99 ? String(n) : "";
+  };
   function parseJson(v, fb) {
     if (v && typeof v === "object") return v;
     try {
@@ -436,6 +447,7 @@
       key =
         state.mode + state.tab + (state.draft ? "e" : "") + (state.live ? "l" : "");
     if (state.tab !== "pizarra" || state.draft) state.present = false;
+    document.body.classList.toggle("presenting", !!state.present);
     document.body.classList.toggle(
       "tab-pizarra",
       state.tab === "pizarra" && !state.draft,
@@ -596,7 +608,7 @@
         ? r
             .map((p) => {
               let t = totals(p.id);
-              return `<div class="row" data-pid="${p.id}">${avatar(p, true)}<div class="info"><strong>${esc(p.nombre)}</strong>${mini(t)}</div><div class="actions"><button class="ib" data-action="edit-player" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-player" data-id="${p.id}" aria-label="Borrar ${esc(p.nombre)}" title="Borrar">${ic("trash")}</button></div></div>`;
+              return `<div class="row" data-pid="${p.id}">${avatar(p, true)}<div class="info"><strong>${dorsal(p) ? `<span class="dor" aria-label="Dorsal ${dorsal(p)}">${dorsal(p)}</span>` : ""}${esc(p.nombre)}</strong>${mini(t)}</div><div class="actions"><button class="ib" data-action="edit-player" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-player" data-id="${p.id}" aria-label="Borrar ${esc(p.nombre)}" title="Borrar">${ic("trash")}</button></div></div>`;
             })
             .join("")
         : empty(
@@ -998,7 +1010,7 @@
       .map((s, i) => {
         let pid = slots[i],
           pl = pid && state.players.find((x) => x.id === pid);
-        return `<div class="slot" style="left:${s[1]}%;top:${s[2]}%"><button data-slot="${i}" class="${pid ? "fill" : ""} ${state.selectedSlot === i ? "sel" : ""}" aria-label="${pid ? esc(name(pid)) + " en " + s[0] : "Posición " + s[0] + " libre"}" title="${pid ? "Arrastra para mover" : "Elegir jugador"}">${pid ? (pl && pl.foto && pl.foto.startsWith("data:") ? `<img src="${esc(pl.foto)}" alt="">` : esc((name(pid)[0] || "?").toUpperCase())) : "+"}</button><span>${pid ? esc(name(pid)) : s[0]}</span></div>`;
+        return `<div class="slot" style="left:${s[1]}%;top:${s[2]}%"><button data-slot="${i}" class="${pid ? "fill" : ""} ${state.selectedSlot === i ? "sel" : ""}" aria-label="${pid ? esc(name(pid)) + " en " + s[0] : "Posición " + s[0] + " libre"}" title="${pid ? "Arrastra para mover" : "Elegir jugador"}">${pid ? (pl && pl.foto && pl.foto.startsWith("data:") ? `<img src="${esc(pl.foto)}" alt="">${dorsal(pl) ? `<em class="dn">${dorsal(pl)}</em>` : ""}` : esc(dorsal(pl) || (name(pid)[0] || "?").toUpperCase())) : "+"}</button><span>${pid ? esc(name(pid)) : s[0]}</span></div>`;
       })
       .join("")}</div>
 <div class="slotmenu">${
@@ -1190,6 +1202,11 @@
         o.players.find((p) => p.id === id) ||
         {}
       ).nombre || "Jugador";
+    const dn = (id) =>
+      dorsal(
+        state.players.find((p) => p.id === id) ||
+          o.players.find((p) => p.id === id),
+      );
     const cssImg = (v) =>
       new Promise((res) => {
         let u = getComputedStyle(document.documentElement)
@@ -1430,13 +1447,28 @@
         g.fillStyle = "#03140a";
         g.font = `800 58px ${ff}`;
         g.textAlign = "center";
-        g.fillText((nm(id)[0] || "?").toUpperCase(), px, py + 19);
+        g.fillText(dn(id) || (nm(id)[0] || "?").toUpperCase(), px, py + 19);
       }
       g.beginPath();
       g.arc(px, py, R0, 0, Math.PI * 2);
       g.strokeStyle = "#d6ffe4";
       g.lineWidth = 5;
       g.stroke();
+      if (imgs[id] && dn(id)) {
+        let bx = px + R0 * 0.72,
+          by = py - R0 * 0.72;
+        g.beginPath();
+        g.arc(bx, by, 24, 0, Math.PI * 2);
+        g.fillStyle = LIME;
+        g.fill();
+        g.lineWidth = 4;
+        g.strokeStyle = "#03140a";
+        g.stroke();
+        g.fillStyle = "#03140a";
+        g.font = `800 30px ${ff}`;
+        g.textAlign = "center";
+        g.fillText(dn(id), bx, by + 10);
+      }
       g.font = `700 34px ${ff}`;
       let t = clipName(g, nm(id), maxW),
         w = g.measureText(t).width + 28;
@@ -1447,11 +1479,11 @@
       g.textAlign = "center";
       g.fillText(t, px, py + R0 + 10 + 33);
     });
-    if (o.strokes && o.strokes.length) {
+    if (o.paint) {
       g.save();
       rr(g, fx, fy, fw, fh, 36);
       g.clip();
-      paintStrokes(g, o.strokes, fx, fy, fw, fh, 10);
+      o.paint(g, fx, fy, fw, fh);
       g.restore();
     }
     let sup = (o.players || []).filter((p) => !p.starter).map((p) => nm(p.id));
@@ -1580,7 +1612,10 @@
       original = state.players.find((p) => p.id === state.playerId),
       foto = original?.foto || "";
     if (file) foto = await resize(file);
-    let payload = { modalidad: state.mode, nombre: name, foto };
+    let dv = String(form.dorsal.value || "").trim(),
+      dn = parseInt(dv);
+    if (dv && !(dn >= 0 && dn <= 99)) throw Error("El dorsal tiene que ser un número del 0 al 99.");
+    let payload = { modalidad: state.mode, nombre: name, foto, dorsal: dv ? dn : null };
     if (!original && curTeam()) payload.equipo_id = curTeam();
     if (!original && full("p")) {
       $("modal").classList.add("hidden");
@@ -1591,18 +1626,31 @@
       payload.id = crypto.randomUUID();
       payload.owner_id = (await db.auth.getUser()).data.user.id;
     }
-    let q = original
-      ? db
-          .from("futbol_personal_jugadores")
-          .update(payload)
-          .eq("id", original.id)
-      : db.from("futbol_personal_jugadores").insert(payload);
-    let { error } = await q;
+    const send = () =>
+      original
+        ? db
+            .from("futbol_personal_jugadores")
+            .update(payload)
+            .eq("id", original.id)
+        : db.from("futbol_personal_jugadores").insert(payload);
+    let { error } = await send(),
+      sinDorsal = false;
+    /* Si la base de datos aún no tiene la columna del dorsal, se guarda el resto. */
+    if (error && /dorsal/i.test(error.message || "")) {
+      delete payload.dorsal;
+      sinDorsal = !!dv;
+      ({ error } = await send());
+    }
     if (error) throw error;
     $("modal").classList.add("hidden");
     state.playerId = null;
     await load();
-    note("Jugador guardado.", true);
+    note(
+      sinDorsal
+        ? "Jugador guardado, pero el dorsal aún no se puede guardar: falta activarlo en el servidor."
+        : "Jugador guardado.",
+      !sinDorsal,
+    );
   }
   async function resize(file) {
     if (!file.type.startsWith("image/"))
@@ -2011,9 +2059,7 @@
         localStorage.removeItem("mf_pizarra_v1");
         Object.keys(MODES).forEach((k) => {
           if (boardState[k]) {
-            boardState[k].strokes = [];
-            boardState[k].hist = [];
-            boardState[k].bg = "";
+            boardState[k] = blankBoard();
           }
         });
         localStorage.setItem("mf_pizarra_uid", u.id);
@@ -2419,7 +2465,7 @@
     {
       el: '[data-tab="pizarra"]',
       t: "Pizarra táctica",
-      p: "Mueve las fichas, dibuja jugadas con el dedo, ponla a pantalla completa para explicarla y guárdala como imagen.",
+      p: "Pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Crea pasos y pulsa «Ver jugada» para verla en movimiento, o sácala en imagen o vídeo.",
     },
     {
       el: '[data-tab="resumen"]',
@@ -2512,7 +2558,8 @@
     {
       t: "Plantilla",
       p: [
-        "Pulsa «+ Jugador» y escribe el nombre. Si quieres, añade su foto.",
+        "Pulsa «+ Jugador» y escribe el nombre. Si quieres, añade su <b>dorsal</b> (el número de su camiseta) y su foto.",
+        "El dorsal sale junto a su nombre, en el campo de la alineación, en la imagen para WhatsApp y en la pizarra.",
         "Toca el lápiz para editar a un jugador y su foto para verla en grande.",
       ],
     },
@@ -2551,8 +2598,11 @@
     {
       t: "Pizarra táctica",
       p: [
-        "Mueve las fichas, dibuja jugadas con el dedo y ponla a pantalla completa para explicarla.",
-        "Puedes guardarla como imagen.",
+        "Con <b>Añadir</b> pones en el campo jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
+        "Al pulsar «Jugador» eliges a uno de tu plantilla (sale con su dorsal) o una ficha con número. Con «Poner titulares» llevas al campo la alineación de un partido.",
+        "Con el lápiz y la flecha dibujas encima. La goma borra la línea o la ficha que toques.",
+        "<b>Jugada en movimiento</b>: coloca las fichas, pulsa «+ Paso» y arrástralas a donde se mueven (verás una flecha del sitio anterior). Repite para cada paso. «Ver jugada» las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo.",
+        "Ponla a pantalla completa con «Presentar» para explicarla, guárdala como <b>imagen</b> o saca un <b>vídeo</b> de la jugada para mandarlo por WhatsApp. La pizarra se guarda en tu móvil.",
       ],
     },
     {
@@ -3127,6 +3177,7 @@
         let p = state.players.find((x) => x.id === id);
         state.playerId = id;
         $("playerForm").nombre.value = p.nombre;
+        $("playerForm").dorsal.value = dorsal(p);
         $("modalTitle").textContent = "Editar jugador";
         openModal();
       }
@@ -4037,16 +4088,68 @@
   }
   if (PUB) startPub();
 
+  /* Pizarra: trazos (lápiz/flecha) + fichas que se arrastran (jugadores, rivales,
+     balón y material) + jugada por pasos. Cada ficha guarda su posición en cada
+     paso (p[i]); al reproducir se mueven de un paso al siguiente. Todo en coordenadas
+     0..1 del campo y guardado solo en el dispositivo. */
+  const BK = {
+    own: "Jugador",
+    riv: "Rival",
+    ball: "Balón",
+    cone: "Cono",
+    hurdle: "Valla",
+    pole: "Pica",
+    goal: "Portería",
+  };
+  const BKI = {
+    own: '<circle cx="12" cy="12" r="8" fill="#2be36a" stroke="#fff" stroke-width="2"/>',
+    riv: '<circle cx="12" cy="12" r="8" fill="#ff4d5e" stroke="#fff" stroke-width="2"/>',
+    ball: '<circle cx="12" cy="12" r="6" fill="#fff" stroke="#111" stroke-width="1.5"/><circle cx="12" cy="12" r="2" fill="#111"/>',
+    cone: '<path d="M12 4 19 19H5z" fill="#ff8a1f" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>',
+    hurdle: '<rect x="3" y="10" width="18" height="5" rx="1.5" fill="#ffd60a" stroke="#fff" stroke-width="1.2"/><path d="M8 10v5M12 10v5M16 10v5" stroke="#3a2f00" stroke-width="1.4"/>',
+    pole: '<path d="M12 3v18" stroke="#ffd60a" stroke-width="4" stroke-linecap="round"/><path d="M12 7v3M12 14v3" stroke="#ff4d5e" stroke-width="4"/>',
+    goal: '<path d="M4 7v10h16V7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M4 11h16M4 14h16M9 7v10M15 7v10" stroke="#fff" stroke-width=".8" opacity=".6"/>',
+  };
+  const BCOL = { own: "#2be36a", riv: "#ff4d5e", ball: "#ffffff" };
   const boardState = {};
+  const cleanItems = (L, n) =>
+    (Array.isArray(L) ? L : [])
+      .filter((i) => i && BK[i.k] && Array.isArray(i.p) && i.p.length)
+      .map((i) => {
+        let p = i.p.filter((q) => Array.isArray(q) && q.length === 2).slice(0, n);
+        while (p.length < n) p.push((p[p.length - 1] || [0.5, 0.5]).slice());
+        return {
+          id: String(i.id || Math.random().toString(36).slice(2)),
+          k: i.k,
+          n: String(i.n || "").slice(0, 3),
+          pid: i.pid || "",
+          r: Number(i.r) || 0,
+          p,
+        };
+      });
+  const blankBoard = () => ({
+    strokes: [],
+    items: [],
+    steps: 1,
+    step: 0,
+    hist: [],
+    bg: "",
+    color: "#ffd60a",
+    tool: "pen",
+  });
   try {
     let r = JSON.parse(localStorage.getItem("mf_pizarra_v1") || "{}");
     Object.keys(MODES).forEach((k) => {
-      let x = r[k] || {};
+      let x = r[k] || {},
+        n = Math.min(20, Math.max(1, parseInt(x.steps) || 1));
       boardState[k] = {
+        ...blankBoard(),
         strokes: Array.isArray(x.strokes)
           ? x.strokes.filter((s) => s && Array.isArray(s.p))
           : [],
-        hist: [],
+        items: cleanItems(x.items, n),
+        steps: n,
+        step: Math.min(n - 1, Math.max(0, parseInt(x.step) || 0)),
         bg: x.bg || "",
         color: x.color || "#ffd60a",
         tool: x.tool || "pen",
@@ -4054,24 +4157,39 @@
     });
   } catch (e) {}
   const bd = () =>
-    boardState[state.mode] ||
-    (boardState[state.mode] = {
-      strokes: [],
-      hist: [],
-      bg: "",
-      color: "#ffd60a",
-      tool: "pen",
-    });
+    boardState[state.mode] || (boardState[state.mode] = blankBoard());
   function saveBoard() {
     try {
       let o = {};
       Object.keys(boardState).forEach((k) => {
         let x = boardState[k];
-        o[k] = { strokes: x.strokes, bg: x.bg, color: x.color, tool: x.tool };
+        o[k] = {
+          strokes: x.strokes,
+          items: x.items,
+          steps: x.steps,
+          step: x.step,
+          bg: x.bg,
+          color: x.color,
+          tool: x.tool,
+        };
       });
       let s = JSON.stringify(o);
       if (s.length < 900000) localStorage.setItem("mf_pizarra_v1", s);
     } catch (e) {}
+  }
+  const snap = (b) =>
+    JSON.stringify({ s: b.strokes, i: b.items, n: b.steps, c: b.step });
+  function pushHist(b) {
+    b.hist.push(snap(b));
+    if (b.hist.length > 60) b.hist.shift();
+  }
+  function restoreHist(b, h) {
+    let x = JSON.parse(h);
+    if (Array.isArray(x)) x = { s: x, i: b.items, n: b.steps, c: b.step };
+    b.strokes = x.s || [];
+    b.steps = x.n || 1;
+    b.items = cleanItems(x.i, b.steps);
+    b.step = Math.min(b.steps - 1, x.c || 0);
   }
   function paintStrokes(g, list, x0, y0, w, h, lw) {
     g.save();
@@ -4103,38 +4221,300 @@
           j = k;
         while (j > 0 && Math.hypot(e[0] - P[j][0], e[1] - P[j][1]) < lw * 3)
           j--;
-        if (j < k) {
-          let a = Math.atan2(e[1] - P[j][1], e[0] - P[j][0]),
-            L = lw * 4.4;
-          g.shadowBlur = 0;
-          g.beginPath();
-          g.moveTo(
-            e[0] + Math.cos(a) * lw * 0.6,
-            e[1] + Math.sin(a) * lw * 0.6,
-          );
-          g.lineTo(e[0] - L * Math.cos(a - 0.5), e[1] - L * Math.sin(a - 0.5));
-          g.lineTo(e[0] - L * Math.cos(a + 0.5), e[1] - L * Math.sin(a + 0.5));
-          g.closePath();
-          g.fill();
-        }
+        if (j < k) arrowHead(g, P[j], e, lw);
       }
     });
     g.restore();
   }
-  function boardTokens() {
-    let m = state.matches.find((x) => x.id === bd().bg);
-    if (!m) return "";
-    let a = m.alineacion || {},
-      f = formations[m.modalidad][a.formation];
-    if (!f) return "";
-    return f
-      .map((s, i) => {
-        let pid = (a.slots || {})[i];
-        if (!pid) return "";
-        let pl = state.players.find((x) => x.id === pid);
-        return `<div class="slot tk" style="left:${s[1]}%;top:${s[2]}%"><button class="fill" tabindex="-1" aria-hidden="true">${pl && pl.foto && pl.foto.startsWith("data:") ? `<img src="${esc(pl.foto)}" alt="">` : esc((name(pid)[0] || "?").toUpperCase())}</button><span>${esc(name(pid))}</span></div>`;
-      })
-      .join("");
+  function arrowHead(g, from, e, lw) {
+    let a = Math.atan2(e[1] - from[1], e[0] - from[0]),
+      L = lw * 4.4;
+    g.save();
+    g.shadowBlur = 0;
+    g.setLineDash([]);
+    g.beginPath();
+    g.moveTo(e[0] + Math.cos(a) * lw * 0.6, e[1] + Math.sin(a) * lw * 0.6);
+    g.lineTo(e[0] - L * Math.cos(a - 0.5), e[1] - L * Math.sin(a - 0.5));
+    g.lineTo(e[0] - L * Math.cos(a + 0.5), e[1] - L * Math.sin(a + 0.5));
+    g.closePath();
+    g.fill();
+    g.restore();
+  }
+  /* Tamaño base de las fichas según el ancho del campo y la modalidad. */
+  const tokU = (w, mode) => w * (mode === "11" ? 0.031 : 0.038);
+  const ORD = { goal: 0, hurdle: 1, pole: 2, cone: 3, riv: 4, own: 5, ball: 6 };
+  const byOrd = (L) => L.slice().sort((a, b) => ORD[a.k] - ORD[b.k]);
+  /* Etiqueta de una ficha: dorsal del jugador (si lo tiene), su inicial o el número puesto. */
+  function itemLabel(it) {
+    if (it.k === "own" && it.pid) {
+      let p = state.players.find((x) => x.id === it.pid);
+      if (p) return dorsal(p) || (p.nombre[0] || "?").toUpperCase();
+    }
+    return it.n;
+  }
+  function itemName(it) {
+    if (it.k !== "own" || !it.pid) return "";
+    let p = state.players.find((x) => x.id === it.pid);
+    return p ? p.nombre.split(" ")[0] : "";
+  }
+  /* Dibuja trayectorias (del paso anterior al actual) y fichas. pos(it) da la posición 0..1. */
+  function paintScene(g, b, x0, y0, w, h, pos, trails) {
+    let u = tokU(w, state.mode),
+      ff = '"Barlow Condensed","Arial Narrow",Impact,sans-serif',
+      XY = (q) => [x0 + q[0] * w, y0 + q[1] * h];
+    g.save();
+    g.lineCap = "round";
+    g.lineJoin = "round";
+    if (trails && b.step > 0)
+      b.items.forEach((it) => {
+        let a = XY(it.p[b.step - 1]),
+          c = XY(it.p[b.step]),
+          d = Math.hypot(c[0] - a[0], c[1] - a[1]);
+        if (d < u * 0.6) return;
+        let col = BCOL[it.k] || "#e8f5d8",
+          lw = Math.max(2, u * 0.13),
+          stop = it.k === "ball" ? u * 0.6 : it.k === "own" || it.k === "riv" ? u * 1.1 : u * 0.9,
+          e = [c[0] - ((c[0] - a[0]) / d) * stop, c[1] - ((c[1] - a[1]) / d) * stop];
+        g.strokeStyle = col;
+        g.fillStyle = col;
+        g.globalAlpha = 0.9;
+        g.lineWidth = lw;
+        g.setLineDash(it.k === "ball" ? [] : [u * 0.42, u * 0.32]);
+        g.beginPath();
+        g.moveTo(a[0], a[1]);
+        g.lineTo(e[0], e[1]);
+        g.stroke();
+        arrowHead(g, a, e, lw);
+        g.globalAlpha = 1;
+      });
+    g.setLineDash([]);
+    byOrd(b.items).forEach((it) => {
+      let [x, y] = XY(pos(it));
+      g.save();
+      g.translate(x, y);
+      g.shadowColor = "rgba(0,0,0,.5)";
+      g.shadowBlur = u * 0.35;
+      g.shadowOffsetY = u * 0.08;
+      if (it.k === "own" || it.k === "riv") {
+        g.beginPath();
+        g.arc(0, 0, u, 0, Math.PI * 2);
+        g.fillStyle = BCOL[it.k];
+        g.fill();
+        g.shadowBlur = 0;
+        g.shadowOffsetY = 0;
+        g.lineWidth = Math.max(1.5, u * 0.14);
+        g.strokeStyle = "#ffffff";
+        g.stroke();
+        let t = itemLabel(it);
+        g.fillStyle = it.k === "own" ? "#03140a" : "#ffffff";
+        g.font = `800 ${Math.round(u * (t.length > 2 ? 0.85 : 1.15))}px ${ff}`;
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText(t, 0, u * 0.08);
+        let nmx = itemName(it);
+        if (nmx) {
+          g.font = `700 ${Math.round(u * 0.62)}px ${ff}`;
+          nmx = clipTxt(g, nmx, u * 3.4);
+          let tw = g.measureText(nmx).width + u * 0.5;
+          rr(g, -tw / 2, u * 1.2, tw, u * 0.82, u * 0.3);
+          g.fillStyle = "rgba(5,15,10,.86)";
+          g.fill();
+          g.fillStyle = "#f1f7ea";
+          g.fillText(nmx, 0, u * 1.63);
+        }
+      } else if (it.k === "ball") {
+        let r = u * 0.48;
+        g.beginPath();
+        g.arc(0, 0, r, 0, Math.PI * 2);
+        g.fillStyle = "#ffffff";
+        g.fill();
+        g.shadowBlur = 0;
+        g.lineWidth = Math.max(1, r * 0.18);
+        g.strokeStyle = "#111";
+        g.stroke();
+        g.beginPath();
+        g.arc(0, 0, r * 0.38, 0, Math.PI * 2);
+        g.fillStyle = "#111";
+        g.fill();
+      } else if (it.k === "cone") {
+        let s = u * 0.62;
+        g.beginPath();
+        g.moveTo(0, -s * 1.15);
+        g.lineTo(s, s * 0.8);
+        g.lineTo(-s, s * 0.8);
+        g.closePath();
+        g.fillStyle = "#ff8a1f";
+        g.fill();
+        g.shadowBlur = 0;
+        g.lineWidth = Math.max(1, u * 0.1);
+        g.strokeStyle = "#ffffff";
+        g.stroke();
+      } else if (it.k === "pole") {
+        let r = u * 0.3;
+        g.beginPath();
+        g.arc(0, 0, r, 0, Math.PI * 2);
+        g.fillStyle = "#ffd60a";
+        g.fill();
+        g.shadowBlur = 0;
+        g.lineWidth = Math.max(1, r * 0.35);
+        g.strokeStyle = "#ff4d5e";
+        g.stroke();
+      } else {
+        g.rotate((it.r * Math.PI) / 180);
+        if (it.k === "hurdle") {
+          let L = u * 1.9,
+            H = u * 0.34;
+          rr(g, -L / 2, -H / 2, L, H, H * 0.35);
+          g.fillStyle = "#ffd60a";
+          g.fill();
+          g.shadowBlur = 0;
+          g.lineWidth = Math.max(1, u * 0.08);
+          g.strokeStyle = "#ffffff";
+          g.stroke();
+          g.strokeStyle = "#3a2f00";
+          g.lineWidth = Math.max(1, u * 0.09);
+          g.beginPath();
+          [-0.25, 0, 0.25].forEach((f) => {
+            g.moveTo(L * f, -H / 2);
+            g.lineTo(L * f, H / 2);
+          });
+          g.stroke();
+        } else {
+          let L = u * 2.8,
+            D = u * 0.9,
+            lw = Math.max(2, u * 0.2);
+          g.fillStyle = "rgba(255,255,255,.16)";
+          g.fillRect(-L / 2, -D, L, D);
+          g.shadowBlur = 0;
+          g.strokeStyle = "rgba(255,255,255,.45)";
+          g.lineWidth = Math.max(1, u * 0.05);
+          g.beginPath();
+          for (let i = 1; i < 6; i++) {
+            g.moveTo(-L / 2 + (L * i) / 6, -D);
+            g.lineTo(-L / 2 + (L * i) / 6, 0);
+          }
+          g.moveTo(-L / 2, -D / 2);
+          g.lineTo(L / 2, -D / 2);
+          g.stroke();
+          g.strokeStyle = "#ffffff";
+          g.lineWidth = lw;
+          g.beginPath();
+          g.moveTo(-L / 2, 0);
+          g.lineTo(-L / 2, -D);
+          g.lineTo(L / 2, -D);
+          g.lineTo(L / 2, 0);
+          g.stroke();
+        }
+      }
+      g.restore();
+    });
+    g.restore();
+  }
+  /* Radio para tocar una ficha, en unidades u. */
+  const HIT = { own: 1.3, riv: 1.3, ball: 0.9, cone: 1, pole: 0.8, hurdle: 1.2, goal: 1.6 };
+  const ease = (f) => (f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2);
+  const ANIM_D = 1100,
+    ANIM_H = 350;
+  /* Posición de cada ficha a los t ms de reproducir la jugada. */
+  function animPos(b, t) {
+    let seg = Math.floor(t / (ANIM_D + ANIM_H)),
+      last = b.steps - 1;
+    if (seg >= last) return (it) => it.p[last];
+    let f = ease(Math.min(1, (t - seg * (ANIM_D + ANIM_H)) / ANIM_D));
+    return (it) => {
+      let a = it.p[seg],
+        c = it.p[seg + 1];
+      return [a[0] + (c[0] - a[0]) * f, a[1] + (c[1] - a[1]) * f];
+    };
+  }
+  const animTotal = (b) => (b.steps - 1) * (ANIM_D + ANIM_H);
+  let boardAnim = null,
+    boardRedraw = null;
+  function stopAnim(go) {
+    if (!boardAnim) return;
+    cancelAnimationFrame(boardAnim.raf);
+    boardAnim = null;
+    if (go) render();
+  }
+  function playAnim() {
+    let b = bd();
+    if (b.steps < 2) {
+      note("Añade al menos un paso más para ver la jugada en movimiento.");
+      return;
+    }
+    let t0 = performance.now(),
+      mode = state.mode;
+    boardAnim = { raf: 0 };
+    render();
+    const tick = (now) => {
+      if (!boardAnim) return;
+      if (state.tab !== "pizarra" || state.mode !== mode || !$("bcanvas")) {
+        boardAnim = null;
+        return;
+      }
+      let t = now - t0;
+      if (boardRedraw) boardRedraw(animPos(b, t));
+      if (t >= animTotal(b) + 250) {
+        b.step = b.steps - 1;
+        saveBoard();
+        stopAnim(true);
+        return;
+      }
+      boardAnim.raf = requestAnimationFrame(tick);
+    };
+    boardAnim.raf = requestAnimationFrame(tick);
+  }
+  function addItem(k, pid) {
+    let b = bd(),
+      n = b.items.length,
+      q = [
+        Math.round((0.5 + ((n % 5) - 2) * 0.12) * 1000) / 1000,
+        Math.round((0.4 + (Math.floor(n / 5) % 4) * 0.08) * 1000) / 1000,
+      ],
+      lab = "";
+    if (k === "own" || k === "riv") {
+      let used = b.items
+        .filter((i) => i.k === k && !i.pid)
+        .map((i) => parseInt(i.n) || 0);
+      lab = String(used.length ? Math.max(...used) + 1 : 1);
+    }
+    pushHist(b);
+    b.items.push({
+      id: Math.random().toString(36).slice(2, 10),
+      k,
+      n: pid ? "" : lab,
+      pid: pid || "",
+      r: 0,
+      p: Array.from({ length: b.steps }, () => q.slice()),
+    });
+    if (b.tool === "erase") b.tool = "pen";
+    saveBoard();
+  }
+  /* Pone en el campo a los titulares de un partido, con su dorsal, en su posición. */
+  function loadLineup(id) {
+    let b = bd(),
+      m = state.matches.find((x) => x.id === id);
+    if (!m || !m.alineacion) return;
+    let f = formations[m.modalidad][m.alineacion.formation];
+    if (!f) return;
+    pushHist(b);
+    let keep = b.items.filter((i) => i.k !== "own"),
+      add = [];
+    f.forEach((s, i) => {
+      let pid = (m.alineacion.slots || {})[i];
+      if (!pid) return;
+      let q = [s[1] / 100, Math.min(s[2] / 100, 0.93)];
+      add.push({
+        id: Math.random().toString(36).slice(2, 10),
+        k: "own",
+        n: "",
+        pid,
+        r: 0,
+        p: Array.from({ length: b.steps }, () => q.slice()),
+      });
+    });
+    b.items = keep.concat(add);
+    saveBoard();
   }
   function boardView() {
     let b = bd(),
@@ -4144,14 +4524,33 @@
           m.alineacion.slots &&
           Object.keys(m.alineacion.slots).length,
       );
-    if (b.bg && !gs.some((m) => m.id === b.bg)) b.bg = "";
+    /* Pizarras guardadas antes de las fichas: la alineación de fondo pasa a ser fichas. */
+    if (b.bg) {
+      if (!b.items.length && gs.some((m) => m.id === b.bg)) {
+        loadLineup(b.bg);
+        b.hist = [];
+      }
+      b.bg = "";
+      saveBoard();
+    }
     const sw = [
       ["#ffd60a", "Amarillo"],
       ["#ffffff", "Blanco"],
       ["#ff4d5e", "Rojo"],
       ["#38bdf8", "Azul"],
     ];
-    return `<section class="panel board ${state.present ? "present" : ""}" id="boardPanel"><div class="bar"><div><div class="kicker">Pizarra</div><h2>${MN()}</h2><p class="muted">Dibuja con el dedo o el ratón para plantear el partido. Con la goma, toca una línea para borrarla.</p></div></div>
+    let onB = new Set(b.items.map((i) => i.pid).filter(Boolean)),
+      menu = state.boardMenu
+        ? `<div class="bmenu" role="menu"><button role="menuitem" data-b="addp" data-v=""><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${BKI.own}</svg>Ficha con número</button>${roster()
+            .filter((p) => !onB.has(p.id))
+            .map(
+              (p) =>
+                `<button role="menuitem" data-b="addp" data-v="${p.id}"><i class="bdn">${esc(dorsal(p) || (p.nombre[0] || "?").toUpperCase())}</i>${esc(p.nombre)}</button>`,
+            )
+            .join("")}</div>`
+        : "",
+      playing = !!boardAnim;
+    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}" id="boardPanel"><div class="bar"><div><div class="kicker">Pizarra</div><h2>${MN()}</h2><p class="muted">Añade jugadores, rivales, balón, conos o vallas y arrástralos. Dibuja con el dedo. Crea pasos para ver la jugada en movimiento.</p></div></div>
 <div class="btools"><div class="seg" role="group" aria-label="Herramienta">${[
       ["pen", "Lápiz", "penline"],
       ["arrow", "Flecha", "arrow"],
@@ -4164,8 +4563,15 @@
       .join(
         "",
       )}</div><div class="swatches" role="group" aria-label="Color">${sw.map((c) => `<button class="sw" data-b="color" data-v="${c[0]}" style="--c:${c[0]}" aria-label="${c[1]}" aria-pressed="${b.color === c[0]}"><i></i></button>`).join("")}</div><button class="ib" data-b="undo" aria-label="Deshacer" title="Deshacer">${ic("undo")}</button><button class="ib d" data-b="clear" aria-label="Borrar todo" title="Borrar todo">${ic("trash")}</button><span class="bsep"></span><button class="secondary small" data-b="img">${ic("download", 18)}Imagen</button><button class="primary small" data-b="present">${ic(state.present ? "x" : "maximize", 18)}${state.present ? "Salir" : "Presentar"}</button></div>
-<label class="bgsel">Fondo<select id="boardBg" aria-label="Fondo de la pizarra"><option value="">Campo vacío</option>${gs.map((m) => `<option value="${m.id}" ${b.bg === m.id ? "selected" : ""}>Alineación vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>
-<div class="bfield"><div class="field ${state.mode === "fs" ? "fs" : ""}" id="bfield">${fieldMarks()}${boardTokens()}<canvas id="bcanvas" role="img" aria-label="Pizarra táctica: dibuja con el dedo o el ratón"></canvas></div></div></section>`;
+<div class="badd" role="group" aria-label="Añadir al campo"><span class="badd-l">Añadir</span>${Object.keys(BK)
+      .map(
+        (k) =>
+          `<button data-b="add" data-v="${k}"${k === "own" ? ` aria-haspopup="menu" aria-expanded="${!!state.boardMenu}"` : ""}><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${BKI[k]}</svg>${BK[k]}</button>`,
+      )
+      .join("")}${menu}</div>
+<div class="bsteps" role="group" aria-label="Jugada en movimiento"><span class="badd-l">Jugada</span><button class="ib" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${b.step < 1 || playing ? " disabled" : ""}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="ib" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${b.step >= b.steps - 1 || playing ? " disabled" : ""}>${ic("right")}</button><button class="secondary small" data-b="addstep"${playing ? " disabled" : ""}>${ic("plus", 18)}Paso</button><button class="ib d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${b.steps < 2 || playing ? " disabled" : ""}>${ic("x")}</button><span class="bst-go"><button class="primary small" data-b="play">${ic(playing ? "stop" : "play", 18)}${playing ? "Parar" : "Ver jugada"}</button><button class="secondary small" data-b="video"${playing ? " disabled" : ""}>${ic("film", 18)}Vídeo</button></span></div>
+${gs.length ? `<label class="bgsel">Poner titulares<select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Elige un partido…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}
+<div class="bfield"><div class="field ${state.mode === "fs" ? "fs" : ""}" id="bfield">${fieldMarks()}<canvas id="bcanvas" role="img" aria-label="Pizarra táctica: arrastra las fichas y dibuja con el dedo o el ratón"></canvas></div></div></section>`;
   }
   let boardRO = null;
   function initBoard() {
@@ -4176,9 +4582,10 @@
       g = cv.getContext("2d"),
       dpr = Math.min(window.devicePixelRatio || 1, 2);
     let cur = null;
-    const redraw = () => {
+    const here = (it) => it.p[b.step];
+    const redraw = (pos) => {
       g.clearRect(0, 0, cv.width, cv.height);
-      if (!b.strokes.length) {
+      if (!b.strokes.length && !b.items.length) {
         g.save();
         g.fillStyle = "rgba(241,247,234,.42)";
         g.font = `800 ${Math.round(cv.width * 0.085)}px "Barlow Condensed","Arial Narrow",Impact,sans-serif`;
@@ -4195,7 +4602,9 @@
         cv.height,
         Math.max(3, cv.width * 0.0085),
       );
+      paintScene(g, b, 0, 0, cv.width, cv.height, pos || here, !pos);
     };
+    boardRedraw = redraw;
     const size = () => {
       let r = fe.getBoundingClientRect(),
         w = Math.max(1, Math.round(r.width * dpr)),
@@ -4204,7 +4613,7 @@
         cv.width = w;
         cv.height = h;
       }
-      redraw();
+      if (!boardAnim) redraw();
     };
     if (boardRO) boardRO.disconnect();
     if (window.ResizeObserver) {
@@ -4219,19 +4628,35 @@
         Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
       ];
     };
+    const hitItem = (p) => {
+      let r = cv.getBoundingClientRect(),
+        u = tokU(r.width, state.mode),
+        L = byOrd(b.items).reverse();
+      return L.find(
+        (it) =>
+          Math.hypot(
+            (here(it)[0] - p[0]) * r.width,
+            (here(it)[1] - p[1]) * r.height,
+          ) <
+          Math.max(HIT[it.k] * u, 16),
+      );
+    };
     const erase = (p) => {
       let r = cv.getBoundingClientRect(),
         px = p[0] * r.width,
         py = p[1] * r.height,
-        n = b.strokes.length,
-        before = JSON.stringify(b.strokes);
-      b.strokes = b.strokes.filter(
-        (s) =>
-          !s.p.some(
-            (q) => Math.hypot(q[0] * r.width - px, q[1] * r.height - py) < 24,
-          ),
-      );
-      if (b.strokes.length !== n) {
+        before = snap(b),
+        it = hitItem(p),
+        n = b.strokes.length;
+      if (it) b.items = b.items.filter((x) => x !== it);
+      else
+        b.strokes = b.strokes.filter(
+          (s) =>
+            !s.p.some(
+              (q) => Math.hypot(q[0] * r.width - px, q[1] * r.height - py) < 24,
+            ),
+        );
+      if (it || b.strokes.length !== n) {
         b.hist.push(before);
         if (b.hist.length > 60) b.hist.shift();
         redraw();
@@ -4240,6 +4665,12 @@
     cv.addEventListener("pointerdown", (e) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
       e.preventDefault();
+      if (boardAnim) return;
+      if (state.boardMenu) {
+        state.boardMenu = false;
+        render();
+        return;
+      }
       try {
         cv.setPointerCapture(e.pointerId);
       } catch (x) {}
@@ -4249,14 +4680,45 @@
         erase(p);
         return;
       }
-      b.hist.push(JSON.stringify(b.strokes));
-      if (b.hist.length > 60) b.hist.shift();
+      let it = hitItem(p);
+      if (it) {
+        cur = {
+          drag: it,
+          off: [here(it)[0] - p[0], here(it)[1] - p[1]],
+          start: p,
+          before: snap(b),
+          moved: false,
+        };
+        return;
+      }
+      pushHist(b);
       cur = { c: b.color, t: b.tool, p: [p] };
       b.strokes.push(cur);
       redraw();
     });
     cv.addEventListener("pointermove", (e) => {
       if (!cur) return;
+      if (cur.drag) {
+        let p = pt(e),
+          r = cv.getBoundingClientRect();
+        if (
+          !cur.moved &&
+          Math.hypot(
+            (p[0] - cur.start[0]) * r.width,
+            (p[1] - cur.start[1]) * r.height,
+          ) < 5
+        )
+          return;
+        cur.moved = true;
+        cur.drag.p[b.step] = [
+          Math.round(Math.min(1, Math.max(0, p[0] + cur.off[0])) * 10000) /
+            10000,
+          Math.round(Math.min(1, Math.max(0, p[1] + cur.off[1])) * 10000) /
+            10000,
+        ];
+        redraw();
+        return;
+      }
       let list = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
       if (!list.length) list = [e];
       list.forEach((ev) => {
@@ -4277,6 +4739,16 @@
     });
     const end = () => {
       if (!cur) return;
+      if (cur.drag) {
+        /* Tocar una valla o una portería sin moverla la gira 45°. */
+        if (!cur.moved && (cur.drag.k === "hurdle" || cur.drag.k === "goal"))
+          cur.drag.r = (cur.drag.r + 45) % 360;
+        if (cur.moved || cur.drag.k === "hurdle" || cur.drag.k === "goal") {
+          b.hist.push(cur.before);
+          if (b.hist.length > 60) b.hist.shift();
+        }
+        redraw();
+      }
       cur = null;
       saveBoard();
     };
@@ -4284,30 +4756,22 @@
     cv.addEventListener("pointercancel", end);
     cv.addEventListener("contextmenu", (e) => e.preventDefault());
   }
-  async function boardExport() {
-    let b = bd();
-    if (!b.strokes.length && !b.bg) {
-      note("Dibuja algo en la pizarra antes de descargar la imagen.");
-      return;
-    }
-    let m = state.matches.find((x) => x.id === b.bg),
-      al =
-        m && m.alineacion
-          ? {
-              formation: m.alineacion.formation,
-              slots: m.alineacion.slots || {},
-            }
-          : { formation: Object.keys(formations[state.mode])[0], slots: {} },
-      o = {
-        modalidad: state.mode,
-        fecha: new Date().toISOString().slice(0, 10),
-        rival: m ? m.rival : "",
-        players: [],
-        alineacion: al,
-        pizarra: true,
-        strokes: b.strokes,
-      };
-    note("Preparando imagen…", true);
+  /* Imagen de la pizarra (fondo del campo sin fichas de alineación + escena encima). */
+  async function boardBase(b, pos, trails) {
+    let o = {
+      modalidad: state.mode,
+      fecha: new Date().toISOString().slice(0, 10),
+      rival: "",
+      players: [],
+      alineacion: { formation: Object.keys(formations[state.mode])[0], slots: {} },
+      pizarra: true,
+      paint: pos
+        ? (g, x, y, w, h) => {
+            paintStrokes(g, b.strokes, x, y, w, h, 10);
+            paintScene(g, b, x, y, w, h, pos, trails);
+          }
+        : null,
+    };
     try {
       await Promise.all([
         document.fonts.load('800 40px "Barlow Condensed"'),
@@ -4315,18 +4779,17 @@
         document.fonts.load('600 30px "Barlow Condensed"'),
       ]);
     } catch (e) {}
-    let cv = await drawLineup(o),
-      blob = await new Promise((r) => cv.toBlob(r, "image/png")),
-      fname = `pizarra-${MFN(o.modalidad)}-${o.fecha}.png`;
-    note("");
-    let file = new File([blob], fname, { type: "image/png" });
+    return { cv: await drawLineup(o), o };
+  }
+  async function shareOrSave(blob, fname, title, done) {
+    let file = new File([blob], fname, { type: blob.type });
     if (
       navigator.canShare &&
       navigator.canShare({ files: [file] }) &&
       window.matchMedia("(pointer:coarse)").matches
     ) {
       try {
-        await navigator.share({ files: [file], title: "Pizarra" });
+        await navigator.share({ files: [file], title });
         return;
       } catch (e) {
         if (e && e.name === "AbortError") return;
@@ -4339,13 +4802,108 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    note("Imagen descargada.", true);
+    note(done, true);
+  }
+  async function boardExport() {
+    let b = bd();
+    if (!b.strokes.length && !b.items.length) {
+      note("Dibuja algo en la pizarra antes de descargar la imagen.");
+      return;
+    }
+    note("Preparando imagen…", true);
+    let { cv, o } = await boardBase(b, (it) => it.p[b.step], true),
+      blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+    note("");
+    await shareOrSave(
+      blob,
+      `pizarra-${MFN(o.modalidad)}-${o.fecha}.png`,
+      "Pizarra",
+      "Imagen descargada.",
+    );
+  }
+  /* Vídeo de la jugada: se dibuja cada fotograma en un lienzo y se graba con MediaRecorder. */
+  let boardRec = false;
+  async function boardVideo() {
+    let b = bd();
+    if (b.steps < 2 || !b.items.length) {
+      note("Para el vídeo, pon fichas en el campo y añade al menos un paso más moviéndolas.");
+      return;
+    }
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+      note("Tu navegador no permite crear vídeos. Prueba con Chrome.");
+      return;
+    }
+    if (boardRec) return;
+    boardRec = true;
+    note("Creando el vídeo de la jugada…", true);
+    try {
+      let { cv: base, o } = await boardBase(b, null),
+        W = 720,
+        H = Math.round((base.height * W) / base.width / 2) * 2,
+        cv = document.createElement("canvas"),
+        g = cv.getContext("2d"),
+        sc = W / base.width,
+        F = { x: 90 * sc, y: 300 * sc, w: 900 * sc, h: 1085 * sc },
+        types = [
+          "video/mp4;codecs=avc1",
+          "video/mp4",
+          "video/webm;codecs=vp9",
+          "video/webm",
+        ],
+        type = types.find((t) => MediaRecorder.isTypeSupported(t)) || "";
+      cv.width = W;
+      cv.height = H;
+      const frame = (pos) => {
+        g.drawImage(base, 0, 0, W, H);
+        g.save();
+        rr(g, F.x, F.y, F.w, F.h, 36 * sc);
+        g.clip();
+        paintStrokes(g, b.strokes, F.x, F.y, F.w, F.h, 10 * sc);
+        paintScene(g, b, F.x, F.y, F.w, F.h, pos, false);
+        g.restore();
+      };
+      frame((it) => it.p[0]);
+      let st = cv.captureStream(30),
+        rec = new MediaRecorder(st, type ? { mimeType: type, videoBitsPerSecond: 3e6 } : {}),
+        parts = [];
+      rec.ondataavailable = (e) => e.data && e.data.size && parts.push(e.data);
+      let stopped = new Promise((r) => (rec.onstop = r));
+      rec.start(250);
+      const HOLD = 700,
+        tot = HOLD + animTotal(b) + 1000,
+        t0 = performance.now();
+      await new Promise((res) => {
+        const tick = () => {
+          let t = performance.now() - t0;
+          frame(t < HOLD ? (it) => it.p[0] : animPos(b, t - HOLD));
+          if (t >= tot) return res();
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      rec.stop();
+      await stopped;
+      st.getTracks().forEach((x) => x.stop());
+      let mt = (rec.mimeType || type || "video/webm").split(";")[0],
+        blob = new Blob(parts, { type: mt });
+      note("");
+      await shareOrSave(
+        blob,
+        `jugada-${MFN(o.modalidad)}-${o.fecha}.${mt.includes("mp4") ? "mp4" : "webm"}`,
+        "Jugada",
+        "Vídeo descargado.",
+      );
+    } finally {
+      boardRec = false;
+    }
   }
   $("view").addEventListener("click", (e) => {
     let t = e.target.closest("[data-b]");
     if (!t || state.tab !== "pizarra") return;
     let b = bd(),
       k = t.dataset.b;
+    if (boardAnim && k !== "play" && k !== "present") return;
+    if (k !== "add" && k !== "addp") state.boardMenu = false;
     if (k === "tool") {
       b.tool = t.dataset.v;
       saveBoard();
@@ -4357,18 +4915,64 @@
       render();
     } else if (k === "undo") {
       if (b.hist.length) {
-        b.strokes = JSON.parse(b.hist.pop());
+        restoreHist(b, b.hist.pop());
         saveBoard();
         render();
       }
     } else if (k === "clear") {
-      if (b.strokes.length) {
-        b.hist.push(JSON.stringify(b.strokes));
+      if (b.strokes.length || b.items.length || b.steps > 1) {
+        pushHist(b);
         b.strokes = [];
+        b.items = [];
+        b.steps = 1;
+        b.step = 0;
         saveBoard();
         render();
       }
-    } else if (k === "img")
+    } else if (k === "add") {
+      if (t.dataset.v === "own") state.boardMenu = !state.boardMenu;
+      else {
+        state.boardMenu = false;
+        addItem(t.dataset.v);
+      }
+      render();
+    } else if (k === "addp") {
+      state.boardMenu = false;
+      addItem("own", t.dataset.v);
+      render();
+    } else if (k === "prev" || k === "next") {
+      b.step = Math.min(b.steps - 1, Math.max(0, b.step + (k === "next" ? 1 : -1)));
+      saveBoard();
+      render();
+    } else if (k === "addstep") {
+      if (b.steps >= 20) {
+        note("Una jugada puede tener como mucho 20 pasos.");
+        return;
+      }
+      pushHist(b);
+      b.items.forEach((it) => it.p.splice(b.step + 1, 0, it.p[b.step].slice()));
+      b.steps++;
+      b.step++;
+      saveBoard();
+      render();
+      note(`Paso ${b.step + 1}: arrastra las fichas a donde se mueven.`, true);
+    } else if (k === "delstep") {
+      if (b.steps < 2) return;
+      pushHist(b);
+      b.items.forEach((it) => it.p.splice(b.step, 1));
+      b.steps--;
+      b.step = Math.min(b.step, b.steps - 1);
+      saveBoard();
+      render();
+    } else if (k === "play") {
+      if (boardAnim) stopAnim(true);
+      else playAnim();
+    } else if (k === "video")
+      boardVideo().catch((x) => {
+        boardRec = false;
+        note("No se pudo crear el vídeo: " + x.message);
+      });
+    else if (k === "img")
       boardExport().catch((x) =>
         note("No se pudo crear la imagen: " + x.message),
       );
@@ -4378,14 +4982,18 @@
     }
   });
   $("view").addEventListener("change", (e) => {
-    if (e.target.id === "boardBg") {
-      bd().bg = e.target.value;
-      saveBoard();
+    if (e.target.id === "boardBg" && e.target.value) {
+      stopAnim();
+      loadLineup(e.target.value);
       render();
+      note("Titulares puestos en el campo. Arrástralos para moverlos.", true);
     }
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.present) {
+    if (e.key === "Escape" && state.boardMenu) {
+      state.boardMenu = false;
+      render();
+    } else if (e.key === "Escape" && state.present) {
       state.present = false;
       render();
     }
