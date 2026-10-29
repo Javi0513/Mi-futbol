@@ -2792,39 +2792,95 @@ a.pack {
   font-style: normal;
   pointer-events: none;
 }
-/* pizarra: fichas y jugada */
-.badd,
-.bsteps {
+/* pizarra: campo grande con los iconos alrededor */
+.board .bar {
+  display: none !important;
+}
+.bw {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+.bw .bfield {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.br {
   position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
   align-items: center;
-  margin: 0 0 10px;
+  gap: 6px;
 }
-.badd-l {
-  font: 800 13px/1 var(--fd);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--mut);
-  margin-right: 2px;
+.brs {
+  flex: none;
+  width: 26px;
+  height: 1px;
+  margin: 2px 0;
+  background: var(--line2);
 }
-.badd > button {
-  min-height: 40px;
-  padding: 0 10px 0 6px;
+.bi {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
   border-radius: 12px;
   background: var(--s3);
   color: var(--ink);
   border: 1px solid var(--line2);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font: 700 15px/1 var(--fd);
-  letter-spacing: 0.03em;
 }
-.badd > button:hover,
-.badd > button[aria-expanded="true"] {
+.bi:hover {
   border-color: var(--lime);
+}
+.bi[aria-pressed="true"],
+.bi.go {
+  background: var(--lime);
+  color: var(--on-lime);
+  border-color: var(--lime);
+}
+.bi.d {
+  background: #2a1519;
+  color: #ffb4be;
+  border-color: #5b2a33;
+}
+.bi[disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+.br .sw {
+  width: 44px;
+  height: 34px;
+}
+.bpc {
+  flex: none;
+  width: 60px;
+  min-height: 54px;
+  padding: 5px 2px 4px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  border-radius: 12px;
+  background: var(--s3);
+  color: var(--ink);
+  border: 1px solid var(--line2);
+}
+.bpc:hover,
+.bpc[aria-expanded="true"] {
+  border-color: var(--lime);
+}
+.bpc small {
+  font: 700 12px/1 var(--fd);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.br-p .bmenu {
+  top: 0;
+  left: auto;
+  right: calc(100% + 8px);
 }
 .bmenu {
   position: absolute;
@@ -2871,35 +2927,124 @@ a.pack {
   font-style: normal;
   flex: none;
 }
+.bbot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 18px;
+  margin-top: 10px;
+}
+.bsteps,
+.bextra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 .bst-n {
-  min-width: 92px;
+  min-width: 84px;
   text-align: center;
   font: 800 18px/1 var(--fd);
   letter-spacing: 0.04em;
 }
-.bsteps .ib[disabled],
-.bsteps button[disabled] {
-  opacity: 0.4;
-  cursor: default;
+.bextra {
+  flex-wrap: nowrap;
+}
+.bextra .bgsel {
+  margin: 0 0 0 6px;
+  flex: 0 1 250px;
+}
+.bextra .bgsel span {
+  display: none;
+}
+.bextra .bgsel select {
+  flex: 1;
+  min-width: 0;
 }
 .board.playing #bcanvas {
   cursor: default;
 }
-.board.present .badd,
-.board.present .bsteps {
-  margin-bottom: 6px;
+.board .field {
+  width: max(280px, calc((100vh - 300px) * 0.7));
+  max-width: calc(100vw - 420px);
+  margin: 0 auto;
+}
+.board.present .field {
+  max-width: calc(100vw - 180px);
+}
+.board.present .bw {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+.board.present .br {
+  justify-content: center;
+}
+.board.present .bbot {
+  margin-top: 8px;
+}
+.board.present .bw .bfield {
+  flex: 0 1 auto;
+}
+.board.present .bextra .bgsel,
+.board.present .bextra [data-b="img"] {
+  display: none;
 }
 @media (max-width: 700px) {
-  .badd {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
+  .board:not(.present) {
+    padding: 8px;
   }
-  .badd > button {
-    flex: none;
+  .bw {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
   }
-  .bmenu {
+  .board.present .bw {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .br {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .br-t {
+    order: 0;
+  }
+  .bw .bfield {
+    order: 1;
+  }
+  .br-p {
+    order: 2;
+  }
+  .brs {
+    width: 1px;
+    height: 26px;
+    margin: 0;
+  }
+  .bi {
+    width: 38px;
+    height: 38px;
+  }
+  .br .sw {
+    width: 30px;
+    height: 38px;
+  }
+  .br .sw i {
+    width: 24px;
+    height: 24px;
+  }
+  .bpc {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 50px;
+  }
+  .bpc small {
+    font-size: 11px;
+  }
+  .br-p .bmenu {
     position: fixed;
     top: auto;
     bottom: calc(env(safe-area-inset-bottom) + 90px);
@@ -2907,40 +3052,44 @@ a.pack {
     right: 16px;
     max-width: none;
   }
+  .board .field {
+    width: 100%;
+    max-width: none;
+  }
+  .board.present .field {
+    width: auto;
+    max-width: 100%;
+  }
+  .bbot {
+    gap: 8px;
+  }
+  .bsteps,
+  .bextra {
+    flex: 1 1 100%;
+  }
+  .bsteps {
+    justify-content: space-between;
+    gap: 4px;
+  }
   .bst-n {
-    min-width: 76px;
+    min-width: 0;
+    flex: 1;
     font-size: 16px;
   }
-}
-.btools .seg {
-  display: flex;
-  margin-bottom: 0;
-}
-.bst-go {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
-@media (max-width: 700px) {
-  .btools .seg button {
-    padding: 0 8px;
+  .bextra {
+    justify-content: flex-start;
   }
-  .bst-go {
-    flex: 1 1 100%;
-    margin-left: 0;
-  }
-  .bst-go .small {
-    flex: 1 1 0;
-  }
-  .bsteps > .badd-l {
-    display: none;
-  }
-  .bsteps .small[data-b="addstep"] {
+  .bextra .bgsel {
     flex: 1 1 auto;
-    padding: 0 8px;
   }
-  .bst-n {
-    min-width: 70px;
+  .board.present .bsteps {
+    flex: 1 1 auto;
+  }
+  .board.present .bextra {
+    flex: none;
+  }
+  .board.present .bsteps [data-b="video"] {
+    display: none;
   }
 }
 /* Presentar: la pizarra ocupa toda la pantalla (sin cabecera ni barra de abajo encima). */

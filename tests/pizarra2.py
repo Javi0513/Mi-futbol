@@ -100,13 +100,13 @@ with sync_playwright() as p:
     pg.click('[data-b=next]');check('› va al paso 3',store(pg)['step']==2)
     # reproducir
     pg.click('[data-b=play]');pg.wait_for_timeout(500)
-    check('Ver jugada: botón Parar y pasos bloqueados','PARAR' in pg.inner_text('[data-b=play]').upper() and pg.locator('[data-b=addstep][disabled]').count()==1)
+    check('Ver jugada: botón Parar y pasos bloqueados','PARAR' in pg.get_attribute('[data-b=play]','aria-label').upper() and pg.locator('[data-b=addstep][disabled]').count()==1)
     shot1=pg.locator('#bcanvas').screenshot();pg.wait_for_timeout(400);shot2=pg.locator('#bcanvas').screenshot()
     check('la jugada se mueve (el dibujo cambia)',shot1!=shot2)
     pg.wait_for_timeout(2600)
-    check('al acabar vuelve a «Ver jugada» en el último paso','VER JUGADA' in pg.inner_text('[data-b=play]').upper() and store(pg)['step']==2)
+    check('al acabar vuelve a «Ver jugada» en el último paso','VER JUGADA' in pg.get_attribute('[data-b=play]','aria-label').upper() and store(pg)['step']==2)
     pg.click('[data-b=play]');pg.wait_for_timeout(300);pg.click('[data-b=play]');pg.wait_for_timeout(200)
-    check('Parar detiene la jugada','VER JUGADA' in pg.inner_text('[data-b=play]').upper())
+    check('Parar detiene la jugada','VER JUGADA' in pg.get_attribute('[data-b=play]','aria-label').upper())
     # quitar paso
     pg.click('[data-b=delstep]');s=store(pg);check('quitar paso',s['steps']==2 and all(len(i['p'])==2 for i in s['items']))
     pg.click('[data-b=undo]');check('deshacer devuelve el paso',store(pg)['steps']==3)
@@ -140,9 +140,9 @@ with sync_playwright() as p:
     pg.screenshot(path=OUT+'/pizarra2_present.png');pg.keyboard.press('Escape')
     # guía y novedades
     nov=json.load(open(REPO+'/version.json'))
-    check('novedades 9.3 hablan de dorsales y jugadas',nov['version']=='9.3' and any('Dorsal' in x for x in nov['novedades']) and any('Ver jugada' in x for x in nov['novedades']))
+    check('novedades 9.3 hablan de dorsales y jugadas',nov['version']=='9.3' and any('Dorsal' in x for x in nov['novedades']) and any('▶' in x for x in nov['novedades']))
     js=open(REPO+'/app.js').read()
-    check('guía de uso explica pasos y conos','«+ Paso»' in js and 'conos, vallas' in js)
+    check('guía de uso explica pasos y conos','fila «Paso»' in js and 'conos, vallas' in js)
     # móvil
     m=b.new_context(viewport={'width':375,'height':812},device_scale_factor=2,has_touch=True,is_mobile=True).new_page()
     m.on('pageerror',lambda e:errs.append('PAGEERR '+str(e)))

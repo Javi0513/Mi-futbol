@@ -2465,7 +2465,7 @@
     {
       el: '[data-tab="pizarra"]',
       t: "Pizarra táctica",
-      p: "Pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Crea pasos y pulsa «Ver jugada» para verla en movimiento, o sácala en imagen o vídeo.",
+      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo.",
     },
     {
       el: '[data-tab="resumen"]',
@@ -2598,11 +2598,12 @@
     {
       t: "Pizarra táctica",
       p: [
-        "Con <b>Añadir</b> pones en el campo jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
-        "Al pulsar «Jugador» eliges a uno de tu plantilla (sale con su dorsal) o una ficha con número. Con «Poner titulares» llevas al campo la alineación de un partido.",
-        "Con el lápiz y la flecha dibujas encima. La goma borra la línea o la ficha que toques.",
-        "<b>Jugada en movimiento</b>: coloca las fichas, pulsa «+ Paso» y arrástralas a donde se mueven (verás una flecha del sitio anterior). Repite para cada paso. «Ver jugada» las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo.",
-        "Ponla a pantalla completa con «Presentar» para explicarla, guárdala como <b>imagen</b> o saca un <b>vídeo</b> de la jugada para mandarlo por WhatsApp. La pizarra se guarda en tu móvil.",
+        "El campo ocupa casi toda la pantalla y los botones están alrededor. Si dejas el dedo (o el ratón) sobre un botón, te dice para qué sirve.",
+        "Con los iconos de <b>debajo del campo</b> (a la derecha en el ordenador) pones jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
+        "Al tocar «Jugador» eliges a uno de tu plantilla (sale con su dorsal) o una ficha con número. Con «Poner titulares de…» llevas al campo la alineación de un partido.",
+        "Con los iconos de <b>encima del campo</b> (a la izquierda en el ordenador) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
+        "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
+        "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
       ],
     },
     {
@@ -4550,28 +4551,29 @@
             .join("")}</div>`
         : "",
       playing = !!boardAnim;
-    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}" id="boardPanel"><div class="bar"><div><div class="kicker">Pizarra</div><h2>${MN()}</h2><p class="muted">Añade jugadores, rivales, balón, conos o vallas y arrástralos. Dibuja con el dedo. Crea pasos para ver la jugada en movimiento.</p></div></div>
-<div class="btools"><div class="seg" role="group" aria-label="Herramienta">${[
+    const dis = (c) => (c || playing ? " disabled" : "");
+    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}" id="boardPanel">
+<div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
       ["pen", "Lápiz", "penline"],
       ["arrow", "Flecha", "arrow"],
-      ["erase", "Goma", "eraser"],
+      ["erase", "Goma: borra la línea o la ficha que toques", "eraser"],
     ]
       .map(
         (t) =>
-          `<button data-b="tool" data-v="${t[0]}" aria-pressed="${b.tool === t[0]}">${ic(t[2], 18)}${t[1]}</button>`,
+          `<button class="bi" data-b="tool" data-v="${t[0]}" aria-pressed="${b.tool === t[0]}" aria-label="${t[1]}" title="${t[1]}">${ic(t[2], 20)}</button>`,
       )
       .join(
         "",
-      )}</div><div class="swatches" role="group" aria-label="Color">${sw.map((c) => `<button class="sw" data-b="color" data-v="${c[0]}" style="--c:${c[0]}" aria-label="${c[1]}" aria-pressed="${b.color === c[0]}"><i></i></button>`).join("")}</div><button class="ib" data-b="undo" aria-label="Deshacer" title="Deshacer">${ic("undo")}</button><button class="ib d" data-b="clear" aria-label="Borrar todo" title="Borrar todo">${ic("trash")}</button><span class="bsep"></span><button class="secondary small" data-b="img">${ic("download", 18)}Imagen</button><button class="primary small" data-b="present">${ic(state.present ? "x" : "maximize", 18)}${state.present ? "Salir" : "Presentar"}</button></div>
-<div class="badd" role="group" aria-label="Añadir al campo"><span class="badd-l">Añadir</span>${Object.keys(BK)
+      )}<span class="brs"></span>${sw.map((c) => `<button class="sw" data-b="color" data-v="${c[0]}" style="--c:${c[0]}" aria-label="${c[1]}" title="${c[1]}" aria-pressed="${b.color === c[0]}"><i></i></button>`).join("")}<span class="brs"></span><button class="bi" data-b="undo" aria-label="Deshacer" title="Deshacer">${ic("undo")}</button><button class="bi d" data-b="clear" aria-label="Borrar todo" title="Borrar todo">${ic("trash")}</button></div>
+<div class="bfield"><div class="field ${state.mode === "fs" ? "fs" : ""}" id="bfield">${fieldMarks()}<canvas id="bcanvas" role="img" aria-label="Pizarra táctica: arrastra las fichas y dibuja con el dedo o el ratón"></canvas></div></div>
+<div class="br br-p" role="toolbar" aria-label="Añadir al campo">${Object.keys(BK)
       .map(
         (k) =>
-          `<button data-b="add" data-v="${k}"${k === "own" ? ` aria-haspopup="menu" aria-expanded="${!!state.boardMenu}"` : ""}><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${BKI[k]}</svg>${BK[k]}</button>`,
+          `<button class="bpc" data-b="add" data-v="${k}" aria-label="Añadir ${BK[k].toLowerCase()}" title="Añadir ${BK[k].toLowerCase()}"${k === "own" ? ` aria-haspopup="menu" aria-expanded="${!!state.boardMenu}"` : ""}><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${BKI[k]}</svg><small>${BK[k]}</small></button>`,
       )
-      .join("")}${menu}</div>
-<div class="bsteps" role="group" aria-label="Jugada en movimiento"><span class="badd-l">Jugada</span><button class="ib" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${b.step < 1 || playing ? " disabled" : ""}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="ib" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${b.step >= b.steps - 1 || playing ? " disabled" : ""}>${ic("right")}</button><button class="secondary small" data-b="addstep"${playing ? " disabled" : ""}>${ic("plus", 18)}Paso</button><button class="ib d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${b.steps < 2 || playing ? " disabled" : ""}>${ic("x")}</button><span class="bst-go"><button class="primary small" data-b="play">${ic(playing ? "stop" : "play", 18)}${playing ? "Parar" : "Ver jugada"}</button><button class="secondary small" data-b="video"${playing ? " disabled" : ""}>${ic("film", 18)}Vídeo</button></span></div>
-${gs.length ? `<label class="bgsel">Poner titulares<select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Elige un partido…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}
-<div class="bfield"><div class="field ${state.mode === "fs" ? "fs" : ""}" id="bfield">${fieldMarks()}<canvas id="bcanvas" role="img" aria-label="Pizarra táctica: arrastra las fichas y dibuja con el dedo o el ratón"></canvas></div></div></section>`;
+      .join("")}${menu}</div></div>
+<div class="bbot"><div class="bsteps" role="toolbar" aria-label="Jugada en movimiento"><button class="bi" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${dis(b.step < 1)}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="bi" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${dis(b.step >= b.steps - 1)}>${ic("right")}</button><button class="bi" data-b="addstep" aria-label="Añadir paso" title="Añadir paso"${dis()}>${ic("plus")}</button><button class="bi d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${dis(b.steps < 2)}>${ic("x")}</button><span class="brs"></span><button class="bi go" data-b="play" aria-label="${playing ? "Parar" : "Ver jugada"}" title="${playing ? "Parar" : "Ver jugada"}">${ic(playing ? "stop" : "play")}</button><button class="bi" data-b="video" aria-label="Vídeo de la jugada" title="Vídeo de la jugada"${dis()}>${ic("film")}</button></div>
+<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div></section>`;
   }
   let boardRO = null;
   function initBoard() {
