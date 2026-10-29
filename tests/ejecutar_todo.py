@@ -2,7 +2,7 @@
 import subprocess, sys, os, re, time
 T = os.path.dirname(os.path.abspath(__file__))
 ORDEN = ['board','feat','dnd2','auth','modes','upd','sw','cap','vis','srch','eye','wl','pago','live','video','teams','tut','prueba','nov','actu','club','supervisor','ayuda','entrenos','grabaentreno','pizarra2','datos','e2e']
-ESPERADO = {'board':30,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'pago':11,'live':27,'video':23,'teams':18,'tut':13,'prueba':7,'nov':7,'actu':6,'club':27,'supervisor':28,'ayuda':15,'entrenos':25,'grabaentreno':10,'pizarra2':61,'datos':26,'e2e':5}
+ESPERADO = {'board':30,'feat':12,'dnd2':24,'auth':31,'modes':22,'upd':4,'sw':8,'cap':2,'vis':5,'srch':9,'eye':7,'wl':4,'pago':11,'live':27,'video':23,'teams':18,'tut':13,'prueba':7,'nov':7,'actu':6,'club':27,'supervisor':28,'ayuda':15,'entrenos':25,'grabaentreno':10,'pizarra2':61,'datos':33,'e2e':5}
 malas = 0
 for n in ORDEN:
     t = time.time()
