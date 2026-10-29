@@ -889,7 +889,7 @@
       dayT = T.filter((t) => t.fecha === state.trDay);
     if (!state.trOk)
       return `<section class="panel"><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">El control de entrenamientos aún no está activado en el servidor (falta ejecutar supabase-entrenamientos.sql en Supabase).</p></section>`;
-    return `<section class="panel"><div class="bar"><div><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : state.trainings.filter((t) => t.modalidad === state.mode).length + " / " + MODES[state.mode].maxE + " · "}${T.length} ${T.length === 1 ? "entrenamiento" : "entrenamientos"}${tp === null ? "" : " · " + tp + "% de asistencia"}</p></div><button class="primary" data-tr="new">${ic("plus")}Entreno</button></div>${trCalendar()}</section><section class="panel"><div class="bar"><div><div class="kicker">${esc(trDayLabel(state.trDay))}</div><h2 class="h2s">${dayT.length ? (dayT.length > 1 ? dayT.length + " entrenamientos" : "Pasar lista") : "Sin entrenamiento"}</h2></div>${dayT.length ? `<button type="button" class="secondary small" data-tr="new">${ic("plus", 18)}Otro</button>` : ""}</div>${
+    return `<section class="panel"><div class="bar"><div><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : state.trainings.filter((t) => t.modalidad === state.mode).length + " / " + MODES[state.mode].maxE + " · "}${T.length} ${T.length === 1 ? "entrenamiento" : "entrenamientos"}${tp === null ? "" : " · " + tp + "% de asistencia"}</p></div><button class="primary" data-tr="new">${ic("plus")}Entreno</button></div>${trCalendar()}</section><section class="panel"><div class="bar"><div><div class="kicker">${esc(trDayLabel(state.trDay))}</div><h2 class="h2s">${dayT.length ? (dayT.length > 1 ? dayT.length + " entrenamientos" : "Pasar lista") : "Sin entrenamiento"}</h2></div>${dayT.length ? `<button type="button" class="secondary small" data-tr="new">${ic("plus", 18)}Otro</button>` : ""}</div>${viendo ? "" : `<div class="btools"><button type="button" class="secondary small" data-tr="rec">${ic("live", 18)}Grabar el entreno</button></div>`}${
       dayT.length
         ? dayT.map(trSession).join("")
         : `<p class="muted">Este día no hay entrenamiento.</p><div class="stack"><button type="button" class="primary" data-tr="new">${ic("plus")}Crear entrenamiento este día</button></div>`
@@ -917,6 +917,8 @@
       state.trDay = b.dataset.f;
       return render();
     }
+    /* Grabar el entreno: misma cámara que el Directo, el vídeo se queda en el móvil (gratis) */
+    if (k === "rec") return camAbre(null, false, { fecha: state.trDay || ymd(new Date()), equipo: teamName() });
     if (k === "new") {
       if (
         plan !== "pro" &&
@@ -2595,6 +2597,7 @@
         "Pasa lista con los jugadores de tu plantilla: <b>✓</b> vino, <b>✗</b> faltó y <b>J</b> falta justificada. Se guarda solo. «Todos vinieron» los marca a todos de una vez.",
         "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
         "Puedes apuntar la hora y una nota (por ejemplo, «táctica» o «físico»). Cada día del calendario sale de un color según la asistencia.",
+        "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido, faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
         "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
@@ -3718,6 +3721,28 @@
         g.fillRect(xx, y0, wck, bh);
         g.fillStyle = "#111";
         g.fillText(clk, xx + pad, y0 + bh / 2);
+      } else if (c.tr) {
+        /* Entreno: etiqueta con el equipo y la fecha arriba a la izquierda */
+        let u = Math.min(w, h) / 360,
+          pad = 8 * u,
+          fs = 15 * u,
+          y0 = 10 * u,
+          t1 = "ENTRENO",
+          t2 = (String(c.tr.equipo || "").slice(0, 20) + " · " + c.tr.fecha.split("-").reverse().slice(0, 2).join("/")).toUpperCase();
+        g.font = `700 ${fs}px "Barlow Condensed", Arial, sans-serif`;
+        g.textBaseline = "middle";
+        let w1 = g.measureText(t1).width + 2 * pad,
+          w2 = g.measureText(t2).width + 2 * pad,
+          bh = fs + 2 * pad,
+          xx = 10 * u;
+        g.fillStyle = "#2be36a";
+        g.fillRect(xx, y0, w1, bh);
+        g.fillStyle = "#03140a";
+        g.fillText(t1, xx + pad, y0 + bh / 2);
+        g.fillStyle = "rgba(5,15,10,.82)";
+        g.fillRect(xx + w1, y0, w2, bh);
+        g.fillStyle = "#fff";
+        g.fillText(t2, xx + w1 + pad, y0 + bh / 2);
       }
     }
     if (c.rec) {
@@ -3741,11 +3766,18 @@
     let em = c.emite
       ? `<button class="danger" data-cam="unemit">${c.emite === "on" ? "● En directo · Cortar" : "Conectando… · Cortar"}</button>`
       : `<button class="secondary" data-cam="emit">${ic("live", 18)}Emitir para la familia${plan === "pro" ? "" : " (Pro)"}</button>`;
+    if (c.tr) {
+      c.box.querySelector(".cam-ui").innerHTML = c.listo
+        ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button><button class="danger" data-cam="close">Cerrar</button></div>`
+        : `<div class="cam-row">${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. Pon el móvil en horizontal. Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor.</p>'}`;
+      return;
+    }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
       ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
       : `${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal. El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor.</p>'}`;
   }
-  async function camAbre(id, frente) {
+  /* tr: grabar un entrenamiento ({ fecha, equipo }); sin marcador ni emisión */
+  async function camAbre(id, frente, tr) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream)
       return note("Este móvil o navegador no permite grabar vídeo desde la app.");
     let s;
@@ -3770,7 +3802,7 @@
     v.srcObject = new MediaStream(s.getVideoTracks());
     document.body.appendChild(box);
     document.body.classList.add("cam-on");
-    cam = { id, s, v, video: v, box, canvas: box.querySelector("canvas"), frente: !!frente, rec: null, listo: null, pick: false };
+    cam = { id, tr: tr || null, s, v, video: v, box, canvas: box.querySelector("canvas"), frente: !!frente, rec: null, listo: null, pick: false };
     cam.ctx = cam.canvas.getContext("2d");
     cam.out = cam.canvas.captureStream(30);
     s.getAudioTracks().forEach((t) => cam.out.addTrack(t));
@@ -3933,7 +3965,9 @@
       m = state.matches.find((z) => z.id === c.id) || {},
       lim = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 30),
       ext = /mp4/.test(c.tipo) ? "mp4" : "webm",
-      n = ["partido", lim(x.equipo), lim(x.rival), m.fecha || "", new Date().toTimeString().slice(0, 5).replace(":", "h")].filter(Boolean).join("-");
+      n = c.tr
+        ? ["entreno", lim(c.tr.equipo), c.tr.fecha, new Date().toTimeString().slice(0, 5).replace(":", "h")].filter(Boolean).join("-")
+        : ["partido", lim(x.equipo), lim(x.rival), m.fecha || "", new Date().toTimeString().slice(0, 5).replace(":", "h")].filter(Boolean).join("-");
     return new File([c.listo], n + "." + ext, { type: c.tipo.split(";")[0] });
   }
   function camGuarda() {

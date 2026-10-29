@@ -142,7 +142,7 @@ with sync_playwright() as p:
     pg.screenshot(path=OUT+'/pizarra2_present.png');pg.keyboard.press('Escape')
     # guía y novedades
     nov=json.load(open(REPO+'/version.json'))
-    check('novedades 9.4 hablan de la pizarra en horizontal',nov['version']=='9.4' and any('horizontal' in x for x in nov['novedades']))
+    check('novedades al día (9.5: grabar el entreno)',nov['version']=='9.5' and any('Grabar el entreno' in x for x in nov['novedades']))
     js=open(REPO+'/app.js').read()
     check('guía de uso explica pasos y conos','fila «Paso»' in js and 'conos, vallas' in js)
     # móvil
