@@ -243,7 +243,7 @@
   const empty = (i, t, s) =>
     `<div class="blank">${ic(i, 34)}<b>${t}</b><span>${s}</span></div>`;
   const mini = (t) =>
-    `<div class="mini" aria-label="${t.games} partidos, ${t.minutes} minutos, ${t.goals} goles, ${t.starts} titularidades"><span><b>${t.games}</b>partidos</span><span><b>${t.minutes}</b>min</span><span><b>${t.goals}</b>goles</span><span><b>${t.starts}</b>titular</span></div>`;
+    `<div class="mini" aria-label="${t.games} partidos, ${t.minutes} minutos, ${t.goals} goles, ${t.starts} titularidades${t.amarillas ? ", " + t.amarillas + " amarillas" : ""}${t.rojas ? ", " + t.rojas + " rojas" : ""}"><span><b>${t.games}</b>partidos</span><span><b>${t.minutes}</b>min</span><span><b>${t.goals}</b>goles</span><span><b>${t.starts}</b>titular</span>${t.cap ? `<span><b>${t.cap}</b>capitán</span>` : ""}${t.amarillas ? `<span class="tjm"><i class="tj a"></i><b>${t.amarillas}</b></span>` : ""}${t.rojas ? `<span class="tjm"><i class="tj r"></i><b>${t.rojas}</b></span>` : ""}</div>`;
   const MES = [
     "ene",
     "feb",
@@ -321,6 +321,52 @@
     let n = p ? parseInt(p.dorsal) : NaN;
     return n >= 0 && n <= 99 ? String(n) : "";
   };
+  /* Datos del partido (dentro de alineacion): capitan, portero, cambios [{id,m,sale,entra}]
+     y tarjetas [{id,m,pid,c:"a"|"r"}]. Los que vienen del Directo llevan lv:1. */
+  const dname = (id) => {
+      let d = dorsal(state.players.find((p) => p.id === id));
+      return (d ? d + " · " : "") + name(id);
+    },
+    gkOf = (al, ids) => {
+      let g = al && al.portero;
+      if (g && (!ids || ids.includes(g))) return g;
+      return (al && al.slots && al.slots[0]) || "";
+    },
+    mdList = (al, k) =>
+      (al && Array.isArray(al[k]) ? al[k] : []).filter((z) => z && typeof z === "object"),
+    rid = () => Math.random().toString(36).slice(2, 10);
+  /* Minutos jugados según titulares, cambios y expulsiones (roja o 2ª amarilla). */
+  function calcMin(players, cambios, tarjetas, total) {
+    let on = {},
+      out = {},
+      am = {},
+      ev = [];
+    players.forEach((p) => {
+      out[p.id] = 0;
+      if (p.starter) on[p.id] = 0;
+    });
+    cambios.forEach((c) => ev.push({ m: Number(c.m) || 0, s: c.sale, e: c.entra }));
+    tarjetas
+      .slice()
+      .sort((a, b) => (Number(a.m) || 0) - (Number(b.m) || 0))
+      .forEach((t) => {
+        if (t.c === "a") am[t.pid] = (am[t.pid] || 0) + 1;
+        if (t.c === "r" || am[t.pid] === 2) ev.push({ m: Number(t.m) || 0, s: t.pid, x: 1 });
+      });
+    ev.sort((a, b) => a.m - b.m);
+    let fuera = {};
+    ev.forEach((e) => {
+      let m = Math.min(total, Math.max(0, e.m));
+      if (e.s in on) {
+        out[e.s] += m - on[e.s];
+        delete on[e.s];
+      }
+      if (e.x) fuera[e.s] = 1;
+      if (e.e && e.e in out && !(e.e in on) && !fuera[e.e]) on[e.e] = m;
+    });
+    Object.keys(on).forEach((id) => (out[id] += total - on[id]));
+    return out;
+  }
   function parseJson(v, fb) {
     if (v && typeof v === "object") return v;
     try {
@@ -416,10 +462,14 @@
           r.starts += e.starter ? 1 : 0;
           r.minutes += Number(e.minutes) || 0;
           r.goals += Number(e.goals) || 0;
+          mdList(m.alineacion, "tarjetas").forEach((t) => {
+            if (t.pid === pid) r[t.c === "r" ? "rojas" : "amarillas"]++;
+          });
+          if (m.alineacion && m.alineacion.capitan === pid) r.cap++;
         }
         return r;
       },
-      { games: 0, starts: 0, minutes: 0, goals: 0 },
+      { games: 0, starts: 0, minutes: 0, goals: 0, amarillas: 0, rojas: 0, cap: 0 },
     );
   }
   function render() {
@@ -994,11 +1044,14 @@
         formations[state.mode][d.alineacion.formation] ||
         formations[state.mode][Object.keys(formations[state.mode])[0]],
       slots = d.alineacion.slots || {},
-      start = d.players.filter((x) => x.starter);
+      start = d.players.filter((x) => x.starter),
+      al = d.alineacion,
+      gk = gkOf(al, d.players.map((x) => x.id)),
+      cap = al.capitan;
     let choices = roster()
       .map((p) => {
         let x = d.players.find((e) => e.id === p.id);
-        return `<div class="checkline"><span>${esc(p.nombre)}</span><input type="checkbox" data-field="called" data-id="${p.id}" aria-label="Convocado: ${esc(p.nombre)}" ${x ? "checked" : ""}><input type="checkbox" data-field="starter" data-id="${p.id}" aria-label="Titular: ${esc(p.nombre)}" ${x?.starter ? "checked" : ""}><input type="number" data-field="minutes" data-id="${p.id}" aria-label="Minutos de ${esc(p.nombre)}" min="0" value="${x?.minutes || 0}" ${x ? "" : "disabled"}><input type="number" data-field="goals" data-id="${p.id}" aria-label="Goles de ${esc(p.nombre)}" min="0" value="${x?.goals || 0}" ${x ? "" : "disabled"}></div>`;
+        return `<div class="checkline"><span>${esc(p.nombre)}${x && p.id === cap ? ' <em class="tg c" title="Capitán">C</em>' : ""}${x && p.id === gk ? ' <em class="tg g" title="Portero">POR</em>' : ""}</span><input type="checkbox" data-field="called" data-id="${p.id}" aria-label="Convocado: ${esc(p.nombre)}" ${x ? "checked" : ""}><input type="checkbox" data-field="starter" data-id="${p.id}" aria-label="Titular: ${esc(p.nombre)}" ${x?.starter ? "checked" : ""}><input type="number" data-field="minutes" data-id="${p.id}" aria-label="Minutos de ${esc(p.nombre)}" min="0" value="${x?.minutes || 0}" ${x ? "" : "disabled"}><input type="number" data-field="goals" data-id="${p.id}" aria-label="Goles de ${esc(p.nombre)}" min="0" value="${x?.goals || 0}" ${x ? "" : "disabled"}></div>`;
       })
       .join("");
     return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
@@ -1024,7 +1077,7 @@
       .map((s, i) => {
         let pid = slots[i],
           pl = pid && state.players.find((x) => x.id === pid);
-        return `<div class="slot" style="left:${s[1]}%;top:${s[2]}%"><button data-slot="${i}" class="${pid ? "fill" : ""} ${state.selectedSlot === i ? "sel" : ""}" aria-label="${pid ? esc(name(pid)) + " en " + s[0] : "Posición " + s[0] + " libre"}" title="${pid ? "Arrastra para mover" : "Elegir jugador"}">${pid ? (pl && pl.foto && pl.foto.startsWith("data:") ? `<img src="${esc(pl.foto)}" alt="">${dorsal(pl) ? `<em class="dn">${dorsal(pl)}</em>` : ""}` : esc(dorsal(pl) || (name(pid)[0] || "?").toUpperCase())) : "+"}</button><span>${pid ? esc(name(pid)) : s[0]}</span></div>`;
+        return `<div class="slot" style="left:${s[1]}%;top:${s[2]}%"><button data-slot="${i}" class="${pid ? "fill" : ""}${pid && pid === gk ? " gk" : ""} ${state.selectedSlot === i ? "sel" : ""}" aria-label="${pid ? esc(name(pid)) + " en " + s[0] : "Posición " + s[0] + " libre"}" title="${pid ? "Arrastra para mover" : "Elegir jugador"}">${pid ? (pl && pl.foto && pl.foto.startsWith("data:") ? `<img src="${esc(pl.foto)}" alt="">${dorsal(pl) ? `<em class="dn">${dorsal(pl)}</em>` : ""}` : esc(dorsal(pl) || (name(pid)[0] || "?").toUpperCase())) : "+"}</button>${pid && pid === cap ? '<i class="capb" title="Capitán" aria-label="Capitán">C</i>' : ""}<span>${pid ? esc(name(pid)) : s[0]}</span></div>`;
       })
       .join("")}</div>
 <div class="slotmenu">${
@@ -1040,9 +1093,73 @@
             : "")
         : '<span class="muted">Toca una posición para elegir jugador, o arrástralo desde arriba.</span>'
     }</div></div>
-<div><h3>Convocatoria</h3><div style="height:8px"></div><div class="checkline muted"><span>Jugador</span><span>Conv.</span><span>Inicial</span><span>Min.</span><span>Goles</span></div>${choices || '<div class="blank">Añade primero jugadores en Plantilla.</div>'}<h3 style="margin-top:18px">Inicial</h3><div style="margin-top:6px">${start.map((x) => `<span class="badge">${esc(name(x.id))}</span>`).join("") || '<span class="muted">Selecciona titulares.</span>'}</div></div></div>
+<div><h3>Convocatoria</h3><div style="height:8px"></div><div class="checkline muted"><span>Jugador</span><span>Conv.</span><span>Inicial</span><span>Min.</span><span>Goles</span></div>${choices || '<div class="blank">Añade primero jugadores en Plantilla.</div>'}<h3 style="margin-top:18px">Inicial</h3><div style="margin-top:6px">${start.map((x) => `<span class="badge">${esc(name(x.id))}</span>`).join("") || '<span class="muted">Selecciona titulares.</span>'}</div>${mdEditor(d, gk)}</div></div>
 <div class="savebar"><button class="primary" data-action="save" ${state.busy ? "disabled" : ""}>${ic("check", 20)}Guardar partido</button><button class="secondary" data-action="cancel">Cancelar</button></div></section>`;
   }
+  /* Capitán, portero, cambios y tarjetas del partido (también se rellenan solos desde el Directo) */
+  function mdEditor(d, gk) {
+    let al = d.alineacion,
+      conv = d.players
+        .map((x) => x.id)
+        .sort((a, b) => name(a).localeCompare(name(b), "es")),
+      opt = (v, ph) =>
+        `<option value="">${ph}</option>` +
+        conv
+          .map(
+            (id) =>
+              `<option value="${esc(id)}" ${id === v ? "selected" : ""}>${esc(dname(id))}</option>`,
+          )
+          .join(""),
+      min = (k, i, z) =>
+        `<input type="number" min="0" max="130" inputmode="numeric" data-md="${k}" data-i="${i}" data-k="m" value="${z.m === "" || z.m == null ? "" : Number(z.m) || 0}" placeholder="Min." aria-label="Minuto">`,
+      del = (k, i, t) =>
+        `<button type="button" class="ib d" data-mddel="${k}" data-i="${i}" aria-label="${t}" title="${t}">${ic("x", 18)}</button>`,
+      cb = mdList(al, "cambios")
+        .map(
+          (z, i) =>
+            `<div class="mdrow cb">${min("cambios", i, z)}<label><small>▼ Sale</small><select data-md="cambios" data-i="${i}" data-k="sale" aria-label="Jugador que sale">${opt(z.sale, "Sale…")}</select></label><label><small>▲ Entra</small><select data-md="cambios" data-i="${i}" data-k="entra" aria-label="Jugador que entra">${opt(z.entra, "Entra…")}</select></label>${del("cambios", i, "Quitar cambio")}</div>`,
+        )
+        .join(""),
+      tj = mdList(al, "tarjetas")
+        .map(
+          (z, i) =>
+            `<div class="mdrow">${min("tarjetas", i, z)}<label><small>Jugador</small><select data-md="tarjetas" data-i="${i}" data-k="pid" aria-label="Jugador de la tarjeta">${opt(z.pid, "Jugador…")}</select></label><label><small>Tarjeta</small><select data-md="tarjetas" data-i="${i}" data-k="c" aria-label="Color de la tarjeta"><option value="a" ${z.c !== "r" ? "selected" : ""}>🟨 Amarilla</option><option value="r" ${z.c === "r" ? "selected" : ""}>🟥 Roja</option></select></label>${del("tarjetas", i, "Quitar tarjeta")}</div>`,
+        )
+        .join("");
+    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div></div>`;
+  }
+  /* Duración del partido para calcular minutos: la del Directo si lo hay, si no la normal. */
+  const mdTotal = (id) => {
+    let x = id && liveRows[id];
+    return ((x && Number(x.parte_min)) || LIVE_PARTE[state.mode] || 30) * 2;
+  };
+  document.addEventListener("click", (e) => {
+    let d = state.draft;
+    if (!d || state.live || !e.target.closest) return;
+    let a = e.target.closest("[data-mdadd]"),
+      r = e.target.closest("[data-mddel]"),
+      c = e.target.closest("[data-mdcalc]");
+    if (!a && !r && !c) return;
+    if (viendo) return note(SOLO_VER);
+    let al = d.alineacion;
+    if (a) {
+      let k = a.dataset.mdadd;
+      al[k] = mdList(al, k);
+      if (al[k].length >= 40) return note("Demasiados en este partido.");
+      al[k].push(k === "cambios" ? { id: rid(), m: "", sale: "", entra: "" } : { id: rid(), m: "", pid: "", c: "a" });
+    }
+    if (r) {
+      let k = r.dataset.mddel;
+      al[k] = mdList(al, k);
+      al[k].splice(Number(r.dataset.i), 1);
+    }
+    if (c) {
+      let mins = calcMin(d.players, mdList(al, "cambios").filter((z) => z.sale || z.entra), mdList(al, "tarjetas"), mdTotal(state.editing));
+      d.players.forEach((p) => (p.minutes = Math.round(mins[p.id] || 0)));
+      note("Minutos calculados con los titulares, los cambios y las expulsiones. Puedes retocarlos.", true);
+    }
+    render();
+  });
   function place(i, pid) {
     const d = state.draft,
       sl = d.alineacion.slots,
@@ -1412,7 +1529,10 @@
     g.stroke();
     g.restore();
     const maxW = o.modalidad === "11" ? 156 : 182,
-      R0 = 46;
+      R0 = 46,
+      gkId = o.pizarra ? "" : gkOf(al),
+      capId = o.pizarra ? "" : al.capitan,
+      GK = "#fbbf24";
     pos.forEach((s, i) => {
       let px = o.pizarra
           ? fx + (fw * s[1]) / 100
@@ -1440,11 +1560,11 @@
       }
       g.beginPath();
       g.arc(px, py, R0 + 8, 0, Math.PI * 2);
-      g.fillStyle = "rgba(43,227,106,.25)";
+      g.fillStyle = id === gkId ? "rgba(251,191,36,.28)" : "rgba(43,227,106,.25)";
       g.fill();
       g.beginPath();
       g.arc(px, py, R0, 0, Math.PI * 2);
-      g.fillStyle = LIME;
+      g.fillStyle = id === gkId ? GK : LIME;
       g.fill();
       if (imgs[id]) {
         g.save();
@@ -1482,6 +1602,21 @@
         g.font = `800 30px ${ff}`;
         g.textAlign = "center";
         g.fillText(dn(id), bx, by + 10);
+      }
+      if (id === capId) {
+        let bx = px - R0 * 0.72,
+          by = py - R0 * 0.72;
+        g.beginPath();
+        g.arc(bx, by, 24, 0, Math.PI * 2);
+        g.fillStyle = "#ffffff";
+        g.fill();
+        g.lineWidth = 4;
+        g.strokeStyle = "#03140a";
+        g.stroke();
+        g.fillStyle = "#03140a";
+        g.font = `800 30px ${ff}`;
+        g.textAlign = "center";
+        g.fillText("C", bx, by + 10);
       }
       g.font = `700 34px ${ff}`;
       let t = clipName(g, nm(id), maxW),
@@ -1707,6 +1842,26 @@
       return note(`Necesitas al menos ${modeCount()} convocados.`);
     if (d.players.filter((x) => x.starter).length !== modeCount())
       return note(`Selecciona exactamente ${modeCount()} titulares.`);
+    {
+      let al = d.alineacion,
+        conv = new Set(d.players.map((x) => x.id)),
+        ok = (id) => id && conv.has(id),
+        byMin = (a, b) => (Number(a.m) || 0) - (Number(b.m) || 0);
+      al.cambios = mdList(al, "cambios")
+        .filter((z) => ok(z.sale) || ok(z.entra))
+        .map((z) => ({ ...z, m: Number(z.m) || 0, sale: ok(z.sale) ? z.sale : "", entra: ok(z.entra) ? z.entra : "" }))
+        .sort(byMin);
+      al.tarjetas = mdList(al, "tarjetas")
+        .filter((z) => ok(z.pid))
+        .map((z) => ({ ...z, m: Number(z.m) || 0, c: z.c === "r" ? "r" : "a" }))
+        .sort(byMin);
+      ["cambios", "tarjetas"].forEach((k) => {
+        if (!al[k].length) delete al[k];
+      });
+      ["capitan", "portero"].forEach((k) => {
+        if (al[k] && !conv.has(al[k])) delete al[k];
+      });
+    }
     let starters = new Set(d.players.filter((x) => x.starter).map((x) => x.id));
     d.alineacion.slots = Object.fromEntries(
       Object.entries(d.alineacion.slots || {}).filter(([, pid]) =>
@@ -2380,7 +2535,7 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto y el nombre de quien marca cada gol de ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
@@ -2469,12 +2624,12 @@
     {
       el: '[data-tab="partidos"]',
       t: "Partidos",
-      p: "Pulsa «+ Partido»: pon fecha y rival, marca convocados y titulares, elige la formación y arrastra a cada jugador a su sitio en el campo. Después apunta minutos, goles y el resultado.",
+      p: "Pulsa «+ Partido»: pon fecha y rival, marca convocados y titulares, elige la formación y arrastra a cada jugador a su sitio en el campo. Elige capitán y portero, y después apunta minutos, goles, cambios, tarjetas y el resultado.",
     },
     {
       el: '[data-tab="partidos"]',
       t: "Comparte y juega en directo",
-      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto y goleadores en vivo, con un enlace para que la familia lo siga sin cuenta. Con la cámara del Directo grabas el partido con el marcador encima.",
+      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto, goleadores, cambios y tarjetas en vivo, con un enlace para que la familia lo siga sin cuenta. Con la cámara del Directo grabas el partido con el marcador encima.",
     },
     {
       el: '[data-tab="pizarra"]',
@@ -2590,6 +2745,9 @@
         "Pulsa «+ Partido»: pon la fecha y el rival, marca convocados y titulares y elige la formación.",
         "Arrastra a cada jugador a su sitio en el campo.",
         "Después del partido apunta los minutos, los goles y el resultado.",
+        "En <b>Datos del partido</b> (al crear o editar un partido) eliges el <b>capitán</b> y el <b>portero</b>. El capitán lleva una «C» y el portero sale de otro color en el campo y en la imagen. Si no eliges portero, es el que pongas en la portería (POR).",
+        "Ahí mismo apuntas los <b>cambios</b> (minuto, quién sale y quién entra, con su dorsal) y las <b>tarjetas</b> amarillas y rojas. «Calcular minutos» rellena los minutos de cada jugador con los titulares, los cambios y las expulsiones.",
+        "Los cambios y tarjetas que apuntes en el Directo aparecen solos aquí. Las tarjetas de cada jugador salen en su ficha de Plantilla y en Estadísticas.",
         "Puedes sacar una imagen de la alineación para mandarla por WhatsApp.",
       ],
     },
@@ -2597,7 +2755,9 @@
       t: "Directo",
       p: [
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
-        "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta. Con «Desactivar enlace» deja de funcionar.",
+        "<b>Cambios</b>: pulsa «🔄 Cambio», elige quién sale y luego quién entra (salen con su dorsal). <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
+        "Debajo eliges el <b>capitán</b> y el <b>portero</b>. Al pulsar «Terminar partido», los minutos de cada jugador se calculan solos con los cambios.",
+        "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta: ve el marcador, el minuto, los goles, los cambios y las tarjetas. Con «Desactivar enlace» deja de funcionar.",
         "«Cámara: grabar el partido» graba vídeo con el marcador y el minuto dentro. Pon el móvil en horizontal. El vídeo se guarda solo en tu móvil. Grabar es gratis.",
         "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
@@ -3273,6 +3433,25 @@
     }
     if (e.target.dataset.field)
       change(e.target.dataset.field, e.target.dataset.id, e.target);
+    let d = state.draft;
+    if (!d) return;
+    if (e.target.id === "mdCap" || e.target.id === "mdGk") {
+      let k = e.target.id === "mdCap" ? "capitan" : "portero";
+      if (e.target.value) d.alineacion[k] = e.target.value;
+      else delete d.alineacion[k];
+      render();
+    }
+    let md = e.target.dataset.md;
+    if (md) {
+      let z = mdList(d.alineacion, md)[Number(e.target.dataset.i)],
+        k = e.target.dataset.k;
+      if (!z) return;
+      if (k === "m") {
+        let v = parseInt(e.target.value);
+        z.m = v >= 0 ? Math.min(130, v) : "";
+      } else z[k] = e.target.value;
+      delete z.lv;
+    }
   });
   $("view").addEventListener("input", (e) => {
     if (
@@ -3356,18 +3535,49 @@
     let c = liveClock(x, now);
     return `<div class="lv-board"><div class="lv-team">${own ? `<input id="lvTeam" value="${esc(x.equipo)}" maxlength="60" aria-label="Nombre de tu equipo" title="Toca para cambiar el nombre de tu equipo">` : `<span>${esc(x.equipo)}</span>`}</div><div class="lv-score" role="img" aria-label="Marcador ${x.gf} a ${x.gc}"><b>${x.gf}</b><i>-</i><b>${x.gc}</b></div><div class="lv-team"><span>${esc(x.rival)}</span></div></div><div class="lv-clock${x.desde ? " run" : ""}"><span class="lv-st">${x.estado === "1T" || x.estado === "2T" ? "● " + LIVE_EST[x.estado] : x.estado === "pre" ? LIVE_EST.pre : ""}</span><b data-lvmin>${c[0]}</b><small data-lvss>${c[1]}</small></div>`;
   }
+  const lvN = (n, d) => (d ? d + " " : "") + (n || "Jugador");
   function liveEvents(x, own) {
-    let ev = (Array.isArray(x.eventos) ? x.eventos : []).slice().reverse();
+    let am = {},
+      all = (Array.isArray(x.eventos) ? x.eventos : []).map((e) => {
+        if (e.t === "a") am[e.pid || e.n] = (am[e.pid || e.n] || 0) + 1;
+        return { e, a2: e.t === "a" && am[e.pid || e.n] === 2 };
+      }),
+      ev = all.reverse(),
+      Q = { s: "el cambio", a: "la tarjeta", r: "la tarjeta" };
     return `<div class="lv-ev">${
       ev.length
         ? ev
-            .map(
-              (e) =>
-                `<div class="lv-e ${e.t === "c" ? "c" : "f"}"><b>${Number(e.m) || 0}'</b><span>⚽ ${esc(e.t === "c" ? x.rival : e.n || x.equipo)}${e.t !== "c" && e.n ? ` <small>${esc(x.equipo)}</small>` : ""}</span>${own ? `<button class="ib d" data-lvdel="${esc(e.id)}" aria-label="Quitar el gol del minuto ${Number(e.m) || 0}" title="Quitar gol">${ic("x", 18)}</button>` : ""}</div>`,
-            )
+            .map(({ e, a2 }) => {
+              let m = Number(e.m) || 0,
+                body =
+                  e.t === "s"
+                    ? `<span class="lv-sub"><span class="in">▲ ${esc(lvN(e.ni, e.di))}</span><span class="out">▼ ${esc(lvN(e.n, e.d))}</span></span>`
+                    : e.t === "a" || e.t === "r"
+                      ? `<span><i class="tj ${e.t}" aria-label="Tarjeta ${e.t === "r" ? "roja" : "amarilla"}"></i>${a2 ? '<i class="tj r" aria-label="y expulsión"></i>' : ""} ${esc(lvN(e.n, e.d))}${a2 ? " <small>2ª amarilla · expulsado</small>" : e.t === "r" ? " <small>expulsado</small>" : ""}</span>`
+                      : `<span>⚽ ${esc(e.t === "c" ? x.rival : e.n ? lvN(e.n, e.d) : x.equipo)}${e.t !== "c" && e.n ? ` <small>${esc(x.equipo)}</small>` : ""}</span>`;
+              return `<div class="lv-e ${e.t === "c" ? "c" : e.t === "s" ? "s" : e.t === "a" || e.t === "r" ? "t " + e.t : "f"}"><b>${m}'</b>${body}${own ? `<button class="ib d" data-lvdel="${esc(e.id)}" aria-label="Quitar ${Q[e.t] || "el gol"} del minuto ${m}" title="Quitar">${ic("x", 18)}</button>` : ""}</div>`;
+            })
             .join("")
-        : '<p class="muted">Aún no hay goles.</p>'
+        : '<p class="muted">Aún no hay goles, cambios ni tarjetas.</p>'
     }</div>`;
+  }
+  /* Quién está en el campo según los titulares y lo apuntado en el Directo */
+  function liveCampo(m, x) {
+    let on = new Set(entries(m).filter((e) => e.starter).map((e) => e.id)),
+      fuera = new Set(),
+      am = {};
+    (Array.isArray(x.eventos) ? x.eventos : []).forEach((e) => {
+      if (e.t === "s") {
+        on.delete(e.pid);
+        if (e.pin && !fuera.has(e.pin)) on.add(e.pin);
+      }
+      if (e.t === "a") am[e.pid] = (am[e.pid] || 0) + 1;
+      if (e.t === "r" || (e.t === "a" && am[e.pid] === 2)) {
+        on.delete(e.pid);
+        fuera.add(e.pid);
+      }
+    });
+    return { on, fuera };
   }
   function liveView() {
     let m = state.matches.find((z) => z.id === state.live),
@@ -3408,8 +3618,52 @@
             .join(
               "",
             )}<button data-scorer="">Sin asignar</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`
+        : livePick2(m, x),
+      al = m.alineacion || {},
+      ids = entries(m).map((e) => e.id),
+      gk = gkOf(al, ids),
+      so = (v, ph) =>
+        `<option value="">${ph}</option>` +
+        ids
+          .slice()
+          .sort((a, b) => name(a).localeCompare(name(b), "es"))
+          .map((id) => `<option value="${esc(id)}" ${id === v ? "selected" : ""}>${esc(dname(id))}</option>`)
+          .join(""),
+      capgk = ids.length
+        ? `<div class="formgrid lv-cg"><label>Capitán<select id="lvCap">${so(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="lvGk">${so(gk, "—")}</select></label></div>`
         : "";
-    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${pick}<h3 class="lv-h">Goles</h3>${liveEvents(x, true)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto y los goleadores, sin necesidad de cuenta. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios y las tarjetas, sin necesidad de cuenta. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+  }
+  /* Elegir jugadores para un cambio (sale y luego entra) o una tarjeta */
+  function livePick2(m, x) {
+    let k = state.lvPick;
+    if (!k) return "";
+    let c = liveCampo(m, x),
+      al = m.alineacion || {},
+      ids = entries(m).map((e) => e.id),
+      gk = gkOf(al, ids),
+      L = (arr) =>
+        arr
+          .slice()
+          .sort((a, b) => name(a).localeCompare(name(b), "es"))
+          .map(
+            (id) =>
+              `<button data-lvp="${esc(id)}">${esc(dname(id))}${id === al.capitan ? " (C)" : ""}${id === gk ? " (POR)" : ""}</button>`,
+          )
+          .join(""),
+      t,
+      list;
+    if (k === "sub") {
+      t = "Cambio · ¿Quién sale?";
+      list = L([...c.on]) || '<span class="muted">No hay nadie en el campo.</span>';
+    } else if (k.out) {
+      t = `Cambio · ¿Quién entra por ${esc(name(k.out))}?`;
+      list = L(ids.filter((id) => !c.on.has(id) && !c.fuera.has(id))) || '<span class="muted">No quedan suplentes convocados.</span>';
+    } else {
+      t = `<i class="tj ${k}"></i>Tarjeta ${k === "r" ? "roja" : "amarilla"} · ¿A quién?`;
+      list = L(ids.filter((id) => !c.fuera.has(id)));
+    }
+    return `<div class="lv-pick"><h3>${t}</h3><div class="slotmenu">${list}<button class="danger" data-live="nopick">Cancelar</button></div></div>`;
   }
   async function openLive(id) {
     let m = state.matches.find((z) => z.id === id);
@@ -3446,6 +3700,7 @@
     }
     state.live = id;
     state.livePick = false;
+    state.lvPick = null;
     render();
     window.scrollTo(0, 0);
   }
@@ -3481,13 +3736,33 @@
     return liveQ;
   }
   /* Pasa el resultado y los goles al partido (estadísticas) */
-  async function liveMatch(x, pid, d) {
+  async function liveMatch(x, pid, d, fin) {
     let m = state.matches.find((z) => z.id === x.partido_id);
     if (!m) return;
     if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
     m.alineacion.resultado = { gf: x.gf, gc: x.gc };
     let e = pid && entries(m).find((z) => z.id === pid);
     if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + d);
+    /* Cambios y tarjetas del Directo al partido (lo apuntado a mano después se respeta) */
+    let al = m.alineacion,
+      ev = Array.isArray(x.eventos) ? x.eventos : [],
+      mano = (k) => mdList(al, k).filter((z) => !z.lv),
+      hay = new Set(mano("cambios").concat(mano("tarjetas")).map((z) => z.id)),
+      byMin = (a, b) => (Number(a.m) || 0) - (Number(b.m) || 0);
+    al.cambios = mano("cambios")
+      .concat(ev.filter((z) => z.t === "s" && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, sale: z.pid || "", entra: z.pin || "", lv: 1 })))
+      .sort(byMin);
+    al.tarjetas = mano("tarjetas")
+      .concat(ev.filter((z) => (z.t === "a" || z.t === "r") && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, pid: z.pid || "", c: z.t, lv: 1 })))
+      .sort(byMin);
+    ["cambios", "tarjetas"].forEach((k) => {
+      if (!al[k].length) delete al[k];
+    });
+    /* Al terminar, los minutos de cada jugador salen solos de los cambios */
+    if (fin && (ev.some((z) => z.t !== "f" && z.t !== "c") || entries(m).every((z) => !Number(z.minutes)))) {
+      let mins = calcMin(entries(m), mdList(al, "cambios"), mdList(al, "tarjetas"), (Number(x.parte_min) || 30) * 2);
+      entries(m).forEach((z) => (z.minutes = Math.round(mins[z.id] || 0)));
+    }
     let r = await db
       .from("futbol_personal_partidos")
       .update({
@@ -3506,25 +3781,41 @@
     };
   function liveGoal(x, t, pid) {
     if (!Array.isArray(x.eventos)) x.eventos = [];
-    if (x.eventos.length >= 60) return note("Demasiados goles en este partido.");
-    let e = { id: Math.random().toString(36).slice(2, 10), m: liveMin(x), t };
+    if (x.eventos.length >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
+    let e = { id: rid(), m: liveMin(x), t };
     if (t === "f") {
       x.gf = Math.min(99, x.gf + 1);
-      if (pid) {
-        e.pid = pid;
-        e.n = name(pid);
-      }
+      if (pid) liveWho(e, pid);
     } else x.gc = Math.min(99, x.gc + 1);
     x.eventos.push(e);
     liveSave(x, () => liveMatch(x, e.pid, 1));
   }
+  /* Nombre y dorsal del jugador dentro del evento (se ve en el enlace público) */
+  function liveWho(e, pid, k = "") {
+    let p = state.players.find((z) => z.id === pid);
+    e[k ? "pin" : "pid"] = pid;
+    e["n" + k] = name(pid).slice(0, 30);
+    if (dorsal(p)) e["d" + k] = dorsal(p);
+  }
+  /* Cambio (t "s": pid sale, pin entra) o tarjeta (t "a" amarilla / "r" roja) */
+  function liveIncid(x, t, pid, pin) {
+    if (!Array.isArray(x.eventos)) x.eventos = [];
+    if (x.eventos.length >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
+    let e = { id: rid(), m: liveMin(x), t };
+    liveWho(e, pid);
+    if (pin) liveWho(e, pin, "i");
+    x.eventos.push(e);
+    liveSave(x, () => liveMatch(x, null, 0));
+  }
   function liveDel(x, id) {
-    let e = (x.eventos || []).find((z) => z.id === id);
-    if (!e || !confirm(`¿Quitar el gol del minuto ${e.m}?`)) return;
+    let e = (x.eventos || []).find((z) => z.id === id),
+      q = { s: "el cambio", a: "la tarjeta", r: "la tarjeta" }[e && e.t] || "el gol";
+    if (!e || !confirm(`¿Quitar ${q} del minuto ${e.m}?`)) return;
     x.eventos = x.eventos.filter((z) => z !== e);
     if (e.t === "c") x.gc = Math.max(0, x.gc - 1);
-    else x.gf = Math.max(0, x.gf - 1);
-    liveSave(x, () => liveMatch(x, e.pid, -1));
+    else if (e.t === "f" || !e.t) x.gf = Math.max(0, x.gf - 1);
+    let gol = e.t === "f" || !e.t;
+    liveSave(x, () => liveMatch(x, gol ? e.pid : null, gol ? -1 : 0));
   }
   async function liveShare(x) {
     let url = liveUrl(x),
@@ -3564,7 +3855,19 @@
     if (!x) return;
     let b = e.target.closest("[data-live]"),
       sc = e.target.closest("[data-scorer]"),
-      dl = e.target.closest("[data-lvdel]");
+      dl = e.target.closest("[data-lvdel]"),
+      lp = e.target.closest("[data-lvp]");
+    if (lp && state.lvPick) {
+      let k = state.lvPick,
+        id = lp.dataset.lvp;
+      if (k === "sub") state.lvPick = { out: id };
+      else {
+        state.lvPick = null;
+        if (k.out) liveIncid(x, "s", k.out, id);
+        else liveIncid(x, k, id);
+      }
+      return render();
+    }
     if (sc) {
       state.livePick = false;
       liveGoal(x, "f", sc.dataset.scorer);
@@ -3580,13 +3883,20 @@
     if (k === "close") {
       state.live = null;
       state.livePick = false;
+      state.lvPick = null;
+      return render();
+    }
+    if (k === "sub" || k === "ta" || k === "tr") {
+      state.livePick = false;
+      state.lvPick = k === "sub" ? "sub" : k === "ta" ? "a" : "r";
       return render();
     }
     if (k === "cam") return camAbre(x.partido_id);
     if (k === "share") return liveShare(x);
     if (k === "off") return liveOff(x);
-    if (k === "nopick") state.livePick = false;
+    if (k === "nopick") state.livePick = state.lvPick = null;
     if (k === "gf") {
+      state.lvPick = null;
       if (m && entries(m).length) state.livePick = true;
       else liveGoal(x, "f", "");
     }
@@ -3622,7 +3932,7 @@
         x.acum_ms = Math.max(0, x.acum_ms + (k === "m+" ? 60000 : -60000));
         if (run) liveStart(x);
       }
-      liveSave(x, k === "end" ? () => liveMatch(x, null, 0) : null);
+      liveSave(x, k === "end" ? () => liveMatch(x, null, 0, true) : null);
     }
     render();
   });
@@ -3635,6 +3945,19 @@
         localStorage.setItem("mf_equipo", x.equipo);
       } catch (z) {}
       liveSave(x);
+      render();
+    }
+    if (e.target.id === "lvCap" || e.target.id === "lvGk") {
+      let m = state.matches.find((z) => z.id === x.partido_id);
+      if (!m) return;
+      if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
+      let k = e.target.id === "lvCap" ? "capitan" : "portero";
+      if (e.target.value) m.alineacion[k] = e.target.value;
+      else delete m.alineacion[k];
+      db.from("futbol_personal_partidos")
+        .update({ alineacion: JSON.stringify(m.alineacion) })
+        .eq("id", m.id)
+        .then((r) => r.error && note(r.error.message));
       render();
     }
     if (e.target.id === "lvDur") {
@@ -4124,7 +4447,7 @@
       liveSkew = Date.parse(pubRow.ahora) - Date.now();
     pubVideo((pubRow && pubRow.video_desde) || null);
     $("pubData").innerHTML = pubRow
-        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}</div>${liveBoard(pubRow, serverNow(), false)}<h3 class="lv-h">Goles</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
+        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}</div>${liveBoard(pubRow, serverNow(), false)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
         : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>';
   }
   function startPub() {
