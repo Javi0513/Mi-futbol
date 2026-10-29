@@ -4,7 +4,7 @@ import sys;pass;import fonts
 import http.server,threading,functools,json
 from playwright.sync_api import sync_playwright
 from PIL import Image
-# v9.3: dorsales + fichas (jugadores, rivales, balón, conos, vallas…) + jugada por pasos animada + vídeo.
+# v9.3/9.4: dorsales + fichas (jugadores, rivales, balón, conos, vallas…) + jugada por pasos animada + vídeo.
 FAKE=open(TESTS+'/run.py').read().split('FAKE = r"""')[1].split('"""')[0]
 src=open(TESTS+'/feat.py').read();SEED=src.split('SEED="""')[1].split('"""')[0]
 N7=['Adri leon','Antonio Miguel','Camacho','Capi','Chamako','Chinchilla','Chuches','David','Edu wadro'];N11=N7+['German','Hugo','Jairo','Javier Casado']
@@ -15,7 +15,9 @@ def store(pg,k='7'):return json.loads(pg.evaluate("localStorage.getItem('mf_piza
 def items(pg,k='7'):return store(pg,k).get('items',[])
 def see(pg):pg.evaluate("document.getElementById('bfield').scrollIntoView({block:'center'})");pg.wait_for_timeout(80)
 def at(pg,q):
-    b=pg.locator('#bcanvas').bounding_box();return (b['x']+b['width']*q[0],b['y']+b['height']*q[1])
+    b=pg.locator('#bcanvas').bounding_box()
+    if pg.locator('#boardPanel.land').count():q=(q[1],1-q[0])
+    return (b['x']+b['width']*q[0],b['y']+b['height']*q[1])
 def drag(pg,q0,q1):
     see(pg);a=at(pg,q0);c=at(pg,q1);pg.mouse.move(*a);pg.mouse.down();pg.mouse.move(*c,steps=10);pg.mouse.up();pg.wait_for_timeout(80)
 def tapc(pg,q):
@@ -140,7 +142,7 @@ with sync_playwright() as p:
     pg.screenshot(path=OUT+'/pizarra2_present.png');pg.keyboard.press('Escape')
     # guía y novedades
     nov=json.load(open(REPO+'/version.json'))
-    check('novedades 9.3 hablan de dorsales y jugadas',nov['version']=='9.3' and any('Dorsal' in x for x in nov['novedades']) and any('▶' in x for x in nov['novedades']))
+    check('novedades 9.4 hablan de la pizarra en horizontal',nov['version']=='9.4' and any('horizontal' in x for x in nov['novedades']))
     js=open(REPO+'/app.js').read()
     check('guía de uso explica pasos y conos','fila «Paso»' in js and 'conos, vallas' in js)
     # móvil
@@ -162,6 +164,20 @@ with sync_playwright() as p:
     m.evaluate('window.scrollTo(0,0)');m.wait_for_timeout(100);m.screenshot(path=OUT+'/pizarra2_movil.png',full_page=True)
     tb=m.locator('.bsteps').bounding_box();check('móvil: fila de jugada no se sale',tb['x']>=0 and tb['x']+tb['width']<=375,tb)
     check('móvil: sin desplazamiento horizontal',m.evaluate('document.documentElement.scrollWidth')<=375)
+    check('móvil vertical: campo en vertical',m.locator('#boardPanel.land').count()==0)
+    # horizontal
+    check('ordenador: campo en horizontal',pg.locator('#boardPanel.land').count()==1)
+    fb=pg.locator('#bfield').bounding_box();check('horizontal: campo más ancho que alto y visible',fb['width']>fb['height']*1.3 and fb['height']>300,fb)
+    o=[i for i in items(pg) if i['k']=='own'][0];q0=o['p'][store(pg)['step']];drag(pg,q0,(q0[0],min(.95,q0[1]+.15)))
+    q1=[i for i in items(pg) if i['id']==o['id']][0]['p'][store(pg)['step']]
+    check('horizontal: arrastrar guarda la posición como en vertical',abs(q1[1]-min(.95,q0[1]+.15))<.03 and abs(q1[0]-q0[0])<.03,(q0,q1))
+    m.set_viewport_size({'width':812,'height':375});m.wait_for_timeout(500)
+    check('móvil girado: pizarra en horizontal a pantalla completa',m.locator('#boardPanel.land.present').count()==1)
+    fb=m.locator('#bfield').bounding_box();check('móvil girado: el campo cabe en la pantalla',fb['y']>=0 and fb['y']+fb['height']<=376 and fb['x']>=0 and fb['x']+fb['width']<=813,fb)
+    m.screenshot(path=OUT+'/pizarra2_movil_horizontal.png')
+    m.tap('[data-b=present]');m.wait_for_timeout(300);check('móvil girado: la X sale de pantalla completa',m.locator('#boardPanel.present').count()==0)
+    m.set_viewport_size({'width':375,'height':812});m.wait_for_timeout(400)
+    check('volver a vertical: campo vertical y sin pantalla completa',m.locator('#boardPanel.land').count()==0 and m.locator('#boardPanel.present').count()==0)
     check('sin errores de consola',not errs,errs)
     b.close()
 print('RESUMEN:',sum(res),'/',len(res))

@@ -446,7 +446,12 @@
     let v = $("view"),
       key =
         state.mode + state.tab + (state.draft ? "e" : "") + (state.live ? "l" : "");
+    /* Móvil en horizontal: la pizarra se abre a pantalla completa (no cabe con la cabecera). */
     if (state.tab !== "pizarra" || state.draft) state.present = false;
+    else if (boardPhoneLand() && !state.presentOff && !state.present) {
+      state.present = true;
+      state.autoPres = true;
+    }
     document.body.classList.toggle("presenting", !!state.present);
     document.body.classList.toggle(
       "tab-pizarra",
@@ -2599,9 +2604,10 @@
       t: "Pizarra táctica",
       p: [
         "El campo ocupa casi toda la pantalla y los botones están alrededor. Si dejas el dedo (o el ratón) sobre un botón, te dice para qué sirve.",
-        "Con los iconos de <b>debajo del campo</b> (a la derecha en el ordenador) pones jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
+        "En tablet, ordenador o con el móvil girado, el campo se pone en <b>horizontal</b> y los botones se reparten a los lados. Si giras el móvil, la pizarra se abre a pantalla completa (con la X vuelves). Lo que hayas hecho se mantiene al girarlo.",
+        "Con los iconos de <b>debajo del campo</b> (a la derecha en horizontal) pones jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
         "Al tocar «Jugador» eliges a uno de tu plantilla (sale con su dorsal) o una ficha con número. Con «Poner titulares de…» llevas al campo la alineación de un partido.",
-        "Con los iconos de <b>encima del campo</b> (a la izquierda en el ordenador) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
+        "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
       ],
@@ -4192,12 +4198,15 @@
     b.items = cleanItems(x.i, b.steps);
     b.step = Math.min(b.steps - 1, x.c || 0);
   }
-  function paintStrokes(g, list, x0, y0, w, h, lw) {
+  function paintStrokes(g, list, x0, y0, w, h, lw, map) {
     g.save();
     g.lineCap = "round";
     g.lineJoin = "round";
     list.forEach((s) => {
-      let P = s.p.map((q) => [x0 + q[0] * w, y0 + q[1] * h]);
+      let P = s.p.map((q) => {
+        let m = map ? map(q) : q;
+        return [x0 + m[0] * w, y0 + m[1] * h];
+      });
       if (!P.length) return;
       g.strokeStyle = s.c;
       g.fillStyle = s.c;
@@ -4259,10 +4268,13 @@
     return p ? p.nombre.split(" ")[0] : "";
   }
   /* Dibuja trayectorias (del paso anterior al actual) y fichas. pos(it) da la posición 0..1. */
-  function paintScene(g, b, x0, y0, w, h, pos, trails) {
-    let u = tokU(w, state.mode),
+  function paintScene(g, b, x0, y0, w, h, pos, trails, map) {
+    let u = tokU(Math.min(w, h), state.mode),
       ff = '"Barlow Condensed","Arial Narrow",Impact,sans-serif',
-      XY = (q) => [x0 + q[0] * w, y0 + q[1] * h];
+      XY = (q) => {
+        let m = map ? map(q) : q;
+        return [x0 + m[0] * w, y0 + m[1] * h];
+      };
     g.save();
     g.lineCap = "round";
     g.lineJoin = "round";
@@ -4361,7 +4373,7 @@
         g.strokeStyle = "#ff4d5e";
         g.stroke();
       } else {
-        g.rotate((it.r * Math.PI) / 180);
+        g.rotate(((it.r - (map ? 90 : 0)) * Math.PI) / 180);
         if (it.k === "hurdle") {
           let L = u * 1.9,
             H = u * 0.34;
@@ -4429,6 +4441,24 @@
     };
   }
   const animTotal = (b) => (b.steps - 1) * (ANIM_D + ANIM_H);
+  /* Campo en horizontal cuando la pantalla es más ancha que alta (tablet, PC, móvil girado). */
+  function boardLand() {
+    return window.innerWidth > window.innerHeight;
+  }
+  function boardPhoneLand() {
+    return boardLand() && window.innerHeight <= 560;
+  }
+  let boardWasLand = false;
+  window.addEventListener("resize", () => {
+    if (state.tab === "pizarra" && !state.draft && boardLand() !== boardWasLand) {
+      stopAnim();
+      if (!boardPhoneLand()) {
+        state.presentOff = false;
+        if (state.autoPres) state.present = state.autoPres = false;
+      }
+      render();
+    }
+  });
   let boardAnim = null,
     boardRedraw = null;
   function stopAnim(go) {
@@ -4552,7 +4582,8 @@
         : "",
       playing = !!boardAnim;
     const dis = (c) => (c || playing ? " disabled" : "");
-    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}" id="boardPanel">
+    boardWasLand = boardLand();
+    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}" id="boardPanel">
 <div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
       ["pen", "Lápiz", "penline"],
       ["arrow", "Flecha", "arrow"],
@@ -4565,7 +4596,7 @@
       .join(
         "",
       )}<span class="brs"></span>${sw.map((c) => `<button class="sw" data-b="color" data-v="${c[0]}" style="--c:${c[0]}" aria-label="${c[1]}" title="${c[1]}" aria-pressed="${b.color === c[0]}"><i></i></button>`).join("")}<span class="brs"></span><button class="bi" data-b="undo" aria-label="Deshacer" title="Deshacer">${ic("undo")}</button><button class="bi d" data-b="clear" aria-label="Borrar todo" title="Borrar todo">${ic("trash")}</button></div>
-<div class="bfield"><div class="field ${state.mode === "fs" ? "fs" : ""}" id="bfield">${fieldMarks()}<canvas id="bcanvas" role="img" aria-label="Pizarra táctica: arrastra las fichas y dibuja con el dedo o el ratón"></canvas></div></div>
+<div class="bfield"><div class="field ${state.mode === "fs" ? "fs" : ""}" id="bfield"><div class="wm"></div><div class="fm">${fieldMarks().replace('<div class="wm"></div>', "")}</div><canvas id="bcanvas" role="img" aria-label="Pizarra táctica: arrastra las fichas y dibuja con el dedo o el ratón"></canvas></div></div>
 <div class="br br-p" role="toolbar" aria-label="Añadir al campo">${Object.keys(BK)
       .map(
         (k) =>
@@ -4584,15 +4615,20 @@
       g = cv.getContext("2d"),
       dpr = Math.min(window.devicePixelRatio || 1, 2);
     let cur = null;
+    /* En horizontal el campo se dibuja girado: las posiciones se guardan siempre
+       como en vertical y aquí se pasan a pantalla (S) y de pantalla (L). */
+    const land = boardLand(),
+      S = land ? (q) => [q[1], 1 - q[0]] : null,
+      L = (p) => (land ? [1 - p[1], p[0]] : p);
     const here = (it) => it.p[b.step];
     const redraw = (pos) => {
       g.clearRect(0, 0, cv.width, cv.height);
       if (!b.strokes.length && !b.items.length) {
         g.save();
         g.fillStyle = "rgba(241,247,234,.42)";
-        g.font = `800 ${Math.round(cv.width * 0.085)}px "Barlow Condensed","Arial Narrow",Impact,sans-serif`;
+        g.font = `800 ${Math.round(Math.min(cv.width, cv.height) * 0.085)}px "Barlow Condensed","Arial Narrow",Impact,sans-serif`;
         g.textAlign = "center";
-        g.fillText("DIBUJA AQUÍ", cv.width / 2, cv.height * 0.2);
+        g.fillText("DIBUJA AQUÍ", cv.width / 2, cv.height * (land ? 0.3 : 0.2));
         g.restore();
       }
       paintStrokes(
@@ -4602,9 +4638,10 @@
         0,
         cv.width,
         cv.height,
-        Math.max(3, cv.width * 0.0085),
+        Math.max(3, Math.min(cv.width, cv.height) * 0.0085),
+        S,
       );
-      paintScene(g, b, 0, 0, cv.width, cv.height, pos || here, !pos);
+      paintScene(g, b, 0, 0, cv.width, cv.height, pos || here, !pos, S);
     };
     boardRedraw = redraw;
     const size = () => {
@@ -4625,13 +4662,18 @@
     size();
     const pt = (e) => {
       let r = cv.getBoundingClientRect();
-      return [
+      return L([
         Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
         Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
-      ];
+      ]);
+    };
+    /* Tamaño en píxeles de una unidad de campo a lo ancho (width) y a lo largo (height). */
+    const box = () => {
+      let r = cv.getBoundingClientRect();
+      return land ? { width: r.height, height: r.width } : r;
     };
     const hitItem = (p) => {
-      let r = cv.getBoundingClientRect(),
+      let r = box(),
         u = tokU(r.width, state.mode),
         L = byOrd(b.items).reverse();
       return L.find(
@@ -4644,7 +4686,7 @@
       );
     };
     const erase = (p) => {
-      let r = cv.getBoundingClientRect(),
+      let r = box(),
         px = p[0] * r.width,
         py = p[1] * r.height,
         before = snap(b),
@@ -4702,7 +4744,7 @@
       if (!cur) return;
       if (cur.drag) {
         let p = pt(e),
-          r = cv.getBoundingClientRect();
+          r = box();
         if (
           !cur.moved &&
           Math.hypot(
@@ -4730,7 +4772,7 @@
           return;
         }
         let l = cur.p[cur.p.length - 1],
-          r = cv.getBoundingClientRect();
+          r = box();
         if (Math.hypot((p[0] - l[0]) * r.width, (p[1] - l[1]) * r.height) > 2)
           cur.p.push([
             Math.round(p[0] * 10000) / 10000,
@@ -4980,6 +5022,8 @@
       );
     else if (k === "present") {
       state.present = !state.present;
+      state.autoPres = false;
+      if (!state.present && boardPhoneLand()) state.presentOff = true;
       render();
     }
   });
@@ -4996,7 +5040,8 @@
       state.boardMenu = false;
       render();
     } else if (e.key === "Escape" && state.present) {
-      state.present = false;
+      state.present = state.autoPres = false;
+      if (boardPhoneLand()) state.presentOff = true;
       render();
     }
   });

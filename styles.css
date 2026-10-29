@@ -2966,13 +2966,109 @@ a.pack {
 .board.playing #bcanvas {
   cursor: default;
 }
+/* Marcas del campo dentro de .fm: en horizontal se gira solo el dibujo de las líneas. */
+.board .field:before {
+  display: none;
+}
+.board .fm {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.board .fm:before {
+  content: "";
+  position: absolute;
+  top: 4%;
+  bottom: 4%;
+  left: 6%;
+  right: 6%;
+  border: 2px solid rgba(232, 245, 216, 0.7);
+  border-radius: 4px;
+}
+.board #bcanvas {
+  top: 0;
+  left: 0;
+}
 .board .field {
-  width: max(280px, calc((100vh - 300px) * 0.7));
-  max-width: calc(100vw - 420px);
   margin: 0 auto;
 }
-.board.present .field {
-  max-width: calc(100vw - 180px);
+/* Horizontal (tablet, ordenador, móvil girado): ancho y alto explícitos, sin depender de aspect-ratio. */
+.board.land .field {
+  --fw: min(calc(100vw - 400px), calc((100vh - 290px) * 10 / 7));
+  width: var(--fw);
+  height: calc(var(--fw) * 0.7);
+  max-width: none;
+  aspect-ratio: auto;
+  background: repeating-linear-gradient(90deg, #0e3a24 0 10%, #104228 10% 20%);
+}
+.board.land .field.fs {
+  background: repeating-linear-gradient(
+    180deg,
+    #0f3b57 0 7.14%,
+    #12476a 7.14% 14.28%
+  );
+}
+.board.land .fm {
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  height: 142.857%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+@media (max-width: 899px) {
+  .board.land .field {
+    --fw: min(calc(100vw - 210px), calc((100vh - 290px) * 10 / 7));
+  }
+}
+@media (max-height: 560px) {
+  .board.land .field {
+    --fw: max(280px, min(calc(100vw - 190px), calc((100vh - 120px) * 10 / 7)));
+  }
+}
+.board.present.land .field {
+  --fw: min(calc(100vw - 190px), calc((100vh - 90px) * 10 / 7));
+  height: calc(var(--fw) * 0.7);
+}
+.board.present.land .bw {
+  align-items: center;
+}
+.board.land .bpc {
+  min-height: 48px;
+}
+@media (max-height: 560px) {
+  .board.land .br {
+    gap: 3px;
+  }
+  .board.land .bi {
+    width: 36px;
+    height: 36px;
+  }
+  .board.land .br .sw {
+    width: 36px;
+    height: 26px;
+  }
+  .board.land .br .sw i {
+    width: 20px;
+    height: 20px;
+  }
+  .board.land .brs {
+    margin: 0;
+  }
+  .board.land .bpc {
+    width: 54px;
+    min-height: 0;
+    padding: 3px 2px;
+  }
+  .board.land .bpc svg {
+    width: 20px;
+    height: 20px;
+  }
+  .board.land .bpc small {
+    font-size: 10px;
+  }
 }
 .board.present .bw {
   flex: 1;
@@ -2992,7 +3088,7 @@ a.pack {
 .board.present .bextra [data-b="img"] {
   display: none;
 }
-@media (max-width: 700px) {
+@media (orientation: portrait) {
   .board:not(.present) {
     padding: 8px;
   }
@@ -3054,7 +3150,7 @@ a.pack {
   }
   .board .field {
     width: 100%;
-    max-width: none;
+    max-width: max(320px, calc((100vh - 300px) * 0.7));
   }
   .board.present .field {
     width: auto;
@@ -3096,4 +3192,32 @@ a.pack {
 body.presenting .head,
 body.presenting .dock {
   visibility: hidden;
+}
+/* Navegadores sin aspect-ratio (iPad antiguos): el alto sale del ancho. */
+@supports not (aspect-ratio: 1 / 1) {
+  .field:after {
+    content: "";
+    display: block;
+    padding-top: 142.857%;
+  }
+  .board.land .field:after {
+    display: none;
+  }
+  .field .circle {
+    height: 0;
+    padding-top: 24%;
+  }
+  .field.fs .circle {
+    padding-top: 30%;
+  }
+  .field .wm {
+    height: 0;
+    padding-top: 46%;
+  }
+  .board.land .field .wm {
+    padding-top: 32%;
+  }
+}
+.board.land .field .wm {
+  width: 32%;
 }
