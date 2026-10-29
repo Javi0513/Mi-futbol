@@ -1,4 +1,10 @@
 (() => {
+  /* iPad y iPhone antiguos (iOS 15.3 o anterior) no tienen crypto.randomUUID: lo creamos con getRandomValues */
+  if (window.crypto && !crypto.randomUUID)
+    crypto.randomUUID = () =>
+      "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+        (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16),
+      );
   /* Antisuplantación: la app no se deja meter dentro de otra web (clickjacking) */
   try {
     if (window.top !== window.self && window.top.location.origin !== location.origin)

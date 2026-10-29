@@ -82,6 +82,11 @@ with sync_playwright() as p:
     check('cerrar apaga la cámara y vuelve a Entrenos',pg.locator('.cam').count()==0 and pg.locator('[data-tab=entrenos].on').count()==1)
     check('no se sube nada al servidor',DB(pg,"window.__calls.length")==0)
     pg.context.close()
+    # iPad antiguo: sin crypto.randomUUID se puede crear un entrenamiento
+    pg=page(b,seed('gratis',[]),ON+"delete Crypto.prototype.randomUUID;");login(pg)
+    pg.click('[data-tab=entrenos]');pg.click('#view [data-tr=new] >> nth=0');pg.wait_for_timeout(300)
+    check('iPad antiguo (sin randomUUID): crea el entrenamiento',DB(pg,"d.entrenamientos.length")==1 and pg.evaluate(r"/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(window.__db.entrenamientos[0].id)"),DB(pg,"d.entrenamientos.map(t=>t.id)"))
+    pg.context.close()
     b.close()
 srv.shutdown()
 errs=[e for e in errs if 'Failed to load resource' not in e]
