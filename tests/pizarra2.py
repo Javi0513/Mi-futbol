@@ -86,7 +86,12 @@ with sync_playwright() as p:
     h=[i for i in items(pg) if i['k']=='hurdle'][0];tapc(pg,h['p'][0])
     check('tocar la valla la gira 45°',[i for i in items(pg) if i['k']=='hurdle'][0]['r']==45)
     # dibujar fuera de las fichas sigue funcionando
+    check('por defecto «Mover»',store(pg).get('tool')=='move' or pg.get_attribute('[data-b=tool][data-v=move]','aria-pressed')=='true')
+    drag(pg,(0.08,0.95),(0.3,0.97));check('con «Mover» arrastrar en hueco no pinta',len(store(pg)['strokes'])==0)
+    pg.click('[data-b=tool][data-v=pen]')
+    o=[i for i in items(pg) if i['pid']=='a1'][0]['p'][0];drag(pg,o,(o[0]+.05,o[1]+.05));check('con el lápiz, arrastrar una ficha la mueve y no pinta',len(store(pg)['strokes'])==0)
     drag(pg,(0.08,0.95),(0.3,0.97));check('lápiz sigue dibujando en hueco',len(store(pg)['strokes'])==1)
+    pg.click('[data-b=tool][data-v=move]')
     # jugada por pasos
     check('empieza en paso 1/1','Paso 1 / 1' in pg.inner_text('.bst-n'))
     pg.click('[data-b=addstep]');s=store(pg)
@@ -142,7 +147,7 @@ with sync_playwright() as p:
     pg.screenshot(path=OUT+'/pizarra2_present.png');pg.keyboard.press('Escape')
     # guía y novedades
     nov=json.load(open(REPO+'/version.json'))
-    check('novedades al día (9.6: arreglo iPad)',nov['version']=='9.6' and any('iPad' in x for x in nov['novedades']))
+    check('novedades al día (9.7: «Mover» + arreglo iPad)',nov['version']=='9.7' and any('Mover' in x for x in nov['novedades']) and any('iPad' in x for x in nov['novedades']))
     js=open(REPO+'/app.js').read()
     check('guía de uso explica pasos y conos','fila «Paso»' in js and 'conos, vallas' in js)
     # móvil

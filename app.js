@@ -234,6 +234,7 @@
     left: '<path d="m15 18-6-6 6-6"/>',
     right: '<path d="m9 18 6-6-6-6"/>',
     film: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>',
+    hand: '<path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
     maximize:
       '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   };
@@ -2616,6 +2617,7 @@
         "En tablet, ordenador o con el móvil girado, el campo se pone en <b>horizontal</b> y los botones se reparten a los lados. Si giras el móvil, la pizarra se abre a pantalla completa (con la X vuelves). Lo que hayas hecho se mantiene al girarlo.",
         "Con los iconos de <b>debajo del campo</b> (a la derecha en horizontal) pones jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
         "Al tocar «Jugador» eliges a uno de tu plantilla (sale con su dorsal) o una ficha con número. Con «Poner titulares de…» llevas al campo la alineación de un partido.",
+        "La <b>mano</b> («Mover») es el modo normal: con ella mueves las fichas y, aunque toques fuera de una ficha, no se pinta nada.",
         "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
@@ -4182,7 +4184,7 @@
     hist: [],
     bg: "",
     color: "#ffd60a",
-    tool: "pen",
+    tool: "move",
   });
   try {
     let r = JSON.parse(localStorage.getItem("mf_pizarra_v1") || "{}");
@@ -4199,7 +4201,7 @@
         step: Math.min(n - 1, Math.max(0, parseInt(x.step) || 0)),
         bg: x.bg || "",
         color: x.color || "#ffd60a",
-        tool: x.tool || "pen",
+        tool: "move",
       };
     });
   } catch (e) {}
@@ -4470,6 +4472,7 @@
     ANIM_H = 350;
   /* Posición de cada ficha a los t ms de reproducir la jugada. */
   function animPos(b, t) {
+    t = Math.max(0, t);
     let seg = Math.floor(t / (ANIM_D + ANIM_H)),
       last = b.steps - 1;
     if (seg >= last) return (it) => it.p[last];
@@ -4523,7 +4526,7 @@
         boardAnim = null;
         return;
       }
-      let t = now - t0;
+      let t = Math.max(0, now - t0);
       if (boardRedraw) boardRedraw(animPos(b, t));
       if (t >= animTotal(b) + 250) {
         b.step = b.steps - 1;
@@ -4558,7 +4561,7 @@
       r: 0,
       p: Array.from({ length: b.steps }, () => q.slice()),
     });
-    if (b.tool === "erase") b.tool = "pen";
+    if (b.tool === "erase") b.tool = "move";
     saveBoard();
   }
   /* Pone en el campo a los titulares de un partido, con su dorsal, en su posición. */
@@ -4623,8 +4626,9 @@
       playing = !!boardAnim;
     const dis = (c) => (c || playing ? " disabled" : "");
     boardWasLand = boardLand();
-    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}" id="boardPanel">
+    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}" id="boardPanel">
 <div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
+      ["move", "Mover fichas (no pinta)", "hand"],
       ["pen", "Lápiz", "penline"],
       ["arrow", "Flecha", "arrow"],
       ["erase", "Goma: borra la línea o la ficha que toques", "eraser"],
@@ -4775,6 +4779,8 @@
         };
         return;
       }
+      /* Con «Mover» tocar el campo nunca pinta: solo se arrastran fichas. */
+      if (b.tool === "move") return;
       pushHist(b);
       cur = { c: b.color, t: b.tool, p: [p] };
       b.strokes.push(cur);
@@ -4994,7 +5000,7 @@
       render();
     } else if (k === "color") {
       b.color = t.dataset.v;
-      if (b.tool === "erase") b.tool = "pen";
+      if (b.tool === "erase" || b.tool === "move") b.tool = "pen";
       saveBoard();
       render();
     } else if (k === "undo") {
