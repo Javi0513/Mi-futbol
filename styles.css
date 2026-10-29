@@ -3440,3 +3440,36 @@ body.presenting .dock {
 .lv-sub > small {
   align-self: center;
 }
+/* categoría del equipo */
+.teams {
+  flex-wrap: wrap;
+}
+.tcat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--mut);
+}
+.tcat select {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 15px;
+}
+.mdparte {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+  color: var(--mut);
+  font-size: 14px;
+}
+.mdparte input {
+  width: 72px;
+  min-height: 40px;
+  text-align: center;
+}

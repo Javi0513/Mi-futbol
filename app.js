@@ -545,8 +545,69 @@
               `<button type="button" data-team="${esc(t.id)}" class="${t.id === cur ? "on" : ""}" aria-pressed="${t.id === cur}">${esc(t.nombre)}</button>`,
           ).join("")
         : `<button type="button" class="on" aria-pressed="true">Mi equipo</button>`;
-    return `<div class="team-chips" role="group" aria-label="Equipos de ${esc(MN())}">${chips}</div><button type="button" class="ib" data-teamact="rename" aria-label="Cambiar el nombre del equipo" title="Cambiar nombre">${ic("pencil", 18)}</button>${L.length > 1 ? `<button type="button" class="ib d" data-teamact="del" aria-label="Borrar este equipo" title="Borrar equipo">${ic("trash", 18)}</button>` : ""}<button type="button" class="ib add" data-teamact="add" aria-label="Añadir otro equipo" title="Añadir equipo">${ic("plus", 18)}<span>Equipo</span></button>`;
+    return `<div class="team-chips" role="group" aria-label="Equipos de ${esc(MN())}">${chips}</div><button type="button" class="ib" data-teamact="rename" aria-label="Cambiar el nombre del equipo" title="Cambiar nombre">${ic("pencil", 18)}</button>${L.length > 1 ? `<button type="button" class="ib d" data-teamact="del" aria-label="Borrar este equipo" title="Borrar equipo">${ic("trash", 18)}</button>` : ""}<button type="button" class="ib add" data-teamact="add" aria-label="Añadir otro equipo" title="Añadir equipo">${ic("plus", 18)}<span>Equipo</span></button>${catSel()}`;
   }
+  /* Categoría del equipo: marca cuánto dura cada parte (para el Directo y los minutos) */
+  const CATS = [
+    ["prebenjamin", "Prebenjamín", 25],
+    ["benjamin", "Benjamín", 30],
+    ["alevin", "Alevín", 35],
+    ["infantil", "Infantil", 40],
+    ["cadete", "Cadete", 45],
+    ["juvenil", "Juvenil", 45],
+    ["senior", "Senior / Aficionado", 45],
+  ];
+  const catKey = (k, id) => "mf_cat:" + (id || k || state.mode),
+    catOf = (k, id) => {
+      let t = state.teams.find((z) => z.id === id),
+        c = t && t.categoria;
+      if (!c)
+        try {
+          c = localStorage.getItem(catKey(k, id)) || "";
+        } catch (e) {}
+      return CATS.find((z) => z[0] === c) || null;
+    },
+    /* Minutos por parte: los de la categoría del equipo, o los normales de la modalidad */
+    parteDe = (k, id) => {
+      let c = catOf(k, id);
+      return c ? c[2] : LIVE_PARTE[k] || 30;
+    };
+  function catSel() {
+    let c = catOf(state.mode, curTeam());
+    return `<label class="tcat"><span>Categoría</span><select id="teamCat" aria-label="Categoría del equipo"><option value="">Sin categoría (${LIVE_PARTE[state.mode] || 30}' por parte)</option>${CATS.map((z) => `<option value="${z[0]}" ${c && c[0] === z[0] ? "selected" : ""}>${z[1]} · 2 × ${z[2]}'</option>`).join("")}</select></label>`;
+  }
+  async function setCat(v) {
+    if (viendo) return note(SOLO_VER), render();
+    let id = curTeam(),
+      local = false;
+    try {
+      if (!id && state.teamsOk) id = await firstTeam(teamName());
+      if (!id) throw Error("categoria");
+      let r = await db.from("equipos").update({ categoria: v || null }).eq("id", id);
+      if (r.error) throw r.error;
+      try {
+        localStorage.removeItem(catKey(state.mode, id));
+      } catch (e) {}
+    } catch (e) {
+      if (!/categor/i.test((e && e.message) || "")) return note(e.message || String(e));
+      /* Sin la columna en el servidor: se guarda en este dispositivo */
+      local = true;
+      try {
+        if (v) localStorage.setItem(catKey(state.mode, id), v);
+        else localStorage.removeItem(catKey(state.mode, id));
+      } catch (z) {}
+    }
+    await load();
+    let c = CATS.find((z) => z[0] === v);
+    note(
+      (c ? `Categoría ${c[1]}: partes de ${c[2]} minutos.` : `Sin categoría: partes de ${LIVE_PARTE[state.mode] || 30} minutos.`) +
+        (local ? " De momento se guarda solo en este dispositivo (falta un paso en el servidor)." : ""),
+      !local,
+    );
+  }
+  $("teams").addEventListener("change", (e) => {
+    if (e.target.id === "teamCat") setCat(e.target.value);
+  });
   function pickTeam(id) {
     state.team[state.mode] = id;
     if (!viendo) try {
@@ -1141,13 +1202,19 @@
         )
         .join(""),
       rv = esc(d.rival || "Rival");
-    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div><h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
+    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div><h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
   }
   /* Duración del partido para calcular minutos: la del Directo si lo hay, si no la normal. */
-  const mdTotal = (id) => {
-    let x = id && liveRows[id];
-    return ((x && Number(x.parte_min)) || LIVE_PARTE[state.mode] || 30) * 2;
+  const mdParte = (d, id) => {
+    let x = id && liveRows[id],
+      m = id && state.matches.find((z) => z.id === id);
+    return (
+      Number(d.alineacion.parte) ||
+      (x && Number(x.parte_min)) ||
+      parteDe(state.mode, m ? teamOf(m) : curTeam())
+    );
   };
+  const mdTotal = (id) => mdParte(state.draft, id) * 2;
   document.addEventListener("click", (e) => {
     let d = state.draft;
     if (!d || state.live || !e.target.closest) return;
@@ -2638,7 +2705,7 @@
     {
       el: "#teams",
       t: "Tu equipo",
-      p: "Con el lápiz le pones nombre a tu equipo. Con el botón + puedes llevar varios equipos en la misma modalidad (plan Pro).",
+      p: "Con el lápiz le pones nombre a tu equipo y debajo eliges su categoría (así cada parte dura lo que toca). Con el botón + puedes llevar varios equipos en la misma modalidad (plan Pro).",
     },
     {
       el: "#stats",
@@ -2758,6 +2825,7 @@
         "Con el lápiz junto al nombre del equipo le cambias el nombre.",
         "Con el botón <b>+</b> creas otro equipo en la misma modalidad, cada uno con su plantilla y sus partidos. Tener varios equipos es del plan Pro; en el plan gratuito tienes un equipo por modalidad.",
         "Toca el nombre de un equipo para cambiar de uno a otro. Con la papelera borras un equipo.",
+        "Debajo eliges la <b>categoría</b> del equipo. Marca cuánto dura cada parte: prebenjamín 25', benjamín 30', alevín 35', infantil 40' y de cadete en adelante 45'. Sin categoría se usa la duración normal de la modalidad.",
       ],
     },
     {
@@ -2775,6 +2843,7 @@
         "Arrastra a cada jugador a su sitio en el campo.",
         "Después del partido apunta los minutos, los goles y el resultado.",
         "En <b>Datos del partido</b> (al crear o editar un partido) eliges el <b>capitán</b> y el <b>portero</b>. El capitán lleva una «C» y el portero sale de otro color en el campo y en la imagen. Si no eliges portero, es el que pongas en la portería (POR).",
+        "En «Datos del partido» también están los <b>minutos por parte</b> de ese partido (salen de la categoría o del Directo). «Calcular minutos» los usa.",
         "Ahí mismo apuntas los <b>cambios</b> (minuto, quién sale y quién entra, con su dorsal) y las <b>tarjetas</b> amarillas y rojas. «Calcular minutos» rellena los minutos de cada jugador con los titulares, los cambios y las expulsiones.",
         "Más abajo está el apartado del <b>rival</b>: sus cambios (dorsal que sale y dorsal que entra) y sus tarjetas (dorsal y nombre opcional), cada uno con su minuto.",
         "Los cambios y tarjetas que apuntes en el Directo aparecen solos aquí. Las tarjetas de cada jugador salen en su ficha de Plantilla y en Estadísticas.",
@@ -2787,6 +2856,7 @@
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
         "<b>Cambios</b>: pulsa «🔄 Cambio», elige quién sale y luego quién entra (salen con su dorsal). <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
         "<b>Del rival</b>: al pulsar «🔄 Cambio», «Amarilla» o «Roja», elige arriba el nombre del rival. Pon el dorsal (en las tarjetas, también el nombre si quieres) y pulsa «Apuntar». Salen marcados con el nombre del rival.",
+        "Los <b>minutos por parte</b> salen de la categoría del equipo. Si un día se juega con otra duración, cámbialos antes de pulsar «Empezar partido».",
         "Debajo eliges el <b>capitán</b> y el <b>portero</b>. Al pulsar «Terminar partido», los minutos de cada jugador se calculan solos con los cambios.",
         "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta: ve el marcador, el minuto, los goles, los cambios y las tarjetas. Con «Desactivar enlace» deja de funcionar.",
         "«Cámara: grabar el partido» graba vídeo con el marcador y el minuto dentro. Pon el móvil en horizontal. El vídeo se guarda solo en tu móvil. Grabar es gratis.",
@@ -3466,6 +3536,11 @@
       change(e.target.dataset.field, e.target.dataset.id, e.target);
     let d = state.draft;
     if (!d) return;
+    if (e.target.id === "mdParte") {
+      let v = parseInt(e.target.value);
+      if (v >= 5 && v <= 60) d.alineacion.parte = v;
+      else e.target.value = mdParte(d, state.editing);
+    }
     if (e.target.id === "mdCap" || e.target.id === "mdGk") {
       let k = e.target.id === "mdCap" ? "capitan" : "portero";
       if (e.target.value) d.alineacion[k] = e.target.value;
@@ -3626,7 +3701,7 @@
         `<button class="${cl}" data-live="${k}">${t}</button>`,
       ctl =
         st === "pre"
-          ? `<label class="lv-dur">Minutos por parte<input id="lvDur" type="number" min="5" max="60" inputmode="numeric" value="${x.parte_min}"></label>` +
+          ? `<label class="lv-dur">Minutos por parte${(() => { let c = catOf(m.modalidad, teamOf(m)); return c ? ` <small>(${esc(c[1])})</small>` : ""; })()}<input id="lvDur" type="number" min="5" max="60" inputmode="numeric" value="${x.parte_min}"></label>` +
             B("start", "Empezar partido", "primary")
           : st === "1T" || st === "2T"
             ? B(run ? "pause" : "resume", run ? "Pausar" : "Reanudar") +
@@ -3761,7 +3836,7 @@
           gf: r0 ? r0.gf : 0,
           gc: r0 ? r0.gc : 0,
           estado: "pre",
-          parte_min: LIVE_PARTE[m.modalidad] || 30,
+          parte_min: parteDe(m.modalidad, teamOf(m)),
           acum_ms: 0,
           desde: null,
           eventos: [],
@@ -3770,9 +3845,19 @@
       if (r.error) return note(liveErr(r.error.message));
       x = liveRows[id] = (r.data && r.data[0]) || row;
       liveSync(x);
-    } else if (x.rival !== m.rival) {
-      x.rival = String(m.rival || "").slice(0, 100);
-      liveSave(x);
+    } else {
+      let pm = parteDe(m.modalidad, teamOf(m)),
+        ch = false;
+      if (x.rival !== m.rival) {
+        x.rival = String(m.rival || "").slice(0, 100);
+        ch = true;
+      }
+      /* Antes de empezar, la duración sigue a la categoría del equipo */
+      if (x.estado === "pre" && catOf(m.modalidad, teamOf(m)) && x.parte_min !== pm) {
+        x.parte_min = pm;
+        ch = true;
+      }
+      if (ch) liveSave(x);
     }
     state.live = id;
     state.livePick = false;
@@ -3819,6 +3904,7 @@
     m.alineacion.resultado = { gf: x.gf, gc: x.gc };
     let e = pid && entries(m).find((z) => z.id === pid);
     if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + d);
+    if (Number(x.parte_min)) m.alineacion.parte = Number(x.parte_min);
     /* Cambios y tarjetas del Directo al partido (lo apuntado a mano después se respeta) */
     let al = m.alineacion,
       ev = Array.isArray(x.eventos) ? x.eventos : [],
