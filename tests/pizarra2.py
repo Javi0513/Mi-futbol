@@ -147,7 +147,7 @@ with sync_playwright() as p:
     pg.screenshot(path=OUT+'/pizarra2_present.png');pg.keyboard.press('Escape')
     # guía y novedades
     nov=json.load(open(REPO+'/version.json'))
-    check('novedades al día (10.1: categoría)',nov['version']=='10.1' and any('categoría' in (x if isinstance(x,str) else x['texto']).lower() for x in nov['novedades']))
+    check('novedades al día (10.2: escudo y foto)',nov['version']=='10.2' and any('escudo' in (x if isinstance(x,str) else x['texto']).lower() for x in nov['novedades']))
     js=open(REPO+'/app.js').read()
     check('guía de uso explica pasos y conos','fila «Paso»' in js and 'conos, vallas' in js)
     # móvil
