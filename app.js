@@ -130,6 +130,7 @@
     trMonth: "",
     trDay: "",
     boardMenu: false,
+    boardPick: null,
   };
   const MODES = {
     7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, maxE: 5, cap: 14 },
@@ -1139,7 +1140,8 @@
       .map((s, i) => {
         let pid = slots[i],
           pl = pid && state.players.find((x) => x.id === pid);
-        return `<div class="slot" style="left:${s[1]}%;top:${s[2]}%"><button data-slot="${i}" class="${pid ? "fill" : ""}${pid && pid === gk ? " gk" : ""} ${state.selectedSlot === i ? "sel" : ""}" aria-label="${pid ? esc(name(pid)) + " en " + s[0] : "Posición " + s[0] + " libre"}" title="${pid ? "Arrastra para mover" : "Elegir jugador"}">${pid ? (pl && pl.foto && pl.foto.startsWith("data:") ? `<img src="${esc(pl.foto)}" alt="">${dorsal(pl) ? `<em class="dn">${dorsal(pl)}</em>` : ""}` : esc(dorsal(pl) || (name(pid)[0] || "?").toUpperCase())) : "+"}</button>${pid && pid === cap ? '<i class="capb" title="Capitán" aria-label="Capitán">C</i>' : ""}<span>${pid ? esc(name(pid)) : s[0]}</span></div>`;
+        let pc = pid && slotCol(d.alineacion, pid, gk);
+        return `<div class="slot" style="left:${s[1]}%;top:${s[2]}%"><button data-slot="${i}" class="${pid ? "fill" : ""}${pid && pid === gk ? " gk" : ""} ${state.selectedSlot === i ? "sel" : ""}"${pc ? ` style="--pc:${pc};--pi:${inkOn(pc)}"` : ""} aria-label="${pid ? esc(name(pid)) + " en " + s[0] : "Posición " + s[0] + " libre"}" title="${pid ? "Arrastra para mover" : "Elegir jugador"}">${pid ? (pl && pl.foto && pl.foto.startsWith("data:") ? `<img src="${esc(pl.foto)}" alt="">${dorsal(pl) ? `<em class="dn">${dorsal(pl)}</em>` : ""}` : esc(dorsal(pl) || (name(pid)[0] || "?").toUpperCase())) : "+"}</button>${pid && pid === cap ? '<i class="capb" title="Capitán" aria-label="Capitán">C</i>' : ""}<span>${pid ? esc(name(pid)) : s[0]}</span></div>`;
       })
       .join("")}</div>
 <div class="slotmenu">${
@@ -1151,7 +1153,12 @@
             )
             .join("") +
           (slots[state.selectedSlot]
-            ? '<button class="danger" data-clear="1">Quitar jugador</button>'
+            ? '<button class="danger" data-clear="1">Quitar jugador</button>' +
+              `<div class="slotcol"><h4>Color de ${esc(name(slots[state.selectedSlot]))}</h4>${colorPicker(
+                "al",
+                slotCol(d.alineacion, slots[state.selectedSlot], gk) || (slots[state.selectedSlot] === gk ? "#fbbf24" : "#2be36a"),
+                '<button type="button" data-pca="all">Poner este color a todo el equipo</button><button type="button" data-pc="">Color normal</button>',
+              )}</div>`
             : "")
         : '<span class="muted">Toca una posición para elegir jugador, o arrástralo desde arriba.</span>'
     }</div></div>
@@ -1249,6 +1256,12 @@
     }
     render();
   });
+  /* Color de un jugador en la alineación: el suyo o el del equipo (el portero no
+     coge el del equipo). Vacío = el normal: verde, o amarillo el portero. */
+  function slotCol(al, pid, gk) {
+    let c = (al.colors || {})[pid] || (pid !== gk ? al.color : "");
+    return isHex(c) ? c : "";
+  }
   function place(i, pid) {
     const d = state.draft,
       sl = d.alineacion.slots,
@@ -1374,6 +1387,52 @@
     document.addEventListener("pointerup", end);
     document.addEventListener("pointercancel", end);
   });
+  /* Colores de las fichas: muestras rápidas y dos barras (tono y claro/oscuro)
+     para elegir cualquier color. Se guardan como #rrggbb. */
+  const PCOLS = ["#2be36a", "#ffd60a", "#ff8a1f", "#ff4d5e", "#ec4899", "#a855f7", "#38bdf8", "#1d4ed8", "#ffffff", "#9ca3af", "#111827"];
+  const isHex = (c) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c);
+  function hslHex(h, s, l) {
+    s /= 100;
+    l /= 100;
+    let k = (n) => (n + h / 30) % 12,
+      a = s * Math.min(l, 1 - l),
+      f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return (
+      "#" +
+      [f(0), f(8), f(4)]
+        .map((x) => Math.round(x * 255).toString(16).padStart(2, "0"))
+        .join("")
+    );
+  }
+  function hexHsl(c) {
+    let [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) / 255),
+      mx = Math.max(r, g, b),
+      mn = Math.min(r, g, b),
+      l = (mx + mn) / 2,
+      d = mx - mn,
+      h = 0;
+    if (d)
+      h =
+        mx === r
+          ? ((g - b) / d + 6) % 6
+          : mx === g
+            ? (b - r) / d + 2
+            : (r - g) / d + 4;
+    return [Math.round(h * 60) % 360, Math.round(l * 100)];
+  }
+  /* Texto oscuro sobre colores claros y blanco sobre los oscuros. */
+  function inkOn(c) {
+    let [r, g, b] = [1, 3, 5].map((i) => {
+      let v = parseInt(c.slice(i, i + 2), 16) / 255;
+      return v <= 0.04 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.36 ? "#03140a" : "#ffffff";
+  }
+  function colorPicker(ctx, cur, extra) {
+    let [h, l] = hexHsl(cur);
+    if (l < 15 || l > 90) l = 50;
+    return `<div class="cpk" data-for="${ctx}" style="--cpk:${cur}"><div class="cpk-sw">${PCOLS.map((c) => `<button type="button" class="sw" data-pc="${c}" style="--c:${c}" aria-label="Color ${c}" aria-pressed="${c === cur.toLowerCase()}"><i></i></button>`).join("")}</div><label class="cpk-r"><span>Color</span><input type="range" class="cpk-h" data-pch="h" min="0" max="359" step="1" value="${h}" aria-label="Barra de color"></label><label class="cpk-r"><span>Claro</span><input type="range" class="cpk-l" data-pch="l" min="15" max="90" step="1" value="${l}" style="--h:${h}" aria-label="Más claro o más oscuro"></label><div class="cpk-b">${extra}</div></div>`;
+  }
   function rr(g, x, y, w, h, r) {
     g.beginPath();
     g.moveTo(x + r, y);
@@ -1422,6 +1481,7 @@
         o.players.find((p) => p.id === id) ||
         {}
       ).nombre || "Jugador";
+    const pc = (id) => slotCol(al, id, gkId) || (id === gkId ? GK : LIME);
     const dn = (id) =>
       dorsal(
         state.players.find((p) => p.id === id) ||
@@ -1649,11 +1709,13 @@
       }
       g.beginPath();
       g.arc(px, py, R0 + 8, 0, Math.PI * 2);
-      g.fillStyle = id === gkId ? "rgba(251,191,36,.28)" : "rgba(43,227,106,.25)";
+      g.globalAlpha = 0.25;
+      g.fillStyle = pc(id);
       g.fill();
+      g.globalAlpha = 1;
       g.beginPath();
       g.arc(px, py, R0, 0, Math.PI * 2);
-      g.fillStyle = id === gkId ? GK : LIME;
+      g.fillStyle = pc(id);
       g.fill();
       if (imgs[id]) {
         g.save();
@@ -1667,7 +1729,7 @@
         g.drawImage(im, px - w / 2, py - h / 2, w, h);
         g.restore();
       } else {
-        g.fillStyle = "#03140a";
+        g.fillStyle = inkOn(pc(id));
         g.font = `800 58px ${ff}`;
         g.textAlign = "center";
         g.fillText(dn(id) || (nm(id)[0] || "?").toUpperCase(), px, py + 19);
@@ -1682,12 +1744,12 @@
           by = py - R0 * 0.72;
         g.beginPath();
         g.arc(bx, by, 24, 0, Math.PI * 2);
-        g.fillStyle = LIME;
+        g.fillStyle = pc(id);
         g.fill();
         g.lineWidth = 4;
         g.strokeStyle = "#03140a";
         g.stroke();
-        g.fillStyle = "#03140a";
+        g.fillStyle = inkOn(pc(id));
         g.font = `800 30px ${ff}`;
         g.textAlign = "center";
         g.fillText(dn(id), bx, by + 10);
@@ -2783,7 +2845,7 @@
     {
       el: '[data-tab="pizarra"]',
       t: "Pizarra táctica",
-      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo.",
+      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Toca un jugador para cambiarle el color. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo.",
     },
     {
       el: '[data-tab="resumen"]',
@@ -2894,6 +2956,7 @@
       p: [
         "Pulsa «+ Partido»: pon la fecha y el rival, marca convocados y titulares y elige la formación.",
         "Arrastra a cada jugador a su sitio en el campo.",
+        "<b>Color de las fichas</b>: toca a un jugador del campo y, debajo, elige su color con las muestras o moviendo la barra de color (y la de claro u oscuro). «Poner este color a todo el equipo» pinta a todos igual y «Color normal» lo deja en verde (o en amarillo si es el portero); el portero no coge el color del equipo. El color sale también en la imagen para WhatsApp.",
         "Después del partido apunta los minutos, los goles y el resultado.",
         "En <b>Datos del partido</b> (al crear o editar un partido) eliges el <b>capitán</b> y el <b>portero</b>. El capitán lleva una «C» y el portero sale de otro color en el campo y en la imagen. Si no eliges portero, es el que pongas en la portería (POR).",
         "En «Datos del partido» también están los <b>minutos por parte</b> de ese partido (salen de la categoría o del Directo). «Calcular minutos» los usa.",
@@ -2940,6 +3003,7 @@
         "Con los iconos de <b>debajo del campo</b> (a la derecha en horizontal) pones jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
         "Al tocar «Jugador» eliges a uno de tu plantilla (sale con su dorsal) o una ficha con número. Con «Poner titulares de…» llevas al campo la alineación de un partido.",
         "La <b>mano</b> («Mover») es el modo normal: con ella mueves las fichas y, aunque toques fuera de una ficha, no se pinta nada.",
+        "<b>Color de los jugadores</b>: toca un jugador o un rival (sin arrastrarlo) y abajo sale su color. Elige una muestra o mueve la barra de color hasta el que quieras; la segunda barra lo hace más claro u oscuro. «A todos los míos» (o «A todos los rivales») los pinta a todos igual, y los que añadas después saldrán de ese color. «Color normal» lo deja como estaba. Toca el campo o la X para cerrarlo.",
         "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
@@ -4859,6 +4923,7 @@
           n: String(i.n || "").slice(0, 3),
           pid: i.pid || "",
           r: Number(i.r) || 0,
+          c: isHex(i.c) ? i.c : "",
           p,
         };
       });
@@ -4870,6 +4935,7 @@
     hist: [],
     bg: "",
     color: "#ffd60a",
+    tcol: {},
     tool: "move",
   });
   try {
@@ -4887,6 +4953,7 @@
         step: Math.min(n - 1, Math.max(0, parseInt(x.step) || 0)),
         bg: x.bg || "",
         color: x.color || "#ffd60a",
+        tcol: x.tcol && typeof x.tcol === "object" ? x.tcol : {},
         tool: "move",
       };
     });
@@ -4905,6 +4972,7 @@
           step: x.step,
           bg: x.bg,
           color: x.color,
+          tcol: x.tcol,
           tool: x.tool,
         };
       });
@@ -5012,7 +5080,7 @@
           c = XY(it.p[b.step]),
           d = Math.hypot(c[0] - a[0], c[1] - a[1]);
         if (d < u * 0.6) return;
-        let col = BCOL[it.k] || "#e8f5d8",
+        let col = it.c || BCOL[it.k] || "#e8f5d8",
           lw = Math.max(2, u * 0.13),
           stop = it.k === "ball" ? u * 0.6 : it.k === "own" || it.k === "riv" ? u * 1.1 : u * 0.9,
           e = [c[0] - ((c[0] - a[0]) / d) * stop, c[1] - ((c[1] - a[1]) / d) * stop];
@@ -5037,9 +5105,21 @@
       g.shadowBlur = u * 0.35;
       g.shadowOffsetY = u * 0.08;
       if (it.k === "own" || it.k === "riv") {
+        let col = it.c || BCOL[it.k];
+        if (it.id === state.boardPick && g.canvas.id === "bcanvas") {
+          g.save();
+          g.shadowBlur = 0;
+          g.beginPath();
+          g.arc(0, 0, u * 1.45, 0, Math.PI * 2);
+          g.setLineDash([u * 0.35, u * 0.25]);
+          g.lineWidth = Math.max(2, u * 0.16);
+          g.strokeStyle = "#ffffff";
+          g.stroke();
+          g.restore();
+        }
         g.beginPath();
         g.arc(0, 0, u, 0, Math.PI * 2);
-        g.fillStyle = BCOL[it.k];
+        g.fillStyle = col;
         g.fill();
         g.shadowBlur = 0;
         g.shadowOffsetY = 0;
@@ -5047,7 +5127,7 @@
         g.strokeStyle = "#ffffff";
         g.stroke();
         let t = itemLabel(it);
-        g.fillStyle = it.k === "own" ? "#03140a" : "#ffffff";
+        g.fillStyle = inkOn(col);
         g.font = `800 ${Math.round(u * (t.length > 2 ? 0.85 : 1.15))}px ${ff}`;
         g.textAlign = "center";
         g.textBaseline = "middle";
@@ -5245,6 +5325,7 @@
       n: pid ? "" : lab,
       pid: pid || "",
       r: 0,
+      c: isHex((b.tcol || {})[k]) ? b.tcol[k] : "",
       p: Array.from({ length: b.steps }, () => q.slice()),
     });
     if (b.tool === "erase") b.tool = "move";
@@ -5259,6 +5340,7 @@
     if (!f) return;
     pushHist(b);
     let keep = b.items.filter((i) => i.k !== "own"),
+      gk = gkOf(m.alineacion),
       add = [];
     f.forEach((s, i) => {
       let pid = (m.alineacion.slots || {})[i];
@@ -5270,6 +5352,7 @@
         n: "",
         pid,
         r: 0,
+        c: slotCol(m.alineacion, pid, gk) || (pid === gk ? "#fbbf24" : ""),
         p: Array.from({ length: b.steps }, () => q.slice()),
       });
     });
@@ -5311,6 +5394,15 @@
         : "",
       playing = !!boardAnim;
     const dis = (c) => (c || playing ? " disabled" : "");
+    let pk = state.boardPick && !playing && b.items.find((i) => i.id === state.boardPick);
+    if (!pk) state.boardPick = null;
+    let pick = pk
+      ? `<div class="bcolp" role="dialog" aria-label="Color de la ficha"><div class="bcolp-t"><b>Color ${pk.k === "own" ? (itemName(pk) ? "de " + esc(itemName(pk)) : "del jugador " + esc(itemLabel(pk))) : "del rival " + esc(itemLabel(pk))}</b><button type="button" class="bi" data-pcx="1" aria-label="Cerrar" title="Cerrar">${ic("x")}</button></div>${colorPicker(
+          "bd",
+          pk.c || BCOL[pk.k],
+          `<button type="button" data-pca="all">A todos los ${pk.k === "own" ? "míos" : "rivales"}</button><button type="button" data-pc="">Color normal</button>`,
+        )}</div>`
+      : "";
     boardWasLand = boardLand();
     return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}" id="boardPanel">
 <div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
@@ -5334,7 +5426,7 @@
       )
       .join("")}${menu}</div></div>
 <div class="bbot"><div class="bsteps" role="toolbar" aria-label="Jugada en movimiento"><button class="bi" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${dis(b.step < 1)}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="bi" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${dis(b.step >= b.steps - 1)}>${ic("right")}</button><button class="bi" data-b="addstep" aria-label="Añadir paso" title="Añadir paso"${dis()}>${ic("plus")}</button><button class="bi d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${dis(b.steps < 2)}>${ic("x")}</button><span class="brs"></span><button class="bi go" data-b="play" aria-label="${playing ? "Parar" : "Ver jugada"}" title="${playing ? "Parar" : "Ver jugada"}">${ic(playing ? "stop" : "play")}</button><button class="bi" data-b="video" aria-label="Vídeo de la jugada" title="Vídeo de la jugada"${dis()}>${ic("film")}</button></div>
-<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div></section>`;
+<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div>${pick}</section>`;
   }
   let boardRO = null;
   function initBoard() {
@@ -5465,6 +5557,11 @@
         };
         return;
       }
+      if (state.boardPick) {
+        state.boardPick = null;
+        render();
+        return;
+      }
       /* Con «Mover» tocar el campo nunca pinta: solo se arrastran fichas. */
       if (b.tool === "move") return;
       pushHist(b);
@@ -5522,6 +5619,16 @@
         if (cur.moved || cur.drag.k === "hurdle" || cur.drag.k === "goal") {
           b.hist.push(cur.before);
           if (b.hist.length > 60) b.hist.shift();
+        }
+        /* Tocar un jugador sin moverlo abre (o cierra) su color. */
+        if (!cur.moved && (cur.drag.k === "own" || cur.drag.k === "riv")) {
+          let id = cur.drag.id;
+          cur = null;
+          saveBoard();
+          state.boardPick = state.boardPick === id ? null : id;
+          boardPickH = false;
+          render();
+          return;
         }
         redraw();
       }
@@ -5767,8 +5874,88 @@
       note("Titulares puestos en el campo. Arrástralos para moverlos.", true);
     }
   });
+  /* Selector de color de las fichas (pizarra «bd» y alineación «al»). */
+  let boardPickH = false;
+  function setPickColor(ctx, c, all, done) {
+    if (ctx === "bd") {
+      let b = bd(),
+        it = b.items.find((i) => i.id === state.boardPick);
+      if (!it) return;
+      if (!boardPickH) {
+        pushHist(b);
+        boardPickH = true;
+      }
+      if (all) {
+        b.items.forEach((i) => {
+          if (i.k === it.k) i.c = c;
+        });
+        b.tcol = { ...(b.tcol || {}), [it.k]: c };
+      } else it.c = c;
+      if (boardRedraw) boardRedraw();
+      if (done) {
+        saveBoard();
+        render();
+      }
+    } else if (ctx === "al" && state.draft && state.selectedSlot !== null) {
+      let al = state.draft.alineacion,
+        pid = al.slots[state.selectedSlot];
+      if (!pid) return;
+      al.colors = al.colors || {};
+      if (all) {
+        al.color = c;
+        al.colors = {};
+      } else if (c) al.colors[pid] = c;
+      else delete al.colors[pid];
+      let bt = document.querySelector(`button[data-slot="${state.selectedSlot}"]`),
+        pc = slotCol(al, pid, gkOf(al, state.draft.players.map((x) => x.id)));
+      if (bt && pc) {
+        bt.style.setProperty("--pc", pc);
+        bt.style.setProperty("--pi", inkOn(pc));
+      }
+      if (done) render();
+    }
+  }
+  const pickHex = (k) => {
+    let h = +k.querySelector(".cpk-h").value,
+      l = +k.querySelector(".cpk-l").value;
+    return hslHex(h, 85, l);
+  };
+  document.addEventListener("input", (e) => {
+    let k = e.target.dataset && e.target.dataset.pch && e.target.closest(".cpk");
+    if (!k) return;
+    let c = pickHex(k);
+    k.style.setProperty("--cpk", c);
+    k.querySelector(".cpk-l").style.setProperty("--h", k.querySelector(".cpk-h").value);
+    setPickColor(k.dataset.for, c, false, false);
+  });
+  document.addEventListener("change", (e) => {
+    let k = e.target.dataset && e.target.dataset.pch && e.target.closest(".cpk");
+    if (k) setPickColor(k.dataset.for, pickHex(k), false, true);
+  });
+  document.addEventListener("click", (e) => {
+    let x = e.target.closest("[data-pcx]");
+    if (x) {
+      state.boardPick = null;
+      render();
+      return;
+    }
+    let t = e.target.closest("[data-pc],[data-pca]"),
+      k = t && t.closest(".cpk");
+    if (!k) return;
+    let all = t.dataset.pca !== undefined,
+      c = all ? k.style.getPropertyValue("--cpk").trim() : t.dataset.pc;
+    if (all && !isHex(c)) c = pickHex(k);
+    if (!c && k.dataset.for === "bd") {
+      setPickColor("bd", "", false, true);
+      return;
+    }
+    setPickColor(k.dataset.for, c, all, true);
+  });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.boardMenu) {
+    if (e.key === "Escape" && state.boardPick) {
+      state.boardPick = null;
+      render();
+    } else if (e.key === "Escape" && state.boardMenu) {
       state.boardMenu = false;
       render();
     } else if (e.key === "Escape" && state.present) {
