@@ -25,8 +25,8 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('las novedades explican los circuitos y la biblioteca',all(w in body for w in ('circuitos','Biblioteca','40 ejercicios')),body[:200])
-    check('las novedades explican el cronómetro','cronómetro' in body.lower())
+    check('las novedades explican la carga física',all(w in body for w in ('carga física','1 al 10','minutos')),body[:200])
+    check('las novedades explican el aviso de sobrecarga','sobrecarga' in body.lower())
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)
