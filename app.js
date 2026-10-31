@@ -127,6 +127,8 @@
     team: {},
     trainings: [],
     trOk: false,
+    circs: [],
+    ciOk: false,
     trMonth: "",
     trDay: "",
     boardMenu: false,
@@ -411,7 +413,7 @@
   }
   async function load() {
     if (viendo) return render();
-    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en] = await Promise.all([
+    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
         .select("*")
@@ -434,11 +436,21 @@
           return { data: null, error: e };
         }
       })(),
+      (async () => {
+        try {
+          return await db.from("circuitos").select("*").order("created_at");
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      })(),
     ]);
     if (pe || me) throw pe || me;
     state.teamsOk = !tr.error;
     state.teams = tr.data || [];
     state.trOk = !en.error;
+    /* Circuitos (v10.4): si falta ejecutar supabase-circuitos.sql, la app sigue igual sin ellos */
+    state.ciOk = state.trOk && !!ci && !ci.error;
+    state.circs = ((ci && ci.data) || []).map((x) => ({ id: x.id, c: ciLimpio(parseJson(x.datos, {})) }));
     state.trainings = (en.data || []).map((x) => ({
       ...x,
       asistencia: parseJson(x.asistencia, {}),
@@ -941,7 +953,7 @@
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div><p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}<p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
@@ -1013,7 +1025,7 @@
       dayT.length
         ? dayT.map(trSession).join("")
         : `<p class="muted">Este día no hay entrenamiento.</p><div class="stack"><button type="button" class="primary" data-tr="new">${ic("plus")}Crear entrenamiento este día</button></div>`
-    }</section>${trPlayers()}`;
+    }</section>${ciPanel()}${trPlayers()}`;
   }
   function trSave(t, patch) {
     if (viendo) return note(SOLO_VER), render();
@@ -1096,6 +1108,550 @@
     let v = e.target.value.trim().slice(0, 300) || null;
     if ((t[f] || null) === v) return;
     trSave(t, { [f]: v });
+  });
+  /* ===== Circuitos de fuerza, coordinación y velocidad (v10.4) =====
+     Biblioteca de ejercicios con dibujo, circuitos dentro de cada entreno (columna entrenamientos.circuito)
+     y «Mis circuitos» guardados (tabla circuitos). Gratis: CI_MAX circuitos guardados; Pro: sin límite.
+     El mismo número está en limite_circuitos() de supabase-circuitos.sql. */
+  const CI_MAX = 3;
+  const CI_PIC = {
+    sentadilla:
+      '<circle cx="34" cy="13" r="4.5"/><path d="M33 18 29 32h13l-2 15M31 23h15M16 50h34"/>',
+    zancada: '<circle cx="31" cy="11" r="4.5"/><path d="M31 16v16l9 7v11M31 32l-8 11-9 5M31 21l-7 8M31 21l7 7M8 51h46"/>',
+    flexion: '<circle cx="14" cy="30" r="4.5"/><path d="m19 33 35 12M23 35v12M8 48h50"/>',
+    plancha: '<circle cx="12" cy="31" r="4.5"/><path d="m17 34 37 10M19 36v10h8M8 47h50"/>',
+    lateral: '<circle cx="14" cy="20" r="4.5"/><path d="m17 25 36 21M19 26v20M24 29l2-14M8 47h50"/>',
+    puente: '<circle cx="9" cy="43" r="4.5"/><path d="m14 45 18-13 10-1 4 15M14 46h12M6 48h50"/>',
+    nordico: '<circle cx="44" cy="17" r="4.5"/><path d="M41 22 25 46H10M36 29l12 6M6 48h50"/>',
+    salto: '<circle cx="30" cy="11" r="4.5"/><path d="M30 16v14l-6 10M30 30l7 10M30 20l-8-9M30 20l8-9M50 46V22m-5 6 5-6 5 6M14 54h34"/>',
+    equilibrio: '<circle cx="32" cy="11" r="4.5"/><path d="M32 16v16v18M32 32l8 6-4 6M32 22H19M32 22h13M20 51h24"/>',
+    sprint: '<circle cx="37" cy="11" r="4.5"/><path d="m35 16-7 16 10 8-2 10M28 32l-8 10-8-2M33 21l9 6M33 21l-9 2M4 18h10M3 26h10"/>',
+    escalera:
+      '<path d="M22 4v56M42 4v56M22 12h20M22 24h20M22 36h20M22 48h20"/><circle cx="28" cy="18" r="2.5" fill="currentColor"/><circle cx="36" cy="30" r="2.5" fill="currentColor"/><circle cx="28" cy="42" r="2.5" fill="currentColor"/><circle cx="36" cy="54" r="2.5" fill="currentColor"/>',
+    conos:
+      '<path d="M16 6l-4 8h8zM48 20l-4 8h8zM16 34l-4 8h8zM48 48l-4 8h8z"/><path d="M24 12 42 24 22 38l20 12" stroke-dasharray="3 4"/>',
+    vallas: '<path d="M6 50V40h12v10M26 50V40h12v10M46 50V40h12v10M4 51h56"/><path d="M8 34q8-14 16 0q8-14 16 0q8-14 16 0" stroke-dasharray="3 4"/>',
+    aros: '<circle cx="18" cy="14" r="7"/><circle cx="44" cy="26" r="7"/><circle cx="18" cy="38" r="7"/><circle cx="44" cy="50" r="7"/>',
+    balon:
+      '<circle cx="22" cy="11" r="4.5"/><path d="M22 16v16l-2 18M22 32l11 7 7 4M22 21l-8 6M22 21l8 5M10 51h24"/><circle cx="50" cy="45" r="6"/><path d="m50 42 3 2-1 3h-4l-1-3z"/>',
+  };
+  const ciPic = (k, s = 56) =>
+    `<svg class="ci-pic" width="${s}" height="${s}" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CI_PIC[k] || CI_PIC.sprint}</svg>`;
+  const CI_CAT = [
+    ["fuerza", "Fuerza"],
+    ["core", "Core"],
+    ["coord", "Coordinación"],
+    ["veloc", "Velocidad"],
+    ["movil", "Calentamiento"],
+  ];
+  /* [id, categoría, dibujo, nombre, cómo se hace] — todo con el peso del cuerpo, apto para fútbol base */
+  const CI_EJ = [
+    ["sent", "fuerza", "sentadilla", "Sentadilla", "Pies a la anchura de los hombros. Baja como si te sentaras en una silla, espalda recta y rodillas hacia fuera. Sube despacio."],
+    ["zanc", "fuerza", "zancada", "Zancadas alternas", "Da un paso largo al frente y baja hasta que la rodilla de atrás casi toque el suelo. Vuelve y cambia de pierna."],
+    ["flex", "fuerza", "flexion", "Flexiones", "Manos bajo los hombros y cuerpo recto. Baja el pecho y empuja. Si cuesta, con las rodillas apoyadas."],
+    ["puen", "fuerza", "puente", "Puente de glúteo", "Tumbado boca arriba con las rodillas dobladas. Sube la cadera apretando el glúteo, aguanta 2 segundos y baja."],
+    ["ssal", "fuerza", "salto", "Sentadilla con salto", "Haz una sentadilla y salta lo más alto que puedas. Cae suave, con las rodillas un poco dobladas."],
+    ["banc", "fuerza", "salto", "Saltos a un banco bajo", "Salta con los dos pies a un banco o escalón bajo y baja andando. Cae siempre suave y estable."],
+    ["nord", "fuerza", "nordico", "Nórdico con compañero", "De rodillas, un compañero te sujeta los tobillos. Déjate caer hacia delante lo más despacio que puedas y frena con las manos. Previene lesiones de isquios."],
+    ["cope", "fuerza", "lateral", "Copenhague (aductores)", "Plancha lateral con la pierna de arriba apoyada en un banco o en las manos de un compañero. Aguanta recto. Previene lesiones de ingle."],
+    ["geme", "fuerza", "equilibrio", "Elevación de gemelos", "De pie, sube de puntillas despacio y baja controlando. Más difícil: a una pierna."],
+    ["pzc", "fuerza", "equilibrio", "Sentadilla a una pierna", "Apoyado en una pierna, baja un poco doblando la rodilla sin que se vaya hacia dentro. Vuelve a subir. Cambia de pierna a mitad."],
+    ["plan", "core", "plancha", "Plancha frontal", "Apoyado en antebrazos y puntas de los pies, cuerpo recto como una tabla. No subas ni bajes la cadera."],
+    ["plat", "core", "lateral", "Plancha lateral", "De lado, apoyado en un antebrazo, cadera arriba y cuerpo recto. Cambia de lado a mitad del tiempo."],
+    ["esca", "core", "plancha", "Escaladores", "En posición de flexión, lleva las rodillas al pecho una y otra vez, rápido y sin subir la cadera."],
+    ["supe", "core", "plancha", "Superman", "Tumbado boca abajo, levanta a la vez brazos y piernas un poco del suelo. Aguanta 2 segundos y baja."],
+    ["bich", "core", "puente", "Bicho muerto", "Boca arriba, brazos y piernas arriba. Baja a la vez un brazo y la pierna contraria sin despegar la espalda del suelo."],
+    ["abal", "core", "balon", "Abdominales con pase", "Por parejas, sentados frente a frente. Sube, pasa el balón con las manos al compañero y vuelve a bajar."],
+    ["esc1", "coord", "escalera", "Escalera: un pie en cada hueco", "Corre por la escalera pisando una vez en cada hueco, rápido y de puntillas, brazos activos."],
+    ["esc2", "coord", "escalera", "Escalera: dos pies en cada hueco", "Pisa con los dos pies dentro de cada hueco antes de pasar al siguiente. Lo más rápido que puedas sin pisar las barras."],
+    ["esc3", "coord", "escalera", "Escalera lateral", "De lado a la escalera: dentro, dentro, fuera. Ve y vuelve sin girarte."],
+    ["esc4", "coord", "escalera", "Escalera: dentro y fuera", "Dentro con un pie, dentro con el otro, fuera, fuera, avanzando hueco a hueco. Mira al frente, no a los pies."],
+    ["skip", "coord", "sprint", "Skipping", "Carrera en el sitio o avanzando poco, subiendo las rodillas a la altura de la cadera."],
+    ["talo", "coord", "sprint", "Talones al glúteo", "Corre despacio llevando los talones a tocar el glúteo, rápido y de puntillas."],
+    ["zigz", "coord", "conos", "Zigzag entre conos", "Pon 6 conos en zigzag. Corre de uno a otro con pasos cortos y cambia de dirección rápido en cada cono."],
+    ["aros", "coord", "aros", "Saltos en aros", "Pon aros en el suelo. Salta de uno a otro: a pies juntos, a la pata coja o alternando pies."],
+    ["slin", "coord", "salto", "Saltos laterales a una línea", "Pies juntos, salta a un lado y a otro de una línea, lo más rápido posible sin pisarla."],
+    ["val1", "coord", "vallas", "Vallas bajas: rodillas arriba", "Pasa por encima de vallas bajas (o picas) subiendo bien las rodillas, un pie entre cada valla."],
+    ["val2", "coord", "vallas", "Vallas bajas: pies juntos", "Salta las vallas bajas con los pies juntos, enlazando un salto con otro y cayendo suave."],
+    ["slal", "coord", "conos", "Conducción en slalom", "Conduce el balón entre los conos tocándolo con las dos piernas, sin que se te escape."],
+    ["toqu", "coord", "balon", "Toques de balón", "Toques con el pie, el muslo y la cabeza sin que caiga. Cuenta cuántos haces seguidos."],
+    ["equi", "coord", "equilibrio", "Equilibrio con pase", "A una pierna, recibe y devuelve el balón al compañero sin apoyar el otro pie. Cambia de pierna a mitad."],
+    ["spr1", "veloc", "sprint", "Sprint de 10 metros", "Salida rápida y sprint de 10 metros a tope. Vuelve andando a la salida."],
+    ["reac", "veloc", "sprint", "Salida de reacción", "Tumbado, sentado o de espaldas. A la señal (palmada o un color) se levanta y sale en sprint."],
+    ["5105", "veloc", "conos", "Cambio de dirección 5-10-5", "Tres conos en línea a 5 metros. Sales del centro, tocas un lado, cruzas hasta el otro y vuelves al centro."],
+    ["atra", "veloc", "sprint", "Atrás y giro", "Corre hacia atrás 5 metros, gira rápido y haz sprint hacia delante."],
+    ["sbal", "veloc", "balon", "Sprint con balón", "Conduce el balón a máxima velocidad 15 metros con toques largos y frena con la planta."],
+    ["ldef", "veloc", "conos", "Desplazamiento lateral defensivo", "Bajo, con las piernas abiertas, desplázate de lado entre dos conos sin cruzar los pies."],
+    ["cade", "movil", "equilibrio", "Abrir y cerrar la cadera", "De pie, sube la rodilla y ábrela hacia fuera dibujando un círculo. Luego al revés. Cambia de pierna."],
+    ["tobi", "movil", "equilibrio", "Tobillos y rodillas", "Círculos con los tobillos y con las rodillas juntas, hacia un lado y hacia el otro."],
+    ["trot", "movil", "sprint", "Carrera suave con brazos", "Trote suave haciendo círculos con los brazos hacia delante y hacia atrás."],
+    ["pata", "movil", "zancada", "Patadas al frente", "Andando, sube la pierna estirada al frente intentando tocar la punta del pie con la mano contraria."],
+  ];
+  const ciEj = (id) => CI_EJ.find((x) => x[0] === id);
+  const ciEst = (id) => {
+    let e = ciEj(id);
+    return { e: id, n: e[3], d: e[4] };
+  };
+  /* Plantillas listas para usar */
+  const CI_PLANT = [
+    { nombre: "Fuerza básica sin material", trabajo: 30, descanso: 15, series: 3, pausa: 60, est: ["sent", "zanc", "flex", "puen", "plan", "esca"] },
+    { nombre: "Coordinación con escalera y conos", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["esc1", "esc2", "esc3", "zigz", "val1", "slin"] },
+    { nombre: "Velocidad y reacción", trabajo: 20, descanso: 40, series: 3, pausa: 90, est: ["skip", "reac", "5105", "spr1", "ldef"] },
+    { nombre: "Prevención de lesiones", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["nord", "cope", "plat", "equi", "geme", "puen"] },
+    { nombre: "Calentamiento con balón", trabajo: 40, descanso: 10, series: 1, pausa: 0, est: ["trot", "cade", "pata", "talo", "slal", "toqu"] },
+  ].map((p) => ({ ...p, est: p.est.map(ciEst) }));
+  const CI_TRAB = [10, 15, 20, 25, 30, 40, 45, 60, 90, 120],
+    CI_DESC = [0, 10, 15, 20, 30, 40, 45, 60, 90],
+    CI_PAUSA = [0, 30, 60, 90, 120, 180];
+  const ciCopia = (c) => JSON.parse(JSON.stringify(c));
+  const ciSeg = (s) => (s >= 60 ? Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") + " min" : s + " s");
+  function ciTotal(c) {
+    let n = (c.est || []).length;
+    if (!n) return 0;
+    return c.series * (n * c.trabajo + (n - 1) * c.descanso) + (c.series - 1) * c.pausa;
+  }
+  const ciMeta = (c) =>
+    `${c.est.length} ${c.est.length === 1 ? "ejercicio" : "ejercicios"} · ${c.trabajo} s trabajo / ${c.descanso} s descanso · ${c.series} ${c.series === 1 ? "serie" : "series"} · unos ${Math.max(1, Math.round(ciTotal(c) / 60))} min`;
+  function ciLimpio(c) {
+    let num = (v, L, d) => (L.includes(+v) ? +v : d);
+    return {
+      nombre: String(c.nombre || "").trim().slice(0, 60) || "Circuito",
+      trabajo: num(c.trabajo, CI_TRAB, 30),
+      descanso: num(c.descanso, CI_DESC, 15),
+      series: Math.min(6, Math.max(1, +c.series || 1)),
+      pausa: num(c.pausa, CI_PAUSA, 60),
+      est: (c.est || []).slice(0, 20).map((x) => ({
+        e: x.e && ciEj(x.e) ? x.e : null,
+        n: String(x.n || "").trim().slice(0, 60) || "Ejercicio",
+        d: String(x.d || "").trim().slice(0, 300),
+      })),
+    };
+  }
+  const ciDe = (x) => (x ? ciLimpio(parseJson(x, {})) : null);
+  const ciPicDe = (s) => (s.e && ciEj(s.e) ? ciEj(s.e)[2] : "");
+  let ciEd = null;
+  function ciOpen(t, h) {
+    $("infoTitle").textContent = t;
+    $("infoBody").innerHTML = h;
+    $("info").classList.remove("hidden");
+  }
+  function ciLimiteHtml() {
+    return `<p>En el plan gratuito puedes guardar <b>${CI_MAX} circuitos</b> en «Mis circuitos». Puedes seguir poniendo circuitos en tus entrenos y usar todas las plantillas y la biblioteca.</p><p>Con el <b>plan Pro</b> guardas <b>todos los circuitos que quieras</b>, además de jugadores, partidos y entrenamientos ilimitados y varios equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
+  }
+  function ciBloque(t) {
+    if (!state.ciOk) return "";
+    let c = ciDe(t.circuito);
+    if (!c)
+      return viendo
+        ? ""
+        : `<div class="btools ci-add"><button type="button" class="secondary small" data-ci="nuevo" data-id="${t.id}">${ic("plus", 18)}Añadir circuito de fuerza o coordinación</button></div>`;
+    return `<div class="ci-card"><div class="kicker">Circuito</div><b class="ci-nom">${esc(c.nombre)}</b><p class="muted">${ciMeta(c)}</p><ol class="ci-mini">${c.est.map((s) => `<li>${esc(s.n)}</li>`).join("")}</ol><div class="btools"><button type="button" class="primary small" data-ci="run" data-id="${t.id}">▶ Iniciar</button>${viendo ? "" : `<button type="button" class="secondary small" data-ci="editar" data-id="${t.id}">Editar</button><button type="button" class="secondary small" data-ci="quitar" data-id="${t.id}">Quitar</button>`}</div></div>`;
+  }
+  function ciPanel() {
+    if (!state.ciOk) return "";
+    let L = state.circs;
+    return `<section class="panel ci-panel"><div class="bar"><div><div class="kicker">Fuerza · coordinación · velocidad</div><h2 class="h2s">Circuitos</h2><p class="muted">${viendo ? "Ejercicios con el peso del cuerpo, aptos para fútbol base." : `Mis circuitos guardados${plan === "pro" ? "" : ": " + L.length + " / " + CI_MAX}`}</p></div>${viendo ? "" : `<button type="button" class="primary small" data-ci="nuevomis">${ic("plus", 18)}Circuito</button>`}</div><div class="btools"><button type="button" class="secondary small" data-ci="biblio">Biblioteca de ejercicios</button></div>${
+      viendo
+        ? ""
+        : L.length
+          ? L.map(
+              (x) =>
+                `<div class="row ci-row"><div class="info"><strong>${esc(x.c.nombre)}</strong><small>${ciMeta(x.c)}</small></div><div class="ci-acc"><button type="button" class="ib" data-ci="runmis" data-cid="${x.id}" aria-label="Iniciar ${esc(x.c.nombre)}">▶</button><button type="button" class="ib" data-ci="editmis" data-cid="${x.id}" aria-label="Editar ${esc(x.c.nombre)}">${ic("pencil", 18)}</button><button type="button" class="ib" data-ci="delmis" data-cid="${x.id}" aria-label="Borrar ${esc(x.c.nombre)}">${ic("trash", 18)}</button></div></div>`,
+            ).join("")
+          : `<p class="muted">Aún no tienes circuitos guardados. Crea uno o empieza con una plantilla: fuerza básica, coordinación, velocidad, prevención de lesiones o calentamiento.</p>`
+    }</section>`;
+  }
+  /* --- Editor (en la ventana de información) --- */
+  function ciEditorHtml() {
+    let e = ciEd,
+      c = e.c,
+      sel = (f, L, suf) =>
+        `<select data-cif="${f}">${L.map((v) => `<option value="${v}"${+c[f] === v ? " selected" : ""}>${v}${suf}</option>`).join("")}</select>`;
+    if (e.vista === "lib") return ciBiblioHtml(true);
+    if (e.vista === "propio")
+      return `<p>Escribe un ejercicio tuyo. Se guarda dentro de este circuito.</p><label class="ci-l">Nombre<input data-cip="n" maxlength="60" placeholder="Ej.: Saltos a la comba" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-cip="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras"></textarea></label><div class="stack"><button type="button" class="primary" data-ci="propiook">Añadir al circuito</button><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
+    if (e.vista === "plant")
+      return `<p>Elige una plantilla o uno de tus circuitos. Se copian sus ejercicios y tiempos, y luego puedes cambiarlos.</p><h3 class="ci-h3">Plantillas</h3>${CI_PLANT.map((p, i) => `<button type="button" class="ci-opt" data-ci="usaplant" data-i="${i}"><b>${esc(p.nombre)}</b><small>${ciMeta(p)}</small></button>`).join("")}${state.circs.length ? `<h3 class="ci-h3">Mis circuitos</h3>${state.circs.map((x) => `<button type="button" class="ci-opt" data-ci="usamis" data-cid="${x.id}"><b>${esc(x.c.nombre)}</b><small>${ciMeta(x.c)}</small></button>`).join("")}` : ""}<div class="stack"><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
+    return `<label class="ci-l">Nombre del circuito<input data-cif="nombre" maxlength="60" value="${esc(c.nombre)}" autocomplete="off"></label><div class="ci-tiempos"><label>Trabajo${sel("trabajo", CI_TRAB, " s")}</label><label>Descanso${sel("descanso", CI_DESC, " s")}</label><label>Series${sel("series", [1, 2, 3, 4, 5, 6], "")}</label><label>Pausa entre series${sel("pausa", CI_PAUSA, " s")}</label></div><p class="muted" data-ci-meta>${c.est.length ? ciMeta(c) : "Añade ejercicios al circuito."}</p>${
+      c.est.length
+        ? `<ol class="ci-est">${c.est
+            .map(
+              (s, i) =>
+                `<li>${ciPicDe(s) ? ciPic(ciPicDe(s), 40) : '<span class="ci-num">' + (i + 1) + "</span>"}<div class="info"><strong>${esc(s.n)}</strong>${s.d ? `<small>${esc(s.d)}</small>` : ""}</div><div class="ci-acc"><button type="button" class="ib" data-ci="sube" data-i="${i}" aria-label="Subir"${i ? "" : " disabled"}>↑</button><button type="button" class="ib" data-ci="baja" data-i="${i}" aria-label="Bajar"${i < c.est.length - 1 ? "" : " disabled"}>↓</button><button type="button" class="ib" data-ci="fuera" data-i="${i}" aria-label="Quitar ${esc(s.n)}">${ic("x", 18)}</button></div></li>`,
+            )
+            .join("")}</ol>`
+        : ""
+    }<div class="btools ci-tools"><button type="button" class="secondary small" data-ci="lib">${ic("plus", 18)}Ejercicio de la biblioteca</button><button type="button" class="secondary small" data-ci="propio">${ic("plus", 18)}Ejercicio propio</button><button type="button" class="secondary small" data-ci="plant">Usar una plantilla</button></div>${
+      e.dest === "tr" ? `<label class="ci-chk"><input type="checkbox" data-cif="guardar"${e.guardar ? " checked" : ""}> Guardar también en «Mis circuitos» para reutilizarlo</label>` : ""
+    }<div class="stack"><button type="button" class="primary" data-ci="ok">${e.dest === "tr" ? "Guardar en el entreno" : "Guardar circuito"}</button></div>`;
+  }
+  function ciBiblioHtml(conAdd) {
+    let cat = (ciEd && ciEd.cat) || ciCat;
+    return `<p>${conAdd ? "Toca «Añadir» para meter un ejercicio en el circuito." : "Ejercicios con el peso del cuerpo, aptos para fútbol base. Ajusta el tiempo a la edad: con los pequeños, menos tiempo y más descanso."}</p><div class="ci-cats" role="group" aria-label="Tipo de ejercicio">${CI_CAT.map((k) => `<button type="button" class="chip${k[0] === cat ? " on" : ""}" data-ci="cat" data-k="${k[0]}" aria-pressed="${k[0] === cat}">${k[1]}</button>`).join("")}</div><div class="ci-lib">${CI_EJ.filter((x) => x[1] === cat)
+      .map(
+        (x) =>
+          `<div class="ci-ej">${ciPic(x[2])}<div class="info"><strong>${esc(x[3])}</strong><small>${esc(x[4])}</small></div>${conAdd ? `<button type="button" class="secondary small" data-ci="add" data-e="${x[0]}">${ciEd.c.est.some((s) => s.e === x[0]) ? "✓ Otra vez" : "Añadir"}</button>` : ""}</div>`,
+      )
+      .join("")}</div>${conAdd ? `<div class="stack"><button type="button" class="primary" data-ci="volver">Volver al circuito (${ciEd.c.est.length})</button></div>` : ""}`;
+  }
+  let ciCat = "fuerza";
+  function ciPinta(scroll) {
+    let t = ciEd.dest === "tr" ? "Circuito del entreno" : ciEd.id ? "Editar circuito" : "Nuevo circuito";
+    if (ciEd.vista === "lib") t = "Biblioteca de ejercicios";
+    if (ciEd.vista === "propio") t = "Ejercicio propio";
+    if (ciEd.vista === "plant") t = "Plantillas";
+    let y = $("infoBody").scrollTop;
+    ciOpen(t, ciEditorHtml());
+    $("infoBody").scrollTop = scroll ? 0 : y;
+  }
+  function ciNuevoBorrador() {
+    return { nombre: "Circuito", trabajo: 30, descanso: 15, series: 3, pausa: 60, est: [] };
+  }
+  async function ciGuardarMis(c, id) {
+    if (!id && plan !== "pro" && state.circs.length >= CI_MAX) {
+      ciOpen("Plan Pro", ciLimiteHtml());
+      return false;
+    }
+    if (id) {
+      let r = await db.from("circuitos").update({ nombre: c.nombre, datos: c }).eq("id", id);
+      if (r.error) return note(r.error.message), false;
+      let x = state.circs.find((x) => x.id === id);
+      if (x) x.c = c;
+      return true;
+    }
+    let row = { id: crypto.randomUUID(), owner_id: curUser, nombre: c.nombre, datos: c };
+    let r = await db.from("circuitos").insert(row);
+    if (r.error) {
+      if (/LIMITE_PLAN/.test(r.error.message || "")) ciOpen("Plan Pro", ciLimiteHtml());
+      else note(r.error.message);
+      return false;
+    }
+    state.circs.push({ id: row.id, c });
+    return true;
+  }
+  async function ciAct(b) {
+    let k = b.dataset.ci,
+      t = b.dataset.id && state.trainings.find((x) => x.id === b.dataset.id),
+      m = b.dataset.cid && state.circs.find((x) => x.id === b.dataset.cid);
+    if (k === "biblio") {
+      ciEd = null;
+      return ciOpen("Biblioteca de ejercicios", ciBiblioHtml(false));
+    }
+    if (k === "cat") {
+      ciCat = b.dataset.k;
+      if (ciEd) {
+        ciEd.cat = ciCat;
+        return ciPinta(true);
+      }
+      return ciOpen("Biblioteca de ejercicios", ciBiblioHtml(false));
+    }
+    if (k === "run" && t) return ciCorre(ciDe(t.circuito));
+    if (k === "runmis" && m) return ciCorre(m.c);
+    if (viendo) return note(SOLO_VER);
+    if (k === "nuevo" && t) {
+      ciEd = { dest: "tr", id: t.id, c: ciNuevoBorrador(), vista: "plant", cat: ciCat, guardar: false };
+      return ciPinta(true);
+    }
+    if (k === "editar" && t) {
+      ciEd = { dest: "tr", id: t.id, c: ciDe(t.circuito), vista: "edit", cat: ciCat, guardar: false };
+      return ciPinta(true);
+    }
+    if (k === "quitar" && t) {
+      if (!confirm("¿Quitar el circuito de este entreno? Si lo tienes en «Mis circuitos», allí sigue.")) return;
+      await trSave(t, { circuito: null });
+      render();
+      return note("Circuito quitado del entreno.", true);
+    }
+    if (k === "nuevomis") {
+      if (plan !== "pro" && state.circs.length >= CI_MAX) return ciOpen("Plan Pro", ciLimiteHtml());
+      ciEd = { dest: "mis", id: null, c: ciNuevoBorrador(), vista: "plant", cat: ciCat };
+      return ciPinta(true);
+    }
+    if (k === "editmis" && m) {
+      ciEd = { dest: "mis", id: m.id, c: ciCopia(m.c), vista: "edit", cat: ciCat };
+      return ciPinta(true);
+    }
+    if (k === "delmis" && m) {
+      if (!confirm(`¿Borrar el circuito «${m.c.nombre}»? Los entrenos que ya lo tienen lo conservan.`)) return;
+      let r = await db.from("circuitos").delete().eq("id", m.id);
+      if (r.error) return note(r.error.message);
+      state.circs = state.circs.filter((x) => x !== m);
+      render();
+      return note("Circuito borrado.", true);
+    }
+    if (!ciEd) return;
+    let c = ciEd.c,
+      i = +b.dataset.i;
+    if (k === "lib" || k === "propio" || k === "plant") {
+      ciEd.vista = k;
+      return ciPinta(true);
+    }
+    if (k === "volver") {
+      ciEd.vista = "edit";
+      return ciPinta(true);
+    }
+    if (k === "add") {
+      if (c.est.length >= 20) return note("Un circuito puede tener hasta 20 ejercicios.");
+      c.est.push(ciEst(b.dataset.e));
+      ciPinta(false);
+      return note("Añadido: " + ciEj(b.dataset.e)[3] + ".", true);
+    }
+    if (k === "propiook") {
+      let n = ($("infoBody").querySelector("[data-cip=n]").value || "").trim(),
+        d = ($("infoBody").querySelector("[data-cip=d]").value || "").trim();
+      if (!n) return note("Escribe el nombre del ejercicio.");
+      if (c.est.length >= 20) return note("Un circuito puede tener hasta 20 ejercicios.");
+      c.est.push({ e: null, n: n.slice(0, 60), d: d.slice(0, 300) });
+      ciEd.vista = "edit";
+      return ciPinta(true);
+    }
+    if (k === "usaplant" || k === "usamis") {
+      let src = k === "usaplant" ? CI_PLANT[i] : m && m.c;
+      if (!src) return;
+      ciEd.c = ciLimpio(ciCopia(src));
+      ciEd.vista = "edit";
+      return ciPinta(true);
+    }
+    if (k === "sube" || k === "baja") {
+      let j = k === "sube" ? i - 1 : i + 1;
+      if (j < 0 || j >= c.est.length) return;
+      [c.est[i], c.est[j]] = [c.est[j], c.est[i]];
+      return ciPinta(false);
+    }
+    if (k === "fuera") {
+      c.est.splice(i, 1);
+      return ciPinta(false);
+    }
+    if (k === "ok") {
+      let v = ciLimpio(c);
+      if (!v.est.length) return note("Añade al menos un ejercicio al circuito.");
+      b.disabled = true;
+      try {
+        if (ciEd.dest === "tr") {
+          let tr = state.trainings.find((x) => x.id === ciEd.id);
+          if (!tr) return;
+          await trSave(tr, { circuito: v });
+          if (ciEd.guardar && !(await ciGuardarMis(ciCopia(v), null))) return render();
+        } else if (!(await ciGuardarMis(v, ciEd.id))) return;
+      } finally {
+        b.disabled = false;
+      }
+      $("info").classList.add("hidden");
+      ciEd = null;
+      render();
+      return note("Circuito guardado.", true);
+    }
+  }
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-ci]");
+    if (b) ciAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-ci]");
+    if (b) ciAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("change", (e) => {
+    let f = e.target.dataset.cif;
+    if (!f || !ciEd) return;
+    if (f === "guardar") return (ciEd.guardar = e.target.checked);
+    ciEd.c[f] = f === "nombre" ? e.target.value.slice(0, 60) : +e.target.value;
+    let mt = $("infoBody").querySelector("[data-ci-meta]");
+    if (mt && ciEd.c.est.length) mt.textContent = ciMeta(ciEd.c);
+  });
+  $("info").addEventListener("input", (e) => {
+    if (e.target.dataset.cif === "nombre" && ciEd) ciEd.c.nombre = e.target.value.slice(0, 60);
+  });
+  /* --- Cronómetro del circuito (pantalla completa, pita al cambiar) --- */
+  let ciRun = null;
+  function ciFases(c) {
+    let F = [{ k: "prep", d: 10, i: 0, s: 0 }],
+      n = c.est.length;
+    for (let s = 0; s < c.series; s++) {
+      for (let i = 0; i < n; i++) {
+        F.push({ k: "work", d: c.trabajo, i, s });
+        if (i < n - 1 && c.descanso) F.push({ k: "rest", d: c.descanso, i: i + 1, s });
+      }
+      if (s < c.series - 1 && c.pausa) F.push({ k: "pausa", d: c.pausa, i: 0, s: s + 1 });
+    }
+    F.push({ k: "fin", d: 0, i: n - 1, s: c.series - 1 });
+    return F;
+  }
+  function ciSon() {
+    try {
+      return localStorage.getItem("mf_ci_son") !== "0";
+    } catch (e) {
+      return true;
+    }
+  }
+  function ciPita(f, ms) {
+    let r = ciRun;
+    if (!r || !r.ac || !ciSon()) return;
+    try {
+      let o = r.ac.createOscillator(),
+        g = r.ac.createGain(),
+        t0 = r.ac.currentTime;
+      o.frequency.value = f;
+      o.type = "square";
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + ms / 1000);
+      o.connect(g);
+      g.connect(r.ac.destination);
+      o.start(t0);
+      o.stop(t0 + ms / 1000 + 0.02);
+    } catch (e) {}
+  }
+  function ciCorre(c) {
+    if (!c || !c.est.length) return;
+    ciPara();
+    let box = document.createElement("div");
+    box.className = "cto";
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", "Circuito: " + c.nombre);
+    document.body.appendChild(box);
+    document.body.classList.add("cam-on");
+    let AC = window.AudioContext || window.webkitAudioContext;
+    ciRun = { c, F: ciFases(c), p: 0, box, fin: 0, pausa: false, resto: 0, ult: -1, ac: null };
+    try {
+      if (AC) {
+        ciRun.ac = new AC();
+        if (ciRun.ac.resume) ciRun.ac.resume();
+      }
+    } catch (e) {}
+    ciLuz();
+    box.addEventListener("click", (e) => {
+      let b = e.target.closest("[data-cto]");
+      if (b) ciBoton(b.dataset.cto);
+    });
+    ciFase(0);
+    ciRun.tm = setInterval(ciTic, 200);
+  }
+  function ciFase(p, desde) {
+    let r = ciRun;
+    r.p = Math.max(0, Math.min(p, r.F.length - 1));
+    let f = r.F[r.p];
+    r.fin = (desde || Date.now()) + f.d * 1000;
+    r.ult = -1;
+    if (f.k === "fin") {
+      ciPita(1320, 250);
+      setTimeout(() => ciPita(1320, 250), 350);
+      setTimeout(() => ciPita(1760, 600), 700);
+      if (navigator.vibrate) try { navigator.vibrate([200, 100, 200, 100, 400]); } catch (e) {}
+    } else if (f.k === "work") {
+      ciPita(1320, 500);
+      if (navigator.vibrate) try { navigator.vibrate(300); } catch (e) {}
+    } else if (r.p) ciPita(660, 400);
+    ciPintaRun();
+  }
+  function ciTic() {
+    let r = ciRun;
+    if (!r || r.pausa) return;
+    let f = r.F[r.p];
+    if (f.k === "fin") return;
+    let q = r.fin - Date.now();
+    if (q <= 0) {
+      let fin = r.fin;
+      /* si el móvil se ha dormido un rato, avanza las fases que ya han pasado */
+      let p = r.p + 1;
+      while (p < r.F.length - 1 && fin + r.F[p].d * 1000 <= Date.now()) fin += r.F[p++].d * 1000;
+      return ciFase(p, fin);
+    }
+    let s = Math.ceil(q / 1000);
+    if (s !== r.ult) {
+      r.ult = s;
+      if (s <= 3 && f.d > 3) ciPita(880, 120);
+      let t = r.box.querySelector("[data-cto-t]"),
+        bar = r.box.querySelector("[data-cto-b]");
+      if (t) t.textContent = s >= 60 ? Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") : String(s);
+      if (bar) bar.style.width = Math.max(0, Math.min(100, 100 - (q * 100) / (f.d * 1000))) + "%";
+    }
+  }
+  function ciPintaRun() {
+    let r = ciRun,
+      c = r.c,
+      f = r.F[r.p],
+      s = c.est[f.i] || c.est[0],
+      sigF = r.F.slice(r.p + 1).find((x) => x.k === "work"),
+      sig = sigF && (f.k === "work" ? c.est[sigF.i] : null),
+      lab = { prep: "Prepárate", work: "¡Vamos!", rest: "Descansa", pausa: "Pausa entre series", fin: "¡Circuito terminado!" }[f.k],
+      pic = ciPicDe(s);
+    r.box.className = "cto ph-" + f.k + (r.pausa ? " parado" : "");
+    if (f.k === "fin") {
+      r.box.innerHTML = `<div class="cto-in"><div class="cto-ph">${lab}</div><p class="cto-fin">${esc(c.nombre)}<br>${c.est.length} ejercicios · ${c.series} ${c.series === 1 ? "serie" : "series"} · ${ciSeg(ciTotal(c))}</p><div class="cto-btns"><button type="button" class="secondary" data-cto="otra">Repetir</button><button type="button" class="primary" data-cto="x">Cerrar</button></div></div>`;
+      return;
+    }
+    r.box.innerHTML = `<div class="cto-in"><div class="cto-top"><span>Serie <b>${f.s + 1}</b>/${c.series} · Ejercicio <b>${f.i + 1}</b>/${c.est.length}</span><button type="button" class="ib cto-x" data-cto="x" aria-label="Terminar el circuito">${ic("x", 22)}</button></div><div class="cto-ph">${r.pausa ? "En pausa" : lab}</div><div class="cto-t" data-cto-t aria-live="off">${f.d}</div><div class="cto-bar" aria-hidden="true"><i data-cto-b></i></div><div class="cto-ej">${f.k === "work" ? "" : '<div class="kicker">' + (f.k === "rest" || f.k === "prep" || f.k === "pausa" ? "Ahora viene" : "") + "</div>"}${pic ? ciPic(pic, 84) : ""}<b>${esc(s.n)}</b>${s.d ? `<p>${esc(s.d)}</p>` : ""}</div>${sig ? `<p class="cto-sig">Después: ${esc(sig.n)}</p>` : ""}<div class="cto-btns"><button type="button" class="secondary" data-cto="prev" aria-label="Fase anterior">« Atrás</button><button type="button" class="primary" data-cto="pausa">${r.pausa ? "▶ Seguir" : "❚❚ Pausa"}</button><button type="button" class="secondary" data-cto="next" aria-label="Saltar a la siguiente fase">Saltar »</button></div><button type="button" class="cto-son" data-cto="son" aria-pressed="${ciSon()}">${ciSon() ? "🔊 Sonido activado" : "🔇 Sin sonido"}</button></div>`;
+    r.ult = -1;
+    if (r.pausa) {
+      let q = r.resto,
+        s2 = Math.ceil(q / 1000),
+        t = r.box.querySelector("[data-cto-t]"),
+        bar = r.box.querySelector("[data-cto-b]");
+      t.textContent = s2 >= 60 ? Math.floor(s2 / 60) + ":" + String(s2 % 60).padStart(2, "0") : String(s2);
+      bar.style.width = 100 - (q * 100) / (f.d * 1000) + "%";
+    } else ciTic();
+  }
+  function ciBoton(k) {
+    let r = ciRun;
+    if (!r) return;
+    if (r.ac && r.ac.state === "suspended" && r.ac.resume) r.ac.resume();
+    if (k === "x") {
+      if (r.F[r.p].k !== "fin" && r.p > 0 && !confirm("¿Terminar el circuito?")) return;
+      return ciPara();
+    }
+    if (k === "otra") return ciFase(0);
+    if (k === "son") {
+      try {
+        localStorage.setItem("mf_ci_son", ciSon() ? "0" : "1");
+      } catch (e) {}
+      return ciPintaRun();
+    }
+    if (k === "pausa") {
+      if (r.pausa) {
+        r.pausa = false;
+        r.fin = Date.now() + r.resto;
+      } else {
+        r.pausa = true;
+        r.resto = Math.max(0, r.fin - Date.now());
+      }
+      return ciPintaRun();
+    }
+    if (k === "next" || k === "prev") {
+      r.pausa = false;
+      return ciFase(r.p + (k === "next" ? 1 : -1));
+    }
+  }
+  function ciPara() {
+    let r = ciRun;
+    if (!r) return;
+    clearInterval(r.tm);
+    try {
+      if (r.lock) r.lock.release().catch(() => {});
+    } catch (e) {}
+    try {
+      if (r.ac && r.ac.close) r.ac.close();
+    } catch (e) {}
+    r.box.remove();
+    if (!document.querySelector(".cam")) document.body.classList.remove("cam-on");
+    ciRun = null;
+  }
+  /* Que no se apague la pantalla mientras corre el circuito */
+  function ciLuz() {
+    if (!ciRun || ciRun.lock || !navigator.wakeLock) return;
+    try {
+      navigator.wakeLock
+        .request("screen")
+        .then((l) => {
+          if (!ciRun) return l.release().catch(() => {});
+          ciRun.lock = l;
+          l.addEventListener("release", () => ciRun && ciRun.lock === l && (ciRun.lock = null));
+        })
+        .catch(() => {});
+    } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (ciRun && !document.hidden) ciLuz();
   });
   function blankAlign() {
     let f = Object.keys(formations[state.mode])[0];
@@ -2860,7 +3416,7 @@
     {
       el: "#acct",
       t: "Mi cuenta",
-      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista y hacer circuitos de fuerza y coordinación en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
     },
     {
       t: "¡Listo para empezar!",
@@ -2993,6 +3549,20 @@
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido, faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
         "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
+      ],
+    },
+    {
+      t: "Circuitos de fuerza y coordinación",
+      p: [
+        "Están en la pestaña <b>Entrenos</b>. Toca un día con entrenamiento y pulsa «Añadir circuito de fuerza o coordinación».",
+        "Puedes empezar con una <b>plantilla</b> (fuerza básica, coordinación con escalera y conos, velocidad y reacción, prevención de lesiones o calentamiento con balón) y luego cambiarla a tu gusto.",
+        "Elige el tiempo de <b>trabajo</b>, el <b>descanso</b>, cuántas <b>series</b> y la pausa entre series. La app te dice cuánto dura el circuito.",
+        "«Ejercicio de la biblioteca»: hay 40 ejercicios con su dibujo y cómo se hacen, por tipos: fuerza, core, coordinación, velocidad y calentamiento. Todos con el peso del cuerpo, aptos para fútbol base.",
+        "«Ejercicio propio»: escribe uno tuyo con su explicación. Con las flechas cambias el orden y con la ✗ lo quitas.",
+        "Pulsa <b>▶ Iniciar</b> en el campo: sale un cronómetro grande que pita al empezar cada ejercicio y en los 3 últimos segundos, y te dice qué ejercicio viene después. Tienes Pausa, Atrás y Saltar. La pantalla no se apaga mientras corre.",
+        "Marca «Guardar también en Mis circuitos» para reutilizarlo otro día. Abajo, en <b>Circuitos</b>, tienes tus circuitos guardados y la biblioteca de ejercicios.",
+        "En el plan gratuito puedes guardar 3 circuitos en «Mis circuitos»; con el plan Pro, todos los que quieras. Poner un circuito en un entreno siempre es gratis.",
+        "Consejo: con los más pequeños, menos tiempo de trabajo y más descanso.",
       ],
     },
     {
@@ -3544,6 +4114,7 @@
           jugadores: state.players,
           partidos: state.matches,
           entrenamientos: state.trainings,
+          circuitos: state.circs,
           directos: Object.values(liveRows),
           ...(perfil ? { perfil } : {}),
         },

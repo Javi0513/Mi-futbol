@@ -57,7 +57,7 @@ with sync_playwright() as p:
     guia(pg)
     check('se abre la guía',pg.locator('#infoTitle').text_content()=='Guía de uso')
     tits=pg.locator('#info .ayuda summary').all_text_contents()
-    check('tiene todos los apartados',len(tits)==12,tits)
+    check('tiene todos los apartados',len(tits)==13,tits)
     for k in ['Tus equipos','Directo','Plan para clubes','Actualizaciones']:
         check('apartado: '+k,k in tits)
     check('los apartados empiezan cerrados',pg.locator('#info .ayuda details[open]').count()==0)
