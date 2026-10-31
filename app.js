@@ -129,6 +129,7 @@
     trOk: false,
     circs: [],
     ciOk: false,
+    cgOk: false,
     trMonth: "",
     trDay: "",
     boardMenu: false,
@@ -413,7 +414,7 @@
   }
   async function load() {
     if (viendo) return render();
-    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci] = await Promise.all([
+    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
         .select("*")
@@ -443,6 +444,13 @@
           return { data: null, error: e };
         }
       })(),
+      (async () => {
+        try {
+          return await db.from("entrenamientos").select("id,carga").limit(1);
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      })(),
     ]);
     if (pe || me) throw pe || me;
     state.teamsOk = !tr.error;
@@ -450,6 +458,8 @@
     state.trOk = !en.error;
     /* Circuitos (v10.4): si falta ejecutar supabase-circuitos.sql, la app sigue igual sin ellos */
     state.ciOk = state.trOk && !!ci && !ci.error;
+    /* Carga física (v10.5): hace falta la columna entrenamientos.carga (supabase-carga.sql) */
+    state.cgOk = state.trOk && !!cg && !cg.error;
     state.circs = ((ci && ci.data) || []).map((x) => ({ id: x.id, c: ciLimpio(parseJson(x.datos, {})) }));
     state.trainings = (en.data || []).map((x) => ({
       ...x,
@@ -953,7 +963,7 @@
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}<p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
@@ -1025,7 +1035,7 @@
       dayT.length
         ? dayT.map(trSession).join("")
         : `<p class="muted">Este día no hay entrenamiento.</p><div class="stack"><button type="button" class="primary" data-tr="new">${ic("plus")}Crear entrenamiento este día</button></div>`
-    }</section>${ciPanel()}${trPlayers()}`;
+    }</section>${ciPanel()}${cgPanel()}${trPlayers()}`;
   }
   function trSave(t, patch) {
     if (viendo) return note(SOLO_VER), render();
@@ -1652,6 +1662,277 @@
   }
   document.addEventListener("visibilitychange", () => {
     if (ciRun && !document.hidden) ciLuz();
+  });
+  /* ===== Carga física por jugador (v10.5) =====
+     Esfuerzo percibido de 1 a 10 (RPE) × minutos = carga. Entrenos: entrenamientos.carga
+     {dur: minutos, rpe: {id: 1-10}}. Partidos: rpe dentro de cada participación (sus minutos ya están).
+     Gratis: anotar y ver la carga de la semana. Pro: gráfico de 6 semanas y avisos de sobrecarga. */
+  const CG_ESF = ["", "Muy, muy fácil", "Muy fácil", "Fácil", "Moderado", "Algo duro", "Duro", "Muy duro", "Muy, muy duro", "Casi al máximo", "Máximo"];
+  const cgCol = (n) => ["", "#4ade80", "#4ade80", "#86efac", "#bef264", "#fde047", "#fbbf24", "#fb923c", "#f97316", "#fb7185", "#f43f5e"][n] || "var(--s3)";
+  let cgEd = null;
+  const cgRpe = (v) => {
+    let n = Math.round(Number(v));
+    return n >= 1 && n <= 10 ? n : 0;
+  };
+  function cgDeTr(t) {
+    let c = parseJson(t && t.carga, null);
+    if (!c) return null;
+    let dur = Math.min(300, Math.max(0, Math.round(Number(c.dur) || 0))),
+      rpe = {};
+    Object.entries(c.rpe || {}).forEach(([k, v]) => {
+      if (cgRpe(v)) rpe[k] = cgRpe(v);
+    });
+    return { dur, rpe };
+  }
+  /* Lunes de la semana de una fecha "aaaa-mm-dd" */
+  function cgLunes(f) {
+    let d = new Date(f + "T12:00:00");
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return ymd(d);
+  }
+  /* Sesiones con carga del equipo elegido: [{f, tipo, nombre, por: {id: {rpe, min}}}] */
+  function cgSesiones() {
+    let S = [];
+    trainings().forEach((t) => {
+      let c = cgDeTr(t);
+      if (!c || !c.dur) return;
+      let por = {};
+      Object.entries(c.rpe).forEach(([id, r]) => (por[id] = { rpe: r, min: c.dur }));
+      if (Object.keys(por).length) S.push({ f: t.fecha, tipo: "e", nombre: "Entreno", por });
+    });
+    games().forEach((m) => {
+      let por = {};
+      entries(m).forEach((e) => {
+        let r = cgRpe(e.rpe),
+          mi = Number(e.minutes) || 0;
+        if (r && mi > 0) por[e.id] = { rpe: r, min: mi };
+      });
+      if (Object.keys(por).length) S.push({ f: m.fecha, tipo: "p", nombre: "vs " + m.rival, por });
+    });
+    return S;
+  }
+  /* Carga por jugador y semana: las 6 últimas semanas (la última es la actual) */
+  function cgSemanas() {
+    let hoy = cgLunes(ymd(new Date())),
+      W = [];
+    for (let i = 5; i >= 0; i--) {
+      let d = new Date(hoy + "T12:00:00");
+      d.setDate(d.getDate() - 7 * i);
+      W.push(ymd(d));
+    }
+    let por = {},
+      eq = W.map(() => 0);
+    cgSesiones().forEach((s) => {
+      let w = W.indexOf(cgLunes(s.f));
+      if (w < 0) return;
+      Object.entries(s.por).forEach(([id, x]) => {
+        let c = x.rpe * x.min;
+        (por[id] = por[id] || W.map(() => 0))[w] += c;
+        eq[w] += c;
+      });
+    });
+    return { W, por, eq };
+  }
+  /* Aviso: semana actual frente a la media de las 4 anteriores (con al menos 2 semanas con datos) */
+  function cgAviso(L) {
+    let prev = L.slice(1, 5).filter((x) => x > 0);
+    if (prev.length < 2) return null;
+    let media = L.slice(1, 5).reduce((a, b) => a + b, 0) / 4,
+      r = media ? L[5] / media : 0;
+    if (r > 1.5) return { k: "l", t: "Cuidado: ha subido mucho", r };
+    if (r > 1.3) return { k: "d", t: "Está subiendo", r };
+    if (r < 0.8 && L[5] > 0) return { k: "b", t: "Carga baja", r };
+    return { k: "w", t: "Normal", r };
+  }
+  const cgSem = (f) => {
+    let d = new Date(f + "T12:00:00");
+    return d.getDate() + " " + MES[d.getMonth()];
+  };
+  function cgBarras(L, W, alto) {
+    let mx = Math.max(1, ...L);
+    return `<div class="cg-bars" style="height:${alto}px" aria-hidden="true">${L.map(
+      (v, i) => `<span title="Semana del ${cgSem(W[i])}: ${v}"><i style="height:${Math.round((v * 100) / mx)}%"${i === L.length - 1 ? ' class="hoy"' : ""}></i></span>`,
+    ).join("")}</div>`;
+  }
+  function cgTrBloque(t) {
+    if (!state.cgOk) return "";
+    let c = cgDeTr(t),
+      n = c ? Object.keys(c.rpe).length : 0;
+    if (!n)
+      return viendo
+        ? ""
+        : `<div class="btools cg-add"><button type="button" class="secondary small" data-cg="tr" data-id="${t.id}">${ic("chart", 18)}Anotar esfuerzo (1-10)</button></div>`;
+    let media = Object.values(c.rpe).reduce((a, b) => a + b, 0) / n;
+    return `<div class="cg-res"><span><b style="color:${cgCol(Math.round(media))}">${media.toFixed(1).replace(".", ",")}</b> esfuerzo medio · ${c.dur} min · ${n} ${n === 1 ? "jugador" : "jugadores"}</span>${viendo ? "" : `<button type="button" class="secondary small" data-cg="tr" data-id="${t.id}">Cambiar</button>`}</div>`;
+  }
+  function cgPanel() {
+    if (!state.cgOk) return "";
+    let { W, por, eq } = cgSemanas(),
+      pro = plan === "pro",
+      r = roster()
+        .map((p) => {
+          let L = por[p.id] || W.map(() => 0);
+          return { p, L, a: cgAviso(L) };
+        })
+        .sort((a, b) => b.L[5] - a.L[5] || a.p.nombre.localeCompare(b.p.nombre, "es")),
+      hace = new Date();
+    hace.setDate(hace.getDate() - 21);
+    let sinEsf = viendo
+        ? []
+        : games()
+            .filter((m) => m.fecha >= ymd(hace) && m.fecha <= ymd(new Date()) && entries(m).some((e) => Number(e.minutes) > 0) && !entries(m).some((e) => cgRpe(e.rpe)))
+            .slice(0, 3),
+      avisos = pro ? r.filter((x) => x.a && x.a.k === "l") : [],
+      hay = eq.some((x) => x > 0);
+    return `<section class="panel cg-panel"><div class="bar"><div><div class="kicker">Esfuerzo × minutos</div><h2 class="h2s">Carga física</h2><p class="muted">Semana del ${cgSem(W[5])} · equipo: <b>${eq[5]}</b></p></div><button type="button" class="ib" data-cg="info" aria-label="Qué es la carga física">?</button></div>${
+      sinEsf.length
+        ? `<div class="cg-pend"><b>Partidos sin esfuerzo anotado</b>${sinEsf.map((m) => `<button type="button" class="secondary small" data-cg="pa" data-id="${m.id}">${esc(cgSem(m.fecha))} vs ${esc(m.rival)}</button>`).join("")}</div>`
+        : ""
+    }${
+      !hay
+        ? `<p class="muted">Al terminar un entreno o un partido, pregunta a cada jugador cuánto le ha costado del 1 al 10 y apúntalo con «Anotar esfuerzo». La app multiplica por los minutos y te enseña la carga de cada semana.</p>`
+        : `${
+            pro
+              ? `<div class="cg-eq"><small>Carga del equipo, últimas 6 semanas</small>${cgBarras(eq, W, 64)}<div class="cg-ejes">${W.map((w, i) => `<span>${i === 5 ? "esta" : cgSem(w)}</span>`).join("")}</div></div>${avisos.length ? `<div class="cg-alerta" role="status">⚠ ${avisos.map((x) => esc(x.p.nombre)).join(", ")}: esta semana ${avisos.length === 1 ? "lleva" : "llevan"} mucha más carga que su media. Vigila el cansancio y las molestias.</div>` : ""}`
+              : `<div class="cg-pro"><b>Con el plan Pro</b>: gráfico de las últimas 6 semanas de cada jugador y aviso cuando alguien sube demasiado de golpe, que es cuando más lesiones hay.${enAndroid ? "" : `<button type="button" class="secondary small" data-cg="pro">Ver el plan Pro</button>`}</div>`
+          }${r
+            .map(
+              (o) =>
+                `<div class="row cg-row">${avatar(o.p)}<div class="info"><strong>${esc(o.p.nombre)}</strong>${pro && o.a ? `<small class="cg-a ${o.a.k}">${o.a.t}</small>` : `<small>esta semana</small>`}</div>${pro ? cgBarras(o.L, W, 34) : ""}<div class="big"><b>${o.L[5]}</b><small>carga</small></div></div>`,
+            )
+            .join("")}`
+    }</section>`;
+  }
+  /* --- Ventana para anotar el esfuerzo --- */
+  function cgEditorHtml() {
+    let e = cgEd,
+      ids = e.ids;
+    return `<p>Pregunta a cada jugador: <b>¿cuánto te ha costado, del 1 (muy fácil) al 10 (lo máximo)?</b> Mejor unos minutos después de terminar, uno a uno.</p>${
+      e.tipo === "e"
+        ? `<label class="ci-l">Minutos que ha durado el entreno<input type="number" inputmode="numeric" min="1" max="300" data-cgf="dur" value="${e.dur || ""}"></label>`
+        : `<p class="muted">Se usan los minutos que ha jugado cada uno en el partido.</p>`
+    }<div class="cg-todos"><span>Poner a todos:</span>${[4, 5, 6, 7, 8].map((n) => `<button type="button" class="cg-n" style="--c:${cgCol(n)}" data-cg="todos" data-v="${n}">${n}</button>`).join("")}</div>${
+      ids.length
+        ? ids
+            .map((id) => {
+              let p = state.players.find((x) => x.id === id) || { id, nombre: e.nombres[id] || "Jugador" },
+                v = e.rpe[id] || 0;
+              return `<div class="cg-j"><div class="cg-jn">${avatar(p)}<div class="info"><strong>${esc(p.nombre)}</strong><small>${v ? v + " · " + CG_ESF[v] : "Sin anotar"}${e.tipo === "p" ? " · " + (e.min[id] || 0) + " min" : ""}</small></div></div><div class="cg-esc" role="group" aria-label="Esfuerzo de ${esc(p.nombre)}">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                .map((n) => `<button type="button" class="cg-n${v === n ? " on" : ""}" style="--c:${cgCol(n)}" data-cg="v" data-pid="${id}" data-v="${n}" aria-pressed="${v === n}" aria-label="${n}, ${CG_ESF[n]}">${n}</button>`)
+                .join("")}</div></div>`;
+            })
+            .join("")
+        : `<p class="muted">${e.tipo === "e" ? "Marca primero quién ha venido al entreno." : "En este partido nadie tiene minutos."}</p>`
+    }<div class="stack"><button type="button" class="primary" data-cg="ok">Guardar esfuerzo</button>${Object.keys(e.rpe).length ? `<button type="button" class="secondary" data-cg="borrar">Borrar lo anotado</button>` : ""}</div>`;
+  }
+  function cgPinta() {
+    let y = $("infoBody").scrollTop;
+    ciOpen(cgEd.tipo === "e" ? "Esfuerzo del entreno" : "Esfuerzo del partido", cgEditorHtml());
+    $("infoBody").scrollTop = y;
+  }
+  function cgDur() {
+    try {
+      return Number(localStorage.getItem("mf_cg_dur")) || 75;
+    } catch (e) {
+      return 75;
+    }
+  }
+  function cgInfoHtml() {
+    return `<p>La <b>carga física</b> mide cuánto ha trabajado cada jugador. Se calcula así: <b>esfuerzo (del 1 al 10) × minutos</b>. Un entreno de 75 minutos con esfuerzo 6 da 450.</p><p>El esfuerzo lo dice el propio jugador: al terminar, pregúntale «¿cuánto te ha costado, del 1 al 10?». Es lo que usan los preparadores físicos (se llama RPE) y funciona muy bien también en fútbol base.</p><p>Con el <b>plan Pro</b> ves el gráfico de las últimas 6 semanas y un <b>aviso</b> cuando la carga de esta semana es mucho mayor que la media de las 4 anteriores (más de 1,5 veces). Subir de golpe es cuando más lesiones hay: mejor ir subiendo poco a poco.</p><p class="muted">Es una ayuda para el entrenador, no un diagnóstico médico.</p>`;
+  }
+  async function cgAct(b) {
+    let k = b.dataset.cg;
+    if (k === "info") return ciOpen("Carga física", cgInfoHtml());
+    if (k === "pro")
+      return ciOpen("Plan Pro", `<p>Con el <b>plan Pro</b> ves el <b>gráfico de carga</b> de las últimas 6 semanas de cada jugador y del equipo, y un <b>aviso de sobrecarga</b> cuando alguien sube demasiado de golpe. Anotar el esfuerzo y ver la carga de la semana es gratis.</p><p>Además: jugadores, partidos y entrenamientos ilimitados, varios equipos, vídeo en directo y circuitos guardados sin límite.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`);
+    if (viendo) return note(SOLO_VER);
+    if (k === "tr") {
+      let t = state.trainings.find((x) => x.id === b.dataset.id);
+      if (!t) return;
+      let c = cgDeTr(t) || { dur: 0, rpe: {} },
+        a = t.asistencia || {},
+        R = roster(),
+        vinieron = R.filter((p) => a[p.id] === "si").map((p) => p.id),
+        ids = vinieron.length ? vinieron : Object.keys(a).length ? [] : R.map((p) => p.id);
+      Object.keys(c.rpe).forEach((id) => !ids.includes(id) && ids.push(id));
+      cgEd = { tipo: "e", id: t.id, ids, rpe: { ...c.rpe }, dur: c.dur || cgDur(), min: {}, nombres: {} };
+      return cgPinta();
+    }
+    if (k === "pa") {
+      let m = state.matches.find((x) => x.id === b.dataset.id);
+      if (!m) return;
+      let E = entries(m).filter((e) => Number(e.minutes) > 0 || cgRpe(e.rpe)),
+        rpe = {},
+        min = {},
+        nombres = {};
+      E.forEach((e) => {
+        if (cgRpe(e.rpe)) rpe[e.id] = cgRpe(e.rpe);
+        min[e.id] = Number(e.minutes) || 0;
+        nombres[e.id] = e.nombre;
+      });
+      cgEd = { tipo: "p", id: m.id, ids: E.map((e) => e.id), rpe, min, nombres, dur: 0 };
+      return cgPinta();
+    }
+    if (!cgEd) return;
+    if (k === "v") {
+      let v = +b.dataset.v;
+      if (cgEd.rpe[b.dataset.pid] === v) delete cgEd.rpe[b.dataset.pid];
+      else cgEd.rpe[b.dataset.pid] = v;
+      return cgPinta();
+    }
+    if (k === "todos") {
+      cgEd.ids.forEach((id) => (cgEd.rpe[id] = +b.dataset.v));
+      return cgPinta();
+    }
+    if (k === "borrar") {
+      cgEd.rpe = {};
+      return cgPinta();
+    }
+    if (k === "ok") {
+      let e = cgEd;
+      b.disabled = true;
+      try {
+        if (e.tipo === "e") {
+          let t = state.trainings.find((x) => x.id === e.id),
+            dur = Math.min(300, Math.max(0, Math.round(Number(e.dur) || 0)));
+          if (!t) return;
+          if (Object.keys(e.rpe).length && !dur) return note("Pon cuántos minutos ha durado el entreno.");
+          try {
+            localStorage.setItem("mf_cg_dur", String(dur || 75));
+          } catch (x) {}
+          await trSave(t, { carga: Object.keys(e.rpe).length ? { dur, rpe: e.rpe } : null });
+        } else {
+          let m = state.matches.find((x) => x.id === e.id);
+          if (!m) return;
+          let P = entries(m).map((x) => {
+            let y = { ...x };
+            if (e.rpe[x.id]) y.rpe = e.rpe[x.id];
+            else delete y.rpe;
+            return y;
+          });
+          let r = await db.from("futbol_personal_partidos").update({ participaciones: JSON.stringify(P) }).eq("id", m.id);
+          if (r.error) return note(r.error.message);
+          m.participaciones = P;
+        }
+      } finally {
+        b.disabled = false;
+      }
+      $("info").classList.add("hidden");
+      cgEd = null;
+      render();
+      return note("Esfuerzo guardado.", true);
+    }
+  }
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-cg]");
+    if (b) cgAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-cg]");
+    if (b) cgAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("input", (e) => {
+    if (e.target.dataset.cgf === "dur" && cgEd) cgEd.dur = e.target.value;
   });
   function blankAlign() {
     let f = Object.keys(formations[state.mode])[0];
@@ -3416,7 +3697,7 @@
     {
       el: "#acct",
       t: "Mi cuenta",
-      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista y hacer circuitos de fuerza y coordinación en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista y hacer circuitos de fuerza y coordinación y llevar la carga física en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
     },
     {
       t: "¡Listo para empezar!",
@@ -3563,6 +3844,18 @@
         "Marca «Guardar también en Mis circuitos» para reutilizarlo otro día. Abajo, en <b>Circuitos</b>, tienes tus circuitos guardados y la biblioteca de ejercicios.",
         "En el plan gratuito puedes guardar 3 circuitos en «Mis circuitos»; con el plan Pro, todos los que quieras. Poner un circuito en un entreno siempre es gratis.",
         "Consejo: con los más pequeños, menos tiempo de trabajo y más descanso.",
+      ],
+    },
+    {
+      t: "Carga física",
+      p: [
+        "Está en la pestaña <b>Entrenos</b>, en el apartado <b>Carga física</b>. Mide cuánto ha trabajado cada jugador: <b>esfuerzo (del 1 al 10) × minutos</b>.",
+        "Al terminar el entreno, pregunta a cada jugador: «¿cuánto te ha costado, del 1 al 10?». Toca el día, pulsa «Anotar esfuerzo (1-10)», pon los minutos que ha durado y marca el número de cada uno. «Poner a todos» rellena a todos con el mismo número y luego cambias a quien haga falta.",
+        "Solo salen los que has marcado como que <b>vinieron</b>. Si aún no has pasado lista, salen todos.",
+        "Partidos: en «Carga física» salen los partidos de las últimas 3 semanas sin esfuerzo anotado. Tócalo y marca el esfuerzo; los minutos de cada jugador ya los pone la app.",
+        "Verás la carga de esta semana de cada jugador y del equipo. La semana empieza el lunes.",
+        "Con el <b>plan Pro</b>: gráfico de las últimas 6 semanas del equipo y de cada jugador, y <b>aviso de sobrecarga</b> cuando alguien lleva esta semana más de 1,5 veces su media de las 4 anteriores. Subir de golpe es cuando más lesiones hay.",
+        "Es una ayuda para el entrenador, no un diagnóstico médico. El botón «?» lo explica.",
       ],
     },
     {
