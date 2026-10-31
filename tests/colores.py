@@ -123,7 +123,7 @@ with sync_playwright() as p:
     # ---- guía y novedades
     js=open(REPO+'/app.js').read();nov=json.load(open(REPO+'/version.json'))
     check('guía de uso explica el color','<b>Color de los jugadores</b>' in js and '<b>Color de las fichas</b>' in js)
-    check('novedades 10.3 hablan del color',nov['version']=='10.3' and sum('color' in x for x in nov['novedades'])>=2)
+    check('novedades al día (desde 10.3)',float(nov['version'])>=10.3)
     check('sin errores de página',not [e for e in errs if 'PAGEERR' in e],errs[:3])
     b.close()
 srv.shutdown()

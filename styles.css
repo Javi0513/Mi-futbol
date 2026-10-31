@@ -3808,3 +3808,343 @@ button.an-p {
     min-height: 34px;
   }
 }
+/* Circuitos de fuerza y coordinación (v10.4) */
+.ci-card {
+  margin: 12px 0 4px;
+  padding: 12px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  background: var(--s2);
+}
+.ci-card .muted {
+  margin: 2px 0 6px;
+  font-size: 13px;
+}
+.ci-nom {
+  font-size: 17px;
+}
+.ci-mini {
+  margin: 0 0 8px;
+  padding-left: 22px;
+  font-size: 14px;
+  color: var(--mut);
+}
+.ci-add {
+  margin-top: 10px;
+}
+.ci-row .info small {
+  display: block;
+}
+.ci-acc {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ci-acc .ib {
+  width: 40px;
+  height: 40px;
+}
+.ci-acc .ib:disabled {
+  opacity: 0.35;
+}
+.ci-pic {
+  flex-shrink: 0;
+  color: var(--lime);
+  background: var(--s1);
+  border-radius: 12px;
+  padding: 4px;
+}
+.ci-tiempos select,
+.ci-l input,
+.ci-l textarea {
+  width: 100%;
+  min-width: 0;
+}
+.ci-l {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.ci-l textarea {
+  font: inherit;
+  resize: vertical;
+}
+.ci-tiempos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ci-tiempos label {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.ci-est {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ci-est li,
+.ci-ej {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--s2);
+}
+.ci-est .info,
+.ci-ej .info {
+  flex: 1;
+  min-width: 0;
+}
+.ci-est small,
+.ci-ej small {
+  display: block;
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.ci-num {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--s1);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ci-tools {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.ci-tools > * {
+  width: 100%;
+}
+.ci-est small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ci-chk {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+  font-size: 14px;
+}
+.ci-chk input {
+  width: 22px;
+  height: 22px;
+}
+.ci-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 10px;
+}
+.ci-cats .chip {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  background: var(--s3);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+}
+.ci-cats .chip.on {
+  background: var(--lime);
+  color: var(--on-lime);
+  border-color: var(--lime);
+}
+.ci-lib {
+  display: grid;
+  gap: 8px;
+}
+.ci-h3 {
+  font-size: 15px;
+  margin: 14px 0 6px;
+}
+.ci-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--s2);
+  color: var(--ink);
+  font: inherit;
+}
+.ci-opt small {
+  display: block;
+  color: var(--mut);
+  font-size: 13px;
+  margin-top: 2px;
+}
+/* Cronómetro del circuito, pantalla completa */
+.cto {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  background: var(--bg);
+  color: var(--ink);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.cto-in {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding: calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+.cto-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--mut);
+  font-size: 15px;
+}
+.cto-ph {
+  font-family: var(--fd);
+  font-size: 34px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.cto-t {
+  font-family: var(--fd);
+  font-weight: 800;
+  font-size: min(38vw, 190px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.cto-bar {
+  height: 10px;
+  border-radius: 99px;
+  background: var(--s3);
+  overflow: hidden;
+}
+.cto-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: currentColor;
+  transition: width 0.2s linear;
+}
+.cto-ej {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--s1);
+  color: var(--ink);
+}
+.cto-ej b {
+  font-size: 22px;
+}
+.cto-ej p {
+  margin: 0;
+  color: var(--mut);
+  font-size: 15px;
+}
+.cto-sig {
+  margin: 0;
+  color: var(--mut);
+}
+.cto-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+.cto-btns > * {
+  flex: 1;
+  white-space: nowrap;
+  min-height: 56px;
+  font-size: 17px;
+}
+.cto-son {
+  background: none;
+  border: 0;
+  color: var(--mut);
+  font: inherit;
+  padding: 8px;
+}
+.cto-fin {
+  font-size: 18px;
+  color: var(--mut);
+}
+.cto.ph-work .cto-ph,
+.cto.ph-work .cto-t,
+.cto.ph-work .cto-bar {
+  color: var(--lime);
+}
+.cto.ph-rest .cto-ph,
+.cto.ph-rest .cto-t,
+.cto.ph-rest .cto-bar,
+.cto.ph-pausa .cto-ph,
+.cto.ph-pausa .cto-t,
+.cto.ph-pausa .cto-bar {
+  color: #60a5fa;
+}
+.cto.ph-prep .cto-ph,
+.cto.ph-prep .cto-t,
+.cto.ph-prep .cto-bar {
+  color: var(--draw);
+}
+.cto.ph-fin .cto-ph {
+  color: var(--lime);
+  margin-top: 30vh;
+}
+.cto.parado .cto-t {
+  opacity: 0.5;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .cto-in {
+    gap: 6px;
+    padding-top: 6px;
+  }
+  .cto-ph {
+    font-size: 24px;
+  }
+  .cto-t {
+    font-size: 24vh;
+  }
+  .cto-ej {
+    padding: 6px 10px;
+  }
+  .cto-ej b {
+    font-size: 18px;
+  }
+  .cto-btns > * {
+    min-height: 46px;
+  }
+  .cto-ej .ci-pic {
+    display: none;
+  }
+}
+#info {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ci-est,
+.ci-lib {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ci-est .info strong,
+.ci-ej .info strong {
+  white-space: normal;
+}
