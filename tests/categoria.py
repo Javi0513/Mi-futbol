@@ -88,6 +88,12 @@ with sync_playwright() as p:
     # Otra modalidad: sin categoría, duración normal
     pg.click('[data-mode="11"]');pg.wait_for_timeout(200)
     check('cada modalidad tiene su categoría (F11 sin categoría: 45)',pg.input_value('#teamCat')=='' and '45' in pg.locator('#teamCat option').first.inner_text())
+    # Fútbol sala: su propia tabla (infantil 25, cadete 20)
+    pg.click('[data-mode="fs"]');pg.wait_for_timeout(200)
+    opts=pg.locator('#teamCat option').all_inner_texts()
+    check('fútbol sala: infantil 25 y cadete 20',any('Infantil · 2 × 25' in o for o in opts) and any('Cadete · 2 × 20' in o for o in opts),opts)
+    pg.select_option('#teamCat','cadete');pg.wait_for_function("()=>(window.__db.equipos||[]).some(t=>t.modalidad==='fs'&&t.categoria==='cadete')",timeout=4000)
+    pg.wait_for_timeout(200);check('el aviso dice 20 minutos','20 minutos' in pg.inner_text('#message'),pg.inner_text('#message'))
     # Servidor sin la columna: se guarda en el dispositivo
     nc=page(b,SEED,'window.__noCat=true;');login(nc)
     nc.select_option('#teamCat','benjamin');nc.wait_for_timeout(500)
