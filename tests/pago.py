@@ -59,6 +59,17 @@ with sync_playwright() as p:
     pg.click('#acct');pg.click('#info [data-info=pro]');pg.wait_for_timeout(300)
     check('enlace de prueba oculto sin ?probarpago (sale la lista de espera)',pg.locator('[data-pro-pay]').count()==0 and pg.locator('#wl').count()==1)
     pg.context.close()
+    # enlace real (sin test_): el pago se ve en la web sin ?probarpago, y sigue oculto en Android
+    CFG_T=CFG;CFG=CFG.replace('buy.stripe.com/test_abc','buy.stripe.com/abc')
+    pg=abrir(b,prueba=False)
+    pg.click('#acct');pg.click('#info [data-info=pro]');pg.wait_for_timeout(300)
+    check('enlace real: botón de pago sin ?probarpago',pg.locator('[data-pro-pay]').count()==1 and pg.locator('#wl').count()==0)
+    pg.context.close()
+    pg=abrir(b,android=True,prueba=False)
+    pg.click('#acct');pg.wait_for_timeout(200)
+    check('enlace real: en Android sigue sin pago',pg.locator('#info [data-info=pro]').count()==0 and pg.locator('[data-pro-pay]').count()==0)
+    pg.context.close()
+    CFG=CFG_T
     pg=abrir(b,prueba=False,seed="{futbol_personal_jugadores:[],futbol_personal_partidos:[],perfiles:[{id:'u1',plan:'pro',stripe_customer:'cus_1'}]}")
     pg.click('#acct');pg.wait_for_timeout(300)
     check('sin ?probarpago, quien paga con Stripe ve "Gestionar o cancelar"',pg.locator('#info [data-pro-portal]').count()==1)
