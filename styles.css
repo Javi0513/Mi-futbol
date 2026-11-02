@@ -4307,3 +4307,169 @@ button.an-p {
 .cg-todos .cg-n {
   border-color: var(--c);
 }
+/* Estrategias de fútbol sala (biblioteca + tarjeta encima de la pizarra) */
+.est-bar {
+  margin: 0 0 10px;
+}
+.est-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 8px 14px;
+  border: 1px solid var(--lime);
+  border-radius: 14px;
+  background: var(--s2);
+  color: var(--ink);
+  font: 800 18px/1.1 var(--fd);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.est-btn .ic {
+  margin-right: 8px;
+  color: var(--lime);
+}
+.est-btn small {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: var(--lime);
+  color: #06210f;
+  font: 800 13px/1.2 var(--fd);
+}
+.est-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  background: var(--s2);
+}
+.est-ct {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.est-ct .bi {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+}
+.est-cn {
+  display: block;
+  font: 800 19px/1.15 var(--fd);
+  letter-spacing: 0.02em;
+}
+.est-step {
+  margin: 6px 0 4px;
+  font-size: 15px;
+  line-height: 1.35;
+  min-height: 2.7em;
+}
+.est-claves summary {
+  cursor: pointer;
+  color: var(--lime);
+  font-weight: 700;
+  font-size: 14px;
+}
+.est-claves ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+.est-chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+}
+.est-chip {
+  margin: 0 6px 6px 0;
+  padding: 6px 11px;
+  border: 1px solid var(--line2);
+  border-radius: 99px;
+  background: var(--s2);
+  color: var(--ink);
+  font: 700 14px/1.2 var(--fb, inherit);
+  cursor: pointer;
+}
+.est-chip[aria-pressed="true"] {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #06210f;
+}
+.est-item {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--s2);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.est-pv {
+  flex: none;
+  width: 84px;
+  margin-right: 10px;
+  border-radius: 8px;
+}
+.est-tx {
+  display: block;
+  min-width: 0;
+}
+.est-tx b {
+  display: block;
+  font: 800 17px/1.15 var(--fd);
+  letter-spacing: 0.02em;
+}
+.est-tx small {
+  display: block;
+  margin-top: 3px;
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.est-k {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--mut);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.est-top,
+.est-pro {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--lime);
+  color: #06210f;
+  font: 800 11px/1.3 var(--fd);
+  font-style: normal;
+}
+.est-pro {
+  margin: 0 0 0 4px;
+  background: #fbbf24;
+}
+.est-go {
+  display: block;
+  margin-top: 6px;
+  color: var(--lime);
+  font-weight: 700;
+  font-size: 14px;
+}
+.est-item.lock .est-go {
+  color: #fbbf24;
+}
+.est-item.lock .est-pv {
+  opacity: 0.6;
+}
+body.presenting .est-bar {
+  display: none;
+}

@@ -3,7 +3,7 @@
      si no hay conexión, usa la copia guardada (la app abre sin internet).
    - Letras, iconos y librería: primero la copia guardada (no cambian).
    - Las llamadas a Supabase NO se tocan nunca. */
-const VERSION = "10.7";
+const VERSION = "10.8";
 const CACHE = "jv32-" + VERSION;
 const SHELL = [
   "./",
@@ -11,6 +11,7 @@ const SHELL = [
   "styles.css",
   "logo.css",
   "app.js",
+  "estrategias-fs.js",
   "config.js",
   "version.json",
   "supabase.js",

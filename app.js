@@ -3684,7 +3684,7 @@
     {
       el: '[data-tab="pizarra"]',
       t: "Pizarra táctica",
-      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Toca un jugador para cambiarle el color. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo.",
+      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Toca un jugador para cambiarle el color. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo. En Fútbol sala tienes además «Estrategias de fútbol sala»: córners, bandas, faltas y 5x4 listos para cargar y verlos moverse.",
     },
     {
       el: '[data-tab="resumen"]',
@@ -3875,6 +3875,16 @@
       ],
     },
     {
+      t: "Estrategias de fútbol sala",
+      p: [
+        "En <b>Fútbol sala</b>, encima de la pizarra tienes el botón <b>«Estrategias de fútbol sala»</b>: una biblioteca de 34 jugadas a balón parado para ensayar en los entrenos.",
+        "Están por tipos: <b>córners</b>, <b>saques de banda</b>, <b>faltas y doble penalti</b>, <b>saque de centro</b>, <b>saque del portero</b>, <b>5x4 con portero-jugador</b> y cómo <b>defender</b> el córner y el 5x4. Con «Las más usadas» ves solo las TOP.",
+        "Toca una y se carga en la pizarra moviéndose sola, paso a paso. Encima del campo te dice qué pasa en cada paso, y en «Claves para que salga bien» tienes los detalles. Las letras de las fichas son los puestos: P portero, PJ portero-jugador, C cierre, AI y AD alas izquierdo y derecho, PV pívot.",
+        "Con ‹ › vas paso a paso para explicarla con calma, y con ▶ la vuelves a ver. Puedes mover las fichas, cambiar colores o poner a tus jugadores, y sacar la <b>imagen</b> o el <b>vídeo</b> para mandarlo al grupo. Si cargas una estrategia y tenías otra jugada, con «Deshacer» la recuperas. La X de la explicación la quita.",
+        "Las <b>10 más usadas</b> (TOP) son gratis para todos. Con el <b>plan Pro</b> tienes las 34.",
+      ],
+    },
+    {
       t: "Estadísticas y buscador",
       p: [
         "En <b>Estadísticas</b> ves el ranking de tus jugadores por goles, minutos, partidos y titularidades.",
@@ -3885,7 +3895,7 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "El plan Pro quita los límites, permite varios equipos y emitir vídeo en el Directo.",
+        "El plan Pro quita los límites, permite varios equipos, emitir vídeo en el Directo y tener todas las estrategias de fútbol sala.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
         { texto: POR_QUE_PRECIO, soloWeb: true },
@@ -5804,6 +5814,7 @@
     color: "#ffd60a",
     tcol: {},
     tool: "move",
+    est: "",
   });
   try {
     let r = JSON.parse(localStorage.getItem("mf_pizarra_v1") || "{}");
@@ -5822,6 +5833,7 @@
         color: x.color || "#ffd60a",
         tcol: x.tcol && typeof x.tcol === "object" ? x.tcol : {},
         tool: "move",
+        est: typeof x.est === "string" ? x.est : "",
       };
     });
   } catch (e) {}
@@ -5841,6 +5853,7 @@
           color: x.color,
           tcol: x.tcol,
           tool: x.tool,
+          est: x.est || "",
         };
       });
       let s = JSON.stringify(o);
@@ -6161,6 +6174,7 @@
       }
       let t = Math.max(0, now - t0);
       if (boardRedraw) boardRedraw(animPos(b, t));
+      if (b.est) estStepTxt(Math.min(b.steps - 1, Math.floor(t / (ANIM_D + ANIM_H)) + (t % (ANIM_D + ANIM_H) > ANIM_D * 0.5 ? 1 : 0)));
       if (t >= animTotal(b) + 250) {
         b.step = b.steps - 1;
         saveBoard();
@@ -6226,6 +6240,151 @@
     b.items = keep.concat(add);
     saveBoard();
   }
+  /* Estrategias de fútbol sala (estrategias-fs.js): biblioteca de jugadas a balón
+     parado y 5x4 que se cargan en la pizarra como jugada por pasos. Las «top»
+     son gratis; el resto, con el plan Pro. */
+  const EST = window.MF_EST_FS || { cats: [], list: [] };
+  const estDe = (id) => EST.list.find((e) => e.id === id);
+  const estLibre = (e) => !!e.top || plan === "pro";
+  const estCatN = (c) => (EST.cats.find((x) => x[0] === c) || [c, c])[1];
+  const EST_ORO = "#fbbf24";
+  /* Metros de la pista (20 x 40) a coordenadas 0..1 del campo dibujado. */
+  const estQ = (q) => [
+    Math.round(Math.min(0.99, Math.max(0.01, 0.06 + (q[0] / 20) * 0.88)) * 10000) / 10000,
+    Math.round(Math.min(0.99, Math.max(0.01, 0.04 + (q[1] / 40) * 0.92)) * 10000) / 10000,
+  ];
+  const estPasos = (e) => Math.max(1, ...e.it.map((i) => i[2].length));
+  function estItems(e) {
+    let n = estPasos(e);
+    return e.it.map((i, x) => {
+      let p = i[2].map(estQ);
+      while (p.length < n) p.push(p[p.length - 1].slice());
+      return {
+        id: e.id + "-" + x + "-" + Math.random().toString(36).slice(2, 6),
+        k: i[0] === "o" ? "own" : i[0] === "r" ? "riv" : "ball",
+        n: i[1] || "",
+        pid: "",
+        r: 0,
+        c: i[0] === "o" && (i[1] === "P" || i[1] === "PJ") ? EST_ORO : "",
+        p,
+      };
+    });
+  }
+  /* Dibujo pequeño de la jugada: posición inicial y recorrido de cada ficha. */
+  function estSvg(e) {
+    let ys = [];
+    e.it.forEach((i) => {
+      if (i[1] === "P" && i[2].length === 1) return;
+      i[2].forEach((q) => ys.push(q[1]));
+    });
+    let y0 = Math.max(-1.5, Math.min(...ys) - 3),
+      y1 = Math.min(41.5, Math.max(...ys) + 3);
+    if (y1 - y0 < 18) y1 = Math.min(41.5, y0 + 18);
+    if (y1 - y0 < 18) y0 = y1 - 18;
+    const col = { o: "#2be36a", r: "#ff4d5e", b: "#ffffff" };
+    let tr = "",
+      dots = "";
+    e.it.forEach((i) => {
+      let P = i[2],
+        c = i[0] === "o" && (i[1] === "P" || i[1] === "PJ") ? EST_ORO : col[i[0]];
+      if (P.length > 1) {
+        let pts = P.map((q) => q[0] + "," + q[1]).join(" "),
+          moved = P.some((q) => Math.hypot(q[0] - P[0][0], q[1] - P[0][1]) > 0.6);
+        if (moved) {
+          let l = P[P.length - 1];
+          tr += `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="${i[0] === "b" ? 0.45 : 0.35}" stroke-linecap="round" stroke-linejoin="round"${i[0] === "b" ? "" : ' stroke-dasharray="0.9 0.7"'} opacity=".85"/><circle cx="${l[0]}" cy="${l[1]}" r="0.45" fill="${c}"/>`;
+        }
+      }
+      dots += `<circle cx="${P[0][0]}" cy="${P[0][1]}" r="${i[0] === "b" ? 0.55 : 0.95}" fill="${c}" stroke="${i[0] === "b" ? "#111" : "#fff"}" stroke-width="0.25"/>`;
+    });
+    return `<svg class="est-pv" width="84" height="${Math.min(150, Math.round((84 * (y1 - y0)) / 23))}" viewBox="-1.5 ${y0} 23 ${y1 - y0}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><rect x="-1.5" y="${y0}" width="23" height="${y1 - y0}" fill="#12476a"/><g fill="none" stroke="rgba(232,245,216,.7)" stroke-width="0.25"><rect x="0" y="0" width="20" height="40"/><path d="M0 20H20M2.5 0Q2.5 6 8.5 6H11.5Q17.5 6 17.5 0M2.5 40Q2.5 34 8.5 34H11.5Q17.5 34 17.5 40"/><circle cx="10" cy="20" r="3"/><path d="M8.5 0V-1H11.5V0M8.5 40V41H11.5V40" stroke-width="0.35"/></g>${tr}${dots}</svg>`;
+  }
+  let estCat = "";
+  function estLibHtml() {
+    let L = EST.list.filter((e) => !estCat || (estCat === "top" ? e.top : e.cat === estCat)),
+      pro = plan === "pro",
+      nTop = EST.list.filter((e) => e.top).length;
+    const chip = (v, t) =>
+      `<button type="button" class="est-chip" data-estc="${v}" aria-pressed="${estCat === v}">${esc(t)}</button>`;
+    return `<p>${EST.list.length} estrategias de fútbol sala para ensayar: córners, saques de banda, faltas, saque de centro, saque del portero y el 5x4 con portero-jugador. Toca una y se carga en la pizarra <b>moviéndose paso a paso</b>, con lo que hace cada jugador.</p>${pro ? "" : `<p class="muted">Las <b>${nTop} más usadas</b> (marcadas con TOP) son gratis. Las demás vienen con el plan Pro.</p>`}<div class="est-chips" role="group" aria-label="Tipo de estrategia">${chip("", "Todas")}${chip("top", "Las más usadas")}${EST.cats.map((c) => chip(c[0], c[1])).join("")}</div><div class="est-list">${L.map((e) => {
+      let ok = estLibre(e);
+      return `<button type="button" class="est-item${ok ? "" : " lock"}" data-est="${e.id}">${estSvg(e)}<span class="est-tx"><span class="est-k">${e.top ? '<i class="est-top">TOP</i>' : ""}${esc(estCatN(e.cat))}${ok ? "" : ' <i class="est-pro">PRO</i>'}</span><b>${esc(e.n)}</b><small>${esc(e.d)}</small><span class="est-go">${ok ? "▶ Cargar en la pizarra" : "Disponible con el plan Pro"}</span></span></button>`;
+    }).join("")}</div>`;
+  }
+  function estOpen() {
+    $("infoTitle").textContent = "Estrategias de fútbol sala";
+    $("infoBody").innerHTML = estLibHtml();
+    $("info").classList.remove("hidden");
+  }
+  function estProHtml(e) {
+    return `<p><b>${esc(e.n)}</b></p><p>${esc(e.d)}</p><p>Esta estrategia es del <b>plan Pro</b>. En el plan gratuito tienes las ${EST.list.filter((x) => x.top).length} más usadas; con el plan Pro, las <b>${EST.list.length} estrategias</b>, además de jugadores, partidos y entrenamientos ilimitados y varios equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}<button type="button" class="secondary" data-estlib="1">Volver a las estrategias</button></div>`;
+  }
+  function estLoad(id) {
+    let e = estDe(id);
+    if (!e || state.mode !== "fs") return;
+    if (!estLibre(e)) {
+      $("infoTitle").textContent = "Estrategia Pro";
+      $("infoBody").innerHTML = estProHtml(e);
+      return;
+    }
+    let b = bd();
+    if (
+      (b.strokes.length || b.items.length) &&
+      b.est !== id &&
+      !confirm("Se cambia lo que tienes en la pizarra por esta estrategia. Si te arrepientes, pulsa «Deshacer». ¿Seguir?")
+    )
+      return;
+    stopAnim();
+    pushHist(b);
+    b.strokes = [];
+    b.steps = estPasos(e);
+    b.items = estItems(e);
+    b.step = 0;
+    b.tool = "move";
+    b.est = id;
+    state.boardPick = null;
+    state.boardMenu = false;
+    saveBoard();
+    $("info").classList.add("hidden");
+    render();
+    /* La explicación arriba y debajo el campo (la jugada pasa en la mitad de arriba). */
+    try {
+      let bar = document.querySelector(".est-bar"),
+        hd = document.querySelector(".head");
+      if (bar)
+        window.scrollTo(0, Math.max(0, bar.getBoundingClientRect().top + window.pageYOffset - (hd ? hd.offsetHeight : 0) - 8));
+    } catch (x) {}
+    setTimeout(() => {
+      if (state.tab === "pizarra" && state.mode === "fs" && bd().est === id && !boardAnim) playAnim();
+    }, 450);
+  }
+  /* Tarjeta de la estrategia cargada: nombre, lo que pasa en el paso actual y claves. */
+  function estCardHtml(b) {
+    let e = b.est && estDe(b.est);
+    if (!e || e.s.length !== b.steps) return "";
+    return `<div class="est-card"><div class="est-ct"><span class="kicker">${esc(estCatN(e.cat))}</span><button type="button" class="bi" data-b="estx" aria-label="Quitar la explicación" title="Quitar la explicación">${ic("x", 18)}</button></div><b class="est-cn">${esc(e.n)}</b><p class="est-step" id="estStep"><b>Paso ${b.step + 1}:</b> ${esc(e.s[b.step] || "")}</p><details class="est-claves"><summary>Claves para que salga bien</summary><ul>${e.k.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details></div>`;
+  }
+  function estStepTxt(i) {
+    let el = $("estStep"),
+      e = bd().est && estDe(bd().est);
+    if (!el || !e || !e.s[i]) return;
+    let t = `<b>Paso ${i + 1}:</b> ${esc(e.s[i])}`;
+    if (el.innerHTML !== t) el.innerHTML = t;
+  }
+  function estBarHtml() {
+    if (state.mode !== "fs") return "";
+    let b = bd();
+    return `<div class="est-bar"><button type="button" class="est-btn" data-b="est"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg><span>Estrategias de fútbol sala</span><small>${EST.list.length}</small></button>${estCardHtml(b)}</div>`;
+  }
+  document.addEventListener("click", (e) => {
+    let t = e.target.closest("[data-est],[data-estc],[data-estlib]");
+    if (!t || !$("infoBody").contains(t)) return;
+    if (t.dataset.estc !== undefined) {
+      estCat = t.dataset.estc;
+      $("infoBody").innerHTML = estLibHtml();
+    } else if (t.dataset.estlib) $("infoBody").innerHTML = estLibHtml();
+    else estLoad(t.dataset.est);
+  });
   function boardView() {
     let b = bd(),
       gs = games().filter(
@@ -6271,7 +6430,7 @@
         )}</div>`
       : "";
     boardWasLand = boardLand();
-    return `<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}" id="boardPanel">
+    return `${state.present ? "" : estBarHtml()}<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}" id="boardPanel">
 <div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
       ["move", "Mover fichas (no pinta)", "hand"],
       ["pen", "Lápiz", "penline"],
@@ -6652,9 +6811,15 @@
     if (!t || state.tab !== "pizarra") return;
     let b = bd(),
       k = t.dataset.b;
-    if (boardAnim && k !== "play" && k !== "present") return;
+    if (boardAnim && k !== "play" && k !== "present" && k !== "est") return;
     if (k !== "add" && k !== "addp") state.boardMenu = false;
-    if (k === "tool") {
+    if (k === "est") {
+      estOpen();
+    } else if (k === "estx") {
+      b.est = "";
+      saveBoard();
+      render();
+    } else if (k === "tool") {
       b.tool = t.dataset.v;
       saveBoard();
       render();
@@ -6676,6 +6841,7 @@
         b.items = [];
         b.steps = 1;
         b.step = 0;
+        b.est = "";
         saveBoard();
         render();
       }
