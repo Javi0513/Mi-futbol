@@ -572,15 +572,17 @@
     return `<div class="team-chips" role="group" aria-label="Equipos de ${esc(MN())}">${chips}</div><button type="button" class="ib" data-teamact="rename" aria-label="Cambiar el nombre del equipo" title="Cambiar nombre">${ic("pencil", 18)}</button>${L.length > 1 ? `<button type="button" class="ib d" data-teamact="del" aria-label="Borrar este equipo" title="Borrar equipo">${ic("trash", 18)}</button>` : ""}<button type="button" class="ib add" data-teamact="add" aria-label="Añadir otro equipo" title="Añadir equipo">${ic("plus", 18)}<span>Equipo</span></button>${catSel()}`;
   }
   /* Categoría del equipo: marca cuánto dura cada parte (para el Directo y los minutos) */
+  /* [clave, nombre, minutos por parte en F7/F11, minutos por parte en fútbol sala] */
   const CATS = [
-    ["prebenjamin", "Prebenjamín", 25],
-    ["benjamin", "Benjamín", 30],
-    ["alevin", "Alevín", 35],
-    ["infantil", "Infantil", 40],
-    ["cadete", "Cadete", 45],
-    ["juvenil", "Juvenil", 45],
-    ["senior", "Senior / Aficionado", 45],
+    ["prebenjamin", "Prebenjamín", 25, 25],
+    ["benjamin", "Benjamín", 30, 25],
+    ["alevin", "Alevín", 35, 25],
+    ["infantil", "Infantil", 40, 25],
+    ["cadete", "Cadete", 45, 20],
+    ["juvenil", "Juvenil", 45, 20],
+    ["senior", "Senior / Aficionado", 45, 20],
   ];
+  const catMin = (c, k) => c[(k || state.mode) === "fs" ? 3 : 2];
   const catKey = (k, id) => "mf_cat:" + (id || k || state.mode),
     catOf = (k, id) => {
       let t = state.teams.find((z) => z.id === id),
@@ -594,11 +596,11 @@
     /* Minutos por parte: los de la categoría del equipo, o los normales de la modalidad */
     parteDe = (k, id) => {
       let c = catOf(k, id);
-      return c ? c[2] : LIVE_PARTE[k] || 30;
+      return c ? catMin(c, k) : LIVE_PARTE[k] || 30;
     };
   function catSel() {
     let c = catOf(state.mode, curTeam());
-    return `<label class="tcat"><span>Categoría</span><select id="teamCat" aria-label="Categoría del equipo"><option value="">Sin categoría (${LIVE_PARTE[state.mode] || 30}' por parte)</option>${CATS.map((z) => `<option value="${z[0]}" ${c && c[0] === z[0] ? "selected" : ""}>${z[1]} · 2 × ${z[2]}'</option>`).join("")}</select></label>`;
+    return `<label class="tcat"><span>Categoría</span><select id="teamCat" aria-label="Categoría del equipo"><option value="">Sin categoría (${LIVE_PARTE[state.mode] || 30}' por parte)</option>${CATS.map((z) => `<option value="${z[0]}" ${c && c[0] === z[0] ? "selected" : ""}>${z[1]} · 2 × ${catMin(z)}'</option>`).join("")}</select></label>`;
   }
   async function setCat(v) {
     if (viendo) return note(SOLO_VER), render();
@@ -624,7 +626,7 @@
     await load();
     let c = CATS.find((z) => z[0] === v);
     note(
-      (c ? `Categoría ${c[1]}: partes de ${c[2]} minutos.` : `Sin categoría: partes de ${LIVE_PARTE[state.mode] || 30} minutos.`) +
+      (c ? `Categoría ${c[1]}: partes de ${catMin(c)} minutos.` : `Sin categoría: partes de ${LIVE_PARTE[state.mode] || 30} minutos.`) +
         (local ? " De momento se guarda solo en este dispositivo (falta un paso en el servidor)." : ""),
       !local,
     );
@@ -3777,7 +3779,7 @@
         "Con el lápiz junto al nombre del equipo le cambias el nombre.",
         "Con el botón <b>+</b> creas otro equipo en la misma modalidad, cada uno con su plantilla y sus partidos. Tener varios equipos es del plan Pro; en el plan gratuito tienes un equipo por modalidad.",
         "Toca el nombre de un equipo para cambiar de uno a otro. Con la papelera borras un equipo.",
-        "Debajo eliges la <b>categoría</b> del equipo. Marca cuánto dura cada parte: prebenjamín 25', benjamín 30', alevín 35', infantil 40' y de cadete en adelante 45'. Sin categoría se usa la duración normal de la modalidad.",
+        "Debajo eliges la <b>categoría</b> del equipo. Marca cuánto dura cada parte: prebenjamín 25', benjamín 30', alevín 35', infantil 40' y de cadete en adelante 45'. En <b>fútbol sala</b>: de prebenjamín a infantil 25' y de cadete en adelante 20'. Sin categoría se usa la duración normal de la modalidad.",
       ],
     },
     {
