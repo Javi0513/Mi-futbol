@@ -130,6 +130,7 @@
     circs: [],
     ciOk: false,
     cgOk: false,
+    ejOk: false,
     trMonth: "",
     trDay: "",
     boardMenu: false,
@@ -414,7 +415,7 @@
   }
   async function load() {
     if (viendo) return render();
-    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg] = await Promise.all([
+    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg, ej] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
         .select("*")
@@ -451,6 +452,13 @@
           return { data: null, error: e };
         }
       })(),
+      (async () => {
+        try {
+          return await db.from("entrenamientos").select("id,ejercicios").limit(1);
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      })(),
     ]);
     if (pe || me) throw pe || me;
     state.teamsOk = !tr.error;
@@ -460,6 +468,8 @@
     state.ciOk = state.trOk && !!ci && !ci.error;
     /* Carga física (v10.5): hace falta la columna entrenamientos.carga (supabase-carga.sql) */
     state.cgOk = state.trOk && !!cg && !cg.error;
+    /* Ejercicios sueltos (v11.0): hace falta la columna entrenamientos.ejercicios (supabase-ejercicios.sql) */
+    state.ejOk = state.trOk && !!ej && !ej.error;
     state.circs = ((ci && ci.data) || []).map((x) => ({ id: x.id, c: ciLimpio(parseJson(x.datos, {})) }));
     state.trainings = (en.data || []).map((x) => ({
       ...x,
@@ -965,7 +975,7 @@
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
@@ -1262,6 +1272,116 @@
         : `<div class="btools ci-add"><button type="button" class="secondary small" data-ci="nuevo" data-id="${t.id}">${ic("plus", 18)}Añadir circuito de fuerza o coordinación</button></div>`;
     return `<div class="ci-card"><div class="kicker">Circuito</div><b class="ci-nom">${esc(c.nombre)}</b><p class="muted">${ciMeta(c)}</p><ol class="ci-mini">${c.est.map((s) => `<li>${esc(s.n)}</li>`).join("")}</ol><div class="btools"><button type="button" class="primary small" data-ci="run" data-id="${t.id}">▶ Iniciar</button>${viendo ? "" : `<button type="button" class="secondary small" data-ci="editar" data-id="${t.id}">Editar</button><button type="button" class="secondary small" data-ci="quitar" data-id="${t.id}">Quitar</button>`}</div></div>`;
   }
+  /* --- Ejercicios sueltos del entreno (v11.0) ---
+     Ejercicios que no son de ningún circuito (rondo, partidillo, finalización…), cada uno con su
+     nombre, explicación y tiempo. Van en la columna entrenamientos.ejercicios (supabase-ejercicios.sql)
+     como lista: [{"n": nombre, "d": cómo se hace, "t": segundos}]. Gratis, hasta EJ_MAX por entreno. */
+  const EJ_MAX = 20;
+  /* Sin tope a la vista: solo uno de seguridad (24 h) para que no se cuelen números absurdos */
+  const EJ_LIM = [5, 86400];
+  const ejClamp = (v) => Math.min(EJ_LIM[1], Math.max(EJ_LIM[0], Math.round(+v || 0)));
+  function ejDe(x) {
+    let l = parseJson(x, []);
+    if (!Array.isArray(l)) return [];
+    return l.slice(0, EJ_MAX).map((s) => ({
+      n: String((s && s.n) || "").trim().slice(0, 60) || "Ejercicio",
+      d: String((s && s.d) || "").trim().slice(0, 300),
+      t: ejClamp((s && s.t) || 600),
+    }));
+  }
+  let ejEd = null;
+  function ejBloque(t) {
+    let L = ejDe(t.ejercicios);
+    if (viendo ? !L.length : !state.ejOk) return "";
+    let tot = L.reduce((a, s) => a + s.t, 0);
+    return `<div class="ej-box">${
+      L.length
+        ? `<div class="ci-card ej-card"><div class="kicker">Ejercicios</div><p class="muted">${L.length} ${L.length === 1 ? "ejercicio" : "ejercicios"} · unos ${Math.max(1, Math.round(tot / 60))} min</p>${L.map(
+            (s, i) =>
+              `<div class="ej-it"><div class="info"><strong>${esc(s.n)}</strong><small>⏱ ${ciSeg(s.t)}</small>${s.d ? `<p>${esc(s.d)}</p>` : ""}</div><div class="ej-acc"><button type="button" class="primary small" data-ej="run" data-id="${t.id}" data-i="${i}" aria-label="Iniciar ${esc(s.n)}">▶ Iniciar</button>${
+                viendo
+                  ? ""
+                  : `<button type="button" class="secondary small" data-ej="editar" data-id="${t.id}" data-i="${i}">Editar</button><button type="button" class="ib" data-ej="quitar" data-id="${t.id}" data-i="${i}" aria-label="Quitar ${esc(s.n)}">${ic("x", 18)}</button>`
+              }</div></div>`,
+          ).join("")}</div>`
+        : ""
+    }${viendo ? "" : `<div class="btools ci-add"><button type="button" class="secondary small" data-ej="nuevo" data-id="${t.id}">${ic("plus", 18)}Añadir ejercicio</button></div>`}</div>`;
+  }
+  function ejEditorHtml() {
+    let s = ejEd.s,
+      m = Math.floor(s.t / 60),
+      sg = s.t % 60,
+      at = (u) => `type="number" inputmode="numeric" pattern="[0-9]*" min="0" ${u === "m" ? "" : 'max="59"'} data-ejm="${u}"`;
+    return `<p>Un ejercicio suelto, sin circuito: un rondo, un partidillo, una finalización… Pon lo que quieras con su tiempo.</p><label class="ci-l">Nombre<input data-ejf="n" maxlength="60" placeholder="Ej.: Rondo 4 contra 2" value="${esc(s.n)}" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-ejf="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras">${esc(s.d)}</textarea></label><div class="ci-tl"><span>Tiempo</span><span class="ci-mmss"><input ${at("m")} aria-label="Minutos del ejercicio" value="${m}"><i>min</i><input ${at("s")} aria-label="Segundos del ejercicio" value="${sg}"><i>s</i></span></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras, sin límite.</p><div class="stack"><button type="button" class="primary" data-ej="ok">${ejEd.i === null ? "Añadir al entreno" : "Guardar"}</button></div>`;
+  }
+  async function ejAct(b) {
+    let k = b.dataset.ej,
+      t = b.dataset.id && state.trainings.find((x) => x.id === b.dataset.id),
+      i = +b.dataset.i;
+    if (k === "run" && t) {
+      let s = ejDe(t.ejercicios)[i];
+      if (s) ciCorre({ nombre: s.n, trabajo: s.t, descanso: 0, series: 1, pausa: 0, est: [{ e: null, n: s.n, d: s.d }] });
+      return;
+    }
+    if (viendo) return note(SOLO_VER);
+    if (k === "nuevo" && t) {
+      if (ejDe(t.ejercicios).length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
+      ciEd = null;
+      ejEd = { id: t.id, i: null, s: { n: "", d: "", t: 600 } };
+      return ciOpen("Añadir ejercicio", ejEditorHtml());
+    }
+    if (k === "editar" && t) {
+      let s = ejDe(t.ejercicios)[i];
+      if (!s) return;
+      ciEd = null;
+      ejEd = { id: t.id, i, s: { ...s } };
+      return ciOpen("Editar ejercicio", ejEditorHtml());
+    }
+    if (k === "quitar" && t) {
+      let L = ejDe(t.ejercicios);
+      if (!L[i] || !confirm(`¿Quitar «${L[i].n}» de este entreno?`)) return;
+      L.splice(i, 1);
+      await trSave(t, { ejercicios: L.length ? L : null });
+      render();
+      return note("Ejercicio quitado.", true);
+    }
+    if (k === "ok" && ejEd) {
+      let box = $("infoBody"),
+        n = (box.querySelector("[data-ejf=n]").value || "").trim(),
+        d = (box.querySelector("[data-ejf=d]").value || "").trim(),
+        mm = box.querySelector("[data-ejm=m]").value,
+        ss = box.querySelector("[data-ejm=s]").value,
+        seg = (+mm || 0) * 60 + (+ss || 0);
+      if (!n) return note("Escribe el nombre del ejercicio.");
+      if (seg < EJ_LIM[0]) return note("Escribe cuánto dura el ejercicio.");
+      let tr = state.trainings.find((x) => x.id === ejEd.id);
+      if (!tr) return;
+      let L = ejDe(tr.ejercicios),
+        s = { n: n.slice(0, 60), d: d.slice(0, 300), t: ejClamp(seg) };
+      if (ejEd.i === null) {
+        if (L.length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
+        L.push(s);
+      } else L[ejEd.i] = s;
+      b.disabled = true;
+      try {
+        await trSave(tr, { ejercicios: L });
+      } finally {
+        b.disabled = false;
+      }
+      $("info").classList.add("hidden");
+      ejEd = null;
+      render();
+      return note("Ejercicio guardado.", true);
+    }
+  }
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-ej]");
+    if (b) ejAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-ej]");
+    if (b) ejAct(b).catch((x) => note(x.message || String(x)));
+  });
   function ciPanel() {
     if (!state.ciOk) return "";
     let L = state.circs;
@@ -3754,7 +3874,7 @@
     {
       el: "#acct",
       t: "Mi cuenta",
-      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista y hacer circuitos de fuerza y coordinación y llevar la carga física en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista, poner ejercicios y circuitos de fuerza y coordinación y llevar la carga física en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
     },
     {
       t: "¡Listo para empezar!",
@@ -3902,6 +4022,16 @@
         "Marca «Guardar también en Mis circuitos» para reutilizarlo otro día. Abajo, en <b>Circuitos</b>, tienes tus circuitos guardados y la biblioteca de ejercicios.",
         "En el plan gratuito puedes guardar 3 circuitos en «Mis circuitos»; con el plan Pro, todos los que quieras. Poner un circuito en un entreno siempre es gratis.",
         "Consejo: con los más pequeños, menos tiempo de trabajo y más descanso.",
+      ],
+    },
+    {
+      t: "Ejercicios del entreno",
+      p: [
+        "Para ejercicios que no son de ningún circuito: un rondo, un partidillo, una finalización, un trabajo táctico…",
+        "En la pestaña <b>Entrenos</b>, toca un día con entrenamiento y pulsa <b>«Añadir ejercicio»</b> (está debajo de «Añadir circuito de fuerza o coordinación»).",
+        "Escribe el <b>nombre</b>, cómo se hace (opcional) y su <b>tiempo</b> en minutos y segundos, el que tú quieras, sin límite. La app te dice cuánto suman todos.",
+        "Con <b>▶</b> sale el cronómetro grande de ese ejercicio, el mismo de los circuitos: pita al empezar y en los 3 últimos segundos.",
+        "Con «Editar» lo cambias y con la ✗ lo quitas. Puedes poner hasta 20 ejercicios en cada entreno. Es gratis.",
       ],
     },
     {
