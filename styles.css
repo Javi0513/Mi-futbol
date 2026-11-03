@@ -4473,3 +4473,78 @@ button.an-p {
 body.presenting .est-bar {
   display: none;
 }
+/* Tiempos libres del circuito (min + s) */
+.ci-tl {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.ci-mmss {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ci-mmss input {
+  width: 3.4em;
+  min-width: 0;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.ci-mmss input::-webkit-inner-spin-button,
+.ci-mmss input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ci-mmss input {
+  -moz-appearance: textfield;
+}
+.ci-mmss i {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--mut);
+}
+.ci-mmss.gen input::placeholder {
+  color: var(--mut);
+}
+.ci-ayt {
+  font-size: 13px;
+  margin: 2px 0 8px;
+}
+.ci-est li {
+  flex-wrap: wrap;
+}
+.ci-et {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-left: 50px;
+  font-size: 13px;
+}
+.ci-et .ci-mmss input {
+  width: 3em;
+  min-height: 36px;
+  height: 36px;
+  padding: 2px 4px;
+  font-size: 15px;
+}
+.ci-et .ci-mmss.gen input {
+  border-style: dashed;
+}
+.ci-et .ci-mmss.gen input::placeholder {
+  opacity: 0.55;
+}
+.ci-et .ci-mmss:not(.gen) input {
+  border-color: var(--lime);
+}
+.ci-et0 {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-height: 0;
+}
+.ci-et:not(.mio) .ci-et0 {
+  display: none;
+}
