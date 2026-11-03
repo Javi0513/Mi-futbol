@@ -2707,6 +2707,24 @@ a.pack {
   background: var(--draw);
   border-color: var(--draw);
 }
+/* Llegó tarde (v11.1) */
+.asis .tarde.on {
+  color: #04202a;
+  background: #5cc8e8;
+  border-color: #5cc8e8;
+}
+.trsum .t {
+  color: #5cc8e8;
+}
+@media (max-width: 420px) {
+  .asis {
+    gap: 4px;
+  }
+  .asis button {
+    width: 38px;
+    height: 40px;
+  }
+}
 .trbar {
   height: 6px;
   border-radius: 99px;
@@ -4587,4 +4605,25 @@ body.presenting .est-bar {
 .ej-it .ib {
   width: 40px;
   height: 40px;
+}
+/* Mis ejercicios (v11.1) */
+.eg-list {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.eg-it {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.eg-it .ci-opt {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.eg-it .ib {
+  flex: none;
+  width: 44px;
+  height: auto;
 }
