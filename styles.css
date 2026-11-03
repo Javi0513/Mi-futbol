@@ -4548,3 +4548,43 @@ body.presenting .est-bar {
 .ci-et:not(.mio) .ci-et0 {
   display: none;
 }
+/* Ejercicios sueltos del entreno (v11.0) */
+.ej-it {
+  padding: 10px 0;
+  border-top: 1px solid var(--line2);
+}
+.ej-it .info strong {
+  display: block;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.ej-it .info small {
+  display: block;
+  color: var(--mut);
+  font-size: 13px;
+}
+.ej-it .info p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--mut);
+  overflow-wrap: anywhere;
+}
+.ej-acc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+.ej-acc .small {
+  flex: 0 0 auto;
+  width: auto;
+}
+.ej-acc .ib {
+  margin-left: auto;
+}
+.ej-it .ib {
+  width: 40px;
+  height: 40px;
+}
