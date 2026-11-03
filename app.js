@@ -1212,30 +1212,33 @@
     { nombre: "Prevención de lesiones", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["nord", "cope", "plat", "equi", "geme", "puen"] },
     { nombre: "Calentamiento con balón", trabajo: 40, descanso: 10, series: 1, pausa: 0, est: ["trot", "cade", "pata", "talo", "slal", "toqu"] },
   ].map((p) => ({ ...p, est: p.est.map(ciEst) }));
-  const CI_TRAB = [10, 15, 20, 25, 30, 40, 45, 60, 90, 120],
-    CI_DESC = [0, 10, 15, 20, 30, 40, 45, 60, 90],
-    CI_PAUSA = [0, 30, 60, 90, 120, 180];
+  /* Tiempos libres (en segundos): mínimo y máximo de cada uno */
+  const CI_LIM = { trabajo: [5, 1800], descanso: [0, 600], pausa: [0, 900], t: [5, 1800] };
+  const ciClamp = (v, f) => Math.min(CI_LIM[f][1], Math.max(CI_LIM[f][0], Math.round(+v || 0)));
+  const ciT = (c, s) => (s && s.t ? s.t : c.trabajo);
   const ciCopia = (c) => JSON.parse(JSON.stringify(c));
   const ciSeg = (s) => (s >= 60 ? Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") + " min" : s + " s");
   function ciTotal(c) {
     let n = (c.est || []).length;
     if (!n) return 0;
-    return c.series * (n * c.trabajo + (n - 1) * c.descanso) + (c.series - 1) * c.pausa;
+    let w = c.est.reduce((a, s) => a + ciT(c, s), 0);
+    return c.series * (w + (n - 1) * c.descanso) + (c.series - 1) * c.pausa;
   }
   const ciMeta = (c) =>
-    `${c.est.length} ${c.est.length === 1 ? "ejercicio" : "ejercicios"} · ${c.trabajo} s trabajo / ${c.descanso} s descanso · ${c.series} ${c.series === 1 ? "serie" : "series"} · unos ${Math.max(1, Math.round(ciTotal(c) / 60))} min`;
+    `${c.est.length} ${c.est.length === 1 ? "ejercicio" : "ejercicios"} · ${c.est.some((s) => s.t && s.t !== c.trabajo) ? "trabajo a medida" : ciSeg(c.trabajo) + " trabajo"} / ${ciSeg(c.descanso)} descanso · ${c.series} ${c.series === 1 ? "serie" : "series"} · unos ${Math.max(1, Math.round(ciTotal(c) / 60))} min`;
   function ciLimpio(c) {
-    let num = (v, L, d) => (L.includes(+v) ? +v : d);
+    let num = (v, f, d) => (v === undefined || v === null || v === "" || isNaN(+v) ? d : ciClamp(v, f));
     return {
       nombre: String(c.nombre || "").trim().slice(0, 60) || "Circuito",
-      trabajo: num(c.trabajo, CI_TRAB, 30),
-      descanso: num(c.descanso, CI_DESC, 15),
+      trabajo: num(c.trabajo, "trabajo", 30),
+      descanso: num(c.descanso, "descanso", 15),
       series: Math.min(6, Math.max(1, +c.series || 1)),
-      pausa: num(c.pausa, CI_PAUSA, 60),
+      pausa: num(c.pausa, "pausa", 60),
       est: (c.est || []).slice(0, 20).map((x) => ({
         e: x.e && ciEj(x.e) ? x.e : null,
         n: String(x.n || "").trim().slice(0, 60) || "Ejercicio",
         d: String(x.d || "").trim().slice(0, 300),
+        ...(+x.t ? { t: ciClamp(x.t, "t") } : {}),
       })),
     };
   }
@@ -1284,18 +1287,42 @@
       return `<p>Escribe un ejercicio tuyo. Se guarda dentro de este circuito.</p><label class="ci-l">Nombre<input data-cip="n" maxlength="60" placeholder="Ej.: Saltos a la comba" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-cip="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras"></textarea></label><div class="stack"><button type="button" class="primary" data-ci="propiook">Añadir al circuito</button><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
     if (e.vista === "plant")
       return `<p>Elige una plantilla o uno de tus circuitos. Se copian sus ejercicios y tiempos, y luego puedes cambiarlos.</p><h3 class="ci-h3">Plantillas</h3>${CI_PLANT.map((p, i) => `<button type="button" class="ci-opt" data-ci="usaplant" data-i="${i}"><b>${esc(p.nombre)}</b><small>${ciMeta(p)}</small></button>`).join("")}${state.circs.length ? `<h3 class="ci-h3">Mis circuitos</h3>${state.circs.map((x) => `<button type="button" class="ci-opt" data-ci="usamis" data-cid="${x.id}"><b>${esc(x.c.nombre)}</b><small>${ciMeta(x.c)}</small></button>`).join("")}` : ""}<div class="stack"><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
-    return `<label class="ci-l">Nombre del circuito<input data-cif="nombre" maxlength="60" value="${esc(c.nombre)}" autocomplete="off"></label><div class="ci-tiempos"><label>Trabajo${sel("trabajo", CI_TRAB, " s")}</label><label>Descanso${sel("descanso", CI_DESC, " s")}</label><label>Series${sel("series", [1, 2, 3, 4, 5, 6], "")}</label><label>Pausa entre series${sel("pausa", CI_PAUSA, " s")}</label></div><p class="muted" data-ci-meta>${c.est.length ? ciMeta(c) : "Añade ejercicios al circuito."}</p>${
+    return `<label class="ci-l">Nombre del circuito<input data-cif="nombre" maxlength="60" value="${esc(c.nombre)}" autocomplete="off"></label><div class="ci-tiempos"><div class="ci-tl"><span>Trabajo de cada ejercicio</span>${ciMmss("trabajo", c.trabajo)}</div><div class="ci-tl"><span>Descanso</span>${ciMmss("descanso", c.descanso)}</div><label>Series${sel("series", [1, 2, 3, 4, 5, 6], "")}</label><div class="ci-tl"><span>Pausa entre series</span>${ciMmss("pausa", c.pausa)}</div></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras. Si un ejercicio necesita otro tiempo, cámbialo en su ⏱.</p><p class="muted" data-ci-meta>${c.est.length ? ciMeta(c) : "Añade ejercicios al circuito."}</p>${
       c.est.length
         ? `<ol class="ci-est">${c.est
             .map(
               (s, i) =>
-                `<li>${ciPicDe(s) ? ciPic(ciPicDe(s), 40) : '<span class="ci-num">' + (i + 1) + "</span>"}<div class="info"><strong>${esc(s.n)}</strong>${s.d ? `<small>${esc(s.d)}</small>` : ""}</div><div class="ci-acc"><button type="button" class="ib" data-ci="sube" data-i="${i}" aria-label="Subir"${i ? "" : " disabled"}>↑</button><button type="button" class="ib" data-ci="baja" data-i="${i}" aria-label="Bajar"${i < c.est.length - 1 ? "" : " disabled"}>↓</button><button type="button" class="ib" data-ci="fuera" data-i="${i}" aria-label="Quitar ${esc(s.n)}">${ic("x", 18)}</button></div></li>`,
+                `<li>${ciPicDe(s) ? ciPic(ciPicDe(s), 40) : '<span class="ci-num">' + (i + 1) + "</span>"}<div class="info"><strong>${esc(s.n)}</strong>${s.d ? `<small>${esc(s.d)}</small>` : ""}</div><div class="ci-acc"><button type="button" class="ib" data-ci="sube" data-i="${i}" aria-label="Subir"${i ? "" : " disabled"}>↑</button><button type="button" class="ib" data-ci="baja" data-i="${i}" aria-label="Bajar"${i < c.est.length - 1 ? "" : " disabled"}>↓</button><button type="button" class="ib" data-ci="fuera" data-i="${i}" aria-label="Quitar ${esc(s.n)}">${ic("x", 18)}</button></div><div class="ci-et${s.t ? " mio" : ""}"><span>⏱ Tiempo</span>${ciMmss("t", s.t, i, c.trabajo)}<button type="button" class="ci-et0" data-ci="tgen" data-i="${i}">Usar el general</button></div></li>`,
             )
             .join("")}</ol>`
         : ""
     }<div class="btools ci-tools"><button type="button" class="secondary small" data-ci="lib">${ic("plus", 18)}Ejercicio de la biblioteca</button><button type="button" class="secondary small" data-ci="propio">${ic("plus", 18)}Ejercicio propio</button><button type="button" class="secondary small" data-ci="plant">Usar una plantilla</button></div>${
       e.dest === "tr" ? `<label class="ci-chk"><input type="checkbox" data-cif="guardar"${e.guardar ? " checked" : ""}> Guardar también en «Mis circuitos» para reutilizarlo</label>` : ""
     }<div class="stack"><button type="button" class="primary" data-ci="ok">${e.dest === "tr" ? "Guardar en el entreno" : "Guardar circuito"}</button></div>`;
+  }
+  /* Campo de tiempo libre: minutos + segundos. f = trabajo | descanso | pausa | t (de un ejercicio) */
+  function ciMmss(f, v, i, gen) {
+    let nom = { trabajo: "trabajo", descanso: "descanso", pausa: "pausa entre series", t: "este ejercicio" }[f],
+      vacio = f === "t" && !v,
+      ref = vacio ? gen : v,
+      m = Math.floor(ref / 60),
+      sg = ref % 60,
+      di = i === undefined ? "" : ` data-i="${i}"`,
+      at = (u) => `type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="${u === "m" ? 30 : 59}" data-cim="${f}" data-u="${u}"${di}`;
+    return `<span class="ci-mmss${vacio ? " gen" : ""}"><input ${at("m")} aria-label="Minutos de ${nom}" ${vacio ? `value="" placeholder="${m}"` : `value="${m}"`}><i>min</i><input ${at("s")} aria-label="Segundos de ${nom}" ${vacio ? `value="" placeholder="${sg}"` : `value="${sg}"`}><i>s</i></span>`;
+  }
+  function ciLeeMmss(inp) {
+    let box = inp.closest(".ci-mmss"),
+      m = box.querySelector('[data-u="m"]'),
+      s = box.querySelector('[data-u="s"]');
+    if (m.value === "" && s.value === "") return null;
+    return (+m.value || 0) * 60 + (+s.value || 0);
+  }
+  function ciPintaMmss(inp, v) {
+    let box = inp.closest(".ci-mmss");
+    box.querySelector('[data-u="m"]').value = Math.floor(v / 60);
+    box.querySelector('[data-u="s"]').value = v % 60;
+    box.classList.remove("gen");
   }
   function ciBiblioHtml(conAdd) {
     let cat = (ciEd && ciEd.cat) || ciCat;
@@ -1430,6 +1457,10 @@
       [c.est[i], c.est[j]] = [c.est[j], c.est[i]];
       return ciPinta(false);
     }
+    if (k === "tgen") {
+      if (c.est[i]) delete c.est[i].t;
+      return ciPinta(false);
+    }
     if (k === "fuera") {
       c.est.splice(i, 1);
       return ciPinta(false);
@@ -1473,6 +1504,30 @@
   $("info").addEventListener("input", (e) => {
     if (e.target.dataset.cif === "nombre" && ciEd) ciEd.c.nombre = e.target.value.slice(0, 60);
   });
+  /* Tiempos libres: se guardan al salir del campo (change) */
+  $("info").addEventListener("change", (e) => {
+    let inp = e.target,
+      f = inp.dataset && inp.dataset.cim;
+    if (!f || !ciEd) return;
+    let c = ciEd.c,
+      v = ciLeeMmss(inp);
+    if (f === "t") {
+      let s = c.est[+inp.dataset.i];
+      if (!s) return;
+      if (v === null || v === 0) delete s.t;
+      else (s.t = ciClamp(v, "t")), ciPintaMmss(inp, s.t);
+      inp.closest(".ci-et").classList.toggle("mio", !!s.t);
+    } else {
+      c[f] = ciClamp(v === null ? CI_LIM[f][0] : v, f);
+      ciPintaMmss(inp, c[f]);
+      if (f === "trabajo")
+        $("infoBody").querySelectorAll('.ci-mmss.gen [data-cim="t"]').forEach((x) => {
+          x.placeholder = x.dataset.u === "m" ? Math.floor(c.trabajo / 60) : c.trabajo % 60;
+        });
+    }
+    let mt = $("infoBody").querySelector("[data-ci-meta]");
+    if (mt && c.est.length) mt.textContent = ciMeta(c);
+  });
   /* --- Cronómetro del circuito (pantalla completa, pita al cambiar) --- */
   let ciRun = null;
   function ciFases(c) {
@@ -1480,7 +1535,7 @@
       n = c.est.length;
     for (let s = 0; s < c.series; s++) {
       for (let i = 0; i < n; i++) {
-        F.push({ k: "work", d: c.trabajo, i, s });
+        F.push({ k: "work", d: ciT(c, c.est[i]), i, s });
         if (i < n - 1 && c.descanso) F.push({ k: "rest", d: c.descanso, i: i + 1, s });
       }
       if (s < c.series - 1 && c.pausa) F.push({ k: "pausa", d: c.pausa, i: 0, s: s + 1 });
@@ -1593,7 +1648,7 @@
       r.box.innerHTML = `<div class="cto-in"><div class="cto-ph">${lab}</div><p class="cto-fin">${esc(c.nombre)}<br>${c.est.length} ejercicios · ${c.series} ${c.series === 1 ? "serie" : "series"} · ${ciSeg(ciTotal(c))}</p><div class="cto-btns"><button type="button" class="secondary" data-cto="otra">Repetir</button><button type="button" class="primary" data-cto="x">Cerrar</button></div></div>`;
       return;
     }
-    r.box.innerHTML = `<div class="cto-in"><div class="cto-top"><span>Serie <b>${f.s + 1}</b>/${c.series} · Ejercicio <b>${f.i + 1}</b>/${c.est.length}</span><button type="button" class="ib cto-x" data-cto="x" aria-label="Terminar el circuito">${ic("x", 22)}</button></div><div class="cto-ph">${r.pausa ? "En pausa" : lab}</div><div class="cto-t" data-cto-t aria-live="off">${f.d}</div><div class="cto-bar" aria-hidden="true"><i data-cto-b></i></div><div class="cto-ej">${f.k === "work" ? "" : '<div class="kicker">' + (f.k === "rest" || f.k === "prep" || f.k === "pausa" ? "Ahora viene" : "") + "</div>"}${pic ? ciPic(pic, 84) : ""}<b>${esc(s.n)}</b>${s.d ? `<p>${esc(s.d)}</p>` : ""}</div>${sig ? `<p class="cto-sig">Después: ${esc(sig.n)}</p>` : ""}<div class="cto-btns"><button type="button" class="secondary" data-cto="prev" aria-label="Fase anterior">« Atrás</button><button type="button" class="primary" data-cto="pausa">${r.pausa ? "▶ Seguir" : "❚❚ Pausa"}</button><button type="button" class="secondary" data-cto="next" aria-label="Saltar a la siguiente fase">Saltar »</button></div><button type="button" class="cto-son" data-cto="son" aria-pressed="${ciSon()}">${ciSon() ? "🔊 Sonido activado" : "🔇 Sin sonido"}</button></div>`;
+    r.box.innerHTML = `<div class="cto-in"><div class="cto-top"><span>Serie <b>${f.s + 1}</b>/${c.series} · Ejercicio <b>${f.i + 1}</b>/${c.est.length}</span><button type="button" class="ib cto-x" data-cto="x" aria-label="Terminar el circuito">${ic("x", 22)}</button></div><div class="cto-ph">${r.pausa ? "En pausa" : lab}</div><div class="cto-t" data-cto-t aria-live="off">${f.d >= 60 ? Math.floor(f.d / 60) + ":" + String(f.d % 60).padStart(2, "0") : f.d}</div><div class="cto-bar" aria-hidden="true"><i data-cto-b></i></div><div class="cto-ej">${f.k === "work" ? "" : '<div class="kicker">' + (f.k === "rest" || f.k === "prep" || f.k === "pausa" ? "Ahora viene" : "") + "</div>"}${pic ? ciPic(pic, 84) : ""}<b>${esc(s.n)}</b>${s.d ? `<p>${esc(s.d)}</p>` : ""}</div>${sig ? `<p class="cto-sig">Después: ${esc(sig.n)}</p>` : ""}<div class="cto-btns"><button type="button" class="secondary" data-cto="prev" aria-label="Fase anterior">« Atrás</button><button type="button" class="primary" data-cto="pausa">${r.pausa ? "▶ Seguir" : "❚❚ Pausa"}</button><button type="button" class="secondary" data-cto="next" aria-label="Saltar a la siguiente fase">Saltar »</button></div><button type="button" class="cto-son" data-cto="son" aria-pressed="${ciSon()}">${ciSon() ? "🔊 Sonido activado" : "🔇 Sin sonido"}</button></div>`;
     r.ult = -1;
     if (r.pausa) {
       let q = r.resto,
@@ -3839,7 +3894,8 @@
       p: [
         "Están en la pestaña <b>Entrenos</b>. Toca un día con entrenamiento y pulsa «Añadir circuito de fuerza o coordinación».",
         "Puedes empezar con una <b>plantilla</b> (fuerza básica, coordinación con escalera y conos, velocidad y reacción, prevención de lesiones o calentamiento con balón) y luego cambiarla a tu gusto.",
-        "Elige el tiempo de <b>trabajo</b>, el <b>descanso</b>, cuántas <b>series</b> y la pausa entre series. La app te dice cuánto dura el circuito.",
+        "Escribe el tiempo de <b>trabajo</b> de cada ejercicio, el <b>descanso</b> y la pausa entre series en <b>minutos y segundos</b>, el que tú quieras (por ejemplo 0 min 45 s o 2 min 30 s; hasta 30 min por ejercicio), y elige cuántas <b>series</b>. La app te dice cuánto dura el circuito.",
+        "Si un ejercicio necesita <b>otro tiempo</b>, escríbelo en su ⏱ Tiempo, debajo del ejercicio. Si lo dejas vacío usa el tiempo general. «Usar el general» le quita el tiempo propio.",
         "«Ejercicio de la biblioteca»: hay 40 ejercicios con su dibujo y cómo se hacen, por tipos: fuerza, core, coordinación, velocidad y calentamiento. Todos con el peso del cuerpo, aptos para fútbol base.",
         "«Ejercicio propio»: escribe uno tuyo con su explicación. Con las flechas cambias el orden y con la ✗ lo quitas.",
         "Pulsa <b>▶ Iniciar</b> en el campo: sale un cronómetro grande que pita al empezar cada ejercicio y en los 3 últimos segundos, y te dice qué ejercicio viene después. Tienes Pausa, Atrás y Saltar. La pantalla no se apaga mientras corre.",
