@@ -131,6 +131,8 @@
     ciOk: false,
     cgOk: false,
     ejOk: false,
+    egOk: false,
+    ejGuard: [],
     trMonth: "",
     trDay: "",
     boardMenu: false,
@@ -415,7 +417,7 @@
   }
   async function load() {
     if (viendo) return render();
-    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg, ej] = await Promise.all([
+    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg, ej, eg] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
         .select("*")
@@ -459,6 +461,13 @@
           return { data: null, error: e };
         }
       })(),
+      (async () => {
+        try {
+          return await db.from("ejercicios_guardados").select("*").order("created_at");
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      })(),
     ]);
     if (pe || me) throw pe || me;
     state.teamsOk = !tr.error;
@@ -470,6 +479,9 @@
     state.cgOk = state.trOk && !!cg && !cg.error;
     /* Ejercicios sueltos (v11.0): hace falta la columna entrenamientos.ejercicios (supabase-ejercicios.sql) */
     state.ejOk = state.trOk && !!ej && !ej.error;
+    /* Mis ejercicios (v11.1): tabla ejercicios_guardados (supabase-mis-ejercicios.sql) */
+    state.egOk = state.ejOk && !!eg && !eg.error;
+    state.ejGuard = ((eg && eg.data) || []).map((x) => ({ id: x.id, s: ejDe([parseJson(x.datos, {})])[0] })).filter((x) => x.s);
     state.circs = ((ci && ci.data) || []).map((x) => ({ id: x.id, c: ciLimpio(parseJson(x.datos, {})) }));
     state.trainings = (en.data || []).map((x) => ({
       ...x,
@@ -879,7 +891,7 @@
   }
   /* ===== Control de entrenamientos (opcional: se activa en Mi cuenta) =====
      Un calendario por equipo; en cada entrenamiento se marca quién vino, quién faltó
-     y quién tuvo falta justificada. Asistencia: {id del jugador: "si" | "no" | "jus"}. */
+     y quién tuvo falta justificada. Asistencia: {id del jugador: "si" | "tarde" | "no" | "jus"}. «tarde» (v11.1) cuenta como que vino. */
   const MESES = [
       "enero",
       "febrero",
@@ -908,7 +920,7 @@
           (a.fecha + (a.hora || "")).localeCompare(b.fecha + (b.hora || "")),
         ),
     trCount = (t) => {
-      let r = { si: 0, no: 0, jus: 0 },
+      let r = { si: 0, tarde: 0, no: 0, jus: 0 },
         ids = new Set(roster().map((p) => p.id));
       Object.entries(t.asistencia || {}).forEach(([id, v]) => {
         if (ids.has(id) && r[v] !== undefined) r[v]++;
@@ -916,9 +928,12 @@
       return r;
     },
     pct = (r) => {
-      let n = r.si + r.no + r.jus;
-      return n ? Math.round((r.si * 100) / n) : null;
+      let v = r.si + (r.tarde || 0),
+        n = v + r.no + r.jus;
+      return n ? Math.round((v * 100) / n) : null;
     };
+  const RELOJ =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
   let trQ = Promise.resolve();
   function entrenosOn() {
     if (viendo) return state.trainings.length > 0;
@@ -954,11 +969,12 @@
           (a, t) => {
             let c = trCount(t);
             a.si += c.si;
+            a.tarde += c.tarde;
             a.no += c.no;
             a.jus += c.jus;
             return a;
           },
-          { si: 0, no: 0, jus: 0 },
+          { si: 0, tarde: 0, no: 0, jus: 0 },
         ),
         p = pct(r),
         k = !L.length ? "" : p === null ? "p" : p >= 80 ? "w" : p >= 50 ? "d" : "l";
@@ -972,17 +988,18 @@
       a = t.asistencia || {},
       B = [
         ["si", "Vino", "check"],
+        ["tarde", "Llegó tarde", "reloj"],
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si}</b> vinieron · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
               (p) =>
                 `<div class="row trow">${avatar(p)}<div class="info"><strong>${esc(p.nombre)}</strong></div><div class="asis" role="group" aria-label="Asistencia de ${esc(p.nombre)}">${B.map(
                   (b) =>
-                    `<button type="button" class="${b[0]}${a[p.id] === b[0] ? " on" : ""}" data-tr="mark" data-id="${t.id}" data-pid="${p.id}" data-v="${b[0]}" aria-pressed="${a[p.id] === b[0]}" aria-label="${b[1]}" title="${b[1]}">${b[2] ? ic(b[2], 18) : "J"}</button>`,
+                    `<button type="button" class="${b[0]}${a[p.id] === b[0] ? " on" : ""}" data-tr="mark" data-id="${t.id}" data-pid="${p.id}" data-v="${b[0]}" aria-pressed="${a[p.id] === b[0]}" aria-label="${b[1]}" title="${b[1]}">${b[2] === "reloj" ? RELOJ : b[2] ? ic(b[2], 18) : "J"}</button>`,
                 ).join("")}</div></div>`,
             )
             .join("")}`
@@ -998,7 +1015,7 @@
     let T = trainings(),
       r = roster()
         .map((p) => {
-          let x = { si: 0, no: 0, jus: 0 };
+          let x = { si: 0, tarde: 0, no: 0, jus: 0 };
           T.forEach((t) => {
             let v = (t.asistencia || {})[p.id];
             if (x[v] !== undefined) x[v]++;
@@ -1008,7 +1025,7 @@
         .sort(
           (a, b) =>
             (b.pc ?? -1) - (a.pc ?? -1) ||
-            b.x.si - a.x.si ||
+            b.x.si + b.x.tarde - (a.x.si + a.x.tarde) ||
             a.p.nombre.localeCompare(b.p.nombre, "es"),
         );
     return `<section class="panel"><h2 class="h2s">Asistencia por jugador</h2><p class="muted">${T.length} ${T.length === 1 ? "entrenamiento" : "entrenamientos"} · ${esc(teamName())}</p><div style="height:6px"></div>${
@@ -1016,7 +1033,7 @@
         ? r
             .map(
               (o) =>
-                `<div class="row">${avatar(o.p)}<div class="info"><strong>${esc(o.p.nombre)}</strong><small>${o.x.si} vino · ${o.x.no} faltó · ${o.x.jus} justificada${o.x.jus === 1 ? "" : "s"}</small><div class="trbar" aria-hidden="true"><i style="width:${o.pc || 0}%"></i></div></div><div class="big"><b>${o.pc === null ? "–" : o.pc + "%"}</b><small>asistencia</small></div></div>`,
+                `<div class="row">${avatar(o.p)}<div class="info"><strong>${esc(o.p.nombre)}</strong><small>${o.x.si + o.x.tarde} vino${o.x.tarde ? ` (${o.x.tarde} tarde)` : ""} · ${o.x.no} faltó · ${o.x.jus} justificada${o.x.jus === 1 ? "" : "s"}</small><div class="trbar" aria-hidden="true"><i style="width:${o.pc || 0}%"></i></div></div><div class="big"><b>${o.pc === null ? "–" : o.pc + "%"}</b><small>asistencia</small></div></div>`,
             )
             .join("")
         : empty("chart", "Aún no hay datos.", "Añade jugadores y pasa lista en tus entrenamientos.")
@@ -1033,11 +1050,12 @@
         (a, t) => {
           let c = trCount(t);
           a.si += c.si;
+          a.tarde += c.tarde;
           a.no += c.no;
           a.jus += c.jus;
           return a;
         },
-        { si: 0, no: 0, jus: 0 },
+        { si: 0, tarde: 0, no: 0, jus: 0 },
       ),
       tp = pct(tot),
       dayT = T.filter((t) => t.fecha === state.trDay);
@@ -1277,6 +1295,7 @@
      nombre, explicación y tiempo. Van en la columna entrenamientos.ejercicios (supabase-ejercicios.sql)
      como lista: [{"n": nombre, "d": cómo se hace, "t": segundos}]. Gratis, hasta EJ_MAX por entreno. */
   const EJ_MAX = 20;
+  const EG_MAX = 200; /* tope de «Mis ejercicios», el mismo que en supabase-mis-ejercicios.sql */
   /* Sin tope a la vista: solo uno de seguridad (24 h) para que no se cuelen números absurdos */
   const EJ_LIM = [5, 86400];
   const ejClamp = (v) => Math.min(EJ_LIM[1], Math.max(EJ_LIM[0], Math.round(+v || 0)));
@@ -1290,6 +1309,31 @@
     }));
   }
   let ejEd = null;
+  /* Mantiene lo escrito al repintar el formulario */
+  function ejLeeForm() {
+    let box = $("infoBody"),
+      q = (x) => box.querySelector(x);
+    if (!ejEd || !q("[data-ejf=n]")) return;
+    ejEd.s.n = q("[data-ejf=n]").value;
+    ejEd.s.d = q("[data-ejf=d]").value;
+    ejEd.s.t = (+q("[data-ejm=m]").value || 0) * 60 + (+q("[data-ejm=s]").value || 0) || 600;
+    if (q("[data-ejg]")) ejEd.guardar = q("[data-ejg]").checked;
+  }
+  /* Guarda en «Mis ejercicios». Si ya hay uno con el mismo nombre, lo actualiza. */
+  async function ejGuardar(s) {
+    let ya = state.ejGuard.find((x) => x.s.n.toLowerCase() === s.n.toLowerCase());
+    if (ya) {
+      let r = await db.from("ejercicios_guardados").update({ datos: s }).eq("id", ya.id);
+      if (r.error) return note(r.error.message);
+      ya.s = { ...s };
+      return;
+    }
+    if (state.ejGuard.length >= EG_MAX) return note(`Puedes guardar hasta ${EG_MAX} ejercicios en «Mis ejercicios».`);
+    let row = { id: crypto.randomUUID(), owner_id: curUser, datos: s };
+    let r = await db.from("ejercicios_guardados").insert(row);
+    if (r.error) return note(r.error.message);
+    state.ejGuard.push({ id: row.id, s: { ...s } });
+  }
   function ejBloque(t) {
     let L = ejDe(t.ejercicios);
     if (viendo ? !L.length : !state.ejOk) return "";
@@ -1312,7 +1356,16 @@
       m = Math.floor(s.t / 60),
       sg = s.t % 60,
       at = (u) => `type="number" inputmode="numeric" pattern="[0-9]*" min="0" ${u === "m" ? "" : 'max="59"'} data-ejm="${u}"`;
-    return `<p>Un ejercicio suelto, sin circuito: un rondo, un partidillo, una finalización… Pon lo que quieras con su tiempo.</p><label class="ci-l">Nombre<input data-ejf="n" maxlength="60" placeholder="Ej.: Rondo 4 contra 2" value="${esc(s.n)}" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-ejf="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras">${esc(s.d)}</textarea></label><div class="ci-tl"><span>Tiempo</span><span class="ci-mmss"><input ${at("m")} aria-label="Minutos del ejercicio" value="${m}"><i>min</i><input ${at("s")} aria-label="Segundos del ejercicio" value="${sg}"><i>s</i></span></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras, sin límite.</p><div class="stack"><button type="button" class="primary" data-ej="ok">${ejEd.i === null ? "Añadir al entreno" : "Guardar"}</button></div>`;
+    let G = state.egOk ? state.ejGuard : [],
+      mis =
+        ejEd.i === null && G.length
+          ? `<h3 class="ci-h3">Mis ejercicios</h3><p class="muted">Toca uno para ponerlo en este entreno.</p><div class="eg-list">${G.map(
+              (g) =>
+                `<div class="eg-it"><button type="button" class="ci-opt" data-ej="usar" data-gid="${g.id}"><b>${esc(g.s.n)}</b><small>⏱ ${ciSeg(g.s.t)}${g.s.d ? " · " + esc(g.s.d.slice(0, 60)) + (g.s.d.length > 60 ? "…" : "") : ""}</small></button><button type="button" class="ib" data-ej="borrarg" data-gid="${g.id}" aria-label="Borrar ${esc(g.s.n)} de Mis ejercicios">${ic("trash", 18)}</button></div>`,
+            ).join("")}</div><h3 class="ci-h3">O escribe uno nuevo</h3>`
+          : "",
+      chk = state.egOk ? `<label class="ci-chk"><input type="checkbox" data-ejg${ejEd.guardar ? " checked" : ""}> Guardar también en «Mis ejercicios» para reutilizarlo</label>` : "";
+    return `${mis}${mis ? "" : "<p>Un ejercicio suelto, sin circuito: un rondo, un partidillo, una finalización… Pon lo que quieras con su tiempo.</p>"}<label class="ci-l">Nombre<input data-ejf="n" maxlength="60" placeholder="Ej.: Rondo 4 contra 2" value="${esc(s.n)}" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-ejf="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras">${esc(s.d)}</textarea></label><div class="ci-tl"><span>Tiempo</span><span class="ci-mmss"><input ${at("m")} aria-label="Minutos del ejercicio" value="${m}"><i>min</i><input ${at("s")} aria-label="Segundos del ejercicio" value="${sg}"><i>s</i></span></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras, sin límite.</p>${chk}<div class="stack"><button type="button" class="primary" data-ej="ok">${ejEd.i === null ? "Añadir al entreno" : "Guardar"}</button></div>`;
   }
   async function ejAct(b) {
     let k = b.dataset.ej,
@@ -1327,14 +1380,16 @@
     if (k === "nuevo" && t) {
       if (ejDe(t.ejercicios).length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
       ciEd = null;
-      ejEd = { id: t.id, i: null, s: { n: "", d: "", t: 600 } };
-      return ciOpen("Añadir ejercicio", ejEditorHtml());
+      ejEd = { id: t.id, i: null, s: { n: "", d: "", t: 600 }, guardar: true };
+      ciOpen("Añadir ejercicio", ejEditorHtml());
+      $("infoBody").scrollTop = 0;
+      return;
     }
     if (k === "editar" && t) {
       let s = ejDe(t.ejercicios)[i];
       if (!s) return;
       ciEd = null;
-      ejEd = { id: t.id, i, s: { ...s } };
+      ejEd = { id: t.id, i, s: { ...s }, guardar: false };
       return ciOpen("Editar ejercicio", ejEditorHtml());
     }
     if (k === "quitar" && t) {
@@ -1344,6 +1399,28 @@
       await trSave(t, { ejercicios: L.length ? L : null });
       render();
       return note("Ejercicio quitado.", true);
+    }
+    if (k === "usar" && ejEd) {
+      let g = state.ejGuard.find((x) => x.id === b.dataset.gid),
+        tr = state.trainings.find((x) => x.id === ejEd.id);
+      if (!g || !tr) return;
+      let L = ejDe(tr.ejercicios);
+      if (L.length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
+      L.push({ ...g.s });
+      await trSave(tr, { ejercicios: L });
+      $("info").classList.add("hidden");
+      ejEd = null;
+      render();
+      return note("Añadido: " + g.s.n + ".", true);
+    }
+    if (k === "borrarg" && ejEd) {
+      let g = state.ejGuard.find((x) => x.id === b.dataset.gid);
+      if (!g || !confirm(`¿Borrar «${g.s.n}» de «Mis ejercicios»? Los entrenos que ya lo tienen lo conservan.`)) return;
+      let r = await db.from("ejercicios_guardados").delete().eq("id", g.id);
+      if (r.error) return note(r.error.message);
+      state.ejGuard = state.ejGuard.filter((x) => x !== g);
+      ejLeeForm();
+      return ciOpen("Añadir ejercicio", ejEditorHtml());
     }
     if (k === "ok" && ejEd) {
       let box = $("infoBody"),
@@ -1362,9 +1439,11 @@
         if (L.length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
         L.push(s);
       } else L[ejEd.i] = s;
+      let gu = $("infoBody").querySelector("[data-ejg]");
       b.disabled = true;
       try {
         await trSave(tr, { ejercicios: L });
+        if (gu && gu.checked) await ejGuardar(s);
       } finally {
         b.disabled = false;
       }
@@ -2029,7 +2108,7 @@
       let c = cgDeTr(t) || { dur: 0, rpe: {} },
         a = t.asistencia || {},
         R = roster(),
-        vinieron = R.filter((p) => a[p.id] === "si").map((p) => p.id),
+        vinieron = R.filter((p) => a[p.id] === "si" || a[p.id] === "tarde").map((p) => p.id),
         ids = vinieron.length ? vinieron : Object.keys(a).length ? [] : R.map((p) => p.id);
       Object.keys(c.rpe).forEach((id) => !ids.includes(id) && ids.push(id));
       cgEd = { tipo: "e", id: t.id, ids, rpe: { ...c.rpe }, dur: c.dur || cgDur(), min: {}, nombres: {} };
@@ -4000,11 +4079,11 @@
       p: [
         "Es opcional: actívalo en «Mi cuenta › Activar el control de entrenamientos». Aparece la pestaña <b>Entrenos</b> abajo.",
         "Verás un calendario del mes. Toca un día y pulsa «Crear entrenamiento este día» (o «+ Entreno»). Con las flechas cambias de mes.",
-        "Pasa lista con los jugadores de tu plantilla: <b>✓</b> vino, <b>✗</b> faltó y <b>J</b> falta justificada. Se guarda solo. «Todos vinieron» los marca a todos de una vez.",
+        "Pasa lista con los jugadores de tu plantilla: <b>✓</b> vino, <b>🕒</b> llegó tarde, <b>✗</b> faltó y <b>J</b> falta justificada. Llegar tarde cuenta como que vino, pero se apunta aparte para que lo veas. Se guarda solo. «Todos vinieron» los marca a todos de una vez.",
         "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
         "Puedes apuntar la hora y una nota (por ejemplo, «táctica» o «físico»). Cada día del calendario sale de un color según la asistencia.",
         "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis.",
-        "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido, faltado o justificado, y su porcentaje.",
+        "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido (y cuántas llegó tarde), faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
         "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
       ],
@@ -4032,6 +4111,7 @@
         "Escribe el <b>nombre</b>, cómo se hace (opcional) y su <b>tiempo</b> en minutos y segundos, el que tú quieras, sin límite. La app te dice cuánto suman todos.",
         "Con <b>▶</b> sale el cronómetro grande de ese ejercicio, el mismo de los circuitos: pita al empezar y en los 3 últimos segundos.",
         "Con «Editar» lo cambias y con la ✗ lo quitas. Puedes poner hasta 20 ejercicios en cada entreno. Es gratis.",
+        "<b>Mis ejercicios</b>: marca «Guardar también en Mis ejercicios» y el ejercicio queda guardado para otros días. Al pulsar «Añadir ejercicio» te salen arriba: toca uno y se pone en el entreno con su tiempo. Con la papelera lo borras de «Mis ejercicios» (los entrenos que ya lo tienen lo conservan). Si guardas otro con el mismo nombre, se actualiza.",
       ],
     },
     {
@@ -4607,6 +4687,7 @@
           partidos: state.matches,
           entrenamientos: state.trainings,
           circuitos: state.circs,
+          mis_ejercicios: state.ejGuard,
           directos: Object.values(liveRows),
           ...(perfil ? { perfil } : {}),
         },

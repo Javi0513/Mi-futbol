@@ -3,6 +3,7 @@ from paths import *
 import http.server,threading,functools,json
 from playwright.sync_api import sync_playwright
 # Ejercicios sueltos en el entreno (v11.0): nombre, explicación y tiempo propio, sin circuito.
+# Mis ejercicios guardados y «Llegó tarde» al pasar lista (v11.1).
 # Mismo Supabase simulado que teams.py. Supabase simulado con filtros eq / is / in encadenados,
 # borrado en cascada de jugadores y partidos al borrar su equipo, y la tabla equipos opcional.
 FAKE=r"""
@@ -15,7 +16,7 @@ window.supabase={createClient:()=>{let cb=null,session=null;
   const o={select(c){sel=true;if(window.__noEj&&String(c||'').includes('ejercicios'))t='__falta';return o},order(){return o},limit(){return o},eq(c,v){F.push(['eq',c,v]);return o},is(c,v){F.push(['is',c,v]);return o},in(c,v){F.push(['in',c,v]);return o},
   insert(p){op='insert';payload=p;return o},update(p){op='update';payload=p;return o},delete(){op='delete';return o},
   then(res){let out;
-   if((window.__noTeams&&t==='equipos')||t==='__falta')out={data:null,error:{message:'relation "public.equipos" does not exist'}};
+   if((window.__noTeams&&t==='equipos')||t==='__falta'||(window.__noEg&&t==='ejercicios_guardados'))out={data:null,error:{message:'relation "public.equipos" does not exist'}};
    else{let rows=window.__db[t]=window.__db[t]||[];
     if(op==='select')out={data:rows.filter(ok).map(CP),error:null};
     else if(op==='insert'){let r=CP(payload);if(t==='equipos')r.created_at=new Date(Date.now()+rows.length).toISOString();rows.push(r);window.__calls.push(['insert',t,r]);out={data:sel?[CP(r)]:null,error:null}}
@@ -96,6 +97,44 @@ with sync_playwright() as p:
     pg.click('.ej-it >> nth=0 >> [data-ej=quitar]');pg.wait_for_timeout(250)
     L=DB(pg,"d.entrenamientos[0].ejercicios")
     check('quitar borra solo ese',len(L)==1 and L[0]['n']=='Partidillo final',str(L))
+    # Mis ejercicios (v11.1)
+    pg.click('.trs [data-ej=nuevo]');pg.wait_for_selector('#info:not(.hidden)')
+    check('«Guardar también en Mis ejercicios» sale marcado',pg.locator('#infoBody [data-ejg]').is_checked())
+    check('los dos que añadiste antes ya están en Mis ejercicios',pg.locator('#infoBody .eg-it').count()==2 and len(DB(pg,"d.ejercicios_guardados"))==2)
+    pg.fill('#infoBody [data-ejf=n]','Finalización 2x1');pg.fill('#infoBody [data-ejf=d]','Centro y remate.');mmss(pg,15,0)
+    pg.click('#infoBody [data-ej=ok]');pg.wait_for_timeout(300)
+    G=DB(pg,"d.ejercicios_guardados")
+    check('se guarda en Mis ejercicios',len(G)==3 and G[2]['datos']=={'n':'Finalización 2x1','d':'Centro y remate.','t':900},str(G))
+    pg.click('.trs [data-ej=nuevo]');pg.wait_for_selector('#info:not(.hidden)')
+    check('al añadir otro, sale arriba en Mis ejercicios',pg.locator('#infoBody .eg-it').count()==3 and 'Finalización 2x1' in pg.locator('#infoBody .eg-list').inner_text())
+    pg.evaluate("document.getElementById('message').innerHTML=''");pg.wait_for_timeout(500);pg.screenshot(path=OUT+'/ej_mis.png')
+    pg.fill('#infoBody [data-ejf=n]','Rondo');pg.click('#infoBody [data-ejg]')
+    pg.click('#infoBody [data-ej=usar]:has-text("Finalización")');pg.wait_for_timeout(300)
+    L=DB(pg,"d.entrenamientos[0].ejercicios")
+    check('con un toque se pone en el entreno con su tiempo',len(L)==3 and L[2]=={'n':'Finalización 2x1','d':'Centro y remate.','t':900} and pg.locator('#info').is_hidden(),str(L))
+    pg.click('.trs [data-ej=nuevo]');pg.wait_for_selector('#info:not(.hidden)')
+    pg.fill('#infoBody [data-ejf=n]','Sin guardar');pg.click('#infoBody [data-ejg]')
+    pg.click('#infoBody [data-ej=ok]');pg.wait_for_timeout(300)
+    check('si lo desmarcas no se guarda',len(DB(pg,"d.ejercicios_guardados"))==3 and len(DB(pg,"d.entrenamientos[0].ejercicios"))==4)
+    pg.click('.trs [data-ej=nuevo]');pg.wait_for_selector('#info:not(.hidden)')
+    pg.fill('#infoBody [data-ejf=n]','a medias')
+    pg.click('#infoBody .eg-it:has-text("Finalización") [data-ej=borrarg]');pg.wait_for_timeout(300)
+    check('la papelera lo borra de Mis ejercicios, no del entreno',len(DB(pg,"d.ejercicios_guardados"))==2 and len(DB(pg,"d.entrenamientos[0].ejercicios"))==4 and pg.locator('#infoBody .eg-it').count()==2)
+    check('y no pierde lo que estabas escribiendo',pg.locator('#infoBody [data-ejf=n]').input_value()=='a medias')
+    pg.click('#closeInfo');pg.wait_for_timeout(150)
+    # Llegó tarde (v11.1)
+    check('cada jugador tiene el botón «Llegó tarde»',pg.locator('.trow').count()==4 and pg.locator('.trow [data-v=tarde]').count()==4)
+    pg.click('.trow >> nth=0 >> [data-v=tarde]');pg.click('.trow >> nth=1 >> [data-v=si]');pg.wait_for_timeout(250)
+    check('se guarda como «tarde»',DB(pg,"d.entrenamientos[0].asistencia")=={'p0':'tarde','p1':'si'},str(DB(pg,"d.entrenamientos[0].asistencia")))
+    sm=pg.locator('.trsum').inner_text()
+    check('el resumen cuenta al que llegó tarde como que vino, y lo dice',sm.startswith('2 vinieron (1 tarde)'),sm)
+    pl=pg.locator('section.panel:has(h2:text("Asistencia por jugador"))').inner_text()
+    check('en la asistencia por jugador sale «(1 tarde)» y cuenta al 100%','1 vino (1 tarde)' in pl and '100%' in pl,pl[:160])
+    pg.locator('.trow >> nth=0').scroll_into_view_if_needed();pg.screenshot(path=OUT+'/tarde.png')
+    pg.close()
+    pg=page(b,sd(),ON+'window.__noEg=1;');login(pg);pg.click('[data-tab=entrenos]');pg.wait_for_selector('.trs')
+    pg.click('.trs [data-ej=nuevo]');pg.wait_for_selector('#info:not(.hidden)')
+    check('sin la tabla de Mis ejercicios, «Añadir ejercicio» sigue funcionando sin la casilla',pg.locator('#infoBody [data-ejg]').count()==0 and pg.locator('#infoBody [data-ejf=n]').count()==1)
     pg.close()
     # Sin el SQL no sale el botón y todo lo demás funciona
     pg=page(b,sd(),ON+'window.__noEj=1;');login(pg);pg.click('[data-tab=entrenos]');pg.wait_for_selector('.trs')
