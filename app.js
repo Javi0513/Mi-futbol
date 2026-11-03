@@ -1277,8 +1277,8 @@
      nombre, explicación y tiempo. Van en la columna entrenamientos.ejercicios (supabase-ejercicios.sql)
      como lista: [{"n": nombre, "d": cómo se hace, "t": segundos}]. Gratis, hasta EJ_MAX por entreno. */
   const EJ_MAX = 20;
-  const EJ_LIM = [5, 7200];
-  const EJ_MIN_MAX = 120;
+  /* Sin tope a la vista: solo uno de seguridad (24 h) para que no se cuelen números absurdos */
+  const EJ_LIM = [5, 86400];
   const ejClamp = (v) => Math.min(EJ_LIM[1], Math.max(EJ_LIM[0], Math.round(+v || 0)));
   function ejDe(x) {
     let l = parseJson(x, []);
@@ -1311,8 +1311,8 @@
     let s = ejEd.s,
       m = Math.floor(s.t / 60),
       sg = s.t % 60,
-      at = (u) => `type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="${u === "m" ? EJ_MIN_MAX : 59}" data-ejm="${u}"`;
-    return `<p>Un ejercicio suelto, sin circuito: un rondo, un partidillo, una finalización… Pon lo que quieras con su tiempo.</p><label class="ci-l">Nombre<input data-ejf="n" maxlength="60" placeholder="Ej.: Rondo 4 contra 2" value="${esc(s.n)}" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-ejf="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras">${esc(s.d)}</textarea></label><div class="ci-tl"><span>Tiempo</span><span class="ci-mmss"><input ${at("m")} aria-label="Minutos del ejercicio" value="${m}"><i>min</i><input ${at("s")} aria-label="Segundos del ejercicio" value="${sg}"><i>s</i></span></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras (hasta ${EJ_MIN_MAX} min).</p><div class="stack"><button type="button" class="primary" data-ej="ok">${ejEd.i === null ? "Añadir al entreno" : "Guardar"}</button></div>`;
+      at = (u) => `type="number" inputmode="numeric" pattern="[0-9]*" min="0" ${u === "m" ? "" : 'max="59"'} data-ejm="${u}"`;
+    return `<p>Un ejercicio suelto, sin circuito: un rondo, un partidillo, una finalización… Pon lo que quieras con su tiempo.</p><label class="ci-l">Nombre<input data-ejf="n" maxlength="60" placeholder="Ej.: Rondo 4 contra 2" value="${esc(s.n)}" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-ejf="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras">${esc(s.d)}</textarea></label><div class="ci-tl"><span>Tiempo</span><span class="ci-mmss"><input ${at("m")} aria-label="Minutos del ejercicio" value="${m}"><i>min</i><input ${at("s")} aria-label="Segundos del ejercicio" value="${sg}"><i>s</i></span></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras, sin límite.</p><div class="stack"><button type="button" class="primary" data-ej="ok">${ejEd.i === null ? "Añadir al entreno" : "Guardar"}</button></div>`;
   }
   async function ejAct(b) {
     let k = b.dataset.ej,
@@ -4029,7 +4029,7 @@
       p: [
         "Para ejercicios que no son de ningún circuito: un rondo, un partidillo, una finalización, un trabajo táctico…",
         "En la pestaña <b>Entrenos</b>, toca un día con entrenamiento y pulsa <b>«Añadir ejercicio»</b> (está debajo de «Añadir circuito de fuerza o coordinación»).",
-        "Escribe el <b>nombre</b>, cómo se hace (opcional) y su <b>tiempo</b> en minutos y segundos, el que tú quieras (hasta 120 min). La app te dice cuánto suman todos.",
+        "Escribe el <b>nombre</b>, cómo se hace (opcional) y su <b>tiempo</b> en minutos y segundos, el que tú quieras, sin límite. La app te dice cuánto suman todos.",
         "Con <b>▶</b> sale el cronómetro grande de ese ejercicio, el mismo de los circuitos: pita al empezar y en los 3 últimos segundos.",
         "Con «Editar» lo cambias y con la ✗ lo quitas. Puedes poner hasta 20 ejercicios en cada entreno. Es gratis.",
       ],
