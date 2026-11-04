@@ -4627,3 +4627,198 @@ body.presenting .est-bar {
   width: 44px;
   height: auto;
 }
+/* v11.2 · Estadísticas en directo: faltas acumuladas y datos por jugador */
+.lv-fal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: -6px 0 10px;
+  color: var(--mut);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.lv-fal b {
+  min-width: 34px;
+  padding: 3px 8px;
+  border-radius: 9px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: 800 20px/1.1 var(--fd);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.lv-fal b.w {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+  color: #fff;
+}
+.lv-dp {
+  margin: -4px 0 12px;
+  text-align: center;
+  color: #ff8a8a;
+  font-weight: 700;
+}
+.lv-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 10px;
+}
+.lv-acc button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 20px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--mut);
+  font: 700 15px var(--fd);
+}
+.lv-acc button.on {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--on-lime);
+}
+.lv-pl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.lv-pl button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 10px 0 12px;
+  border-radius: 12px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: 700 16px var(--fd);
+  text-align: left;
+}
+.lv-pl button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lv-pl button small {
+  color: var(--mut);
+  font-size: 12px;
+}
+.lv-pl button b {
+  flex: none;
+  min-width: 30px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--lime);
+  color: var(--on-lime);
+  font: 800 18px/1.2 var(--fd);
+  text-align: center;
+}
+.lv-pl button.off {
+  opacity: 0.5;
+}
+.lv-pl button:active {
+  transform: scale(0.97);
+}
+.lv-bn {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  color: var(--mut);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.lv-rvst button b {
+  margin-left: 6px;
+}
+.lv-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--s2);
+  color: var(--mut);
+  font-size: 14px;
+}
+.lv-sum b {
+  color: var(--ink);
+  font: 800 17px var(--fd);
+}
+.mdst {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 6px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.mdst table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 13px;
+}
+.mdst th,
+.mdst td {
+  padding: 4px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.mdst thead th {
+  color: var(--mut);
+  font-weight: 700;
+}
+.mdst tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--s1, var(--bg));
+  text-align: left;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mdst input {
+  width: 52px;
+  min-height: 38px;
+  text-align: center;
+  font-size: 16px;
+}
+.mini.mst {
+  margin-top: 2px;
+}
+.mini.mst b {
+  font-size: 15px;
+}
+.mdfal {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px 0;
+}
+.mdfal label {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+.mdfal small {
+  display: block;
+  font-size: 12px;
+  color: var(--mut);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mdfal input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 6px;
+  font-size: 16px;
+  text-align: center;
+}

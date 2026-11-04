@@ -252,6 +252,19 @@
     `<div class="blank">${ic(i, 34)}<b>${t}</b><span>${s}</span></div>`;
   const mini = (t) =>
     `<div class="mini" aria-label="${t.games} partidos, ${t.minutes} minutos, ${t.goals} goles, ${t.starts} titularidades${t.amarillas ? ", " + t.amarillas + " amarillas" : ""}${t.rojas ? ", " + t.rojas + " rojas" : ""}"><span><b>${t.games}</b>partidos</span><span><b>${t.minutes}</b>min</span><span><b>${t.goals}</b>goles</span><span><b>${t.starts}</b>titular</span>${t.cap ? `<span><b>${t.cap}</b>capitán</span>` : ""}${t.amarillas ? `<span class="tjm"><i class="tj a"></i><b>${t.amarillas}</b></span>` : ""}${t.rojas ? `<span class="tjm"><i class="tj r"></i><b>${t.rojas}</b></span>` : ""}</div>`;
+  /* Robos, pérdidas, tiros… de la temporada (solo los que tengan algo) */
+  const miniSt = (t) => {
+    let v = [
+      ["rob", "robos"],
+      ["per", "pérdidas"],
+      ["tir", "tiros", t.tp + t.tf],
+      ["tp", "a puerta"],
+      ["par", "paradas"],
+      ["asi", "asist."],
+      ["fal", "faltas"],
+    ].filter((z) => (z[2] ?? t[z[0]]) > 0);
+    return v.length ? `<div class="mini mst">${v.map((z) => `<span><b>${z[2] ?? t[z[0]]}</b>${z[1]}</span>`).join("")}</div>` : "";
+  };
   const MES = [
     "ene",
     "feb",
@@ -374,6 +387,26 @@
     });
     Object.keys(on).forEach((id) => (out[id] += total - on[id]));
     return out;
+  }
+  /* Estadísticas de cada jugador en el partido (v11.2). Van en su ficha de convocado:
+     st {rob, per, tp, tf, par, asi, fal}. [clave, botón, plural, corto] */
+  const ESTP = [
+      ["rob", "Robo", "Balones robados", "Rob."],
+      ["per", "Pérdida", "Balones perdidos", "Pérd."],
+      ["tp", "Tiro a puerta", "Tiros a puerta", "T. pta"],
+      ["tf", "Tiro fuera", "Tiros fuera", "T. fuera"],
+      ["par", "Parada", "Paradas", "Par."],
+      ["asi", "Asistencia", "Asistencias", "Asist."],
+      ["fal", "Falta", "Faltas cometidas", "Faltas"],
+    ],
+    stv = (e, k) => Math.max(0, Number(e && e.st && e.st[k]) || 0);
+  /* Suma (o pone, si fija) un dato: crea un objeto nuevo para no tocar la copia del partido guardado */
+  function stSet(e, k, v, fija) {
+    let s = { ...(e.st && typeof e.st === "object" ? e.st : {}) };
+    s[k] = Math.min(999, Math.max(0, fija ? Number(v) || 0 : (Number(s[k]) || 0) + v));
+    if (!s[k]) delete s[k];
+    if (Object.keys(s).length) e.st = s;
+    else delete e.st;
   }
   function parseJson(v, fb) {
     if (v && typeof v === "object") return v;
@@ -508,6 +541,7 @@
           r.starts += e.starter ? 1 : 0;
           r.minutes += Number(e.minutes) || 0;
           r.goals += Number(e.goals) || 0;
+          ESTP.forEach((s) => (r[s[0]] += stv(e, s[0])));
           mdList(m.alineacion, "tarjetas").forEach((t) => {
             if (t.pid === pid) r[t.c === "r" ? "rojas" : "amarillas"]++;
           });
@@ -515,7 +549,7 @@
         }
         return r;
       },
-      { games: 0, starts: 0, minutes: 0, goals: 0, amarillas: 0, rojas: 0, cap: 0 },
+      { games: 0, starts: 0, minutes: 0, goals: 0, amarillas: 0, rojas: 0, cap: 0, rob: 0, per: 0, tp: 0, tf: 0, par: 0, asi: 0, fal: 0 },
     );
   }
   function render() {
@@ -887,7 +921,7 @@
           b.t.minutes - a.t.minutes ||
           a.p.nombre.localeCompare(b.p.nombre, "es"),
       );
-    return `<section class="panel"><h2 class="h2s">Jugadores</h2><p class="muted">Ordenados por goles y minutos · ${MN()}</p><div style="height:6px"></div>${r.length ? r.map((x, i) => `<div class="row"><div class="rank">${i + 1}</div>${avatar(x.p)}<div class="info"><strong>${esc(x.p.nombre)}</strong>${mini(x.t)}</div><div class="big"><b>${x.t.goals}</b><small>goles</small></div></div>`).join("") : empty("chart", "Aún no hay datos.", "Añade jugadores y partidos para ver el resumen.")}</section>`;
+    return `<section class="panel"><h2 class="h2s">Jugadores</h2><p class="muted">Ordenados por goles y minutos · ${MN()}</p><div style="height:6px"></div>${r.length ? r.map((x, i) => `<div class="row"><div class="rank">${i + 1}</div>${avatar(x.p)}<div class="info"><strong>${esc(x.p.nombre)}</strong>${mini(x.t)}${miniSt(x.t)}</div><div class="big"><b>${x.t.goals}</b><small>goles</small></div></div>`).join("") : empty("chart", "Aún no hay datos.", "Añade jugadores y partidos para ver el resumen.")}</section>`;
   }
   /* ===== Control de entrenamientos (opcional: se activa en Mi cuenta) =====
      Un calendario por equipo; en cada entrenamiento se marca quién vino, quién faltó
@@ -2303,7 +2337,21 @@
         )
         .join(""),
       rv = esc(d.rival || "Rival");
-    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div><h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
+    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div>${mdStats(d)}<h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><label class="mdparte">Tiros del rival<input type="number" min="0" max="999" inputmode="numeric" data-mdr="tir" value="${Number((al.estR || {}).tir) || ""}" placeholder="0"></label><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
+  }
+  /* Robos, pérdidas, tiros, paradas, asistencias y faltas de cada convocado + faltas acumuladas */
+  function mdStats(d) {
+    if (!d.players.length) return "";
+    let F = d.alineacion.faltas || {},
+      fi = (k, l) =>
+        `<label><small>${l}</small><input type="number" min="0" max="99" inputmode="numeric" data-mdfal="${k}" value="${Number(F[k]) || ""}" placeholder="0" aria-label="Faltas ${l}"></label>`,
+      ps = d.players.slice().sort((a, b) => name(a.id).localeCompare(name(b.id), "es"));
+    return `<h4>Estadísticas de cada jugador</h4><p class="hint">Lo que apuntes en el Directo aparece aquí solo. Puedes corregirlo.</p><div class="mdst"><table><thead><tr><th scope="col">Jugador</th>${ESTP.map((s) => `<th scope="col" title="${s[2]}">${s[3]}</th>`).join("")}</tr></thead><tbody>${ps
+      .map(
+        (p) =>
+          `<tr><th scope="row">${esc(dname(p.id))}</th>${ESTP.map((s) => `<td><input type="number" min="0" max="999" inputmode="numeric" data-mdst="${esc(p.id)}" data-k="${s[0]}" value="${stv(p, s[0]) || ""}" placeholder="0" aria-label="${s[2]} de ${esc(name(p.id))}"></td>`).join("")}</tr>`,
+      )
+      .join("")}</tbody></table></div><h4>Faltas acumuladas</h4><div class="mdfal">${fi("n1", "Nuestras 1ª")}${fi("r1", "Rival 1ª")}${fi("n2", "Nuestras 2ª")}${fi("r2", "Rival 2ª")}</div>`;
   }
   /* Duración del partido para calcular minutos: la del Directo si lo hay, si no la normal. */
   const mdParte = (d, id) => {
@@ -3933,7 +3981,7 @@
     {
       el: '[data-tab="partidos"]',
       t: "Comparte y juega en directo",
-      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto, goleadores, cambios y tarjetas en vivo, con un enlace para que la familia lo siga sin cuenta. Con la cámara del Directo grabas el partido con el marcador encima.",
+      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto, goleadores, cambios, tarjetas, faltas acumuladas y estadísticas de cada jugador (robos, pérdidas, tiros…) en vivo, con un enlace para que la familia lo siga sin cuenta. Con la cámara del Directo grabas el partido con el marcador encima.",
     },
     {
       el: '[data-tab="pizarra"]',
@@ -4056,6 +4104,7 @@
         "Ahí mismo apuntas los <b>cambios</b> (minuto, quién sale y quién entra, con su dorsal) y las <b>tarjetas</b> amarillas y rojas. «Calcular minutos» rellena los minutos de cada jugador con los titulares, los cambios y las expulsiones.",
         "Más abajo está el apartado del <b>rival</b>: sus cambios (dorsal que sale y dorsal que entra) y sus tarjetas (dorsal y nombre opcional), cada uno con su minuto.",
         "Los cambios y tarjetas que apuntes en el Directo aparecen solos aquí. Las tarjetas de cada jugador salen en su ficha de Plantilla y en Estadísticas.",
+        "En <b>Estadísticas de cada jugador</b> tienes una tabla con los robos, pérdidas, tiros a puerta, tiros fuera, paradas, asistencias y faltas de cada convocado (desliza a los lados si no cabe). Se rellena sola desde el Directo y puedes corregirla o apuntarla a mano después del partido. Debajo están las <b>faltas acumuladas</b> de cada parte y, en el apartado del rival, sus <b>tiros</b>.",
         "Puedes sacar una imagen de la alineación para mandarla por WhatsApp.",
       ],
     },
@@ -4067,7 +4116,10 @@
         "<b>Del rival</b>: al pulsar «🔄 Cambio», «Amarilla» o «Roja», elige arriba el nombre del rival. Pon el dorsal (en las tarjetas, también el nombre si quieres) y pulsa «Apuntar». Salen marcados con el nombre del rival.",
         "Los <b>minutos por parte</b> salen de la categoría del equipo. Si un día se juega con otra duración, cámbialos antes de pulsar «Empezar partido».",
         "Debajo eliges el <b>capitán</b> y el <b>portero</b>. Al pulsar «Terminar partido», los minutos de cada jugador se calculan solos con los cambios.",
-        "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta: ve el marcador, el minuto, los goles, los cambios y las tarjetas. Con «Desactivar enlace» deja de funcionar.",
+        "<b>Estadísticas en directo</b>: elige arriba qué quieres apuntar (<b>Robo</b>, <b>Pérdida</b>, <b>Tiro a puerta</b>, <b>Tiro fuera</b>, <b>Parada</b>, <b>Asistencia</b> o <b>Falta</b>) y toca al jugador. El número de cada jugador sube al momento. Primero salen los que están en el campo y debajo el banquillo.",
+        "<b>Faltas acumuladas</b>: cada «Falta» de un jugador tuyo y cada «Falta del rival» suman a las faltas de esa parte, que salen debajo del reloj (también en el enlace para la familia). En <b>fútbol sala</b>, al llegar a 5 faltas en una parte se pone en rojo y te avisa de que la siguiente es <b>doble penalti</b>. En la 2ª parte empiezan de cero.",
+        "«Tiro del rival» cuenta sus tiros. Si te equivocas, «↶ Deshacer» quita lo último que apuntaste. Debajo tienes el resumen del partido: robos, pérdidas, tiros y faltas de los dos equipos.",
+        "Con «Compartir enlace» mandas un enlace para que la familia siga el partido sin tener cuenta: ve el marcador, el minuto, los goles, los cambios, las tarjetas y las faltas acumuladas. Las estadísticas de cada jugador solo las ves tú. Con «Desactivar enlace» deja de funcionar.",
         "«Cámara: grabar el partido» graba vídeo con el marcador y el minuto dentro. Pon el móvil en horizontal. El vídeo se guarda solo en tu móvil. Grabar es gratis.",
         "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
@@ -4154,6 +4206,8 @@
       t: "Estadísticas y buscador",
       p: [
         "En <b>Estadísticas</b> ves el ranking de tus jugadores por goles, minutos, partidos y titularidades.",
+        "Debajo de cada jugador salen también sus <b>robos, pérdidas, tiros, paradas, asistencias y faltas</b> de toda la temporada (solo los que tenga apuntados).",
+        "<b>Distancia recorrida</b>: no la medimos. Hace falta un GPS o un reloj deportivo puesto en cada jugador; con el móvil del entrenador no se puede saber.",
         "Con la lupa buscas cualquier jugador o partido de todas tus modalidades.",
       ],
     },
@@ -4896,6 +4950,24 @@
       else delete d.alineacion[k];
       render();
     }
+    let ds = e.target.dataset;
+    if (ds.mdst) {
+      let p = d.players.find((z) => z.id === ds.mdst),
+        v = Math.min(999, Math.max(0, parseInt(e.target.value) || 0));
+      if (p) stSet(p, ds.k, v, true);
+    }
+    if (ds.mdfal) {
+      let v = Math.min(99, Math.max(0, parseInt(e.target.value) || 0)),
+        F = { ...(d.alineacion.faltas || {}) };
+      delete F.lv;
+      F[ds.mdfal] = v;
+      d.alineacion.faltas = F;
+    }
+    if (ds.mdr) {
+      let v = Math.min(999, Math.max(0, parseInt(e.target.value) || 0));
+      if (v) d.alineacion.estR = { ...(d.alineacion.estR || {}), tir: v };
+      else delete d.alineacion.estR;
+    }
     let md = e.target.dataset.md;
     if (md) {
       let z = mdList(d.alineacion, md)[Number(e.target.dataset.i)],
@@ -4991,12 +5063,32 @@
   }
   function liveBoard(x, now, own) {
     let c = liveClock(x, now);
-    return `<div class="lv-board"><div class="lv-team">${own ? `<input id="lvTeam" value="${esc(x.equipo)}" maxlength="60" aria-label="Nombre de tu equipo" title="Toca para cambiar el nombre de tu equipo">` : `<span>${esc(x.equipo)}</span>`}</div><div class="lv-score" role="img" aria-label="Marcador ${x.gf} a ${x.gc}"><b>${x.gf}</b><i>-</i><b>${x.gc}</b></div><div class="lv-team"><span>${esc(x.rival)}</span></div></div><div class="lv-clock${x.desde ? " run" : ""}"><span class="lv-st">${x.estado === "1T" || x.estado === "2T" ? "● " + LIVE_EST[x.estado] : x.estado === "pre" ? LIVE_EST.pre : ""}</span><b data-lvmin>${c[0]}</b><small data-lvss>${c[1]}</small></div>`;
+    return `<div class="lv-board"><div class="lv-team">${own ? `<input id="lvTeam" value="${esc(x.equipo)}" maxlength="60" aria-label="Nombre de tu equipo" title="Toca para cambiar el nombre de tu equipo">` : `<span>${esc(x.equipo)}</span>`}</div><div class="lv-score" role="img" aria-label="Marcador ${x.gf} a ${x.gc}"><b>${x.gf}</b><i>-</i><b>${x.gc}</b></div><div class="lv-team"><span>${esc(x.rival)}</span></div></div><div class="lv-clock${x.desde ? " run" : ""}"><span class="lv-st">${x.estado === "1T" || x.estado === "2T" ? "● " + LIVE_EST[x.estado] : x.estado === "pre" ? LIVE_EST.pre : ""}</span><b data-lvmin>${c[0]}</b><small data-lvss>${c[1]}</small></div>${liveFalBoard(x)}`;
+  }
+  /* Faltas acumuladas por parte (t "fa" en los eventos; r:1 = del rival; p = parte) */
+  function liveFal(x) {
+    let f = { n1: 0, r1: 0, n2: 0, r2: 0 };
+    (Array.isArray(x.eventos) ? x.eventos : []).forEach((e) => {
+      if (e.t === "fa") f[(e.r ? "r" : "n") + (e.p === 2 ? 2 : 1)]++;
+    });
+    return f;
+  }
+  const lvParte = (x) => (x.estado === "2T" || x.estado === "FIN" ? 2 : 1);
+  function liveFalBoard(x) {
+    let f = liveFal(x),
+      h = lvParte(x),
+      fn = f["n" + h],
+      fr = f["r" + h],
+      fs = x.modalidad === "fs";
+    if (x.estado === "pre" || !(fs || f.n1 || f.r1 || f.n2 || f.r2)) return "";
+    /* Fútbol sala: desde la 6ª falta acumulada de cada parte, doble penalti */
+    let dp = fs ? [fn >= 5 ? x.equipo : "", fr >= 5 ? x.rival || "Rival" : ""].filter(Boolean) : [];
+    return `<div class="lv-fal" aria-label="Faltas acumuladas en la ${h}ª parte: ${esc(x.equipo)} ${fn}, ${esc(x.rival || "rival")} ${fr}"><b class="${fs && fn >= 5 ? "w" : ""}">${fn}</b><span>Faltas ${h}ª parte</span><b class="${fs && fr >= 5 ? "w" : ""}">${fr}</b></div>${dp.length ? `<p class="lv-dp">⚠️ ${esc(dp.join(" y "))}: ${dp.length > 1 ? "las próximas faltas son" : "la próxima falta es"} doble penalti</p>` : ""}`;
   }
   const lvN = (n, d) => (n ? (d ? d + " " : "") + n : d ? "Dorsal " + d : "—");
   function liveEvents(x, own) {
     let am = {},
-      all = (Array.isArray(x.eventos) ? x.eventos : []).map((e) => {
+      all = (Array.isArray(x.eventos) ? x.eventos : []).filter((e) => e.t !== "fa").map((e) => {
         let q = e.r ? "r:" + (e.d || e.n) : e.pid || e.n;
         if (e.t === "a") am[q] = (am[q] || 0) + 1;
         return { e, a2: e.t === "a" && am[q] === 2 };
@@ -5093,7 +5185,88 @@
       capgk = ids.length
         ? `<div class="formgrid lv-cg"><label>Capitán<select id="lvCap">${so(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="lvGk">${so(gk, "—")}</select></label></div>`
         : "";
-    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios y las tarjetas, sin necesidad de cuenta. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+  }
+  /* Estadísticas en directo: eliges qué apuntar (robo, pérdida, tiro…) y tocas al jugador */
+  function liveStats(m, x) {
+    let es = entries(m);
+    if (!es.length) return "";
+    let k = state.lvSt || "rob",
+      c = liveCampo(m, x),
+      al = m.alineacion || {},
+      ids = es.map((e) => e.id),
+      gk = gkOf(al, ids),
+      srt = (a) => a.slice().sort((p, q) => name(p).localeCompare(name(q), "es")),
+      on = srt(ids.filter((id) => c.on.has(id))),
+      rest = srt(ids.filter((id) => !c.on.has(id))),
+      btn = (id) =>
+        `<button data-lvsp="${esc(id)}" class="${c.fuera.has(id) ? "off" : ""}" aria-label="${esc(ESTP.find((s) => s[0] === k)[1])}: ${esc(name(id))}"><span>${esc(dname(id))}${id === gk ? " <small>POR</small>" : ""}</span><b>${stv(es.find((e) => e.id === id), k)}</b></button>`,
+      tot = (kk) => es.reduce((a, e) => a + stv(e, kk), 0),
+      rt = Number((al.estR || {}).tir) || 0,
+      f = liveFal(x),
+      u = state.lvUndo && state.lvUndo.length;
+    return `<div class="lv-stats"><h3 class="lv-h">Estadísticas</h3><p class="hint">Elige qué apuntar y toca al jugador. Primero salen los que están en el campo.</p><div class="lv-acc" role="group" aria-label="Qué apuntar">${ESTP.map((s) => `<button data-lvst="${s[0]}" class="${s[0] === k ? "on" : ""}" aria-pressed="${s[0] === k}">${s[1]}</button>`).join("")}</div><div class="lv-pl">${on.map(btn).join("")}${rest.length ? `<p class="lv-bn">${on.length ? "Banquillo" : "Convocados"}</p>` + rest.map(btn).join("") : ""}</div><div class="lv-ctl lv-rvst"><button class="secondary" data-live="rfal">Falta del rival <b>${f.r1 + f.r2}</b></button><button class="secondary" data-live="rtir">Tiro del rival <b>${rt}</b></button><button class="secondary" data-live="undo" ${u ? "" : "disabled"}>↶ Deshacer</button></div><div class="lv-sum"><span>Robos <b>${tot("rob")}</b></span><span>Pérdidas <b>${tot("per")}</b></span><span>Tiros <b>${tot("tp") + tot("tf")}</b> <small>(${tot("tp")} a puerta)</small></span><span>Tiros rival <b>${rt}</b></span><span>Faltas <b>${f.n1 + f.n2}</b> - <b>${f.r1 + f.r2}</b></span></div></div>`;
+  }
+  /* Apunta un dato a un jugador; la falta además suma a las faltas acumuladas del equipo */
+  function liveStat(x, m, pid, k) {
+    let e = entries(m).find((z) => z.id === pid);
+    if (!e) return;
+    stSet(e, k, 1);
+    let u = { pid, k };
+    if (k === "fal") {
+      let f = liveFoulEv(x);
+      if (f) u.ev = f.id;
+    }
+    lvUndoPush(u);
+    if (u.ev) liveSave(x, () => liveMatch(x, null, 0));
+    else liveStatSave(m);
+  }
+  function liveFoulEv(x, r) {
+    if (!Array.isArray(x.eventos)) x.eventos = [];
+    if (x.eventos.filter((z) => z.t === "fa").length >= 40) return null;
+    let e = { id: rid(), m: liveMin(x), t: "fa", p: lvParte(x) };
+    if (r) e.r = 1;
+    x.eventos.push(e);
+    return e;
+  }
+  function lvUndoPush(u) {
+    state.lvUndo = (state.lvUndo || []).concat(u).slice(-30);
+  }
+  function liveUndo(x, m) {
+    let u = (state.lvUndo || []).pop();
+    if (!u) return;
+    if (u.pid) {
+      let e = entries(m).find((z) => z.id === u.pid);
+      if (e) stSet(e, u.k, -1);
+    }
+    if (u.rt) {
+      let R = m.alineacion.estR || {};
+      R.tir = Math.max(0, (Number(R.tir) || 0) - 1);
+      if (!R.tir) delete m.alineacion.estR;
+    }
+    if (u.ev) {
+      x.eventos = (x.eventos || []).filter((z) => z.id !== u.ev);
+      liveSave(x, () => liveMatch(x, null, 0));
+    } else liveStatSave(m);
+  }
+  /* Guarda los datos del partido poco después del último toque (sin una petición por toque) */
+  let lvStT = null;
+  function liveStatSave(m) {
+    clearTimeout(lvStT);
+    lvStT = setTimeout(() => {
+      liveQ = liveQ
+        .then(async () => {
+          let r = await db
+            .from("futbol_personal_partidos")
+            .update({
+              participaciones: JSON.stringify(entries(m)),
+              alineacion: JSON.stringify(m.alineacion),
+            })
+            .eq("id", m.id);
+          if (r.error) note(r.error.message);
+        })
+        .catch((e) => note(e.message));
+    }, 400);
   }
   /* Elegir jugadores para un cambio (sale y luego entra) o una tarjeta */
   function livePick2(m, x) {
@@ -5159,7 +5332,7 @@
     if (!e.d) delete e.d;
     if (!e.di) delete e.di;
     if (!Array.isArray(x.eventos)) x.eventos = [];
-    if (x.eventos.length >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
+    if (lvCount(x) >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
     x.eventos.push(e);
     state.lvPick = null;
     liveSave(x, () => liveMatch(x, null, 0));
@@ -5211,6 +5384,7 @@
     state.live = id;
     state.livePick = false;
     state.lvPick = null;
+    state.lvUndo = [];
     render();
     window.scrollTo(0, 0);
   }
@@ -5277,8 +5451,11 @@
     ["cambios", "tarjetas", "cambiosR", "tarjetasR"].forEach((k) => {
       if (!al[k].length) delete al[k];
     });
+    /* Faltas acumuladas del equipo y del rival por parte (lv:1 = vienen del Directo) */
+    if (ev.some((z) => z.t === "fa")) al.faltas = { ...liveFal(x), lv: 1 };
+    else if (al.faltas && al.faltas.lv) delete al.faltas;
     /* Al terminar, los minutos de cada jugador salen solos de los cambios */
-    if (fin && (ev.some((z) => z.t !== "f" && z.t !== "c" && !z.r) || entries(m).every((z) => !Number(z.minutes)))) {
+    if (fin && (ev.some((z) => ["s", "a", "r"].includes(z.t) && !z.r) || entries(m).every((z) => !Number(z.minutes)))) {
       let mins = calcMin(entries(m), mdList(al, "cambios"), mdList(al, "tarjetas"), (Number(x.parte_min) || 30) * 2);
       entries(m).forEach((z) => (z.minutes = Math.round(mins[z.id] || 0)));
     }
@@ -5298,9 +5475,10 @@
     liveStart = (x) => {
       x.desde = new Date(serverNow()).toISOString();
     };
+  const lvCount = (x) => x.eventos.filter((z) => z.t !== "fa").length;
   function liveGoal(x, t, pid) {
     if (!Array.isArray(x.eventos)) x.eventos = [];
-    if (x.eventos.length >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
+    if (lvCount(x) >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
     let e = { id: rid(), m: liveMin(x), t };
     if (t === "f") {
       x.gf = Math.min(99, x.gf + 1);
@@ -5319,7 +5497,7 @@
   /* Cambio (t "s": pid sale, pin entra) o tarjeta (t "a" amarilla / "r" roja) */
   function liveIncid(x, t, pid, pin) {
     if (!Array.isArray(x.eventos)) x.eventos = [];
-    if (x.eventos.length >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
+    if (lvCount(x) >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
     let e = { id: rid(), m: liveMin(x), t };
     liveWho(e, pid);
     if (pin) liveWho(e, pin, "i");
@@ -5376,7 +5554,18 @@
       sc = e.target.closest("[data-scorer]"),
       dl = e.target.closest("[data-lvdel]"),
       lp = e.target.closest("[data-lvp]"),
-      sd = e.target.closest("[data-lvside]");
+      sd = e.target.closest("[data-lvside]"),
+      lst = e.target.closest("[data-lvst]"),
+      lsp = e.target.closest("[data-lvsp]");
+    if (lst) {
+      state.lvSt = lst.dataset.lvst;
+      return render();
+    }
+    if (lsp) {
+      let m0 = state.matches.find((z) => z.id === state.live);
+      if (m0) liveStat(x, m0, lsp.dataset.lvsp, state.lvSt || "rob");
+      return render();
+    }
     if (sd) {
       state.lvSide = sd.dataset.lvside;
       return render();
@@ -5408,9 +5597,27 @@
       state.live = null;
       state.livePick = false;
       state.lvPick = null;
+      state.lvUndo = [];
       return render();
     }
     if (k === "rok") return liveRival(x);
+    if ((k === "rfal" || k === "rtir" || k === "undo") && m) {
+      if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
+      if (k === "undo") liveUndo(x, m);
+      if (k === "rfal") {
+        let f = liveFoulEv(x, 1);
+        if (!f) return note("Demasiadas faltas apuntadas en este partido.");
+        lvUndoPush({ ev: f.id });
+        liveSave(x, () => liveMatch(x, null, 0));
+      }
+      if (k === "rtir") {
+        let R = (m.alineacion.estR = { ...(m.alineacion.estR || {}) });
+        R.tir = Math.min(999, (Number(R.tir) || 0) + 1);
+        lvUndoPush({ rt: 1 });
+        liveStatSave(m);
+      }
+      return render();
+    }
     if (k === "sub" || k === "ta" || k === "tr") {
       state.livePick = false;
       state.lvSide = "n";
