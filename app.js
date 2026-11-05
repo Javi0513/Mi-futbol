@@ -108,6 +108,11 @@
       ? t
       : null;
   })();
+  /* Enlace del equipo para los jugadores: ?equipo=<código>. Se ve sin cuenta. */
+  const EQ = (() => {
+    let t = new URLSearchParams(location.search).get("equipo") || "";
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null;
+  })();
   const state = {
     mode: "7",
     tab: "plantilla",
@@ -241,6 +246,7 @@
     left: '<path d="m15 18-6-6 6-6"/>',
     right: '<path d="m9 18 6-6-6-6"/>',
     film: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
     hand: '<path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
     shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
     maximize:
@@ -529,6 +535,7 @@
       participaciones: parseJson(m.participaciones, []),
       alineacion: parseJson(m.alineacion, {}),
     }));
+    await Promise.all([espCarga(), jgCarga()]);
     await loadLive();
     render();
   }
@@ -609,6 +616,8 @@
               ? entrenosView()
               : summary();
     if (!state.draft && state.tab === "pizarra") initBoard();
+    espSync();
+    if (key !== lastKey && espOk && espDe() && (state.tab === "entrenos" || state.tab === "partidos")) espRefresca();
     if (key !== lastKey) {
       lastKey = key;
       v.classList.remove("enter");
@@ -625,7 +634,7 @@
               `<button type="button" data-team="${esc(t.id)}" class="${t.id === cur ? "on" : ""}" aria-pressed="${t.id === cur}">${esc(t.nombre)}</button>`,
           ).join("")
         : `<button type="button" class="on" aria-pressed="true">Mi equipo</button>`;
-    return `<div class="team-chips" role="group" aria-label="Equipos de ${esc(MN())}">${chips}</div><button type="button" class="ib" data-teamact="rename" aria-label="Cambiar el nombre del equipo" title="Cambiar nombre">${ic("pencil", 18)}</button>${L.length > 1 ? `<button type="button" class="ib d" data-teamact="del" aria-label="Borrar este equipo" title="Borrar equipo">${ic("trash", 18)}</button>` : ""}<button type="button" class="ib add" data-teamact="add" aria-label="Añadir otro equipo" title="Añadir equipo">${ic("plus", 18)}<span>Equipo</span></button>${catSel()}`;
+    return `<div class="team-chips" role="group" aria-label="Equipos de ${esc(MN())}">${chips}</div><button type="button" class="ib" data-teamact="rename" aria-label="Cambiar el nombre del equipo" title="Cambiar nombre">${ic("pencil", 18)}</button>${L.length > 1 ? `<button type="button" class="ib d" data-teamact="del" aria-label="Borrar este equipo" title="Borrar equipo">${ic("trash", 18)}</button>` : ""}<button type="button" class="ib add" data-teamact="add" aria-label="Añadir otro equipo" title="Añadir equipo">${ic("plus", 18)}<span>Equipo</span></button>${viendo ? "" : `<button type="button" class="ib add esp-b" data-esp="abrir" aria-label="Enlace del equipo para los jugadores" title="Enlace del equipo">${ic("link", 18)}<span>Enlace</span></button>`}${catSel()}`;
   }
   /* Categoría del equipo: marca cuánto dura cada parte (para el Directo y los minutos) */
   /* [clave, nombre, minutos por parte en F7/F11, minutos por parte en fútbol sala] */
@@ -1026,12 +1035,12 @@
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Qué vamos a trabajar<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: juego de 4, defensa con cambio, activación" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${viendo ? "" : `<div class="btools tr-env"><button type="button" class="primary small" data-tr="enviar" data-id="${t.id}">${ic("share", 18)}Enviar el entreno a los jugadores</button></div>`}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Qué vamos a trabajar<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: juego de 4, defensa con cambio, activación" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${viendo ? "" : `<div class="btools tr-env"><button type="button" class="primary small" data-tr="enviar" data-id="${t.id}">${ic("share", 18)}Enviar el entreno a los jugadores</button></div>`}${cgTrBloque(t)}${espResumen("entreno", t.id)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
               (p) =>
-                `<div class="row trow">${avatar(p)}<div class="info"><strong>${esc(p.nombre)}</strong></div><div class="asis" role="group" aria-label="Asistencia de ${esc(p.nombre)}">${B.map(
+                `<div class="row trow">${avatar(p)}<div class="info"><strong>${esc(p.nombre)}</strong>${espTag("entreno", t.id, p.id)}</div><div class="asis" role="group" aria-label="Asistencia de ${esc(p.nombre)}">${B.map(
                   (b) =>
                     `<button type="button" class="${b[0]}${a[p.id] === b[0] ? " on" : ""}" data-tr="mark" data-id="${t.id}" data-pid="${p.id}" data-v="${b[0]}" aria-pressed="${a[p.id] === b[0]}" aria-label="${b[1]}" title="${b[1]}">${b[2] === "reloj" ? RELOJ : b[2] ? ic(b[2], 18) : "J"}</button>`,
                 ).join("")}</div></div>`,
@@ -1572,14 +1581,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3 };
+  const LIM = { cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: convocatorias, envíos de entrenos, vídeos de jugadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: convocatorias, envíos de entrenos, vídeos de jugadas, enlace del equipo, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -1703,6 +1712,371 @@
       } else dispVer().catch((x) => note(x.message));
     }
   });
+  /* --- Enlace del equipo (v11.5, supabase-equipo.sql) ---
+     Una página para los jugadores (?equipo=<código>, sin cuenta): convocatoria, próximos entrenos
+     y vídeos de jugadas. Cada jugador elige su nombre y avisa «Voy» o «No puedo ir» (con motivo).
+     La app del entrenador sube un resumen («datos») cada vez que cambia algo de ese equipo. */
+  const ESP_TR_PRO = 30,
+    ESP_VID_MB = 50,
+    ESP_VID_DIAS = 30;
+  /* Cada vídeo compartido se borra solo a los 30 días (del almacén y del enlace) */
+  const vidCad = (v) => {
+    let d = new Date(String(v.f || "").slice(0, 10) + "T12:00:00");
+    if (isNaN(d)) d = new Date();
+    d.setDate(d.getDate() + ESP_VID_DIAS);
+    return ymd(d);
+  };
+  const vidVivo = (v) => vidCad(v) > ymd(new Date());
+  let espOk = false,
+    espL = [],
+    espR = [],
+    espPub = {},
+    espT = null;
+  const espDe = () => espL.find((e) => e.modalidad === state.mode && (e.equipo_id || "") === (curTeam() || ""));
+  const espUrl = (e) => location.origin + location.pathname + "?equipo=" + e.id;
+  const espVids = (e) => (e && e.datos && Array.isArray(e.datos.videos) ? e.datos.videos : []);
+  async function espCarga() {
+    let r;
+    try {
+      r = await db.from("espacios").select("id,modalidad,equipo_id,datos,actualizado");
+    } catch (e) {
+      r = { error: e };
+    }
+    espOk = !r.error;
+    espL = ((r && r.data) || []).map((x) => ({ ...x, datos: parseJson(x.datos, {}) }));
+    await espResp();
+    if (!viendo) espCaducados().catch(() => {});
+  }
+  async function espCaducados() {
+    for (let e of espL) {
+      let V = espVids(e),
+        viejos = V.filter((v) => !vidVivo(v));
+      if (!viejos.length) continue;
+      await db.storage.from("jugadas").remove(viejos.map((v) => v.id));
+      let datos = { ...e.datos, videos: V.filter(vidVivo) },
+        r = await db.from("espacios").update({ datos }).eq("id", e.id);
+      if (!r.error) {
+        e.datos = datos;
+        delete espPub[e.id];
+      }
+    }
+  }
+  /* Al entrar en Entrenos o Partidos: trae lo último que han contestado los jugadores */
+  async function espRefresca() {
+    let antes = JSON.stringify(espR);
+    await espResp();
+    let f = document.activeElement;
+    if (JSON.stringify(espR) !== antes && !(f && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)) && $("info").classList.contains("hidden")) render();
+  }
+  async function espResp() {
+    if (!espOk || !espL.length) return (espR = []);
+    try {
+      let r = await db.from("espacio_respuestas").select("*");
+      if (!r.error) espR = r.data || [];
+    } catch (e) {}
+  }
+  /* Lo que contestan los jugadores de este equipo para un entreno o el partido */
+  function espAvisos(tipo, ref) {
+    let e = espDe();
+    return e ? espR.filter((r) => r.espacio_id === e.id && r.tipo === tipo && r.ref === ref) : [];
+  }
+  function espDatos(e) {
+    let hoy = ymd(new Date()),
+      c = cvLee(),
+      T = trainings()
+        .filter((t) => t.fecha >= hoy)
+        .slice(0, esPro() ? ESP_TR_PRO : LIM.espTr);
+    return {
+      v: 1,
+      equipo: teamName(),
+      modalidad: state.mode,
+      jugadores: roster().map((p) => ({ id: p.id, n: p.nombre, d: dorsal(p) || "" })),
+      partido:
+        c && c.fecha && c.fecha >= hoy && (c.ids.length || c.rival)
+          ? { ref: c.fecha, rival: c.rival || "", fecha: c.fecha, hora: c.hora || "", cita: c.cita || "", lugar: c.lugar || "", nota: c.nota || "", conv: cvJug(c).map((p) => p.id) }
+          : null,
+      entrenos: T.map((t) => {
+        let ci = state.ciOk ? ciDe(t.circuito) : null;
+        return {
+          id: t.id,
+          fecha: t.fecha,
+          hora: t.hora || "",
+          nota: t.nota || "",
+          ej: ejDe(t.ejercicios).map((s) => ({ n: s.n, t: s.t, d: s.d || "" })),
+          circ: ci ? { n: ci.nombre, s: ci.series, est: ci.est.map((x) => x.n) } : null,
+        };
+      }),
+      videos: espVids(e),
+    };
+  }
+  /* Se llama en cada render: si algo ha cambiado, sube el resumen (como mucho cada 1,5 s) */
+  function espSync(ya) {
+    if (!espOk || viendo || PUB || EQ) return;
+    let e = espDe();
+    if (!e) return;
+    clearTimeout(espT);
+    espT = setTimeout(() => espSube(e).catch(() => {}), ya ? 0 : 1500);
+  }
+  async function espSube(e) {
+    if (espDe() !== e) return;
+    let d = espDatos(e),
+      s = JSON.stringify(d);
+    if (espPub[e.id] === s) return;
+    let r = await db.from("espacios").update({ datos: d }).eq("id", e.id);
+    if (r.error) throw new Error(r.error.message);
+    espPub[e.id] = s;
+    e.datos = d;
+  }
+  function espTextoWa(e) {
+    return `🔗 *Enlace del equipo · ${teamName()}*\nAquí tenéis la convocatoria, los entrenos y las jugadas. Elegid vuestro nombre y avisad si no podéis ir:\n${espUrl(e)}`;
+  }
+  function espAvisosHtml(e) {
+    let d = e.datos || {},
+      nom = (id) => (state.players.find((p) => p.id === id) || {}).nombre || "Jugador",
+      fila = (tit, tipo, ref) => {
+        let L = espR.filter((r) => r.espacio_id === e.id && r.tipo === tipo && r.ref === ref),
+          no = L.filter((r) => r.estado === "no"),
+          si = L.filter((r) => r.estado === "voy").length;
+        return `<div class="esp-av-it"><b>${esc(tit)}</b><small>✓ ${si} ${si === 1 ? "va" : "van"} · ✗ ${no.length} no ${no.length === 1 ? "puede" : "pueden"}</small>${no.map((r) => `<span class="esp-no">✗ ${esc(nom(r.jugador_id))}${r.motivo ? " · " + esc(r.motivo) : ""}</span>`).join("")}</div>`;
+      },
+      h = [];
+    if (d.partido) h.push(fila(`Partido${d.partido.rival ? " vs " + d.partido.rival : ""} · ${fmtDate(d.partido.fecha)}`, "partido", d.partido.ref));
+    (d.entrenos || []).forEach((t) => h.push(fila(`Entreno · ${fmtDate(t.fecha)}${t.hora ? " " + t.hora : ""}`, "entreno", t.id)));
+    return h.length ? h.join("") : '<p class="muted">Cuando hagas una convocatoria o crees entrenos de los próximos días, aquí verás quién va y quién no puede.</p>';
+  }
+  async function espAbre() {
+    if (!espOk)
+      return ciOpen(
+        "Enlace del equipo",
+        "<p>El enlace del equipo se está activando en el servidor. Vuelve a probar en un rato.</p>",
+      );
+    let e = espDe();
+    if (!e)
+      return ciOpen(
+        "Enlace del equipo",
+        `<p>Un enlace para el grupo de WhatsApp de <b>${esc(teamName())}</b>. Los jugadores lo abren <b>sin crearse cuenta</b>, eligen su nombre y ven:</p><ul class="esp-ul"><li>📋 La <b>convocatoria</b> del próximo partido (hora, citación y lugar)</li><li>🏃 Los <b>próximos entrenos</b> con la hora y qué se va a trabajar</li><li>🎬 Los <b>vídeos de las jugadas</b>, para repasarlas antes del partido</li></ul><p>Y en cada entreno y partido pueden decir <b>«Voy»</b> o <b>«No puedo ir»</b> con el motivo. Tú lo ves aquí, en el entreno y en la convocatoria.</p>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: el próximo partido, los ${LIM.espTr} próximos entrenos y ${LIM.espVid} vídeos. Con Pro, ilimitado.</p>`}<div class="stack"><button type="button" class="primary" data-esp="crear">${ic("link", 20)}Crear el enlace del equipo</button></div>`,
+      );
+    await espResp();
+    let V = espVids(e),
+      wa = "https://wa.me/?text=" + encodeURIComponent(espTextoWa(e));
+    ciOpen(
+      "Enlace del equipo",
+      `<p class="muted">Compártelo en el grupo de <b>${esc(teamName())}</b>. Se pone al día solo cada vez que cambias la convocatoria o los entrenos.</p><input class="esp-url" readonly value="${esc(espUrl(e))}" aria-label="Enlace del equipo"><div class="stack"><a class="primary" href="${wa}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-esp="copiar">Copiar el enlace</button><a class="secondary" href="${esc(espUrl(e))}" target="_blank" rel="noopener">${ic("eye", 20)}Ver lo que ven los jugadores</a></div>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: los jugadores ven el próximo partido y los ${LIM.espTr} próximos entrenos, y puedes compartir ${LIM.espVid} vídeos. Con Pro, todos los entrenos y vídeos ilimitados.</p>`}<h3 class="ci-h3">Quién va y quién no puede</h3><div class="esp-av">${espAvisosHtml(e)}</div><h3 class="ci-h3">Vídeos de jugadas para el equipo</h3><p class="muted">Sube el vídeo de una jugada (por ejemplo, la que preparas en el ordenador) y los jugadores la ven desde el enlace. Máximo ${ESP_VID_MB} MB cada uno. Se borran solos a los ${ESP_VID_DIAS} días.</p><label class="primary vj-up">${ic("plus", 20)}Subir un vídeo<input type="file" accept="video/*" data-espf hidden></label>${
+        V.length
+          ? `<div class="vj-list">${V.map(
+              (v) =>
+                `<div class="vj-it"><a class="ci-opt" href="${esc(v.url)}" target="_blank" rel="noopener">${ic("play", 20)}<span><b>${esc(v.n)}</b><small>${esc(fmtDate(v.f))} · ${vjMb(v.size || 0)} · se borra el ${esc(fmtDate(vidCad(v)))}</small></span></a><button type="button" class="ib" data-esp="quitar" data-id="${esc(v.id)}" aria-label="Quitar ${esc(v.n)}">${ic("trash", 18)}</button></div>`,
+            ).join("")}</div>`
+          : '<p class="muted vj-vacio">Todavía no has compartido vídeos.</p>'
+      }<div class="btools esp-fin"><button type="button" class="danger small" data-esp="borrar">Desactivar el enlace</button></div>`,
+    );
+    $("infoBody").scrollTop = 0;
+  }
+  function espVidTotal() {
+    return espL.reduce((n, e) => n + espVids(e).length, 0);
+  }
+  async function espSubeVideo(f, nombre) {
+    let e = espDe();
+    if (!e) return espAbre();
+    if (!f) return;
+    if (!/^video\//.test(f.type || "video/")) return note("Eso no parece un vídeo.");
+    if (!esPro() && espVidTotal() >= LIM.espVid)
+      return proLimite(`En el plan gratuito puedes compartir <b>${LIM.espVid} vídeos de jugadas</b> con tus equipos. Quita alguno para subir otro.`);
+    if (f.size > ESP_VID_MB * 1048576)
+      return note(`El vídeo pesa más de ${ESP_VID_MB} MB. Recórtalo o grábalo con menos calidad y vuelve a subirlo.`);
+    let n = nombre;
+    if (!n) {
+      let def = String(f.name || "").replace(/\.[a-z0-9]+$/i, "").slice(0, 60);
+      if (!def || /^(img|vid|mov|trim|video|pxl)[_-]?\d/i.test(def)) def = "Jugada " + fmtDate(ymd(new Date()));
+      n = prompt("Ponle un nombre a la jugada:", def);
+      if (n === null) return;
+      n = n.trim().slice(0, 60) || def;
+    }
+    note("Subiendo el vídeo… no cierres la app hasta que termine.", true);
+    let t = f.type || "video/mp4",
+      ext = /quicktime/.test(t) ? "mov" : /webm/.test(t) ? "webm" : "mp4",
+      path = `${curUser}/${e.id}/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}.${ext}`,
+      r = await db.storage.from("jugadas").upload(path, f, { contentType: t, upsert: false });
+    if (r.error)
+      return note(
+        /row-level|policy|403|Unauthorized/i.test(r.error.message || "")
+          ? "Has llegado al límite de vídeos compartidos de tu plan."
+          : /size|large|413/i.test(r.error.message || "")
+            ? `El vídeo pesa más de ${ESP_VID_MB} MB.`
+            : "No se pudo subir el vídeo: " + r.error.message,
+      );
+    let url = db.storage.from("jugadas").getPublicUrl(path).data.publicUrl;
+    e.datos = { ...(e.datos || {}), videos: [{ id: path, n, url, f: ymd(new Date()), size: f.size }, ...espVids(e)] };
+    delete espPub[e.id];
+    await espSube(e);
+    note("Vídeo compartido con el equipo.", true);
+    espAbre();
+  }
+  async function espAct(b) {
+    let k = b.dataset.esp,
+      e = espDe();
+    if (k === "abrir") return espAbre();
+    if (k === "crear") {
+      if (viendo) return note(SOLO_VER);
+      b.disabled = true;
+      let r = await db.from("espacios").insert({ modalidad: state.mode, equipo_id: curTeam() || "" }).select("id,modalidad,equipo_id,datos,actualizado");
+      b.disabled = false;
+      if (r.error) return note(r.error.message);
+      espL.push({ ...r.data[0], datos: {} });
+      await espSube(espDe());
+      espAbre();
+      return note("Enlace creado. Compártelo en el grupo del equipo.", true);
+    }
+    if (!e) return;
+    if (k === "copiar") return copiaTexto(espTextoWa(e), "Enlace copiado. Pégalo en el grupo del equipo.");
+    if (k === "quitar") {
+      let v = espVids(e).find((x) => x.id === b.dataset.id);
+      if (!v || !confirm(`¿Quitar «${v.n}» del enlace del equipo?`)) return;
+      await db.storage.from("jugadas").remove([v.id]);
+      e.datos = { ...e.datos, videos: espVids(e).filter((x) => x.id !== v.id) };
+      await espSube(e);
+      return espAbre();
+    }
+    if (k === "borrar") {
+      if (!confirm("¿Desactivar el enlace del equipo? Los jugadores ya no podrán abrirlo y se borran sus avisos y los vídeos compartidos.")) return;
+      let V = espVids(e).map((x) => x.id);
+      if (V.length) await db.storage.from("jugadas").remove(V);
+      let r = await db.from("espacios").delete().eq("id", e.id);
+      if (r.error) return note(r.error.message);
+      espL = espL.filter((x) => x !== e);
+      $("info").classList.add("hidden");
+      render();
+      return note("Enlace desactivado.", true);
+    }
+  }
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-esp]");
+    if (b) espAct(b).catch((x) => note(x.message || String(x)));
+  });
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest("#teams [data-esp], #view [data-esp]");
+    if (b) espAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("change", (e) => {
+    if (!e.target.matches("[data-espf]")) return;
+    let f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    espSubeVideo(f).catch((x) => note(x.message || String(x)));
+  });
+  /* Etiqueta junto al jugador: lo que ha contestado desde el enlace */
+  function espTag(tipo, ref, pid) {
+    let r = espAvisos(tipo, ref).find((x) => x.jugador_id === pid);
+    if (!r) return "";
+    return r.estado === "no"
+      ? `<small class="esp-no">Avisó: no puede${r.motivo ? " · " + esc(r.motivo) : ""}</small>`
+      : '<small class="esp-si">Dijo que va</small>';
+  }
+  function espResumen(tipo, ref) {
+    let L = espAvisos(tipo, ref);
+    if (!L.length) return "";
+    let no = L.filter((r) => r.estado === "no").length;
+    return `<p class="muted esp-res">Desde el enlace del equipo: <b class="w">${L.length - no}</b> ${L.length - no === 1 ? "va" : "van"} · <b class="l">${no}</b> no ${no === 1 ? "puede" : "pueden"}</p>`;
+  }
+
+  /* --- Mis jugadas (v11.5): la pizarra guardada con nombre, en la cuenta (móvil y ordenador) --- */
+  let jgOk = false,
+    jgL = [];
+  async function jgCarga() {
+    try {
+      let r = await db.from("jugadas_guardadas").select("id,modalidad,nombre,datos,creado").order("creado", { ascending: false });
+      jgOk = !r.error;
+      jgL = ((r && r.data) || []).map((x) => ({ ...x, datos: parseJson(x.datos, {}) }));
+    } catch (e) {
+      jgOk = false;
+    }
+  }
+  const jgMode = () => jgL.filter((x) => x.modalidad === state.mode);
+  function jgAbre() {
+    if (!jgOk) return ciOpen("Mis jugadas", "<p>Guardar jugadas se está activando en el servidor. Vuelve a probar en un rato.</p>");
+    let L = jgMode();
+    ciOpen(
+      "Mis jugadas",
+      `<p class="muted">Guarda con un nombre la jugada que tienes en la pizarra y vuelve a abrirla cuando quieras, también desde el ordenador o la tablet entrando con tu cuenta.</p>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: ${jgL.length} de ${LIM.jg} jugadas guardadas. Con Pro, ilimitadas.</p>`}<div class="stack"><button type="button" class="primary" data-jg="guardar">${ic("download", 20)}Guardar la jugada de la pizarra</button></div>${
+        L.length
+          ? `<div class="vj-list">${L.map(
+              (j) =>
+                `<div class="vj-it"><button type="button" class="ci-opt" data-jg="abrir" data-id="${esc(j.id)}">${ic("play", 20)}<span><b>${esc(j.nombre)}</b><small>${Math.max(1, parseInt(j.datos.steps) || 1)} ${(parseInt(j.datos.steps) || 1) === 1 ? "paso" : "pasos"} · ${esc(fmtDate(String(j.creado || "").slice(0, 10)))}</small></span></button><button type="button" class="ib" data-jg="borrar" data-id="${esc(j.id)}" aria-label="Borrar ${esc(j.nombre)}">${ic("trash", 18)}</button></div>`,
+            ).join("")}</div>`
+          : `<p class="muted vj-vacio">Todavía no tienes jugadas guardadas en ${esc(MN())}.</p>`
+      }`,
+    );
+    $("infoBody").scrollTop = 0;
+  }
+  async function jgGuarda() {
+    if (viendo) return note(SOLO_VER);
+    if (!jgOk) return jgAbre();
+    let b = bd();
+    if (!b.strokes.length && !b.items.length) return note("La pizarra está vacía: pon jugadores o dibuja la jugada y luego guárdala.");
+    let e = b.est && state.mode === "fs" ? estDe(b.est) : null,
+      def = (e && e.n) || "Jugada " + fmtDate(ymd(new Date())),
+      n = prompt("Nombre de la jugada:", def);
+    if (n === null) return;
+    n = n.trim().slice(0, 60) || def;
+    let datos = { strokes: b.strokes, items: b.items, steps: b.steps, tcol: b.tcol, bg: b.bg || "", clean: !!b.clean, est: b.est || "" },
+      ya = jgMode().find((x) => x.nombre.toLowerCase() === n.toLowerCase());
+    if (ya) {
+      if (!confirm(`Ya tienes una jugada llamada «${ya.nombre}». ¿Cambiarla por la de ahora?`)) return;
+      let r = await db.from("jugadas_guardadas").update({ datos }).eq("id", ya.id);
+      if (r.error) return note(r.error.message);
+      ya.datos = datos;
+    } else {
+      if (!esPro() && jgL.length >= LIM.jg)
+        return proLimite(`En el plan gratuito puedes guardar <b>${LIM.jg} jugadas</b>. Borra alguna para guardar otra.`);
+      let row = { id: crypto.randomUUID(), modalidad: state.mode, nombre: n, datos },
+        r = await db.from("jugadas_guardadas").insert(row);
+      if (r.error) return note(/plan gratuito/.test(r.error.message) ? r.error.message : "No se pudo guardar: " + r.error.message);
+      jgL.unshift({ ...row, creado: new Date().toISOString() });
+    }
+    note(`Jugada «${n}» guardada en «Mis jugadas».`, true);
+    if (!$("info").classList.contains("hidden") && $("infoTitle").textContent === "Mis jugadas") jgAbre();
+  }
+  function jgCargaEnPizarra(j) {
+    let b = bd(),
+      d = j.datos || {};
+    if ((b.strokes.length || b.items.length) && !confirm("Se cambia lo que tienes en la pizarra por esta jugada. Si te arrepientes, pulsa «Deshacer». ¿Seguir?")) return;
+    stopAnim();
+    pushHist(b);
+    let n = Math.min(PASOS_MAX, Math.max(1, parseInt(d.steps) || 1));
+    b.strokes = Array.isArray(d.strokes) ? d.strokes.filter((s) => s && Array.isArray(s.p)) : [];
+    b.items = cleanItems(d.items, n);
+    b.steps = n;
+    b.step = 0;
+    b.tcol = d.tcol && typeof d.tcol === "object" ? d.tcol : {};
+    b.bg = d.bg || "";
+    b.clean = !!d.clean;
+    b.est = state.mode === "fs" && typeof d.est === "string" ? d.est : "";
+    b.tool = "move";
+    state.boardPick = null;
+    saveBoard();
+    $("info").classList.add("hidden");
+    render();
+    note(`Jugada «${j.nombre}» en la pizarra.`, true);
+  }
+  $("info").addEventListener("click", async (e) => {
+    let b = e.target.closest("[data-jg]");
+    if (!b) return;
+    let k = b.dataset.jg,
+      j = jgL.find((x) => x.id === b.dataset.id);
+    try {
+      if (k === "guardar") return await jgGuarda();
+      if (k === "abrir" && j) return jgCargaEnPizarra(j);
+      if (k === "borrar" && j) {
+        if (!confirm(`¿Borrar la jugada «${j.nombre}»?`)) return;
+        let r = await db.from("jugadas_guardadas").delete().eq("id", j.id);
+        if (r.error) return note(r.error.message);
+        jgL = jgL.filter((x) => x !== j);
+        jgAbre();
+      }
+    } catch (x) {
+      note(x.message || String(x));
+    }
+  });
+
   /* --- Convocatoria (v11.3) ---
      Antes del partido: eliges a los convocados, rival, lugar, día, hora y citación, y la app
      escribe el mensaje para el grupo de WhatsApp. Se guarda en este dispositivo (una por equipo),
@@ -1724,6 +2098,7 @@
     try {
       localStorage.setItem(cvKey(), JSON.stringify(cv));
     } catch (e) {}
+    espSync();
   }
   function cvBorra() {
     try {
@@ -1754,7 +2129,11 @@
   function cvCard() {
     let c = cvLee();
     if (viendo || !c || (!c.ids.length && !c.rival)) return "";
-    return `<div class="cv-card"><div class="info"><div class="kicker">Convocatoria</div><strong>${esc(cvResumen(c) || "Sin datos")}</strong><small>${cvJug(c).length} convocados${c.lugar ? " · " + esc(c.lugar) : ""}</small></div><div class="btools"><button type="button" class="primary small" data-cv="abrir">${ic("users", 18)}Ver y enviar</button></div></div>`;
+    return `<div class="cv-card"><div class="info"><div class="kicker">Convocatoria</div><strong>${esc(cvResumen(c) || "Sin datos")}</strong><small>${cvJug(c).length} convocados${c.lugar ? " · " + esc(c.lugar) : ""}${(() => {
+      let L = espAvisos("partido", c.fecha),
+        no = L.filter((r) => r.estado === "no").length;
+      return L.length ? ` · ✓ ${L.length - no} ${L.length - no === 1 ? "va" : "van"} · ✗ ${no} no ${no === 1 ? "puede" : "pueden"}` : "";
+    })()}</small></div><div class="btools"><button type="button" class="primary small" data-cv="abrir">${ic("users", 18)}Ver y enviar</button></div></div>`;
   }
   function cvAbre(desde) {
     cv = cvLee() || cvNuevo();
@@ -1777,7 +2156,7 @@
         ? `<div class="cv-list">${r
             .map(
               (p) =>
-                `<label class="cv-j"><input type="checkbox" data-cvp="${p.id}"${cv.ids.includes(p.id) ? " checked" : ""}>${avatar(p)}<span>${dorsal(p) ? `<i class="bdn">${dorsal(p)}</i>` : ""}${esc(p.nombre)}</span></label>`,
+                `<label class="cv-j"><input type="checkbox" data-cvp="${p.id}"${cv.ids.includes(p.id) ? " checked" : ""}>${avatar(p)}<span>${dorsal(p) ? `<i class="bdn">${dorsal(p)}</i>` : ""}${esc(p.nombre)}${espTag("partido", cv.fecha, p.id)}</span></label>`,
             )
             .join("")}</div>`
         : '<p class="muted">Añade primero a tus jugadores en Plantilla.</p>'
@@ -1971,7 +2350,7 @@
     vjUrl = URL.createObjectURL(v.blob);
     ciOpen(
       v.nombre,
-      `<video class="vj-video" src="${vjUrl}" controls playsinline autoplay></video><div class="stack"><button type="button" class="primary" data-vj="full">${ic("maximize", 20)}Pantalla completa</button><button type="button" class="secondary" data-vj="share">${ic("share", 20)}Compartir o guardar</button><button type="button" class="secondary" data-vj="lista">${ic("back", 20)}Volver a mis vídeos</button></div>`,
+      `<video class="vj-video" src="${vjUrl}" controls playsinline autoplay></video><div class="stack"><button type="button" class="primary" data-vj="full">${ic("maximize", 20)}Pantalla completa</button><button type="button" class="secondary" data-vj="share">${ic("share", 20)}Compartir o guardar</button>${viendo ? "" : `<button type="button" class="secondary" data-vj="eq">${ic("link", 20)}Compartir con el equipo</button>`}<button type="button" class="secondary" data-vj="lista">${ic("back", 20)}Volver a mis vídeos</button></div>`,
     );
   }
   async function vjSube(f) {
@@ -2014,6 +2393,7 @@
       } catch (e) {}
       return;
     }
+    if (k === "eq" && vjVer) return espSubeVideo(vjVer.blob, vjVer.nombre);
     if (k === "share" && vjVer) {
       let ext = /webm/.test(vjVer.type) ? "webm" : /quicktime/.test(vjVer.type) ? "mov" : "mp4",
         nom = vjVer.nombre.replace(/[^\wáéíóúñü -]+/gi, "").trim().replace(/\s+/g, "-").toLowerCase() || "jugada";
@@ -4436,11 +4816,11 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan solo en tu dispositivo.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan en tu dispositivo y, si usas «Guardar» en la pizarra, también en tu cuenta. Si creas el <b>enlace del equipo</b>, quien tenga ese enlace ve el nombre del equipo, el nombre y dorsal de los jugadores, la convocatoria, los próximos entrenos y los vídeos que compartas; las respuestas «Voy» / «No puedo ir» y su motivo se guardan en tu cuenta (el motivo solo lo ves tú) y se borran a los 120 días. Puedes desactivar el enlace cuando quieras.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias y envíos de entrenos al mes, vídeos de jugadas o pasos de una jugada), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias y envíos de entrenos al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas o lo que se ve en el enlace del equipo), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -4652,6 +5032,18 @@
       ],
     },
     {
+      t: "Enlace del equipo",
+      p: [
+        "Arriba, junto a tus equipos, pulsa <b>«Enlace»</b> y luego «Crear el enlace del equipo». Mándalo al grupo de WhatsApp con «Enviar por WhatsApp» o «Copiar el enlace». Cada equipo tiene el suyo.",
+        "Tus jugadores lo abren <b>sin crearse cuenta</b> (en el móvil o en el ordenador), eligen su nombre una vez y ven: la <b>convocatoria</b> del próximo partido (rival, día, hora, citación, lugar y convocados), los <b>próximos entrenos</b> con la hora, qué se va a trabajar y los ejercicios, y los <b>vídeos de las jugadas</b> para repasarlas antes del partido.",
+        "En cada entreno y en el partido tienen los botones <b>«Voy»</b> y <b>«No puedo ir»</b> (con el motivo, por ejemplo «lesionado» o «examen»). Tú lo ves en el enlace («Quién va y quién no puede»), al <b>pasar lista</b> junto a cada jugador y en la <b>convocatoria</b>. El motivo solo lo ves tú.",
+        "El enlace se pone al día solo cada vez que cambias la convocatoria o los entrenos desde tu móvil. Para que el partido salga, haz la convocatoria en «Partidos › Convocatoria».",
+        "<b>Vídeos para el equipo</b>: en el enlace pulsa «Subir un vídeo» (máximo 50 MB cada uno), o en la pizarra › Vídeos abre uno y pulsa «Compartir con el equipo». Así puedes subir la jugada que preparas en el ordenador. Con la papelera lo quitas. Cada vídeo <b>se borra solo a los 30 días</b> (del enlace y del servidor); si lo quieres más tiempo, vuelve a subirlo.",
+        "Plan gratuito: los jugadores ven el próximo partido y los <b>2 próximos entrenos</b>, y puedes compartir <b>2 vídeos</b>. Con el plan Pro, todos los entrenos y vídeos ilimitados.",
+        "«Desactivar el enlace» lo borra: el enlace deja de funcionar y se quitan los avisos y los vídeos compartidos. Puedes crear otro cuando quieras.",
+      ],
+    },
+    {
       t: "Partidos y alineaciones",
       p: [
         "Pulsa «+ Partido»: pon la fecha y el rival, marca convocados y titulares y elige la formación.",
@@ -4751,7 +5143,8 @@
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
         "<b>Limpia</b> (plan Pro): deja el campo liso, sin rayas ni escudo, para que se vean mejor las fichas y los movimientos. Vuelve a tocarlo para dejarlo como antes. La imagen y el vídeo salen también limpios. Junto con la pantalla completa tienes la pizarra grande y despejada.",
-        "<b>Vídeos</b> (2 gratis por modalidad, ilimitados con Pro): sube desde el móvil el vídeo de una jugada (de un partido, de otro equipo…), ponle nombre y enséñalo cuando quieras, también a pantalla completa. Se guardan solo en ese dispositivo, cada modalidad con los suyos. Con «Compartir o guardar» lo mandas por WhatsApp.",
+        "<b>Vídeos</b> (2 gratis por modalidad, ilimitados con Pro): sube desde el móvil el vídeo de una jugada (de un partido, de otro equipo…), ponle nombre y enséñalo cuando quieras, también a pantalla completa. Se guardan solo en ese dispositivo, cada modalidad con los suyos. Con «Compartir o guardar» lo mandas por WhatsApp y con «Compartir con el equipo» lo ven tus jugadores en el enlace del equipo.",
+        "<b>Guardar</b> y <b>Mis jugadas</b> (3 gratis, ilimitadas con Pro): con «Guardar» le pones un nombre a la jugada que tienes en la pizarra (con sus pasos, colores y dibujos) y se guarda en tu cuenta. En «Mis jugadas» la vuelves a abrir cuando quieras, también desde el ordenador o la tablet entrando con tu cuenta. Si guardas con un nombre que ya tienes, te pregunta si quieres cambiarla.",
       ],
     },
     {
@@ -4777,8 +5170,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados y las 10 estrategias TOP de fútbol sala.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada y circuitos), <b>pizarra limpia</b>, gráfico de carga física, emitir vídeo en el Directo y las 34 estrategias de fútbol sala.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos y <b>2</b> vídeos, y las 10 estrategias TOP de fútbol sala.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física, emitir vídeo en el Directo y las 34 estrategias de fútbol sala.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
@@ -6802,6 +7195,145 @@
   }
   if (PUB) startPub();
 
+  /* Página del enlace del equipo para los jugadores (?equipo=<código>, sin cuenta) */
+  let eqD = null,
+    eqYo = "",
+    eqErr = false,
+    eqUlt = "";
+  const eqYoKey = () => "mf_eq_yo:" + EQ;
+  async function eqLoad() {
+    let r;
+    try {
+      r = await db.rpc("ver_espacio", { codigo: EQ });
+    } catch (e) {
+      r = { error: e };
+    }
+    eqErr = !!r.error;
+    if (!r.error) {
+      let s = JSON.stringify(r.data || null);
+      if (s === eqUlt && $("eqData").querySelector(".kicker")) return;
+      eqUlt = s;
+      eqD = r.data || null;
+    }
+    eqPinta();
+  }
+  function eqMios(tipo, ref) {
+    return ((eqD && eqD.respuestas) || []).filter((r) => r.tipo === tipo && r.ref === ref);
+  }
+  function eqBotones(tipo, ref) {
+    if (!eqYo || eqYo === "-") return "";
+    let L = eqMios(tipo, ref),
+      mia = L.find((r) => r.j === eqYo),
+      si = L.filter((r) => r.estado === "voy").length,
+      no = L.length - si;
+    return `<div class="eq-resp"><button type="button" class="${mia && mia.estado === "voy" ? "primary" : "secondary"} small" data-eqr="voy" data-t="${tipo}" data-ref="${esc(ref)}" aria-pressed="${!!(mia && mia.estado === "voy")}">${ic("check", 18)}Voy</button><button type="button" class="${mia && mia.estado === "no" ? "danger" : "secondary"} small" data-eqr="no" data-t="${tipo}" data-ref="${esc(ref)}" aria-pressed="${!!(mia && mia.estado === "no")}">${ic("x", 18)}No puedo ir</button></div><p class="muted eq-cuenta">${mia ? (mia.estado === "voy" ? "Has dicho que <b>vas</b>." : "Has avisado de que <b>no puedes ir</b>.") + " " : ""}✓ ${si} ${si === 1 ? "va" : "van"} · ✗ ${no} no ${no === 1 ? "puede" : "pueden"}</p>`;
+  }
+  function eqPinta() {
+    let box = $("eqData");
+    if (!box) return;
+    if (!eqD) {
+      box.innerHTML = eqErr
+        ? '<h2 class="h2s">Mi equipo</h2><p class="muted">No se ha podido cargar. Revisa tu conexión; lo volvemos a intentar solos.</p>'
+        : '<h2 class="h2s">Enlace no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>';
+      return;
+    }
+    let d = eqD.datos || {},
+      J = Array.isArray(d.jugadores) ? d.jugadores : [],
+      yo = J.find((p) => p.id === eqYo);
+    if (eqYo && eqYo !== "-" && !yo) eqYo = "";
+    let nom = (id) => (J.find((p) => p.id === id) || {}).n || "",
+      h = `<div class="kicker">${esc(MN(d.modalidad))}</div><h2>${esc(d.equipo || "Mi equipo")}</h2>`;
+    if (!eqYo) {
+      box.innerHTML =
+        h +
+        `<h3 class="ci-h3">¿Quién eres?</h3><p class="muted">Elige tu nombre una vez y podrás avisar si vas o no a los entrenos y partidos.</p><div class="eq-quien">${J.map((p) => `<button type="button" class="secondary" data-eqyo="${esc(p.id)}">${p.d ? `<i class="bdn">${esc(p.d)}</i>` : ""}${esc(p.n)}</button>`).join("")}</div><div class="stack"><button type="button" class="secondary small" data-eqyo="-">Solo quiero mirar</button></div>`;
+      return;
+    }
+    h += `<p class="muted eq-hola">${yo ? `Hola, <b>${esc(yo.n)}</b>.` : "Estás mirando sin elegir jugador."} <button type="button" class="linkbtn" data-eqyo="">${yo ? "No soy yo" : "Elegir mi nombre"}</button></p>`;
+    let p = d.partido;
+    h += `<section class="eq-sec"><h3 class="ci-h3">⚽ Próximo partido</h3>`;
+    if (p) {
+      let conv = Array.isArray(p.conv) ? p.conv : [],
+        estoy = yo && conv.includes(yo.id);
+      h += `<div class="eq-card"><b class="eq-tit">${p.rival ? "vs " + esc(p.rival) : "Partido"}</b><p>📅 ${esc(trDayLabel(p.fecha).replace(/^./, (x) => x.toUpperCase()))}</p>${p.hora || p.cita ? `<p>⏰ ${[p.hora ? "Partido: " + esc(p.hora) : "", p.cita ? "Citación: <b>" + esc(p.cita) + "</b>" : ""].filter(Boolean).join(" · ")}</p>` : ""}${p.lugar ? `<p>📍 ${esc(p.lugar)}</p>` : ""}${p.nota ? `<p>📝 ${esc(p.nota)}</p>` : ""}${yo ? `<p class="eq-conv ${estoy ? "si" : "no"}">${estoy ? "✅ Estás convocado" : "No estás en la convocatoria"}</p>` : ""}<details class="eq-det"><summary>Convocados (${conv.length})</summary><ol>${conv.map((id) => `<li${yo && id === yo.id ? ' class="yo"' : ""}>${esc(nom(id))}</li>`).join("")}</ol></details>${!yo || estoy ? eqBotones("partido", p.ref) : ""}</div>`;
+    } else h += '<p class="muted">Todavía no hay convocatoria.</p>';
+    h += `</section><section class="eq-sec"><h3 class="ci-h3">🏃 Próximos entrenos</h3>`;
+    let T = Array.isArray(d.entrenos) ? d.entrenos : [];
+    h += T.length
+      ? T.map(
+          (t) =>
+            `<div class="eq-card"><b class="eq-tit">${esc(trDayLabel(t.fecha).replace(/^./, (x) => x.toUpperCase()))}${t.hora ? " · " + esc(t.hora) : ""}</b>${t.nota ? `<p>🎯 <b>Vamos a trabajar:</b> ${esc(t.nota)}</p>` : ""}${
+              (t.ej || []).length
+                ? `<ol class="eq-ej">${t.ej.map((s) => `<li><b>${esc(s.n)}</b> <small>(${trMin(s.t)})</small>${s.d ? `<br><span class="muted">${esc(s.d)}</span>` : ""}</li>`).join("")}</ol>`
+                : ""
+            }${t.circ ? `<p>💪 <b>Circuito: ${esc(t.circ.n)}</b> (${t.circ.s} ${t.circ.s === 1 ? "serie" : "series"})</p><ol class="eq-ej">${(t.circ.est || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ol>` : ""}${eqBotones("entreno", t.id)}</div>`,
+        ).join("")
+      : '<p class="muted">No hay entrenos programados en los próximos días.</p>';
+    h += `</section><section class="eq-sec"><h3 class="ci-h3">🎬 Jugadas</h3>`;
+    let V = (Array.isArray(d.videos) ? d.videos : []).filter(vidVivo);
+    h += V.length
+      ? `<div class="eq-vids">${V.map((v) => `<div class="eq-vid"><b>${esc(v.n)}</b><small class="muted"> · hasta el ${esc(fmtDate(vidCad(v)))}</small><video src="${esc(v.url)}" controls playsinline preload="metadata"></video></div>`).join("")}</div>`
+      : '<p class="muted">El entrenador todavía no ha subido jugadas.</p>';
+    h += `</section><p class="muted lv-upd">Actualizado: ${esc(new Date(eqD.actualizado || Date.now()).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</p>`;
+    box.innerHTML = h;
+  }
+  function startEq() {
+    $("login").classList.add("hidden");
+    $("app").classList.add("hidden");
+    let box = document.createElement("main");
+    box.id = "pub";
+    box.className = "pub eq";
+    document.body.appendChild(box);
+    document.title = "Mi equipo · Mi Fútbol JV32";
+    try {
+      eqYo = localStorage.getItem(eqYoKey()) || "";
+    } catch (e) {}
+    box.innerHTML = `<div class="pub-in"><div class="brand"><span class="mark" role="img" aria-label="Logo JV32"></span><span class="word">Mi Fútbol <i>JV32</i></span></div><section class="panel"><div id="eqData"><p class="muted">Cargando…</p></div></section><p class="legal-links"><a href="${esc(location.pathname)}">¿Eres entrenador? Lleva tu equipo con Mi Fútbol JV32</a></p></div>`;
+    box.addEventListener("click", async (e) => {
+      let y = e.target.closest("[data-eqyo]");
+      if (y) {
+        eqYo = y.dataset.eqyo;
+        try {
+          localStorage.setItem(eqYoKey(), eqYo);
+        } catch (x) {}
+        eqPinta();
+        return window.scrollTo(0, 0);
+      }
+      let b = e.target.closest("[data-eqr]");
+      if (!b || !eqYo || eqYo === "-") return;
+      let est = b.dataset.eqr,
+        motivo = "";
+      if (est === "no") {
+        motivo = prompt("¿Por qué no puedes ir? (opcional: lesión, estudios, viaje…)", "");
+        if (motivo === null) return;
+      }
+      b.disabled = true;
+      let r;
+      try {
+        r = await db.rpc("responder_espacio", { codigo: EQ, p_tipo: b.dataset.t, p_ref: b.dataset.ref, p_jugador: eqYo, p_estado: est, p_motivo: String(motivo).trim().slice(0, 200) });
+      } catch (x) {
+        r = { error: x };
+      }
+      if (r.error) {
+        b.disabled = false;
+        return note("No se pudo enviar: " + (r.error.message || "revisa tu conexión"));
+      }
+      note(est === "voy" ? "¡Apuntado! El entrenador ya sabe que vas." : "Avisado. El entrenador ya sabe que no puedes ir.", true);
+      eqLoad();
+    });
+    eqLoad();
+    /* Se pone al día al volver a la página y cada minuto (si no hay un vídeo en marcha) */
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") eqLoad();
+    });
+    setInterval(() => {
+      let v = [...box.querySelectorAll("video")].some((x) => !x.paused);
+      if (document.visibilityState === "visible" && !v) eqLoad();
+    }, 60000);
+  }
+  if (EQ) startEq();
+
+
   /* Pizarra: trazos (lápiz/flecha) + fichas que se arrastran (jugadores, rivales,
      balón y material) + jugada por pasos. Cada ficha guarda su posición en cada
      paso (p[i]); al reproducir se mueven de un paso al siguiente. Todo en coordenadas
@@ -7492,7 +8024,7 @@
       )
       .join("")}${menu}</div></div>
 <div class="bbot"><div class="bsteps" role="toolbar" aria-label="Jugada en movimiento"><button class="bi" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${dis(b.step < 1)}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="bi" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${dis(b.step >= b.steps - 1)}>${ic("right")}</button><button class="bi" data-b="addstep" aria-label="Añadir paso" title="Añadir paso"${dis()}>${ic("plus")}</button><button class="bi d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${dis(b.steps < 2)}>${ic("x")}</button><span class="brs"></span><button class="bi go" data-b="play" aria-label="${playing ? "Parar" : "Ver jugada"}" title="${playing ? "Parar" : "Ver jugada"}">${ic(playing ? "stop" : "play")}</button><button class="bi" data-b="video" aria-label="Vídeo de la jugada" title="Vídeo de la jugada"${dis()}>${ic("film")}</button></div>
-<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean && esPro() ? " on" : ""}" data-b="clean" aria-pressed="${!!(b.clean && esPro())}" title="Pizarra limpia: campo liso, sin rayas ni escudo${esPro() ? "" : " (plan Pro)"}">${ic("eraser", 18)}Limpia${esPro() ? "" : '<em class="pro-tag">PRO</em>'}</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div>${pick}</section>`;
+<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean && esPro() ? " on" : ""}" data-b="clean" aria-pressed="${!!(b.clean && esPro())}" title="Pizarra limpia: campo liso, sin rayas ni escudo${esPro() ? "" : " (plan Pro)"}">${ic("eraser", 18)}Limpia${esPro() ? "" : '<em class="pro-tag">PRO</em>'}</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}<button class="btx" data-b="jg" title="Guardar la jugada con un nombre y ver «Mis jugadas»">${ic("download", 18)}Guardar</button></div></div>${pick}</section>`;
   }
   let boardRO = null;
   function initBoard() {
@@ -7852,7 +8384,7 @@
     if (!t || state.tab !== "pizarra") return;
     let b = bd(),
       k = t.dataset.b;
-    if (boardAnim && k !== "play" && k !== "present" && k !== "est") return;
+    if (boardAnim && k !== "play" && k !== "present" && k !== "est" && k !== "jg" && k !== "jgsave") return;
     if (k !== "add" && k !== "addp") state.boardMenu = false;
     if (k === "est") {
       estOpen();
@@ -7868,6 +8400,10 @@
       note(b.clean ? "Pizarra limpia: campo liso, sin rayas ni escudo." : "Pizarra normal.", true);
     } else if (k === "vids") {
       vjAbre();
+    } else if (k === "jg") {
+      jgAbre();
+    } else if (k === "jgsave") {
+      jgGuarda().catch((x) => note(x.message || String(x)));
     } else if (k === "tool") {
       b.tool = t.dataset.v;
       saveBoard();
@@ -8050,7 +8586,7 @@
   });
 
   db.auth.onAuthStateChange((event, session) => {
-    if (PUB) return;
+    if (PUB || EQ) return;
     if (event === "PASSWORD_RECOVERY") recovering = true;
     if (session && recovering) {
       $("login").classList.remove("hidden");

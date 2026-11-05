@@ -2982,7 +2982,7 @@ a.pack {
 }
 .bextra .bgsel {
   margin: 0 0 0 6px;
-  flex: 0 1 250px;
+  flex: 0 1 200px;
 }
 .bextra .bgsel span {
   display: none;
@@ -5016,4 +5016,143 @@ body.presenting .est-bar {
 }
 .disp-it .ci-opt {
   margin-bottom: 0;
+}
+/* Enlace del equipo y Mis jugadas (v11.5) */
+.esp-url {
+  width: 100%;
+  margin: 8px 0;
+  font-size: 14px;
+}
+.esp-ul {
+  margin: 6px 0 10px;
+  padding-left: 4px;
+  list-style: none;
+}
+.esp-ul li {
+  margin: 4px 0;
+}
+.esp-av-it {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--s2);
+}
+.esp-av-it small {
+  color: var(--mut);
+}
+.esp-no,
+.esp-si {
+  display: block;
+  font-size: 12.5px;
+}
+.esp-no {
+  color: var(--loss);
+}
+.esp-si {
+  color: var(--win);
+}
+.esp-res b.w {
+  color: var(--win);
+}
+.esp-res b.l {
+  color: var(--loss);
+}
+.esp-fin {
+  margin-top: 14px;
+}
+.cv-j .esp-no,
+.cv-j .esp-si {
+  display: inline;
+  margin-left: 6px;
+}
+.eq-sec {
+  margin-top: 16px;
+}
+.eq-card {
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--s2);
+}
+.eq-card p {
+  margin: 4px 0;
+}
+.eq-tit {
+  display: block;
+  font: 700 19px/1.2 var(--fd);
+  margin-bottom: 4px;
+}
+.eq-conv {
+  font-weight: 700;
+}
+.eq-conv.si {
+  color: var(--win);
+}
+.eq-conv.no {
+  color: var(--mut);
+}
+.eq-det {
+  margin: 6px 0;
+}
+.eq-det li.yo {
+  color: var(--lime);
+  font-weight: 700;
+}
+.eq-ej {
+  margin: 6px 0;
+  padding-left: 22px;
+}
+.eq-ej li {
+  margin: 4px 0;
+}
+.eq-resp {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.eq-resp button {
+  flex: 1 1 130px;
+}
+.eq-cuenta {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+.eq-quien {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+.eq-quien .bdn {
+  margin-right: 6px;
+}
+.eq-hola .linkbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--lime);
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
+}
+.eq-vid {
+  margin-bottom: 12px;
+}
+.eq-vid video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  margin-top: 6px;
+  border-radius: 12px;
+  background: #000;
+}
+.vj-it a.ci-opt {
+  text-decoration: none;
+  color: inherit;
 }
