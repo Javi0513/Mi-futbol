@@ -25,7 +25,7 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('las novedades explican el esfuerzo de los jugadores y el preparador',all(w in body for w in ('PARA TODOS','enlace del equipo','Cuánto te ha costado','preparador físico')),body[:200])
+    check('las novedades explican el contexto de la carga, las fases del juego y las ABP',all(w in body for w in ('PARA TODOS','contexto de la carga','Fases del juego','ABP','FÚTBOL 7 Y FÚTBOL 11')),body[:200])
     check('y lo que es gratis y lo que es Pro','PLAN GRATUITO' in body and 'PLAN PRO' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())

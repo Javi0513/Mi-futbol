@@ -70,7 +70,7 @@ with sync_playwright() as p:
     b=p.chromium.launch()
     pg=page(b,sd('gratis'));login(pg)
     pg.click('[data-tab=pizarra]');pg.wait_for_selector('#bcanvas')
-    check('en fútbol 7 no sale el botón de estrategias',pg.locator('[data-b=est]').count()==0)
+    check('en fútbol 7 el botón es el de las ABP, no el de sala','Jugadas a balón parado' in pg.locator('[data-b=est]').text_content() and 'fútbol sala' not in pg.locator('[data-b=est]').text_content())
     board(pg)
     check('en fútbol sala sale el botón «Estrategias de fútbol sala»',pg.locator('[data-b=est]').count()==1 and 'ESTRATEGIAS' in pg.inner_text('[data-b=est]').upper())
     pg.screenshot(path=OUT+'/est_boton.png')
