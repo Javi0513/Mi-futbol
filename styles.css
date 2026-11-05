@@ -2980,9 +2980,6 @@ a.pack {
   font: 800 18px/1 var(--fd);
   letter-spacing: 0.04em;
 }
-.bextra {
-  flex-wrap: nowrap;
-}
 .bextra .bgsel {
   margin: 0 0 0 6px;
   flex: 0 1 250px;
@@ -4821,4 +4818,185 @@ body.presenting .est-bar {
   padding: 0 6px;
   font-size: 16px;
   text-align: center;
+}
+/* Convocatoria (v11.3) */
+.mbtns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.cv-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--lime);
+  border-radius: 14px;
+  background: var(--s2);
+}
+.cv-card .info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cv-card small {
+  color: var(--mut);
+}
+.cv-card .btools {
+  margin: 0;
+}
+.cv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+.cv-grid .ci-l:first-child,
+.cv-grid .ci-l:nth-child(2) {
+  grid-column: 1 / -1;
+}
+.cv-h {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cv-h span {
+  display: flex;
+  gap: 6px;
+}
+.cv-list {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+.cv-j {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--s1);
+  cursor: pointer;
+}
+.cv-j input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--lime);
+  flex: none;
+}
+.cv-j .avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.cv-j span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.cv-j .bdn {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+}
+.cv-txt {
+  margin: 6px 0 0;
+  padding: 12px;
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 12px;
+  background: #0b141a;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: 400 14px/1.45 var(--fb);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* Pizarra limpia y vídeos de jugadas (v11.3) */
+.btx {
+  flex: none;
+  height: 44px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  background: var(--s3);
+  color: var(--ink);
+  border: 1px solid var(--line2);
+  font: 700 15px/1 var(--fd);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.btx:hover {
+  border-color: var(--lime);
+}
+.btx.on {
+  background: var(--lime);
+  color: var(--on-lime);
+  border-color: var(--lime);
+}
+.board.clean .field,
+.board.clean.land .field {
+  background: #17603a;
+  box-shadow:
+    0 0 0 4px var(--s1),
+    0 18px 40px #0009;
+}
+.board.clean .field.fs,
+.board.clean.land .field.fs {
+  background: #1a5f8a;
+}
+.board.clean .wm {
+  display: none;
+}
+.vj-up {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  margin: 10px 0 14px;
+  border-radius: 14px;
+  cursor: pointer;
+}
+.vj-list {
+  display: grid;
+  gap: 8px;
+}
+.vj-it {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vj-it .ci-opt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+.vj-it .ci-opt span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.vj-it .ci-opt small {
+  color: var(--mut);
+}
+.vj-video {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  border-radius: 14px;
+  background: #000;
 }
