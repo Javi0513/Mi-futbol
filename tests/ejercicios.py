@@ -54,7 +54,7 @@ def login(pg):
 DB=lambda pg,js:pg.evaluate('(()=>{let d=window.__db;return '+js+'})()')
 ON="localStorage.setItem('mf_entrenos:u1','1');"
 def sd(ej=None):
-    return {'futbol_personal_jugadores':CP(P),'futbol_personal_partidos':[],'perfiles':[{'id':'u1','plan':'gratis'}],
+    return {'futbol_personal_jugadores':CP(P),'futbol_personal_partidos':[],'perfiles':[{'id':'u1','plan':'pro'}],
       'entrenamientos':[{'id':'t1','owner_id':'u1','modalidad':'7','fecha':HOY,'asistencia':{},'circuito':None,'ejercicios':ej}],'circuitos':[]}
 def mmss(pg,m,s_):
     pg.fill('#infoBody [data-ejm=m]',str(m));pg.fill('#infoBody [data-ejm=s]',str(s_))

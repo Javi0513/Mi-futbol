@@ -1130,15 +1130,19 @@
       wa = "https://wa.me/?text=" + encodeURIComponent(txt);
     ciOpen(
       "Enviar el entreno",
-      `<p class="muted">Este es el mensaje para el grupo de tus jugadores. Así llegan sabiendo qué se va a trabajar.</p><pre class="cv-txt">${esc(txt)}</pre><div class="stack"><a class="primary" href="${wa}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${navigator.share ? '<button type="button" class="secondary" data-trx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-trx="copiar">Copiar el mensaje</button></div>`,
+      `<p class="muted">Este es el mensaje para el grupo de tus jugadores. Así llegan sabiendo qué se va a trabajar.</p>${envQuedan("tr")}<pre class="cv-txt">${esc(txt)}</pre><div class="stack"><a class="primary" data-trx="wa" href="${wa}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${navigator.share ? '<button type="button" class="secondary" data-trx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-trx="copiar">Copiar el mensaje</button></div>`,
     );
     $("infoBody").scrollTop = 0;
     trTxt = txt;
+    trEnvId = t.id;
   }
-  let trTxt = "";
+  let trTxt = "",
+    trEnvId = "";
   $("info").addEventListener("click", async (e) => {
     let b = e.target.closest("[data-trx]");
     if (!b) return;
+    if (!envPuede("tr", trEnvId)) return e.preventDefault();
+    if (b.dataset.trx === "wa") return;
     if (b.dataset.trx === "share") {
       try {
         await navigator.share({ text: trTxt });
@@ -1391,9 +1395,14 @@
   /* --- Ejercicios sueltos del entreno (v11.0) ---
      Ejercicios que no son de ningún circuito (rondo, partidillo, finalización…), cada uno con su
      nombre, explicación y tiempo. Van en la columna entrenamientos.ejercicios (supabase-ejercicios.sql)
-     como lista: [{"n": nombre, "d": cómo se hace, "t": segundos}]. Gratis, hasta EJ_MAX por entreno. */
-  const EJ_MAX = 20;
-  const EG_MAX = 200; /* tope de «Mis ejercicios», el mismo que en supabase-mis-ejercicios.sql */
+     como lista: [{"n": nombre, "d": cómo se hace, "t": segundos}]. Gratis hasta LIM.ej por entreno; con Pro sin límite (EJ_MAX es solo un tope de seguridad). */
+  const EJ_MAX = 200;
+  const ejMax = () => (esPro() ? EJ_MAX : LIM.ej);
+  const ejLleno = () =>
+    esPro()
+      ? note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`)
+      : proLimite(`En el plan gratuito cada entreno puede tener <b>${LIM.ej} ejercicios</b>. Con el plan Pro, sin límite.`);
+  const EG_MAX = 5000; /* tope de seguridad de «Mis ejercicios» con Pro, el mismo que en supabase-limites.sql */
   /* Sin tope a la vista: solo uno de seguridad (24 h) para que no se cuelen números absurdos */
   const EJ_LIM = [5, 86400];
   const ejClamp = (v) => Math.min(EJ_LIM[1], Math.max(EJ_LIM[0], Math.round(+v || 0)));
@@ -1426,6 +1435,8 @@
       ya.s = { ...s };
       return;
     }
+    if (!esPro() && state.ejGuard.length >= LIM.misEj)
+      return proLimite(`En el plan gratuito puedes guardar <b>${LIM.misEj} ejercicios</b> en «Mis ejercicios». Con el plan Pro, sin límite.`);
     if (state.ejGuard.length >= EG_MAX) return note(`Puedes guardar hasta ${EG_MAX} ejercicios en «Mis ejercicios».`);
     let row = { id: crypto.randomUUID(), owner_id: curUser, datos: s };
     let r = await db.from("ejercicios_guardados").insert(row);
@@ -1476,7 +1487,7 @@
     }
     if (viendo) return note(SOLO_VER);
     if (k === "nuevo" && t) {
-      if (ejDe(t.ejercicios).length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
+      if (ejDe(t.ejercicios).length >= ejMax()) return ejLleno();
       ciEd = null;
       ejEd = { id: t.id, i: null, s: { n: "", d: "", t: 600 }, guardar: true };
       ciOpen("Añadir ejercicio", ejEditorHtml());
@@ -1503,7 +1514,7 @@
         tr = state.trainings.find((x) => x.id === ejEd.id);
       if (!g || !tr) return;
       let L = ejDe(tr.ejercicios);
-      if (L.length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
+      if (L.length >= ejMax()) return ejLleno();
       L.push({ ...g.s });
       await trSave(tr, { ejercicios: L });
       $("info").classList.add("hidden");
@@ -1534,7 +1545,7 @@
       let L = ejDe(tr.ejercicios),
         s = { n: n.slice(0, 60), d: d.slice(0, 300), t: ejClamp(seg) };
       if (ejEd.i === null) {
-        if (L.length >= EJ_MAX) return note(`Un entreno puede tener hasta ${EJ_MAX} ejercicios.`);
+        if (L.length >= ejMax()) return ejLleno();
         L.push(s);
       } else L[ejEd.i] = s;
       let gu = $("infoBody").querySelector("[data-ejg]");
@@ -1558,6 +1569,139 @@
   $("info").addEventListener("click", (e) => {
     let b = e.target.closest("[data-ej]");
     if (b) ejAct(b).catch((x) => note(x.message || String(x)));
+  });
+  /* --- Límites del plan gratuito (v11.4) ---
+     Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
+  const LIM = { cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3 };
+  /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
+  const PASOS_MAX = 200;
+  const esPro = () => plan === "pro";
+  function proLimite(txt) {
+    ciOpen(
+      "Plan Pro",
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: convocatorias, envíos de entrenos, vídeos de jugadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+    );
+    $("infoBody").scrollTop = 0;
+    return false;
+  }
+  /* Envíos del mes (convocatorias y entrenos). Cada convocatoria o entreno distinto cuenta una vez:
+     volver a mandar el mismo no gasta otro. Se guarda en el dispositivo. */
+  const envKey = () => `mf_envios:${curUser || ""}:${ymd(new Date()).slice(0, 7)}`;
+  function envLee() {
+    try {
+      let x = JSON.parse(localStorage.getItem(envKey()) || "{}");
+      return x && typeof x === "object" ? x : {};
+    } catch (e) {
+      return {};
+    }
+  }
+  const envUsados = (tipo) => (envLee()[tipo] || []).length;
+  function envPuede(tipo, clave) {
+    if (esPro()) return true;
+    let x = envLee(),
+      L = x[tipo] || [];
+    if (L.includes(clave)) return true;
+    if (L.length >= LIM[tipo])
+      return proLimite(
+        tipo === "cv"
+          ? `En el plan gratuito puedes enviar <b>${LIM.cv} convocatorias al mes</b> y este mes ya las has usado. El mes que viene vuelves a tener ${LIM.cv}.`
+          : `En el plan gratuito puedes enviar <b>${LIM.tr} entrenos al mes</b> a tus jugadores y este mes ya los has usado. El mes que viene vuelves a tener ${LIM.tr}.`,
+      );
+    L.push(clave);
+    x[tipo] = L;
+    try {
+      localStorage.setItem(envKey(), JSON.stringify(x));
+    } catch (e) {}
+    return true;
+  }
+  const envQuedan = (tipo) =>
+    esPro() ? "" : `<p class="muted lim-q">Plan gratuito: te quedan ${Math.max(0, LIM[tipo] - envUsados(tipo))} de ${LIM[tipo]} ${tipo === "cv" ? "convocatorias" : "envíos de entreno"} este mes. Con Pro, ilimitados.</p>`;
+
+  /* --- Dispositivos (supabase-limites.sql) ---
+     Plan gratuito: la misma cuenta en 3 dispositivos. Pro: sin límite.
+     Sin el SQL puesto, la app sigue funcionando igual (no se limita). */
+  function dispId() {
+    let id = "";
+    try {
+      id = localStorage.getItem("mf_disp") || "";
+    } catch (e) {}
+    if (!/^[\w-]{8,64}$/.test(id)) {
+      id = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      try {
+        localStorage.setItem("mf_disp", id);
+      } catch (e) {}
+    }
+    return id;
+  }
+  function dispNombre() {
+    let u = navigator.userAgent || "",
+      tactil = navigator.maxTouchPoints > 1;
+    if (/iPad/.test(u) || (/Macintosh/.test(u) && tactil)) return "iPad";
+    if (/iPhone/.test(u)) return "iPhone";
+    if (/Android/.test(u)) return /Mobile/.test(u) ? "Móvil Android" : "Tablet Android";
+    if (/Windows/.test(u)) return "Ordenador Windows";
+    if (/Macintosh/.test(u)) return "Mac";
+    return "Ordenador";
+  }
+  let dispOk = false,
+    dispBloq = false;
+  /* true = puede seguir. false = ha llegado al tope y se le enseña la lista. */
+  async function dispRevisa() {
+    let r;
+    try {
+      r = await db.rpc("registrar_dispositivo", { p_id: dispId(), p_nombre: dispNombre() });
+    } catch (e) {
+      return true;
+    }
+    if (!r || r.error || !r.data || typeof r.data !== "object") return true;
+    dispOk = true;
+    if (r.data.ok !== false) return true;
+    dispBloq = true;
+    dispBloqueo(Array.isArray(r.data.lista) ? r.data.lista : []);
+    return false;
+  }
+  const dispFila = (d, quitar) =>
+    `<div class="vj-it disp-it"><div class="ci-opt"><span><b>${esc(d.nombre || "Dispositivo")}${d.id === dispId() ? " · este" : ""}</b><small>Abierta por última vez: ${esc(fmtDate(String(d.visto || "").slice(0, 10)))}</small></span></div>${d.id === dispId() ? "" : `<button type="button" class="secondary small" data-dsp="quitar" data-id="${esc(d.id)}">${quitar}</button>`}</div>`;
+  function dispBloqueo(L) {
+    ciOpen(
+      `Ya usas la app en ${LIM.disp} dispositivos`,
+      `<p>En el plan gratuito puedes usar tu cuenta en <b>${LIM.disp} dispositivos</b> (móvil, tablet u ordenador). Para entrar en este, cierra la sesión en uno de estos:</p><div class="vj-list">${L.map((d) => dispFila(d, "Cerrar la sesión allí")).join("")}</div><p>Con el <b>plan Pro</b> puedes usarla en <b>todos los dispositivos que quieras</b>.</p>${precioProHtml()}<div class="stack">${proBtn()}<button type="button" class="secondary" data-dsp="salir">Salir</button></div>`,
+    );
+    $("closeInfo").textContent = "Salir";
+  }
+  async function dispLista() {
+    let r = await db.from("dispositivos").select("*");
+    if (r.error) throw new Error(r.error.message);
+    return (r.data || []).sort((a, b) => String(b.visto).localeCompare(String(a.visto)));
+  }
+  async function dispVer() {
+    let L = await dispLista();
+    ciOpen(
+      "Mis dispositivos",
+      `<p>Aquí están los dispositivos donde has abierto la app con tu cuenta.${esPro() ? " Con el plan Pro no tienes límite." : ` En el plan gratuito puedes usar <b>${LIM.disp}</b>; ahora tienes <b>${L.length} de ${LIM.disp}</b>.`}</p><div class="vj-list">${L.map((d) => dispFila(d, "Quitar")).join("") || '<p class="muted">Ninguno todavía.</p>'}</div><p class="muted">Al cerrar sesión, ese dispositivo deja libre su sitio. Los que lleven 60 días sin abrir la app se quitan solos.</p>`,
+    );
+  }
+  $("info").addEventListener("click", (e) => {
+    if (e.target.closest("[data-dsp-ver]")) dispVer().catch((x) => note(x.message));
+  });
+  $("info").addEventListener("click", async (e) => {
+    let b = e.target.closest("[data-dsp]");
+    if (!b) return;
+    if (b.dataset.dsp === "salir") return doLogout();
+    if (b.dataset.dsp === "quitar") {
+      b.disabled = true;
+      let r = await db.from("dispositivos").delete().eq("id", b.dataset.id);
+      if (r.error) return note(r.error.message);
+      if (dispBloq) {
+        if (await dispRevisa()) {
+          dispBloq = false;
+          $("closeInfo").textContent = "Cerrar";
+          $("info").classList.add("hidden");
+          note("Listo. Ya puedes usar la app en este dispositivo.", true);
+          enterApp();
+        }
+      } else dispVer().catch((x) => note(x.message));
+    }
   });
   /* --- Convocatoria (v11.3) ---
      Antes del partido: eliges a los convocados, rival, lugar, día, hora y citación, y la app
@@ -1637,7 +1781,7 @@
             )
             .join("")}</div>`
         : '<p class="muted">Añade primero a tus jugadores en Plantilla.</p>'
-    }<h3 class="ci-h3">Mensaje</h3><pre class="cv-txt" data-cvt>${esc(cvTexto(cv))}</pre><div class="stack"><a class="primary" data-cv="wa" href="${cvWa()}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${navigator.share ? `<button type="button" class="secondary" data-cv="share">Compartir…</button>` : ""}<button type="button" class="secondary" data-cv="copiar">Copiar el mensaje</button>${cv.deDraft ? "" : `<button type="button" class="secondary" data-cv="partido">${ic("plus", 20)}Crear el partido con estos convocados</button><button type="button" class="danger" data-cv="borrar">Empezar una convocatoria nueva</button>`}</div>`;
+    }<h3 class="ci-h3">Mensaje</h3>${envQuedan("cv")}<pre class="cv-txt" data-cvt>${esc(cvTexto(cv))}</pre><div class="stack"><a class="primary" data-cv="wa" href="${cvWa()}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${navigator.share ? `<button type="button" class="secondary" data-cv="share">Compartir…</button>` : ""}<button type="button" class="secondary" data-cv="copiar">Copiar el mensaje</button>${cv.deDraft ? "" : `<button type="button" class="secondary" data-cv="partido">${ic("plus", 20)}Crear el partido con estos convocados</button><button type="button" class="danger" data-cv="borrar">Empezar una convocatoria nueva</button>`}</div>`;
   }
   const cvWa = () => "https://wa.me/?text=" + encodeURIComponent(cvTexto(cv));
   /* Repinta sólo el contador y el mensaje: así no se pierde lo que se está escribiendo */
@@ -1686,6 +1830,7 @@
       if (!cvJug(cv).length) note("Aún no has marcado a ningún convocado.");
       return;
     }
+    if ((k === "share" || k === "copiar") && !envPuede("cv", cvClave())) return;
     if (k === "share") {
       try {
         await navigator.share({ text: cvTexto(cv) });
@@ -1718,8 +1863,13 @@
       note("Partido creado con los convocados. Elige los titulares y guárdalo.", true);
     }
   }
+  const cvClave = () => `${cv.fecha}|${String(cv.rival || "").trim().toLowerCase()}`;
   $("info").addEventListener("click", (e) => {
     let b = e.target.closest("[data-cv]");
+    if (b && b.dataset.cv === "wa" && cv && !envPuede("cv", cvClave())) {
+      e.preventDefault();
+      return;
+    }
     if (b) cvAct(b).catch((x) => note(x.message || String(x)));
   });
   $("view").addEventListener("click", (e) => {
@@ -1803,7 +1953,7 @@
     }
     ciOpen(
       "Vídeos de jugadas",
-      `<p class="muted">Sube desde el móvil el vídeo de una jugada y enséñalo a pantalla completa cuando quieras. Se guardan <b>solo en este dispositivo</b>${MODES[state.mode] ? " (en " + esc(MN()) + ")" : ""}.</p><label class="primary vj-up">${ic("plus", 20)}Subir un vídeo<input type="file" accept="video/*" data-vjf hidden></label>${
+      `<p class="muted">Sube desde el móvil el vídeo de una jugada y enséñalo a pantalla completa cuando quieras. Se guardan <b>solo en este dispositivo</b>${MODES[state.mode] ? " (en " + esc(MN()) + ")" : ""}.</p>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: ${L.length} de ${LIM.vid} vídeos. Con Pro, ilimitados.</p>`}<label class="primary vj-up">${ic("plus", 20)}Subir un vídeo<input type="file" accept="video/*" data-vjf hidden></label>${
         L.length
           ? `<div class="vj-list">${L.map(
               (v) =>
@@ -1827,6 +1977,8 @@
   async function vjSube(f) {
     if (!f) return;
     if (!/^video\//.test(f.type || "video/")) return note("Eso no parece un vídeo.");
+    if (!esPro() && (await vjLista()).length >= LIM.vid)
+      return proLimite(`En el plan gratuito puedes guardar <b>${LIM.vid} vídeos de jugadas</b> en cada modalidad. Borra alguno para subir otro.`);
     if (f.size > VJ_MAX) return note("El vídeo es muy grande (más de 500 MB). Recórtalo en el móvil y vuelve a subirlo.");
     let def = String(f.name || "").replace(/\.[a-z0-9]+$/i, "").slice(0, 60);
     if (!def || /^(img|vid|mov|trim|video|pxl)[_-]?\d/i.test(def)) def = "Jugada " + fmtDate(ymd(new Date()));
@@ -1879,6 +2031,7 @@
     vjSube(f).catch((x) => note(x.message || String(x)));
   });
   $("closeInfo").addEventListener("click", () => {
+    if (dispBloq) return doLogout();
     let vd = $("infoBody").querySelector(".vj-video");
     if (vd) vd.pause();
     vjSuelta();
@@ -3732,6 +3885,7 @@
       let prueba = await revisarPrueba();
       await loadPlan();
       await loadClub();
+      if (!(await dispRevisa())) return;
       if (prueba === "activada" && pruebaHasta)
         note(`¡Gracias por probar la app! Tienes el plan Pro gratis en modo prueba durante ${diasQuedan(pruebaHasta)} días, hasta el ${fechaLarga(pruebaHasta)}.`, true);
       else if (prueba === "terminada" && plan !== "pro")
@@ -4072,6 +4226,10 @@
       loginNote("");
     });
   async function doLogout() {
+    if (dispOk)
+      try {
+        await Promise.race([db.from("dispositivos").delete().eq("id", dispId()), new Promise((r) => setTimeout(r, 1500))]);
+      } catch (e) {}
     try {
       await Promise.race([
         db.auth.signOut({ scope: "local" }),
@@ -4282,7 +4440,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala). Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias y envíos de entrenos al mes, vídeos de jugadas o pasos de una jugada), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -4490,7 +4648,7 @@
         "Abajo ves el mensaje ya escrito. «Enviar por WhatsApp» lo abre en WhatsApp para mandarlo al grupo; también puedes «Copiar el mensaje» y pegarlo donde quieras.",
         "La convocatoria se queda guardada en tu móvil y sale arriba en Partidos hasta que empieces una nueva. «Crear el partido con estos convocados» abre el partido con ellos ya marcados: solo te queda elegir titulares.",
         "Dentro de un partido también tienes el botón «Convocatoria», que coge los convocados de ese partido. La citación y el lugar se guardan en el partido y salen en la lista.",
-        "Es gratis para todos.",
+        "En el plan gratuito puedes enviar <b>3 convocatorias al mes</b>; volver a mandar la misma no gasta otra. Con el plan Pro, ilimitadas.",
       ],
     },
     {
@@ -4535,7 +4693,7 @@
         "Pasa lista con los jugadores de tu plantilla: <b>✓</b> vino, <b>🕒</b> llegó tarde, <b>✗</b> faltó y <b>J</b> falta justificada. Llegar tarde cuenta como que vino, pero se apunta aparte para que lo veas. Se guarda solo. «Todos vinieron» los marca a todos de una vez.",
         "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
         "Puedes apuntar la hora y <b>qué vais a trabajar</b> (por ejemplo, «juego de 4, defensa con cambio, activación»). Cada día del calendario sale de un color según la asistencia.",
-        "<b>Enviar el entreno a los jugadores</b>: prepara el entreno antes (qué vais a trabajar, los ejercicios con su explicación y el circuito) y pulsa «Enviar el entreno a los jugadores». Te sale el mensaje escrito para mandarlo por WhatsApp al grupo, así llegan sabiendo lo que se va a hacer y pierdes menos tiempo explicando.",
+        "<b>Enviar el entreno a los jugadores</b>: prepara el entreno antes (qué vais a trabajar, los ejercicios con su explicación y el circuito) y pulsa «Enviar el entreno a los jugadores». Te sale el mensaje escrito para mandarlo por WhatsApp al grupo, así llegan sabiendo lo que se va a hacer y pierdes menos tiempo explicando. Gratis: 3 envíos al mes; con Pro, ilimitados.",
         "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido (y cuántas llegó tarde), faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
@@ -4564,7 +4722,7 @@
         "En la pestaña <b>Entrenos</b>, toca un día con entrenamiento y pulsa <b>«Añadir ejercicio»</b> (está debajo de «Añadir circuito de fuerza o coordinación»).",
         "Escribe el <b>nombre</b>, cómo se hace (opcional) y su <b>tiempo</b> en minutos y segundos, el que tú quieras, sin límite. La app te dice cuánto suman todos.",
         "Con <b>▶</b> sale el cronómetro grande de ese ejercicio, el mismo de los circuitos: pita al empezar y en los 3 últimos segundos.",
-        "Con «Editar» lo cambias y con la ✗ lo quitas. Puedes poner hasta 20 ejercicios en cada entreno. Es gratis.",
+        "Con «Editar» lo cambias y con la ✗ lo quitas. En el plan gratuito puedes poner 3 ejercicios en cada entreno y guardar 5 en «Mis ejercicios»; con el plan Pro, sin límite.",
         "<b>Mis ejercicios</b>: marca «Guardar también en Mis ejercicios» y el ejercicio queda guardado para otros días. Al pulsar «Añadir ejercicio» te salen arriba: toca uno y se pone en el entreno con su tiempo. Con la papelera lo borras de «Mis ejercicios» (los entrenos que ya lo tienen lo conservan). Si guardas otro con el mismo nombre, se actualiza.",
       ],
     },
@@ -4592,8 +4750,8 @@
         "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
-        "<b>Limpia</b>: deja el campo liso, sin rayas ni escudo, para que se vean mejor las fichas y los movimientos. Vuelve a tocarlo para dejarlo como antes. La imagen y el vídeo salen también limpios. Junto con la pantalla completa tienes la pizarra grande y despejada.",
-        "<b>Vídeos</b>: sube desde el móvil el vídeo de una jugada (de un partido, de otro equipo…), ponle nombre y enséñalo cuando quieras, también a pantalla completa. Se guardan solo en ese dispositivo, cada modalidad con los suyos. Con «Compartir o guardar» lo mandas por WhatsApp.",
+        "<b>Limpia</b> (plan Pro): deja el campo liso, sin rayas ni escudo, para que se vean mejor las fichas y los movimientos. Vuelve a tocarlo para dejarlo como antes. La imagen y el vídeo salen también limpios. Junto con la pantalla completa tienes la pizarra grande y despejada.",
+        "<b>Vídeos</b> (2 gratis por modalidad, ilimitados con Pro): sube desde el móvil el vídeo de una jugada (de un partido, de otro equipo…), ponle nombre y enséñalo cuando quieras, también a pantalla completa. Se guardan solo en ese dispositivo, cada modalidad con los suyos. Con «Compartir o guardar» lo mandas por WhatsApp.",
       ],
     },
     {
@@ -4619,7 +4777,9 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "El plan Pro quita los límites, permite varios equipos, emitir vídeo en el Directo y tener todas las estrategias de fútbol sala.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados y las 10 estrategias TOP de fútbol sala.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada y circuitos), <b>pizarra limpia</b>, gráfico de carga física, emitir vídeo en el Directo y las 34 estrategias de fútbol sala.",
+        "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
         { texto: POR_QUE_PRECIO, soloWeb: true },
@@ -4764,7 +4924,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button><button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
@@ -6698,7 +6858,7 @@
     let r = JSON.parse(localStorage.getItem("mf_pizarra_v1") || "{}");
     Object.keys(MODES).forEach((k) => {
       let x = r[k] || {},
-        n = Math.min(20, Math.max(1, parseInt(x.steps) || 1));
+        n = Math.min(PASOS_MAX, Math.max(1, parseInt(x.steps) || 1));
       boardState[k] = {
         ...blankBoard(),
         strokes: Array.isArray(x.strokes)
@@ -7310,7 +7470,7 @@
         )}</div>`
       : "";
     boardWasLand = boardLand();
-    return `${state.present ? "" : estBarHtml()}<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}${b.clean ? " clean" : ""}" id="boardPanel">
+    return `${state.present ? "" : estBarHtml()}<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}${b.clean && esPro() ? " clean" : ""}" id="boardPanel">
 <div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
       ["move", "Mover fichas (no pinta)", "hand"],
       ["pen", "Lápiz", "penline"],
@@ -7332,7 +7492,7 @@
       )
       .join("")}${menu}</div></div>
 <div class="bbot"><div class="bsteps" role="toolbar" aria-label="Jugada en movimiento"><button class="bi" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${dis(b.step < 1)}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="bi" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${dis(b.step >= b.steps - 1)}>${ic("right")}</button><button class="bi" data-b="addstep" aria-label="Añadir paso" title="Añadir paso"${dis()}>${ic("plus")}</button><button class="bi d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${dis(b.steps < 2)}>${ic("x")}</button><span class="brs"></span><button class="bi go" data-b="play" aria-label="${playing ? "Parar" : "Ver jugada"}" title="${playing ? "Parar" : "Ver jugada"}">${ic(playing ? "stop" : "play")}</button><button class="bi" data-b="video" aria-label="Vídeo de la jugada" title="Vídeo de la jugada"${dis()}>${ic("film")}</button></div>
-<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean ? " on" : ""}" data-b="clean" aria-pressed="${!!b.clean}" title="Pizarra limpia: campo liso, sin rayas ni escudo">${ic("eraser", 18)}Limpia</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div>${pick}</section>`;
+<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean && esPro() ? " on" : ""}" data-b="clean" aria-pressed="${!!(b.clean && esPro())}" title="Pizarra limpia: campo liso, sin rayas ni escudo${esPro() ? "" : " (plan Pro)"}">${ic("eraser", 18)}Limpia${esPro() ? "" : '<em class="pro-tag">PRO</em>'}</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div>${pick}</section>`;
   }
   let boardRO = null;
   function initBoard() {
@@ -7351,7 +7511,7 @@
     const here = (it) => it.p[b.step];
     const redraw = (pos) => {
       g.clearRect(0, 0, cv.width, cv.height);
-      if (!b.strokes.length && !b.items.length && !b.clean) {
+      if (!b.strokes.length && !b.items.length && !(b.clean && esPro())) {
         g.save();
         g.fillStyle = "rgba(241,247,234,.42)";
         g.font = `800 ${Math.round(Math.min(cv.width, cv.height) * 0.085)}px "Barlow Condensed","Arial Narrow",Impact,sans-serif`;
@@ -7554,7 +7714,7 @@
       players: [],
       alineacion: { formation: Object.keys(formations[state.mode])[0], slots: {} },
       pizarra: true,
-      limpia: !!b.clean,
+      limpia: !!b.clean && esPro(),
       paint: pos
         ? (g, x, y, w, h) => {
             paintStrokes(g, b.strokes, x, y, w, h, 10);
@@ -7701,6 +7861,7 @@
       saveBoard();
       render();
     } else if (k === "clean") {
+      if (!b.clean && !esPro()) return proLimite("La <b>pizarra limpia</b> (campo liso, sin rayas ni escudo) es del plan Pro.");
       b.clean = !b.clean;
       saveBoard();
       render();
@@ -7749,8 +7910,10 @@
       saveBoard();
       render();
     } else if (k === "addstep") {
-      if (b.steps >= 20) {
-        note("Una jugada puede tener como mucho 20 pasos.");
+      if (!esPro() && b.steps >= LIM.pasos)
+        return proLimite(`En el plan gratuito una jugada puede tener <b>${LIM.pasos} pasos</b>. Con el plan Pro, todos los que quieras.`);
+      if (b.steps >= PASOS_MAX) {
+        note(`Una jugada puede tener como mucho ${PASOS_MAX} pasos.`);
         return;
       }
       pushHist(b);
