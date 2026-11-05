@@ -1040,7 +1040,7 @@
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Qué vamos a trabajar<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: juego de 4, defensa con cambio, activación" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${viendo ? "" : `<div class="btools tr-env"><button type="button" class="primary small" data-tr="enviar" data-id="${t.id}">${ic("share", 18)}Enviar el entreno a los jugadores</button></div>`}${cgTrBloque(t)}${espResumen("entreno", t.id)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Qué vamos a trabajar<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: juego de 4, defensa con cambio, activación" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${viendo ? "" : `<div class="btools tr-env"><button type="button" class="primary small" data-tr="enviar" data-id="${t.id}">${ic("share", 18)}Enviar el entreno a los jugadores</button></div>`}${cxMDHtml(t)}${cgTrBloque(t)}${espResumen("entreno", t.id)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
@@ -1113,7 +1113,7 @@
       dayT.length
         ? dayT.map(trSession).join("")
         : `<p class="muted">Este día no hay entrenamiento.</p><div class="stack"><button type="button" class="primary" data-tr="new">${ic("plus")}Crear entrenamiento este día</button></div>`
-    }</section>${ciPanel()}${cgPanel()}${trPlayers()}`;
+    }</section>${ciPanel()}${cgPanel()}${faPanel()}${trPlayers()}`;
   }
   /* Mensaje del entreno para el grupo de los jugadores (v11.3): qué se trabaja y cada ejercicio
      explicado, para que lleguen sabiéndolo y se pierda menos tiempo en explicaciones. */
@@ -1126,7 +1126,7 @@
     if (E.length) {
       L.push("", "📋 *Ejercicios:*");
       E.forEach((s, i) => {
-        L.push(`${i + 1}. ${s.n} (${trMin(s.t)})`);
+        L.push(`${i + 1}. ${s.n} (${trMin(s.t)}${s.f ? " · " + FASE[s.f][1] : ""})`);
         if (s.d) L.push(`   ${s.d}`);
       });
     }
@@ -1411,6 +1411,34 @@
      nombre, explicación y tiempo. Van en la columna entrenamientos.ejercicios (supabase-ejercicios.sql)
      como lista: [{"n": nombre, "d": cómo se hace, "t": segundos}]. Gratis hasta LIM.ej por entreno; con Pro sin límite (EJ_MAX es solo un tope de seguridad). */
   const EJ_MAX = 200;
+  /* --- Fases del juego (v11.7, idea de un preparador físico) ---
+     Cada ejercicio del entreno y cada jugada de la pizarra se puede marcar con su fase:
+     ataque (organizado y contraataque), defensa (organizada y reorganización defensiva) y ABP
+     (acciones a balón parado). El contraataque es la transición defensa-ataque y la reorganización,
+     la de ataque-defensa. [clave, nombre, corto, color, fase] */
+  const FASES = [
+    ["at", "Ataque organizado", "Ataque organizado", "#2be36a", "Ataque"],
+    ["tda", "Contraataque (transición defensa-ataque)", "Contraataque", "#facc15", "Ataque"],
+    ["de", "Defensa organizada", "Defensa organizada", "#60a5fa", "Defensa"],
+    ["tad", "Reorganización defensiva (transición ataque-defensa)", "Reorganización defensiva", "#f97316", "Defensa"],
+    ["abp", "ABP (acciones a balón parado)", "ABP", "#c084fc", "Balón parado"],
+  ];
+  const FASE = {};
+  FASES.forEach((x) => (FASE[x[0]] = x));
+  const faseTag = (f) => (FASE[f] ? `<i class="fa-tag" style="--c:${FASE[f][3]}">${esc(FASE[f][2])}</i>` : "");
+  /* Botones para elegir la fase (se puede dejar sin fase). act = data-ej="fase" o data-jg="fase" */
+  const faseChips = (cur, act) =>
+    `<div class="fa-pick"><span>Fase del juego (opcional)</span>${["Ataque", "Defensa", "Balón parado"]
+      .map(
+        (g) =>
+          `<div class="fa-chips" role="group" aria-label="${g}"><small>${g}</small>${FASES.filter((x) => x[4] === g)
+            .map(
+              (x) =>
+                `<button type="button" class="fa-chip${cur === x[0] ? " on" : ""}" style="--c:${x[3]}" data-${act === "jgfa" ? "jg" : "ej"}="fase" data-f="${x[0]}" aria-pressed="${cur === x[0]}" title="${esc(x[1])}">${esc(x[2])}</button>`,
+            )
+            .join("")}</div>`,
+      )
+      .join("")}</div>`;
   const ejMax = () => (esPro() ? EJ_MAX : LIM.ej);
   const ejLleno = () =>
     esPro()
@@ -1427,6 +1455,7 @@
       n: String((s && s.n) || "").trim().slice(0, 60) || "Ejercicio",
       d: String((s && s.d) || "").trim().slice(0, 300),
       t: ejClamp((s && s.t) || 600),
+      ...(s && FASE[s.f] ? { f: s.f } : {}),
     }));
   }
   let ejEd = null;
@@ -1465,7 +1494,7 @@
       L.length
         ? `<div class="ci-card ej-card"><div class="kicker">Ejercicios</div><p class="muted">${L.length} ${L.length === 1 ? "ejercicio" : "ejercicios"} · unos ${Math.max(1, Math.round(tot / 60))} min</p>${L.map(
             (s, i) =>
-              `<div class="ej-it"><div class="info"><strong>${esc(s.n)}</strong><small>⏱ ${ciSeg(s.t)}</small>${s.d ? `<p>${esc(s.d)}</p>` : ""}</div><div class="ej-acc"><button type="button" class="primary small" data-ej="run" data-id="${t.id}" data-i="${i}" aria-label="Iniciar ${esc(s.n)}">▶ Iniciar</button>${
+              `<div class="ej-it"><div class="info"><strong>${esc(s.n)}</strong><small>⏱ ${ciSeg(s.t)}${s.f ? " " + faseTag(s.f) : ""}</small>${s.d ? `<p>${esc(s.d)}</p>` : ""}</div><div class="ej-acc"><button type="button" class="primary small" data-ej="run" data-id="${t.id}" data-i="${i}" aria-label="Iniciar ${esc(s.n)}">▶ Iniciar</button>${
                 viendo
                   ? ""
                   : `<button type="button" class="secondary small" data-ej="editar" data-id="${t.id}" data-i="${i}">Editar</button><button type="button" class="ib" data-ej="quitar" data-id="${t.id}" data-i="${i}" aria-label="Quitar ${esc(s.n)}">${ic("x", 18)}</button>`
@@ -1484,11 +1513,11 @@
         ejEd.i === null && G.length
           ? `<h3 class="ci-h3">Mis ejercicios</h3><p class="muted">Toca uno para ponerlo en este entreno.</p><div class="eg-list">${G.map(
               (g) =>
-                `<div class="eg-it"><button type="button" class="ci-opt" data-ej="usar" data-gid="${g.id}"><b>${esc(g.s.n)}</b><small>⏱ ${ciSeg(g.s.t)}${g.s.d ? " · " + esc(g.s.d.slice(0, 60)) + (g.s.d.length > 60 ? "…" : "") : ""}</small></button><button type="button" class="ib" data-ej="borrarg" data-gid="${g.id}" aria-label="Borrar ${esc(g.s.n)} de Mis ejercicios">${ic("trash", 18)}</button></div>`,
+                `<div class="eg-it"><button type="button" class="ci-opt" data-ej="usar" data-gid="${g.id}"><b>${esc(g.s.n)}</b><small>⏱ ${ciSeg(g.s.t)}${g.s.f ? " · " + FASE[g.s.f][1] : ""}${g.s.d ? " · " + esc(g.s.d.slice(0, 60)) + (g.s.d.length > 60 ? "…" : "") : ""}</small></button><button type="button" class="ib" data-ej="borrarg" data-gid="${g.id}" aria-label="Borrar ${esc(g.s.n)} de Mis ejercicios">${ic("trash", 18)}</button></div>`,
             ).join("")}</div><h3 class="ci-h3">O escribe uno nuevo</h3>`
           : "",
       chk = state.egOk ? `<label class="ci-chk"><input type="checkbox" data-ejg${ejEd.guardar ? " checked" : ""}> Guardar también en «Mis ejercicios» para reutilizarlo</label>` : "";
-    return `${mis}${mis ? "" : "<p>Un ejercicio suelto, sin circuito: un rondo, un partidillo, una finalización… Pon lo que quieras con su tiempo.</p>"}<label class="ci-l">Nombre<input data-ejf="n" maxlength="60" placeholder="Ej.: Rondo 4 contra 2" value="${esc(s.n)}" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-ejf="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras">${esc(s.d)}</textarea></label><div class="ci-tl"><span>Tiempo</span><span class="ci-mmss"><input ${at("m")} aria-label="Minutos del ejercicio" value="${m}"><i>min</i><input ${at("s")} aria-label="Segundos del ejercicio" value="${sg}"><i>s</i></span></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras, sin límite.</p>${chk}<div class="stack"><button type="button" class="primary" data-ej="ok">${ejEd.i === null ? "Añadir al entreno" : "Guardar"}</button></div>`;
+    return `${mis}${mis ? "" : "<p>Un ejercicio suelto, sin circuito: un rondo, un partidillo, una finalización… Pon lo que quieras con su tiempo.</p>"}<label class="ci-l">Nombre<input data-ejf="n" maxlength="60" placeholder="Ej.: Rondo 4 contra 2" value="${esc(s.n)}" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-ejf="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras">${esc(s.d)}</textarea></label><div class="ci-tl"><span>Tiempo</span><span class="ci-mmss"><input ${at("m")} aria-label="Minutos del ejercicio" value="${m}"><i>min</i><input ${at("s")} aria-label="Segundos del ejercicio" value="${sg}"><i>s</i></span></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras, sin límite.</p>${faseChips(s.f, "ejfa")}${chk}<div class="stack"><button type="button" class="primary" data-ej="ok">${ejEd.i === null ? "Añadir al entreno" : "Guardar"}</button></div>`;
   }
   async function ejAct(b) {
     let k = b.dataset.ej,
@@ -1503,7 +1532,7 @@
     if (k === "nuevo" && t) {
       if (ejDe(t.ejercicios).length >= ejMax()) return ejLleno();
       ciEd = null;
-      ejEd = { id: t.id, i: null, s: { n: "", d: "", t: 600 }, guardar: true };
+      ejEd = { id: t.id, i: null, s: { n: "", d: "", t: 600, f: "" }, guardar: true };
       ciOpen("Añadir ejercicio", ejEditorHtml());
       $("infoBody").scrollTop = 0;
       return;
@@ -1522,6 +1551,14 @@
       await trSave(t, { ejercicios: L.length ? L : null });
       render();
       return note("Ejercicio quitado.", true);
+    }
+    if (k === "fase" && ejEd) {
+      ejLeeForm();
+      ejEd.s.f = ejEd.s.f === b.dataset.f ? "" : b.dataset.f;
+      let y = $("infoBody").scrollTop;
+      ciOpen(ejEd.i === null ? "Añadir ejercicio" : "Editar ejercicio", ejEditorHtml());
+      $("infoBody").scrollTop = y;
+      return;
     }
     if (k === "usar" && ejEd) {
       let g = state.ejGuard.find((x) => x.id === b.dataset.gid),
@@ -1557,7 +1594,7 @@
       let tr = state.trainings.find((x) => x.id === ejEd.id);
       if (!tr) return;
       let L = ejDe(tr.ejercicios),
-        s = { n: n.slice(0, 60), d: d.slice(0, 300), t: ejClamp(seg) };
+        s = { n: n.slice(0, 60), d: d.slice(0, 300), t: ejClamp(seg), ...(FASE[ejEd.s.f] ? { f: ejEd.s.f } : {}) };
       if (ejEd.i === null) {
         if (L.length >= ejMax()) return ejLleno();
         L.push(s);
@@ -1786,10 +1823,18 @@
     d.setDate(d.getDate() - 7 * (sem - 1));
     let desde = ymd(d),
       hoy = ymd(new Date());
+    let cat = catOf(state.mode, curTeam()),
+      fa = {},
+      lun = cgLunes(hoy);
+    trainings()
+      .filter((t) => t.fecha >= lun && t.fecha <= hoy)
+      .forEach((t) => ejDe(t.ejercicios).forEach((x) => x.f && (fa[x.f] = (fa[x.f] || 0) + Math.round(x.t / 60))));
     return {
       sem,
       pro: esPro(),
       dd: cgDur(),
+      cx: { ...cxOf(), cat: cat ? cat[0] : "" },
+      fa,
       s: cgBase()
         .filter((x) => x.f >= desde && x.f <= hoy)
         .map((x) => {
@@ -2137,18 +2182,28 @@
     }
   }
   const jgMode = () => jgL.filter((x) => x.modalidad === state.mode);
+  let jgFil = "";
   function jgAbre() {
     if (!jgOk) return ciOpen("Mis jugadas", "<p>Guardar jugadas se está activando en el servidor. Vuelve a probar en un rato.</p>");
-    let L = jgMode();
+    let T = jgMode(),
+      hayF = T.some((j) => FASE[j.datos.f]);
+    if (!hayF) jgFil = "";
+    let L = T.filter((j) => !jgFil || j.datos.f === jgFil);
     ciOpen(
       "Mis jugadas",
-      `<p class="muted">Guarda con un nombre la jugada que tienes en la pizarra y vuelve a abrirla cuando quieras, también desde el ordenador o la tablet entrando con tu cuenta.</p>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: ${jgL.length} de ${LIM.jg} jugadas guardadas. Con Pro, ilimitadas.</p>`}<div class="stack"><button type="button" class="primary" data-jg="guardar">${ic("download", 20)}Guardar la jugada de la pizarra</button></div>${
+      `<p class="muted">Guarda con un nombre la jugada que tienes en la pizarra y vuelve a abrirla cuando quieras, también desde el ordenador o la tablet entrando con tu cuenta.</p>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: ${jgL.length} de ${LIM.jg} jugadas guardadas. Con Pro, ilimitadas.</p>`}${faseChips(bd().f || "", "jgfa")}<div class="stack"><button type="button" class="primary" data-jg="guardar">${ic("download", 20)}Guardar la jugada de la pizarra</button></div>${
+        hayF
+          ? `<div class="est-chips fa-fil" role="group" aria-label="Ver por fase"><button type="button" class="est-chip" data-jg="filtro" data-f="" aria-pressed="${!jgFil}">Todas</button>${FASES.filter((x) => T.some((j) => j.datos.f === x[0]))
+              .map((x) => `<button type="button" class="est-chip" data-jg="filtro" data-f="${x[0]}" aria-pressed="${jgFil === x[0]}">${esc(x[2])}</button>`)
+              .join("")}</div>`
+          : ""
+      }${
         L.length
           ? `<div class="vj-list">${L.map(
               (j) =>
-                `<div class="vj-it"><button type="button" class="ci-opt" data-jg="abrir" data-id="${esc(j.id)}">${ic("play", 20)}<span><b>${esc(j.nombre)}</b><small>${Math.max(1, parseInt(j.datos.steps) || 1)} ${(parseInt(j.datos.steps) || 1) === 1 ? "paso" : "pasos"} · ${esc(fmtDate(String(j.creado || "").slice(0, 10)))}</small></span></button><button type="button" class="ib" data-jg="borrar" data-id="${esc(j.id)}" aria-label="Borrar ${esc(j.nombre)}">${ic("trash", 18)}</button></div>`,
+                `<div class="vj-it"><button type="button" class="ci-opt" data-jg="abrir" data-id="${esc(j.id)}">${ic("play", 20)}<span><b>${esc(j.nombre)}</b><small>${Math.max(1, parseInt(j.datos.steps) || 1)} ${(parseInt(j.datos.steps) || 1) === 1 ? "paso" : "pasos"} · ${esc(fmtDate(String(j.creado || "").slice(0, 10)))}${FASE[j.datos.f] ? " " + faseTag(j.datos.f) : ""}</small></span></button><button type="button" class="ib" data-jg="borrar" data-id="${esc(j.id)}" aria-label="Borrar ${esc(j.nombre)}">${ic("trash", 18)}</button></div>`,
             ).join("")}</div>`
-          : `<p class="muted vj-vacio">Todavía no tienes jugadas guardadas en ${esc(MN())}.</p>`
+          : `<p class="muted vj-vacio">${jgFil ? "No tienes jugadas de esta fase." : `Todavía no tienes jugadas guardadas en ${esc(MN())}.`}</p>`
       }`,
     );
     $("infoBody").scrollTop = 0;
@@ -2158,12 +2213,12 @@
     if (!jgOk) return jgAbre();
     let b = bd();
     if (!b.strokes.length && !b.items.length) return note("La pizarra está vacía: pon jugadores o dibuja la jugada y luego guárdala.");
-    let e = b.est && state.mode === "fs" ? estDe(b.est) : null,
+    let e = b.est ? estDe(b.est) : null,
       def = (e && e.n) || "Jugada " + fmtDate(ymd(new Date())),
       n = prompt("Nombre de la jugada:", def);
     if (n === null) return;
     n = n.trim().slice(0, 60) || def;
-    let datos = { strokes: b.strokes, items: b.items, steps: b.steps, tcol: b.tcol, bg: b.bg || "", clean: !!b.clean, est: b.est || "" },
+    let datos = { strokes: b.strokes, items: b.items, steps: b.steps, tcol: b.tcol, bg: b.bg || "", clean: !!b.clean, est: b.est || "", f: FASE[b.f] ? b.f : e ? estFase(e) : "" },
       ya = jgMode().find((x) => x.nombre.toLowerCase() === n.toLowerCase());
     if (ya) {
       if (!confirm(`Ya tienes una jugada llamada «${ya.nombre}». ¿Cambiarla por la de ahora?`)) return;
@@ -2195,7 +2250,8 @@
     b.tcol = d.tcol && typeof d.tcol === "object" ? d.tcol : {};
     b.bg = d.bg || "";
     b.clean = !!d.clean;
-    b.est = state.mode === "fs" && typeof d.est === "string" ? d.est : "";
+    b.est = typeof d.est === "string" && estDe(d.est) ? d.est : "";
+    b.f = FASE[d.f] ? d.f : "";
     b.tool = "move";
     state.boardPick = null;
     saveBoard();
@@ -2210,6 +2266,16 @@
       j = jgL.find((x) => x.id === b.dataset.id);
     try {
       if (k === "guardar") return await jgGuarda();
+      if (k === "fase") {
+        let bb = bd();
+        bb.f = bb.f === b.dataset.f ? "" : b.dataset.f;
+        saveBoard();
+        return jgAbre();
+      }
+      if (k === "filtro") {
+        jgFil = b.dataset.f || "";
+        return jgAbre();
+      }
       if (k === "abrir" && j) return jgCargaEnPizarra(j);
       if (k === "borrar" && j) {
         if (!confirm(`¿Borrar la jugada «${j.nombre}»?`)) return;
@@ -3115,13 +3181,17 @@
     return { W, por, eq };
   }
   /* Aviso: semana actual frente a la media de las 4 anteriores (con al menos 2 semanas con datos) */
-  function cgAviso(L) {
+  /* v11.7: x = {lim, P} del contexto (cxAvisoX): tope según la edad y periodo de cada semana */
+  function cgAviso(L, x) {
     let prev = L.slice(1, 5).filter((x) => x > 0);
     if (prev.length < 2) return null;
     let media = L.slice(1, 5).reduce((a, b) => a + b, 0) / 4,
-      r = media ? L[5] / media : 0;
-    if (r > 1.5) return { k: "l", t: "Cuidado: ha subido mucho", r };
-    if (r > 1.3) return { k: "d", t: "Está subiendo", r };
+      r = media ? L[5] / media : 0,
+      lim = (x && x.lim) || 1.5,
+      P = (x && x.P) || [];
+    if (P[5] === "paron") return r > lim ? { k: "d", t: "Parón: está subiendo", r } : { k: "b", t: "Parón: es normal que baje", r };
+    if (r > lim) return { k: "l", t: P[4] === "paron" ? "Vuelta del parón: ha subido mucho" : P[5] === "pre" ? "Pretemporada: sube muy deprisa" : "Cuidado: ha subido mucho", r };
+    if (r > lim - 0.2) return { k: "d", t: "Está subiendo", r };
     if (r < 0.8 && L[5] > 0) return { k: "b", t: "Carga baja", r };
     return { k: "w", t: "Normal", r };
   }
@@ -3153,10 +3223,11 @@
     if (!state.cgOk) return "";
     let { W, por, eq } = cgSemanas(),
       pro = plan === "pro",
+      ax = cxAvisoX(cxOf(), catOf(state.mode, curTeam()), W),
       r = roster()
         .map((p) => {
           let L = por[p.id] || W.map(() => 0);
-          return { p, L, a: cgAviso(L) };
+          return { p, L, a: cgAviso(L, ax) };
         })
         .sort((a, b) => b.L[5] - a.L[5] || a.p.nombre.localeCompare(b.p.nombre, "es")),
       hace = new Date();
@@ -3168,7 +3239,7 @@
             .slice(0, 3),
       avisos = pro ? r.filter((x) => x.a && x.a.k === "l") : [],
       hay = eq.some((x) => x > 0);
-    return `<section class="panel cg-panel"><div class="bar"><div><div class="kicker">Esfuerzo × minutos</div><h2 class="h2s">Carga física</h2><p class="muted">Semana del ${cgSem(W[5])} · equipo: <b>${eq[5]}</b></p></div><button type="button" class="ib" data-cg="info" aria-label="Qué es la carga física">?</button></div>${
+    return `<section class="panel cg-panel"><div class="bar"><div><div class="kicker">Esfuerzo × minutos</div><h2 class="h2s">Carga física</h2><p class="muted">Semana del ${cgSem(W[5])} · equipo: <b>${eq[5]}</b></p></div><button type="button" class="ib" data-cg="info" aria-label="Qué es la carga física">?</button></div>${cxFila()}${
       sinEsf.length
         ? `<div class="cg-pend"><b>Partidos sin esfuerzo anotado</b>${sinEsf.map((m) => `<button type="button" class="secondary small" data-cg="pa" data-id="${m.id}">${esc(cgSem(m.fecha))} vs ${esc(m.rival)}</button>`).join("")}</div>`
         : ""
@@ -3177,7 +3248,7 @@
         ? `<p class="muted">Al terminar un entreno o un partido, pregunta a cada jugador cuánto le ha costado del 1 al 10 y apúntalo con «Anotar esfuerzo». La app multiplica por los minutos y te enseña la carga de cada semana.</p>${cgEnlaceHint()}`
         : `${
             pro
-              ? `<div class="cg-eq"><small>Carga del equipo, últimas 6 semanas</small>${cgBarras(eq, W, 64)}<div class="cg-ejes">${W.map((w, i) => `<span>${i === 5 ? "esta" : cgSem(w)}</span>`).join("")}</div></div>${avisos.length ? `<div class="cg-alerta" role="status">⚠ ${avisos.map((x) => esc(x.p.nombre)).join(", ")}: esta semana ${avisos.length === 1 ? "lleva" : "llevan"} mucha más carga que su media. Vigila el cansancio y las molestias.</div>` : ""}`
+              ? `<div class="cg-eq"><small>Carga del equipo, últimas 6 semanas</small>${cgBarras(eq, W, 64)}<div class="cg-ejes">${W.map((w, i) => `<span>${i === 5 ? "esta" : cgSem(w)}</span>`).join("")}</div>${cxEjePer(ax.P)}</div>${avisos.length ? `<div class="cg-alerta" role="status">⚠ ${avisos.map((x) => esc(x.p.nombre)).join(", ")}: esta semana ${avisos.length === 1 ? "lleva" : "llevan"} mucha más carga que su media. Vigila el cansancio y las molestias.</div>` : ""}`
               : `<div class="cg-pro"><b>Con el plan Pro</b>: gráfico de las últimas 6 semanas de cada jugador y aviso cuando alguien sube demasiado de golpe, que es cuando más lesiones hay.${enAndroid ? "" : `<button type="button" class="secondary small" data-cg="pro">Ver el plan Pro</button>`}</div>`
           }${r
             .map(
@@ -3228,8 +3299,11 @@
       return 75;
     }
   }
+  /* Periodo de cada semana debajo del gráfico (si se ha puesto) */
+  const cxEjePer = (P) =>
+    P && P.some(Boolean) ? `<div class="cg-ejes cx-ejes">${P.map((p) => `<span class="cx-${p || "x"}">${p ? cxPerN(p).slice(0, p === "paron" ? 5 : 4) : ""}</span>`).join("")}</div>` : "";
   function cgInfoHtml() {
-    return `<p>La <b>carga física</b> mide cuánto ha trabajado cada jugador. Se calcula así: <b>esfuerzo (del 1 al 10) × minutos</b>. Un entreno de 75 minutos con esfuerzo 6 da 450.</p><p>El esfuerzo lo dice el propio jugador: al terminar, pregúntale «¿cuánto te ha costado, del 1 al 10?». Es lo que usan los preparadores físicos (se llama RPE) y funciona muy bien también en fútbol base.</p><p>Con el <b>plan Pro</b> ves el gráfico de las últimas 6 semanas y un <b>aviso</b> cuando la carga de esta semana es mucho mayor que la media de las 4 anteriores (más de 1,5 veces). Subir de golpe es cuando más lesiones hay: mejor ir subiendo poco a poco.</p><p class="muted">Es una ayuda para el entrenador, no un diagnóstico médico.</p>`;
+    return `<p>La <b>carga física</b> mide cuánto ha trabajado cada jugador. Se calcula así: <b>esfuerzo (del 1 al 10) × minutos</b>. Un entreno de 75 minutos con esfuerzo 6 da 450.</p><p>El esfuerzo lo dice el propio jugador: al terminar, pregúntale «¿cuánto te ha costado, del 1 al 10?». Es lo que usan los preparadores físicos (se llama RPE) y funciona muy bien también en fútbol base.</p><p>Con el <b>plan Pro</b> ves el gráfico de las últimas 6 semanas y un <b>aviso</b> cuando la carga de esta semana es mucho mayor que la media de las 4 anteriores (más de 1,5 veces). Subir de golpe es cuando más lesiones hay: mejor ir subiendo poco a poco.</p><p>El <b>contexto del equipo</b> (categoría, días de entreno, horario y periodo: pretemporada, competición o parón) afina el aviso: hasta infantil salta antes (1,3 veces la media), en el parón es normal que baje y a la vuelta del parón te avisa si se sube de golpe.</p><p class="muted">Es una ayuda para el entrenador, no un diagnóstico médico.</p>`;
   }
   async function cgAct(b) {
     let k = b.dataset.cg;
@@ -3326,6 +3400,307 @@
   });
   $("info").addEventListener("input", (e) => {
     if (e.target.dataset.cgf === "dur" && cgEd) cgEd.dur = e.target.value;
+  });
+
+  /* --- Contexto de la carga (v11.7, idea de un preparador físico) ---
+     Por equipo: días de entreno a la semana, horario y periodo de la temporada (con su historial),
+     además de la categoría (la edad). Sirve para ajustar el aviso de sobrecarga, dar consejos y
+     marcar cada entreno con su día del microciclo (MD-2 = 2 días antes del partido).
+     Va en equipos.contexto (supabase-contexto.sql); sin la columna, se guarda en este dispositivo.
+     {dias: 1-7, hora: "m"|"t"|"n", per: [{d: "aaaa-mm-dd", p: "pre"|"comp"|"paron"}]} */
+  const CX_PER = [
+    ["pre", "Pretemporada", "Se va subiendo la carga poco a poco"],
+    ["comp", "Competición", "Microciclo competitivo: semanas con partido"],
+    ["paron", "Parón", "Navidad, Semana Santa, sin partidos…"],
+  ];
+  const CX_HORA = [
+    ["m", "Mañana"],
+    ["t", "Tarde"],
+    ["n", "Noche"],
+  ];
+  const cxKey = (id) => "mf_ctx:" + (id || state.mode);
+  const cxPerN = (p) => (CX_PER.find((x) => x[0] === p) || ["", ""])[1];
+  function cxDe(x) {
+    let c = parseJson(x, null);
+    if (!c || typeof c !== "object") c = {};
+    let dias = Math.round(Number(c.dias)) || 0;
+    return {
+      dias: dias >= 1 && dias <= 7 ? dias : 0,
+      hora: CX_HORA.some((h) => h[0] === c.hora) ? c.hora : "",
+      per: (Array.isArray(c.per) ? c.per : [])
+        .filter((p) => p && /^\d{4}-\d\d-\d\d$/.test(p.d) && CX_PER.some((z) => z[0] === p.p))
+        .map((p) => ({ d: p.d, p: p.p }))
+        .sort((a, b) => a.d.localeCompare(b.d))
+        .slice(-40),
+    };
+  }
+  function cxOf(id) {
+    if (id === undefined) id = curTeam();
+    let t = state.teams.find((z) => z.id === id),
+      c = t && t.contexto;
+    if (!c)
+      try {
+        c = localStorage.getItem(cxKey(id));
+      } catch (e) {}
+    return cxDe(c);
+  }
+  /* Periodo de una fecha según el historial (el último que empezó ese día o antes) */
+  function cxPer(c, f) {
+    let p = "";
+    c.per.forEach((x) => {
+      if (x.d <= f) p = x.p;
+    });
+    return p;
+  }
+  /* Hasta infantil (menores de 14) el aviso salta antes */
+  const cxJoven = (cat) => !!cat && ["prebenjamin", "benjamin", "alevin", "infantil"].includes(cat[0]);
+  /* Lo que necesita el aviso: tope (veces la media) y periodo de cada una de las 6 semanas */
+  function cxAvisoX(c, cat, W) {
+    let hoy = ymd(new Date());
+    return {
+      lim: cxJoven(cat) ? 1.3 : 1.5,
+      P: W.map((w) => {
+        let d = new Date(w + "T12:00:00");
+        d.setDate(d.getDate() + 6);
+        let f = ymd(d);
+        return cxPer(c, f < hoy ? f : hoy);
+      }),
+    };
+  }
+  /* Resumen en una línea: «Benjamín · 3 días/semana · tarde · Competición» */
+  function cxLinea(c, cat, f) {
+    let p = cxPer(c, f || ymd(new Date())),
+      h = CX_HORA.find((x) => x[0] === c.hora);
+    return [cat ? cat[1] : "Sin categoría", c.dias ? c.dias + (c.dias === 1 ? " día" : " días") + "/semana" : "", h ? h[1].toLowerCase() : "", p ? cxPerN(p) : ""].filter(Boolean).join(" · ");
+  }
+  /* Consejos según el contexto. Orientativos: el que sabe es el preparador. */
+  function cxConsejos(c, cat) {
+    let p = cxPer(c, ymd(new Date())),
+      L = [];
+    if (p === "pre") L.push("Pretemporada: sube la carga poco a poco (no más de un 10% de una semana a otra) y deja un día suave entre los más duros.");
+    if (p === "comp") L.push("Semana con partido: el día después, recuperación; a mitad de semana, lo más intenso; el día antes, activación corta y con balón.");
+    if (p === "paron") L.push("Parón: mantén 1 o 2 sesiones para no perder la forma. La semana de vuelta es cuando más lesiones hay: sube poco a poco.");
+    if (cxJoven(cat)) L.push(`En ${esc(cat[1].toLowerCase())}, casi todo el trabajo físico con balón y jugando. El aviso de sobrecarga salta antes (1,3 veces su media).`);
+    else if (cat && (cat[0] === "cadete" || cat[0] === "juvenil")) L.push("En cadete y juvenil ya se puede meter fuerza con su propio peso, bien hecha y sin prisa.");
+    if (c.dias && c.dias <= 2) L.push(`Con ${c.dias === 1 ? "1 día" : "2 días"} por semana cada sesión cuenta: mezcla físico y táctica en el mismo entreno.`);
+    else if (c.dias >= 4) L.push(`Con ${c.dias} días por semana, alterna sesiones fuertes y suaves.`);
+    if (c.hora === "m") L.push("Por la mañana el cuerpo tarda más en arrancar: haz el calentamiento algo más largo.");
+    if (c.hora === "n") L.push("De noche cuesta más dormir después de un entreno muy intenso: déjalo para días que no haya partido temprano.");
+    return L;
+  }
+  /* Día del microciclo de un entreno: MD-2 = faltan 2 días para el partido; MD+1 = el día después */
+  const CX_MD = {
+    "-1": "activación corta, con balón y poca carga",
+    "-2": "velocidad y poco volumen",
+    "-3": "el día más intenso de la semana",
+    "-4": "el día más intenso de la semana",
+    "+1": "recuperación: suave",
+    "+2": "recuperación activa o compensatorio",
+  };
+  function cxMD(f) {
+    let d0 = new Date(f + "T12:00:00"),
+      dif = (m) => Math.round((new Date(m.fecha + "T12:00:00") - d0) / 864e5),
+      G = games().map((m) => dif(m)),
+      sig = G.filter((x) => x > 0 && x <= 6).sort((a, b) => a - b)[0],
+      ant = G.filter((x) => x < 0 && x >= -2).sort((a, b) => b - a)[0];
+    if (ant !== undefined && (sig === undefined || -ant < sig)) return { k: "+" + -ant, t: CX_MD["+" + -ant] };
+    if (sig !== undefined) return { k: "-" + sig, t: CX_MD["-" + sig] || "carga media" };
+    return null;
+  }
+  function cxMDHtml(t) {
+    if (!state.cgOk) return "";
+    let m = cxMD(t.fecha);
+    if (!m) return "";
+    let n = +m.k.slice(1);
+    return `<p class="cx-md"><b>MD${m.k}</b> ${m.k[0] === "-" ? `faltan ${n} ${n === 1 ? "día" : "días"} para el partido` : `${n === 1 ? "el día" : "2 días"} después del partido`}: ${esc(m.t)}.</p>`;
+  }
+  /* Fila del contexto dentro del panel de carga */
+  function cxFila() {
+    let c = cxOf(),
+      cat = catOf(state.mode, curTeam()),
+      vacio = !c.dias && !c.hora && !c.per.length,
+      L = cxConsejos(c, cat);
+    return `<div class="cx-row"><div><small>Contexto del equipo</small><b>${esc(cxLinea(c, cat))}</b>${vacio ? `<span class="muted">Pon días de entreno, horario y periodo para afinar los avisos.</span>` : ""}</div>${viendo ? "" : `<button type="button" class="secondary small" data-cx="abrir">${vacio ? "Poner" : "Cambiar"}</button>`}</div>${L.length ? `<details class="cx-tips"><summary>Consejos para esta semana (${L.length})</summary><ul>${L.map((x) => `<li>${x}</li>`).join("")}</ul></details>` : ""}`;
+  }
+  let cxEd = null;
+  function cxEditorHtml() {
+    let e = cxEd,
+      cat = catOf(state.mode, curTeam()),
+      hoy = ymd(new Date()),
+      pAct = cxPer(e, hoy),
+      bt = (act, v, on, t) => `<button type="button" class="cx-b${on ? " on" : ""}" data-cx="${act}" data-v="${v}" aria-pressed="${on}">${t}</button>`;
+    return `<p>Con esto la app ajusta el <b>aviso de sobrecarga</b>, te da consejos y marca cada entreno con su día de la semana de partido (MD-2 = faltan 2 días).</p><label class="ci-l">Categoría (la edad)<select data-cxf="cat"><option value="">Sin categoría</option>${CATS.map((z) => `<option value="${z[0]}" ${cat && cat[0] === z[0] ? "selected" : ""}>${z[1]}</option>`).join("")}</select></label><div class="cx-g"><span>Días de entreno a la semana</span><div class="cx-bs">${[1, 2, 3, 4, 5, 6, 7].map((n) => bt("dias", n, e.dias === n, n)).join("")}</div></div><div class="cx-g"><span>Entrenáis por la…</span><div class="cx-bs">${CX_HORA.map((h) => bt("hora", h[0], e.hora === h[0], h[1])).join("")}</div></div><div class="cx-g"><span>Periodo de la temporada</span><div class="cx-ps">${CX_PER.map(
+      (x) => `<button type="button" class="ci-opt cx-p${e.nuevo === x[0] || (!e.nuevo && pAct === x[0]) ? " on" : ""}" data-cx="per" data-v="${x[0]}"><b>${x[1]}</b><small>${x[2]}</small></button>`,
+    ).join("")}</div>${e.nuevo && e.nuevo !== pAct ? `<label class="ci-l">Desde el día<input type="date" data-cxf="desde" value="${esc(e.desde || hoy)}" max="${hoy}"></label>` : ""}</div>${
+      e.per.length
+        ? `<details class="cx-hist"><summary>Historial de periodos (${e.per.length})</summary>${e.per
+            .slice()
+            .reverse()
+            .map((x) => `<div class="cx-hi"><span>Desde el ${esc(fmtDate(x.d))}: <b>${cxPerN(x.p)}</b></span><button type="button" class="ib" data-cx="quitaper" data-v="${esc(x.d)}" aria-label="Quitar">${ic("x", 18)}</button></div>`)
+            .join("")}</details>`
+        : ""
+    }<div class="stack"><button type="button" class="primary" data-cx="ok">Guardar</button></div>`;
+  }
+  function cxPinta() {
+    let y = $("infoBody").scrollTop;
+    ciOpen("Contexto de la carga", cxEditorHtml());
+    $("infoBody").scrollTop = y;
+  }
+  async function cxGuarda(c) {
+    let id = curTeam(),
+      local = false;
+    try {
+      if (!id && state.teamsOk) id = await firstTeam(teamName());
+      if (!id) throw Error("contexto");
+      let r = await db.from("equipos").update({ contexto: c }).eq("id", id);
+      if (r.error) throw r.error;
+      let t = state.teams.find((z) => z.id === id);
+      if (t) t.contexto = c;
+      try {
+        localStorage.removeItem(cxKey(id));
+      } catch (e) {}
+    } catch (e) {
+      if (!/contexto/i.test((e && e.message) || "")) return note(e.message || String(e)), false;
+      /* Sin la columna en el servidor: se guarda en este dispositivo */
+      local = true;
+      try {
+        localStorage.setItem(cxKey(id), JSON.stringify(c));
+      } catch (z) {}
+    }
+    return local ? "local" : true;
+  }
+  async function cxAct(b) {
+    let k = b.dataset.cx;
+    if (viendo) return note(SOLO_VER);
+    if (k === "abrir") {
+      cxEd = { ...cxOf(), nuevo: "", desde: "" };
+      cxEd.per = cxEd.per.slice();
+      return cxPinta();
+    }
+    if (!cxEd) return;
+    if (k === "dias") cxEd.dias = cxEd.dias === +b.dataset.v ? 0 : +b.dataset.v;
+    else if (k === "hora") cxEd.hora = cxEd.hora === b.dataset.v ? "" : b.dataset.v;
+    else if (k === "per") cxEd.nuevo = b.dataset.v;
+    else if (k === "quitaper") cxEd.per = cxEd.per.filter((x) => x.d !== b.dataset.v);
+    else if (k === "ok") {
+      let c = { dias: cxEd.dias, hora: cxEd.hora, per: cxEd.per.slice() },
+        hoy = ymd(new Date());
+      if (cxEd.nuevo && cxEd.nuevo !== cxPer(c, hoy)) {
+        let d = /^\d{4}-\d\d-\d\d$/.test(cxEd.desde || "") && cxEd.desde <= hoy ? cxEd.desde : hoy;
+        c.per = c.per.filter((x) => x.d !== d).concat({ d, p: cxEd.nuevo });
+      }
+      c = cxDe(c);
+      b.disabled = true;
+      let r;
+      try {
+        r = await cxGuarda(c);
+      } finally {
+        b.disabled = false;
+      }
+      if (!r) return;
+      $("info").classList.add("hidden");
+      cxEd = null;
+      render();
+      return note("Contexto guardado." + (r === "local" ? " De momento se guarda solo en este dispositivo (falta un paso en el servidor)." : ""), true);
+    }
+    cxPinta();
+  }
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-cx]");
+    if (b) cxAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-cx]");
+    if (b) cxAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("change", (e) => {
+    let f = e.target.dataset && e.target.dataset.cxf;
+    if (!f || !cxEd) return;
+    if (f === "desde") cxEd.desde = e.target.value;
+    if (f === "cat")
+      setCat(e.target.value)
+        .then(() => cxEd && cxPinta())
+        .catch((x) => note(x.message || String(x)));
+  });
+
+  /* --- Fases del juego en los entrenos (v11.7) ---
+     Minutos de cada fase según los ejercicios marcados, y su carga (minutos × esfuerzo medio del
+     entreno). Gratis: esta semana. Pro: las 6 últimas semanas y el total. */
+  function faSesion(t) {
+    let M = {},
+      E = ejDe(t.ejercicios);
+    E.forEach((s) => {
+      let k = s.f || "";
+      M[k] = (M[k] || 0) + s.t / 60;
+    });
+    let c = cgDeTr(t),
+      J = cgJug("entreno", t.id),
+      R = Object.values({ ...J, ...((c && c.rpe) || {}) }),
+      rpe = R.length ? R.reduce((a, b) => a + b, 0) / R.length : 0;
+    return { M, rpe };
+  }
+  function faPanel() {
+    if (!state.trOk || !state.ejOk) return "";
+    let T = trainings(),
+      hoy = cgLunes(ymd(new Date())),
+      W = [];
+    for (let i = 5; i >= 0; i--) {
+      let d = new Date(hoy + "T12:00:00");
+      d.setDate(d.getDate() - 7 * i);
+      W.push(ymd(d));
+    }
+    let por = {},
+      carga = {},
+      hay = false;
+    FASES.forEach((x) => {
+      por[x[0]] = W.map(() => 0);
+      carga[x[0]] = W.map(() => 0);
+    });
+    T.forEach((t) => {
+      let w = W.indexOf(cgLunes(t.fecha));
+      if (w < 0) return;
+      let { M, rpe } = faSesion(t);
+      Object.entries(M).forEach(([k, m]) => {
+        if (!por[k]) return;
+        hay = true;
+        por[k][w] += m;
+        carga[k][w] += m * rpe;
+      });
+    });
+    let pro = esPro(),
+      tot = FASES.reduce((a, x) => a + por[x[0]][5], 0),
+      mx = Math.max(1, ...FASES.map((x) => por[x[0]][5])),
+      fila = (x) => {
+        let m = Math.round(por[x[0]][5]),
+          cg = Math.round(carga[x[0]][5]);
+        return `<div class="fa-row"><span class="fa-n">${faseTag(x[0])}</span><span class="fa-bar"><i style="width:${Math.round((por[x[0]][5] * 100) / mx)}%;background:${x[3]}"></i></span><span class="fa-v"><b>${m}</b> min${cg ? ` · <small>carga ${cg}</small>` : ""}</span></div>`;
+      };
+    let h = `<section class="panel fa-panel"><div class="bar"><div><div class="kicker">Ataque · defensa · ABP</div><h2 class="h2s">Fases del juego</h2><p class="muted">Semana del ${cgSem(W[5])} · ${Math.round(tot)} min marcados</p></div><button type="button" class="ib" data-fa="info" aria-label="Qué son las fases del juego">?</button></div>`;
+    if (!hay) return h + `<p class="muted">Al añadir un ejercicio al entreno, marca su fase: ataque organizado, contraataque, defensa organizada, reorganización defensiva o ABP. Aquí verás cuántos minutos le dedicas a cada una.</p></section>`;
+    h += FASES.map(fila).join("");
+    if (pro) {
+      let T6 = W.map((w, i) => FASES.reduce((a, x) => a + por[x[0]][i], 0)),
+        mx6 = Math.max(1, ...T6),
+        sum = FASES.map((x) => [x, por[x[0]].reduce((a, b) => a + b, 0)]),
+        st = sum.reduce((a, b) => a + b[1], 0) || 1;
+      h += `<div class="cg-eq"><small>Minutos por fase, últimas 6 semanas</small><div class="fa-st" aria-hidden="true">${W.map(
+        (w, i) =>
+          `<span title="Semana del ${cgSem(w)}">${FASES.map((x) => (por[x[0]][i] ? `<i style="height:${(por[x[0]][i] * 100) / mx6}%;background:${x[3]}"></i>` : "")).join("")}</span>`,
+      ).join("")}</div><div class="cg-ejes">${W.map((w, i) => `<span>${i === 5 ? "esta" : cgSem(w)}</span>`).join("")}</div></div><p class="muted fa-tot">En 6 semanas: ${sum
+        .filter((x) => x[1] > 0)
+        .map((x) => `${esc(x[0][2])} <b>${Math.round((x[1] * 100) / st)}%</b>`)
+        .join(" · ")}</p>`;
+    } else
+      h += `<div class="cg-pro"><b>Con el plan Pro</b>: las 6 últimas semanas por fase y el reparto en %, para ver si te olvidas de alguna.${enAndroid ? "" : `<button type="button" class="secondary small" data-cg="pro">Ver el plan Pro</button>`}</div>`;
+    return h + `</section>`;
+  }
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-fa]");
+    if (b)
+      ciOpen(
+        "Fases del juego",
+        `<p>Un partido tiene <b>fases</b> y conviene entrenarlas todas:</p><ul><li><b>Ataque</b>: ataque organizado y contraataque (la transición defensa-ataque, justo al robar).</li><li><b>Defensa</b>: defensa organizada y reorganización defensiva (la transición ataque-defensa, justo al perderla).</li><li><b>ABP</b>: acciones a balón parado (córners, faltas, saques de banda…).</li></ul><p>Marca la fase en cada ejercicio del entreno y en tus jugadas de la pizarra. Aquí ves los <b>minutos</b> de cada fase y su <b>carga</b> (minutos × esfuerzo medio del entreno).</p><p class="muted">Gratis: esta semana. Con el plan Pro: las 6 últimas semanas y el reparto en %.</p>`,
+      );
   });
   function blankAlign() {
     let f = Object.keys(formations[state.mode])[0];
@@ -5095,7 +5470,7 @@
     {
       el: '[data-tab="pizarra"]',
       t: "Pizarra táctica",
-      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Toca un jugador para cambiarle el color. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo. En Fútbol sala tienes además «Estrategias de fútbol sala»: córners, bandas, faltas y 5x4 listos para cargar y verlos moverse.",
+      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Toca un jugador para cambiarle el color. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo. En Fútbol sala tienes además «Estrategias de fútbol sala» y en fútbol 7 y 11, «Jugadas a balón parado (ABP)»: córners, faltas, saques de banda y más, listos para cargar y verlos moverse.",
     },
     {
       el: '[data-tab="resumen"]',
@@ -5110,7 +5485,7 @@
     {
       el: "#acct",
       t: "Mi cuenta",
-      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista, poner ejercicios y circuitos de fuerza y coordinación y llevar la carga física en cada entreno), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
+      p: "Tu foto de perfil, tu plan, el plan para clubes (si eres supervisor del club, desde ahí ves a tus entrenadores), el control de entrenamientos (actívalo aquí si quieres pasar lista, poner ejercicios y circuitos de fuerza y coordinación y llevar la carga física en cada entreno, con el contexto del equipo y las fases del juego), la guía de uso, descargar tus datos, privacidad y borrar la cuenta. Desde aquí puedes volver a ver este tutorial cuando quieras.",
     },
     {
       t: "¡Listo para empezar!",
@@ -5295,6 +5670,8 @@
         "En la pestaña <b>Entrenos</b>, toca un día con entrenamiento y pulsa <b>«Añadir ejercicio»</b> (está debajo de «Añadir circuito de fuerza o coordinación»).",
         "Escribe el <b>nombre</b>, cómo se hace (opcional) y su <b>tiempo</b> en minutos y segundos, el que tú quieras, sin límite. La app te dice cuánto suman todos.",
         "Con <b>▶</b> sale el cronómetro grande de ese ejercicio, el mismo de los circuitos: pita al empezar y en los 3 últimos segundos.",
+        "<b>Fase del juego</b> (opcional): al añadir o editar un ejercicio, marca de qué fase es: <b>Ataque</b> (ataque organizado o contraataque), <b>Defensa</b> (defensa organizada o reorganización defensiva) o <b>ABP</b> (acciones a balón parado). Toca otra vez para quitarla. Sale en el ejercicio y en el mensaje del entreno.",
+        "<b>Fases del juego</b>: en Entrenos, debajo de «Carga física», ves los minutos de esta semana en cada fase y su carga (minutos × esfuerzo medio del entreno), para no olvidarte de ninguna. Gratis la semana actual; con el plan Pro, las 6 últimas semanas y el reparto en %. El contraataque es la transición defensa-ataque y la reorganización defensiva, la de ataque-defensa.",
         "Con «Editar» lo cambias y con la ✗ lo quitas. En el plan gratuito puedes poner 3 ejercicios en cada entreno y guardar 5 en «Mis ejercicios»; con el plan Pro, sin límite.",
         "<b>Mis ejercicios</b>: marca «Guardar también en Mis ejercicios» y el ejercicio queda guardado para otros días. Al pulsar «Añadir ejercicio» te salen arriba: toca uno y se pone en el entreno con su tiempo. Con la papelera lo borras de «Mis ejercicios» (los entrenos que ya lo tienen lo conservan). Si guardas otro con el mismo nombre, se actualiza.",
       ],
@@ -5310,6 +5687,9 @@
         "<b>Preparador físico</b>: en «Enlace › Esfuerzo y carga física» pulsa «Crear enlace para el preparador físico» y mándaselo por WhatsApp. Lo abre sin cuenta y <b>solo puede mirar</b>: la carga de cada jugador y el esfuerzo de cada sesión. No ve la convocatoria, los motivos ni los vídeos. Con «Quitar el enlace del preparador» deja de funcionar.",
         "Plan gratuito: los jugadores anotan solo la <b>última sesión</b> y el preparador ve la <b>semana actual</b>. Con el plan Pro, todas las sesiones de los últimos 7 días y 6 semanas con gráfico y avisos. Si no quieres pedirles el esfuerzo, desmarca «Pedir a los jugadores su esfuerzo» en el enlace.",
         "Verás la carga de esta semana de cada jugador y del equipo. La semana empieza el lunes.",
+        "<b>Contexto del equipo</b> (gratis): arriba de «Carga física», pulsa «Poner» o «Cambiar» y elige la categoría (la edad), los <b>días de entreno a la semana</b>, si entrenáis por la <b>mañana, tarde o noche</b> y el <b>periodo</b>: pretemporada, competición (microciclo competitivo) o parón. Al cambiar de periodo puedes decir desde qué día; queda un historial.",
+        "Con el contexto la app afina el aviso: hasta infantil salta antes (1,3 veces la media en vez de 1,5), en el parón es normal que baje y a la vuelta del parón te avisa si subes de golpe. En «Consejos para esta semana» tienes recomendaciones según la edad, los días, el horario y el periodo. En el gráfico Pro sale el periodo debajo de cada semana.",
+        "<b>Día del microciclo</b>: si hay un partido cerca, en cada entreno sale su día: <b>MD-1</b> el día antes (activación corta), MD-2 (velocidad, poco volumen), MD-3 o MD-4 (el día más intenso) y MD+1 o MD+2 después del partido (recuperación). El preparador físico ve también el contexto y los minutos por fase en su enlace.",
         "Con el <b>plan Pro</b>: gráfico de las últimas 6 semanas del equipo y de cada jugador, y <b>aviso de sobrecarga</b> cuando alguien lleva esta semana más de 1,5 veces su media de las 4 anteriores. Subir de golpe es cuando más lesiones hay.",
         "Es una ayuda para el entrenador, no un diagnóstico médico. El botón «?» lo explica.",
       ],
@@ -5328,6 +5708,8 @@
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
         "<b>Limpia</b> (plan Pro): deja el campo liso, sin rayas ni escudo, para que se vean mejor las fichas y los movimientos. Vuelve a tocarlo para dejarlo como antes. La imagen y el vídeo salen también limpios. Junto con la pantalla completa tienes la pizarra grande y despejada.",
         "<b>Vídeos</b> (2 gratis por modalidad, ilimitados con Pro): sube desde el móvil el vídeo de una jugada (de un partido, de otro equipo…), ponle nombre y enséñalo cuando quieras, también a pantalla completa. Se guardan solo en ese dispositivo, cada modalidad con los suyos. Con «Compartir o guardar» lo mandas por WhatsApp y con «Compartir con el equipo» lo ven tus jugadores en el enlace del equipo.",
+        "<b>Fase de la jugada</b>: en «Guardar» puedes marcar la fase de la jugada (ataque organizado, contraataque, defensa organizada, reorganización defensiva o ABP) antes de guardarla. En «Mis jugadas» sale su fase y puedes ver solo las de una fase.",
+        "<b>Jugadas a balón parado (ABP)</b>: en fútbol 7 y fútbol 11, encima de la pizarra tienes el botón <b>«Jugadas a balón parado (ABP)»</b>: 14 jugadas que se mueven solas paso a paso: córners (primer palo, segundo palo, en corto, con bloqueos, raso al borde del área), faltas laterales y frontales, saques de banda y cómo <b>defender</b> el córner (en zona o mixto) y la falta lateral. Arriba te explica cada paso y tienes las claves. Las <b>5 más usadas</b> (TOP) son gratis; con el plan Pro, las 14. Los números de las fichas son dorsales y P es el portero.",
         "<b>Guardar</b> y <b>Mis jugadas</b> (3 gratis, ilimitadas con Pro): con «Guardar» le pones un nombre a la jugada que tienes en la pizarra (con sus pasos, colores y dibujos) y se guarda en tu cuenta. En «Mis jugadas» la vuelves a abrir cuando quieras, también desde el ordenador o la tablet entrando con tu cuenta. Si guardas con un nombre que ya tienes, te pregunta si quieres cambiarla.",
       ],
     },
@@ -5354,8 +5736,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el enlace del preparador físico con la <b>semana actual</b>, y las 10 estrategias TOP de fútbol sala.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo y las 34 estrategias de fútbol sala.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
@@ -7605,12 +7987,21 @@
       { W, por, eq } = cgSemanas(S),
       pro = !!cg.pro,
       nom = (id) => (Jg.find((p) => p.id === id) || {}).n || "Jugador",
+      cxp = cg.cx ? cxDe(cg.cx) : null,
+      ccat = cg.cx ? CATS.find((z) => z[0] === cg.cx.cat) || null : null,
+      ax = cxp ? cxAvisoX(cxp, ccat, W) : null,
       R = Jg.map((p) => {
         let L = por[p.id] || W.map(() => 0);
-        return { p, L, a: cgAviso(L) };
+        return { p, L, a: cgAviso(L, ax) };
       }).sort((a, b) => b.L[5] - a.L[5] || String(a.p.n).localeCompare(String(b.p.n), "es")),
       avisos = pro ? R.filter((x) => x.a && x.a.k === "l") : [],
-      h = `<div class="kicker">Preparador físico · ${esc(MN(pfD.modalidad))}</div><h2>${esc(pfD.equipo || "Mi equipo")}</h2><p class="muted">Carga física = <b>esfuerzo (1-10) × minutos</b>. Semana del ${cgSem(W[5])} · equipo: <b>${eq[5]}</b></p>`;
+      h = `<div class="kicker">Preparador físico · ${esc(MN(pfD.modalidad))}</div><h2>${esc(pfD.equipo || "Mi equipo")}</h2><p class="muted">Carga física = <b>esfuerzo (1-10) × minutos</b>. Semana del ${cgSem(W[5])} · equipo: <b>${eq[5]}</b></p>${cxp ? `<p class="cx-pf">${esc(cxLinea(cxp, ccat))}</p>` : ""}${
+      cg.fa && Object.keys(cg.fa).length
+        ? `<p class="muted cx-pf">Esta semana por fases: ${FASES.filter((x) => cg.fa[x[0]])
+            .map((x) => `${esc(x[2])} <b>${Math.round(cg.fa[x[0]])}</b> min`)
+            .join(" · ")}</p>`
+        : ""
+    }`;
     if (pro)
       h += `<div class="cg-eq"><small>Carga del equipo, últimas 6 semanas</small>${cgBarras(eq, W, 64)}<div class="cg-ejes">${W.map((w, i) => `<span>${i === 5 ? "esta" : cgSem(w)}</span>`).join("")}</div></div>${avisos.length ? `<div class="cg-alerta" role="status">⚠ ${avisos.map((x) => esc(x.p.n)).join(", ")}: esta semana ${avisos.length === 1 ? "lleva" : "llevan"} mucha más carga que su media de las 4 anteriores.</div>` : ""}`;
     h += `<section class="eq-sec"><h3 class="ci-h3">Carga de cada jugador</h3>${R.map(
@@ -7705,6 +8096,7 @@
     tcol: {},
     tool: "move",
     est: "",
+    f: "",
   });
   try {
     let r = JSON.parse(localStorage.getItem("mf_pizarra_v1") || "{}");
@@ -7724,6 +8116,7 @@
         tcol: x.tcol && typeof x.tcol === "object" ? x.tcol : {},
         tool: "move",
         est: typeof x.est === "string" ? x.est : "",
+        f: typeof x.f === "string" ? x.f : "",
         clean: !!x.clean,
       };
     });
@@ -7745,6 +8138,7 @@
           tcol: x.tcol,
           tool: x.tool,
           est: x.est || "",
+          f: x.f || "",
           clean: !!x.clean,
         };
       });
@@ -8135,16 +8529,28 @@
   /* Estrategias de fútbol sala (estrategias-fs.js): biblioteca de jugadas a balón
      parado y 5x4 que se cargan en la pizarra como jugada por pasos. Las «top»
      son gratis; el resto, con el plan Pro. */
-  const EST = window.MF_EST_FS || { cats: [], list: [] };
-  const estDe = (id) => EST.list.find((e) => e.id === id);
+  /* v11.7: en fútbol 7 y fútbol 11, la biblioteca de ABP (abp.js) funciona igual, en un campo de 68 x 105. */
+  const EST_FS = window.MF_EST_FS || { cats: [], list: [] },
+    EST_ABP = window.MF_ABP || { cats: [], list: [] };
+  /* Geometría de cada biblioteca: ancho y largo en metros */
+  const estG = () => (state.mode === "fs" ? { W: 20, H: 40, s: 1 } : { W: 68, H: 105, s: 2.6 });
+  let EST = EST_FS;
+  const estLib = () => (EST = state.mode === "fs" ? EST_FS : EST_ABP);
+  const estDe = (id) => estLib().list.find((e) => e.id === id);
   const estLibre = (e) => !!e.top || plan === "pro";
-  const estCatN = (c) => (EST.cats.find((x) => x[0] === c) || [c, c])[1];
+  const estCatN = (c) => (estLib().cats.find((x) => x[0] === c) || [c, c])[1];
+  /* Fase del juego de una estrategia (para «Mis jugadas»): casi todas son ABP */
+  const estFase = (e) => (e.cat === "5x4" ? "at" : e.cat === "defensa" && !/córner|falta|barrera|banda/i.test(e.n) ? "de" : "abp");
+  const estTitulo = () => (state.mode === "fs" ? "Estrategias de fútbol sala" : "Jugadas a balón parado (ABP)");
   const EST_ORO = "#fbbf24";
-  /* Metros de la pista (20 x 40) a coordenadas 0..1 del campo dibujado. */
-  const estQ = (q) => [
-    Math.round(Math.min(0.99, Math.max(0.01, 0.06 + (q[0] / 20) * 0.88)) * 10000) / 10000,
-    Math.round(Math.min(0.99, Math.max(0.01, 0.04 + (q[1] / 40) * 0.92)) * 10000) / 10000,
-  ];
+  /* Metros del campo a coordenadas 0..1 del campo dibujado. */
+  const estQ = (q) => {
+    let G = estG();
+    return [
+      Math.round(Math.min(0.99, Math.max(0.01, 0.06 + (q[0] / G.W) * 0.88)) * 10000) / 10000,
+      Math.round(Math.min(0.99, Math.max(0.01, 0.04 + (q[1] / G.H) * 0.92)) * 10000) / 10000,
+    ];
+  };
   const estPasos = (e) => Math.max(1, ...e.it.map((i) => i[2].length));
   function estItems(e) {
     let n = estPasos(e);
@@ -8164,15 +8570,18 @@
   }
   /* Dibujo pequeño de la jugada: posición inicial y recorrido de cada ficha. */
   function estSvg(e) {
-    let ys = [];
+    let G = estG(),
+      k = G.s,
+      ys = [];
     e.it.forEach((i) => {
       if (i[1] === "P" && i[2].length === 1) return;
       i[2].forEach((q) => ys.push(q[1]));
     });
-    let y0 = Math.max(-1.5, Math.min(...ys) - 3),
-      y1 = Math.min(41.5, Math.max(...ys) + 3);
-    if (y1 - y0 < 18) y1 = Math.min(41.5, y0 + 18);
-    if (y1 - y0 < 18) y0 = y1 - 18;
+    let mn = 18 * k,
+      y0 = Math.max(-1.5 * k, Math.min(...ys) - 3 * k),
+      y1 = Math.min(G.H + 1.5 * k, Math.max(...ys) + 3 * k);
+    if (y1 - y0 < mn) y1 = Math.min(G.H + 1.5 * k, y0 + mn);
+    if (y1 - y0 < mn) y0 = y1 - mn;
     const col = { o: "#2be36a", r: "#ff4d5e", b: "#ffffff" };
     let tr = "",
       dots = "";
@@ -8184,38 +8593,50 @@
           moved = P.some((q) => Math.hypot(q[0] - P[0][0], q[1] - P[0][1]) > 0.6);
         if (moved) {
           let l = P[P.length - 1];
-          tr += `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="${i[0] === "b" ? 0.45 : 0.35}" stroke-linecap="round" stroke-linejoin="round"${i[0] === "b" ? "" : ' stroke-dasharray="0.9 0.7"'} opacity=".85"/><circle cx="${l[0]}" cy="${l[1]}" r="0.45" fill="${c}"/>`;
+          tr += `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="${(i[0] === "b" ? 0.45 : 0.35) * k}" stroke-linecap="round" stroke-linejoin="round"${i[0] === "b" ? "" : ` stroke-dasharray="${0.9 * k} ${0.7 * k}"`} opacity=".85"/><circle cx="${l[0]}" cy="${l[1]}" r="${0.45 * k}" fill="${c}"/>`;
         }
       }
-      dots += `<circle cx="${P[0][0]}" cy="${P[0][1]}" r="${i[0] === "b" ? 0.55 : 0.95}" fill="${c}" stroke="${i[0] === "b" ? "#111" : "#fff"}" stroke-width="0.25"/>`;
+      dots += `<circle cx="${P[0][0]}" cy="${P[0][1]}" r="${(i[0] === "b" ? 0.55 : 0.95) * k}" fill="${c}" stroke="${i[0] === "b" ? "#111" : "#fff"}" stroke-width="${0.25 * k}"/>`;
     });
-    return `<svg class="est-pv" width="84" height="${Math.min(150, Math.round((84 * (y1 - y0)) / 23))}" viewBox="-1.5 ${y0} 23 ${y1 - y0}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><rect x="-1.5" y="${y0}" width="23" height="${y1 - y0}" fill="#12476a"/><g fill="none" stroke="rgba(232,245,216,.7)" stroke-width="0.25"><rect x="0" y="0" width="20" height="40"/><path d="M0 20H20M2.5 0Q2.5 6 8.5 6H11.5Q17.5 6 17.5 0M2.5 40Q2.5 34 8.5 34H11.5Q17.5 34 17.5 40"/><circle cx="10" cy="20" r="3"/><path d="M8.5 0V-1H11.5V0M8.5 40V41H11.5V40" stroke-width="0.35"/></g>${tr}${dots}</svg>`;
+    let vw = G.W + 3 * k,
+      lin =
+        state.mode === "fs"
+          ? `<rect x="0" y="0" width="20" height="40"/><path d="M0 20H20M2.5 0Q2.5 6 8.5 6H11.5Q17.5 6 17.5 0M2.5 40Q2.5 34 8.5 34H11.5Q17.5 34 17.5 40"/><circle cx="10" cy="20" r="3"/><path d="M8.5 0V-1H11.5V0M8.5 40V41H11.5V40" stroke-width="0.35"/>`
+          : `<rect x="0" y="0" width="68" height="105"/><path d="M0 52.5H68M13.84 0V16.5H54.16V0M24.84 0V5.5H43.16V0M13.84 105V88.5H54.16V105M24.84 105V99.5H43.16V105"/><circle cx="34" cy="52.5" r="9.15"/><path d="M30.34 0V-1.6H37.66V0M30.34 105V106.6H37.66V105" stroke-width="0.9"/>`;
+    return `<svg class="est-pv" width="84" height="${Math.min(150, Math.round((84 * (y1 - y0)) / vw))}" viewBox="${-1.5 * k} ${y0} ${vw} ${y1 - y0}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><rect x="${-1.5 * k}" y="${y0}" width="${vw}" height="${y1 - y0}" fill="${state.mode === "fs" ? "#12476a" : "#104228"}"/><g fill="none" stroke="rgba(232,245,216,.7)" stroke-width="${0.25 * k}">${lin}</g>${tr}${dots}</svg>`;
   }
   let estCat = "";
   function estLibHtml() {
+    estLib();
     let L = EST.list.filter((e) => !estCat || (estCat === "top" ? e.top : e.cat === estCat)),
       pro = plan === "pro",
       nTop = EST.list.filter((e) => e.top).length;
     const chip = (v, t) =>
       `<button type="button" class="est-chip" data-estc="${v}" aria-pressed="${estCat === v}">${esc(t)}</button>`;
-    return `<p>${EST.list.length} estrategias de fútbol sala para ensayar: córners, saques de banda, faltas, saque de centro, saque del portero y el 5x4 con portero-jugador. Toca una y se carga en la pizarra <b>moviéndose paso a paso</b>, con lo que hace cada jugador.</p>${pro ? "" : `<p class="muted">Las <b>${nTop} más usadas</b> (marcadas con TOP) son gratis. Las demás vienen con el plan Pro.</p>`}<div class="est-chips" role="group" aria-label="Tipo de estrategia">${chip("", "Todas")}${chip("top", "Las más usadas")}${EST.cats.map((c) => chip(c[0], c[1])).join("")}</div><div class="est-list">${L.map((e) => {
+    return `<p>${
+      state.mode === "fs"
+        ? `${EST.list.length} estrategias de fútbol sala para ensayar: córners, saques de banda, faltas, saque de centro, saque del portero y el 5x4 con portero-jugador.`
+        : `${EST.list.length} jugadas a balón parado (ABP) para ensayar: córners, faltas laterales y frontales, saques de banda y cómo defenderlas. Sirven para ${esc(MN())}: solo salen los jugadores que intervienen.`
+    } Toca una y se carga en la pizarra <b>moviéndose paso a paso</b>, con lo que hace cada jugador.</p>${pro ? "" : `<p class="muted">Las <b>${nTop} más usadas</b> (marcadas con TOP) son gratis. Las demás vienen con el plan Pro.</p>`}<div class="est-chips" role="group" aria-label="Tipo de estrategia">${chip("", "Todas")}${chip("top", "Las más usadas")}${EST.cats.map((c) => chip(c[0], c[1])).join("")}</div><div class="est-list">${L.map((e) => {
       let ok = estLibre(e);
       return `<button type="button" class="est-item${ok ? "" : " lock"}" data-est="${e.id}">${estSvg(e)}<span class="est-tx"><span class="est-k">${e.top ? '<i class="est-top">TOP</i>' : ""}${esc(estCatN(e.cat))}${ok ? "" : ' <i class="est-pro">PRO</i>'}</span><b>${esc(e.n)}</b><small>${esc(e.d)}</small><span class="est-go">${ok ? "▶ Cargar en la pizarra" : "Disponible con el plan Pro"}</span></span></button>`;
     }).join("")}</div>`;
   }
   function estOpen() {
-    $("infoTitle").textContent = "Estrategias de fútbol sala";
+    $("infoTitle").textContent = estTitulo();
     $("infoBody").innerHTML = estLibHtml();
     $("info").classList.remove("hidden");
   }
   function estProHtml(e) {
-    return `<p><b>${esc(e.n)}</b></p><p>${esc(e.d)}</p><p>Esta estrategia es del <b>plan Pro</b>. En el plan gratuito tienes las ${EST.list.filter((x) => x.top).length} más usadas; con el plan Pro, las <b>${EST.list.length} estrategias</b>, además de jugadores, partidos y entrenamientos ilimitados y varios equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}<button type="button" class="secondary" data-estlib="1">Volver a las estrategias</button></div>`;
+    estLib();
+    let qu = state.mode === "fs" ? "estrategia" : "jugada";
+    return `<p><b>${esc(e.n)}</b></p><p>${esc(e.d)}</p><p>Esta ${qu} es del <b>plan Pro</b>. En el plan gratuito tienes las ${EST.list.filter((x) => x.top).length} más usadas; con el plan Pro, <b>las ${EST.list.length}</b>, además de jugadores, partidos y entrenamientos ilimitados y varios equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}<button type="button" class="secondary" data-estlib="1">Volver a la lista</button></div>`;
   }
   function estLoad(id) {
     let e = estDe(id);
-    if (!e || state.mode !== "fs") return;
+    if (!e) return;
     if (!estLibre(e)) {
-      $("infoTitle").textContent = "Estrategia Pro";
+      $("infoTitle").textContent = state.mode === "fs" ? "Estrategia Pro" : "Jugada Pro";
       $("infoBody").innerHTML = estProHtml(e);
       return;
     }
@@ -8234,6 +8655,7 @@
     b.step = 0;
     b.tool = "move";
     b.est = id;
+    b.f = estFase(e);
     state.boardPick = null;
     state.boardMenu = false;
     saveBoard();
@@ -8247,7 +8669,7 @@
         window.scrollTo(0, Math.max(0, bar.getBoundingClientRect().top + window.pageYOffset - (hd ? hd.offsetHeight : 0) - 8));
     } catch (x) {}
     setTimeout(() => {
-      if (state.tab === "pizarra" && state.mode === "fs" && bd().est === id && !boardAnim) playAnim();
+      if (state.tab === "pizarra" && bd().est === id && !boardAnim) playAnim();
     }, 450);
   }
   /* Tarjeta de la estrategia cargada: nombre, lo que pasa en el paso actual y claves. */
@@ -8264,9 +8686,9 @@
     if (el.innerHTML !== t) el.innerHTML = t;
   }
   function estBarHtml() {
-    if (state.mode !== "fs") return "";
+    estLib();
     let b = bd();
-    return `<div class="est-bar"><button type="button" class="est-btn" data-b="est"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg><span>Estrategias de fútbol sala</span><small>${EST.list.length}</small></button>${estCardHtml(b)}</div>`;
+    return `<div class="est-bar"><button type="button" class="est-btn" data-b="est"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg><span>${estTitulo()}</span><small>${EST.list.length}</small></button>${estCardHtml(b)}</div>`;
   }
   document.addEventListener("click", (e) => {
     let t = e.target.closest("[data-est],[data-estc],[data-estlib]");
@@ -8747,6 +9169,7 @@
         b.steps = 1;
         b.step = 0;
         b.est = "";
+        b.f = "";
         saveBoard();
         render();
       }
