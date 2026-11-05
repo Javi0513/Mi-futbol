@@ -5156,3 +5156,58 @@ body.presenting .est-bar {
   text-decoration: none;
   color: inherit;
 }
+/* Esfuerzo desde el enlace y preparador físico (v11.6) */
+.cg-jug {
+  font-style: normal;
+  color: #60a5fa;
+}
+.cg-jtxt {
+  font-size: 13px;
+}
+.cg-enl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0 2px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line2);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--mut);
+}
+.cg-enl span {
+  flex: 1 1 200px;
+}
+.esp-esf {
+  margin: 6px 0;
+}
+.esp-esf-l {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.esp-esf-l i {
+  font-style: normal;
+  font-size: 12.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--c);
+  color: var(--ink);
+}
+.eq-esf .cg-esc {
+  margin-top: 8px;
+}
+.pf-av {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--s3);
+  border: 1px solid var(--line2);
+  font-weight: 700;
+}
