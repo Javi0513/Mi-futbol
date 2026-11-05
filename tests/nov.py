@@ -25,8 +25,8 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('las novedades explican el plan gratuito y el Pro',all(w in body for w in ('PLAN PRO','PLAN GRATUITO','3 dispositivos','ilimitado','Mis dispositivos')),body[:200])
-    check('y que es gratis','gratis' in body)
+    check('las novedades explican el enlace del equipo y Mis jugadas',all(w in body for w in ('FÚTBOL SALA','PARA TODOS','Enlace del equipo','No puedo ir','Mis jugadas')),body[:200])
+    check('y lo que es gratis y lo que es Pro','PLAN GRATUITO' in body and 'PLAN PRO' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)
