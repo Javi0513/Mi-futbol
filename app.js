@@ -825,13 +825,13 @@
   }
   function matches() {
     let g = games();
-    return `<section class="panel"><div class="bar"><div><div class="kicker">Partidos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : games().length + " / " + MODES[state.mode].maxM + " partidos · "}Convocatoria, titulares, posiciones y goles.</p></div><button class="primary" data-action="add-match">${ic("plus")}Partido</button></div>${
+    return `<section class="panel"><div class="bar"><div><div class="kicker">Partidos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : games().length + " / " + MODES[state.mode].maxM + " partidos · "}Convocatoria, titulares, posiciones y goles.</p></div><div class="mbtns">${viendo ? "" : `<button class="secondary" data-cv="abrir">${ic("users")}Convocatoria</button>`}<button class="primary" data-action="add-match">${ic("plus")}Partido</button></div></div>${cvCard()}${
       g.length
         ? g
             .map((m) => {
               let e = entries(m),
                 a = m.alineacion || {};
-              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong><small>${liveChip(m.id)}${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small><small class="cl">Inicial: ${
+              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong><small>${liveChip(m.id)}${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small>${a.conv && (a.conv.cita || a.conv.lugar) ? `<small class="cl">${esc([a.conv.cita ? "Citación " + a.conv.cita : "", a.conv.hora ? "partido " + a.conv.hora : "", a.conv.lugar].filter(Boolean).join(" · "))}</small>` : ""}<small class="cl">Inicial: ${
                 e
                   .filter((x) => x.starter)
                   .map((x) => esc(name(x.id)))
@@ -1026,7 +1026,7 @@
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Nota<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: táctica, físico…" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Qué vamos a trabajar<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: juego de 4, defensa con cambio, activación" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${viendo ? "" : `<div class="btools tr-env"><button type="button" class="primary small" data-tr="enviar" data-id="${t.id}">${ic("share", 18)}Enviar el entreno a los jugadores</button></div>`}${cgTrBloque(t)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
@@ -1101,6 +1101,69 @@
         : `<p class="muted">Este día no hay entrenamiento.</p><div class="stack"><button type="button" class="primary" data-tr="new">${ic("plus")}Crear entrenamiento este día</button></div>`
     }</section>${ciPanel()}${cgPanel()}${trPlayers()}`;
   }
+  /* Mensaje del entreno para el grupo de los jugadores (v11.3): qué se trabaja y cada ejercicio
+     explicado, para que lleguen sabiéndolo y se pierda menos tiempo en explicaciones. */
+  const trMin = (s) => (s >= 60 ? Math.round(s / 60) + " min" : s + " s");
+  function trTexto(t) {
+    let L = [`🏃 *ENTRENAMIENTO* · ${teamName()}`, `📅 ${trDayLabel(t.fecha).replace(/^./, (x) => x.toUpperCase())}${t.hora ? " · " + t.hora : ""}`];
+    if (t.nota) L.push("", `🎯 *Vamos a trabajar:* ${t.nota}`);
+    let E = ejDe(t.ejercicios),
+      c = state.ciOk ? ciDe(t.circuito) : null;
+    if (E.length) {
+      L.push("", "📋 *Ejercicios:*");
+      E.forEach((s, i) => {
+        L.push(`${i + 1}. ${s.n} (${trMin(s.t)})`);
+        if (s.d) L.push(`   ${s.d}`);
+      });
+    }
+    if (c) {
+      L.push("", `💪 *Circuito: ${c.nombre}* (${c.series} ${c.series === 1 ? "serie" : "series"}, unos ${Math.max(1, Math.round(ciTotal(c) / 60))} min)`);
+      c.est.forEach((s, i) => L.push(`${i + 1}. ${s.n}`));
+    }
+    L.push("", "Venid con esto leído y así aprovechamos más el entreno 💪");
+    return L.join("\n");
+  }
+  async function trEnviar(t) {
+    if (!t.nota && !ejDe(t.ejercicios).length && !(state.ciOk && ciDe(t.circuito)))
+      return note("Escribe primero qué vais a trabajar o añade algún ejercicio.");
+    let txt = trTexto(t),
+      wa = "https://wa.me/?text=" + encodeURIComponent(txt);
+    ciOpen(
+      "Enviar el entreno",
+      `<p class="muted">Este es el mensaje para el grupo de tus jugadores. Así llegan sabiendo qué se va a trabajar.</p><pre class="cv-txt">${esc(txt)}</pre><div class="stack"><a class="primary" href="${wa}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${navigator.share ? '<button type="button" class="secondary" data-trx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-trx="copiar">Copiar el mensaje</button></div>`,
+    );
+    $("infoBody").scrollTop = 0;
+    trTxt = txt;
+  }
+  let trTxt = "";
+  $("info").addEventListener("click", async (e) => {
+    let b = e.target.closest("[data-trx]");
+    if (!b) return;
+    if (b.dataset.trx === "share") {
+      try {
+        await navigator.share({ text: trTxt });
+      } catch (x) {}
+    } else copiaTexto(trTxt, "Mensaje copiado. Pégalo en el grupo de tus jugadores.");
+  });
+  async function copiaTexto(txt, ok) {
+    try {
+      await navigator.clipboard.writeText(txt);
+      return note(ok, true);
+    } catch (e) {}
+    let ta = document.createElement("textarea");
+    ta.value = txt;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    let bien = false;
+    try {
+      bien = document.execCommand("copy");
+    } catch (e) {}
+    ta.remove();
+    note(bien ? ok : "No se pudo copiar: mantén el dedo sobre el mensaje para copiarlo.", bien);
+  }
   function trSave(t, patch) {
     if (viendo) return note(SOLO_VER), render();
     Object.assign(t, patch);
@@ -1113,6 +1176,7 @@
   async function trAct(b) {
     let k = b.dataset.tr,
       t = state.trainings.find((x) => x.id === b.dataset.id);
+    if (k === "enviar") return t && trEnviar(t);
     if (k === "prev" || k === "next") {
       let [y, m] = state.trMonth.split("-").map(Number),
         d = new Date(y, m - 1 + (k === "next" ? 1 : -1), 1);
@@ -1494,6 +1558,332 @@
   $("info").addEventListener("click", (e) => {
     let b = e.target.closest("[data-ej]");
     if (b) ejAct(b).catch((x) => note(x.message || String(x)));
+  });
+  /* --- Convocatoria (v11.3) ---
+     Antes del partido: eliges a los convocados, rival, lugar, día, hora y citación, y la app
+     escribe el mensaje para el grupo de WhatsApp. Se guarda en este dispositivo (una por equipo),
+     sin servidor. «Crear el partido» abre el partido nuevo con esos convocados ya marcados. */
+  const cvKey = () => `mf_conv:${curUser || ""}:${state.mode}:${curTeam() || ""}`;
+  let cv = null;
+  function cvLee() {
+    try {
+      let x = JSON.parse(localStorage.getItem(cvKey()) || "null");
+      if (x && typeof x === "object") return { ...cvNuevo(), ...x, ids: Array.isArray(x.ids) ? x.ids : [] };
+    } catch (e) {}
+    return null;
+  }
+  function cvNuevo() {
+    return { rival: "", fecha: ymd(new Date()), hora: "", cita: "", lugar: "", nota: "", ids: [] };
+  }
+  function cvGuarda() {
+    if (!cv) return;
+    try {
+      localStorage.setItem(cvKey(), JSON.stringify(cv));
+    } catch (e) {}
+  }
+  function cvBorra() {
+    try {
+      localStorage.removeItem(cvKey());
+    } catch (e) {}
+  }
+  /* Sólo los jugadores que siguen en la plantilla, en el orden de la plantilla */
+  const cvJug = (c) => roster().filter((p) => c.ids.includes(p.id));
+  function cvTexto(c) {
+    let J = cvJug(c),
+      L = [`⚽ *CONVOCATORIA* · ${teamName()}`];
+    if (c.rival) L.push(`🆚 Rival: ${c.rival}`);
+    if (c.fecha) L.push(`📅 ${trDayLabel(c.fecha).replace(/^./, (x) => x.toUpperCase())}`);
+    if (c.hora || c.cita)
+      L.push(`⏰ ${[c.hora ? "Partido: " + c.hora : "", c.cita ? "Citación: " + c.cita : ""].filter(Boolean).join(" · ")}`);
+    if (c.lugar) L.push(`📍 ${c.lugar}`);
+    L.push("", `👥 *Convocados (${J.length}):*`);
+    J.forEach((p, i) => L.push(`${i + 1}. ${p.nombre}${dorsal(p) ? " (" + dorsal(p) + ")" : ""}`));
+    if (c.nota) L.push("", `📝 ${c.nota}`);
+    return L.join("\n");
+  }
+  function cvResumen(c) {
+    return [c.rival ? "vs " + c.rival : "", c.fecha ? fmtDate(c.fecha) : "", c.cita ? "citación " + c.cita : c.hora ? c.hora : ""]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  /* Tarjeta en Partidos con la convocatoria guardada */
+  function cvCard() {
+    let c = cvLee();
+    if (viendo || !c || (!c.ids.length && !c.rival)) return "";
+    return `<div class="cv-card"><div class="info"><div class="kicker">Convocatoria</div><strong>${esc(cvResumen(c) || "Sin datos")}</strong><small>${cvJug(c).length} convocados${c.lugar ? " · " + esc(c.lugar) : ""}</small></div><div class="btools"><button type="button" class="primary small" data-cv="abrir">${ic("users", 18)}Ver y enviar</button></div></div>`;
+  }
+  function cvAbre(desde) {
+    cv = cvLee() || cvNuevo();
+    delete cv.deDraft;
+    if (desde) {
+      cv = { ...cv, ...desde };
+      cvGuarda();
+    }
+    ciOpen("Convocatoria", cvHtml());
+    $("infoBody").scrollTop = 0;
+  }
+  function cvHtml() {
+    let r = roster(),
+      cap = MODES[state.mode].cap,
+      J = cvJug(cv),
+      f = (k, lab, ty, ph, ml) =>
+        `<label class="ci-l">${lab}<input data-cvf="${k}" type="${ty}"${ph ? ` placeholder="${ph}"` : ""}${ml ? ` maxlength="${ml}"` : ""} value="${esc(cv[k] || "")}" autocomplete="off"></label>`;
+    return `<p class="muted">${cv.deDraft ? "Los convocados salen del partido. Si cambias alguno aquí, cambia solo en el mensaje: en el partido se marcan en la lista «Conv.»." : "Elige a los convocados y los datos del partido. La app te escribe el mensaje para el grupo de WhatsApp."}</p><div class="cv-grid">${f("rival", "Rival", "text", "Ej.: CD Alhambra", 100)}${f("lugar", "Lugar", "text", "Ej.: Pabellón Municipal", 120)}${f("fecha", "Día", "date")}${f("hora", "Hora del partido", "time")}${f("cita", "Hora de citación", "time")}</div><label class="ci-l">Nota (opcional)<input data-cvf="nota" maxlength="200" placeholder="Ej.: equipación azul, traed la ficha" value="${esc(cv.nota || "")}" autocomplete="off"></label><div class="cv-h"><h3 class="ci-h3">Convocados <b data-cvn>${J.length}</b>${cap ? ` <small class="muted">(máx. ${cap})</small>` : ""}</h3><span><button type="button" class="secondary small" data-cv="todos">Todos</button><button type="button" class="secondary small" data-cv="ninguno">Ninguno</button></span></div>${
+      r.length
+        ? `<div class="cv-list">${r
+            .map(
+              (p) =>
+                `<label class="cv-j"><input type="checkbox" data-cvp="${p.id}"${cv.ids.includes(p.id) ? " checked" : ""}>${avatar(p)}<span>${dorsal(p) ? `<i class="bdn">${dorsal(p)}</i>` : ""}${esc(p.nombre)}</span></label>`,
+            )
+            .join("")}</div>`
+        : '<p class="muted">Añade primero a tus jugadores en Plantilla.</p>'
+    }<h3 class="ci-h3">Mensaje</h3><pre class="cv-txt" data-cvt>${esc(cvTexto(cv))}</pre><div class="stack"><a class="primary" data-cv="wa" href="${cvWa()}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${navigator.share ? `<button type="button" class="secondary" data-cv="share">Compartir…</button>` : ""}<button type="button" class="secondary" data-cv="copiar">Copiar el mensaje</button>${cv.deDraft ? "" : `<button type="button" class="secondary" data-cv="partido">${ic("plus", 20)}Crear el partido con estos convocados</button><button type="button" class="danger" data-cv="borrar">Empezar una convocatoria nueva</button>`}</div>`;
+  }
+  const cvWa = () => "https://wa.me/?text=" + encodeURIComponent(cvTexto(cv));
+  /* Repinta sólo el contador y el mensaje: así no se pierde lo que se está escribiendo */
+  function cvRefresca() {
+    let box = $("infoBody"),
+      t = box.querySelector("[data-cvt]"),
+      n = box.querySelector("[data-cvn]"),
+      a = box.querySelector("[data-cv=wa]");
+    if (t) t.textContent = cvTexto(cv);
+    if (n) n.textContent = cvJug(cv).length;
+    if (a) a.href = cvWa();
+    if (cv.deDraft && state.draft) state.draft.alineacion.conv = { hora: cv.hora, cita: cv.cita, lugar: cv.lugar };
+    cvGuarda();
+  }
+  async function cvAct(b) {
+    let k = b.dataset.cv;
+    if (k === "abrir") return cvAbre();
+    if (k === "desde") {
+      /* Desde «Editar / Nuevo partido»: la convocatoria se rellena con lo que hay en el partido */
+      let d = state.draft;
+      if (!d) return;
+      if ($("date")) d.fecha = $("date").value;
+      if ($("rival")) d.rival = $("rival").value.trim();
+      let c = d.alineacion.conv || {},
+        x = { rival: d.rival, fecha: d.fecha, ids: d.players.map((p) => p.id), deDraft: 1 };
+      ["hora", "cita", "lugar"].forEach((q) => c[q] && (x[q] = c[q]));
+      return cvAbre(x);
+    }
+    if (!cv) return;
+    let cap = MODES[state.mode].cap;
+    if (k === "todos") {
+      cv.ids = roster().map((p) => p.id);
+      if (cap && cv.ids.length > cap) {
+        cv.ids = cv.ids.slice(0, cap);
+        note(`Máximo ${cap} convocados en ${MN().toLowerCase()}. He marcado los ${cap} primeros.`);
+      }
+      $("infoBody").querySelectorAll("[data-cvp]").forEach((x) => (x.checked = cv.ids.includes(x.dataset.cvp)));
+      return cvRefresca();
+    }
+    if (k === "ninguno") {
+      cv.ids = [];
+      $("infoBody").querySelectorAll("[data-cvp]").forEach((x) => (x.checked = false));
+      return cvRefresca();
+    }
+    if (k === "wa") {
+      if (!cvJug(cv).length) note("Aún no has marcado a ningún convocado.");
+      return;
+    }
+    if (k === "share") {
+      try {
+        await navigator.share({ text: cvTexto(cv) });
+      } catch (e) {}
+      return;
+    }
+    if (k === "copiar") return copiaTexto(cvTexto(cv), "Mensaje copiado. Pégalo en el grupo de WhatsApp.");
+    if (k === "borrar") {
+      if (!confirm("¿Empezar una convocatoria nueva? Se borra la que tienes ahora.")) return;
+      cvBorra();
+      cv = cvNuevo();
+      $("infoBody").innerHTML = cvHtml();
+      render();
+      return;
+    }
+    if (k === "partido") {
+      if (viendo) return note(SOLO_VER);
+      if (!cv.rival.trim() || !cv.fecha) return note("Pon el rival y el día para crear el partido.");
+      $("info").classList.add("hidden");
+      if (full("m")) return showInfo("pro");
+      state.tab = "partidos";
+      state.editing = null;
+      resetDraft();
+      let d = state.draft;
+      d.fecha = cv.fecha;
+      d.rival = cv.rival.trim();
+      d.players = cvJug(cv).map((p) => ({ id: p.id, nombre: p.nombre, minutes: 0, goals: 0, starter: false }));
+      d.alineacion.conv = { hora: cv.hora, cita: cv.cita, lugar: cv.lugar };
+      render();
+      note("Partido creado con los convocados. Elige los titulares y guárdalo.", true);
+    }
+  }
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-cv]");
+    if (b) cvAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-cv]");
+    if (b) cvAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("input", (e) => {
+    let k = e.target.dataset.cvf;
+    if (!k || !cv) return;
+    cv[k] = e.target.value;
+    cvRefresca();
+  });
+  $("info").addEventListener("change", (e) => {
+    let id = e.target.dataset.cvp;
+    if (!id || !cv) return;
+    let cap = MODES[state.mode].cap;
+    if (e.target.checked) {
+      if (cap && cvJug(cv).length >= cap) {
+        e.target.checked = false;
+        return note(`Máximo ${cap} convocados en ${MN().toLowerCase()}.`);
+      }
+      if (!cv.ids.includes(id)) cv.ids.push(id);
+    } else cv.ids = cv.ids.filter((x) => x !== id);
+    cvRefresca();
+  });
+  /* --- Vídeos de jugadas (v11.3) ---
+     El entrenador sube desde el móvil el vídeo de una jugada (de un partido, de YouTube grabado,
+     de otro equipo…) y lo tiene junto a la pizarra para enseñarlo a pantalla completa.
+     Se guardan SOLO en este dispositivo (IndexedDB «mf_videos»), sin servidor: no cuestan nada. */
+  const VJ_MAX = 500 * 1024 * 1024;
+  let vjDbP = null,
+    vjUrl = "",
+    vjVer = null;
+  function vjDb() {
+    if (vjDbP) return vjDbP;
+    vjDbP = new Promise((ok, ko) => {
+      if (!window.indexedDB) return ko(new Error("Este navegador no deja guardar vídeos."));
+      let r = indexedDB.open("mf_videos", 1);
+      r.onupgradeneeded = () => {
+        let s = r.result.createObjectStore("v", { keyPath: "id" });
+        s.createIndex("mode", "mode");
+      };
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => ko(r.error || new Error("No se pudo abrir el almacén de vídeos."));
+    });
+    vjDbP.catch(() => (vjDbP = null));
+    return vjDbP;
+  }
+  function vjTx(modo, fn) {
+    return vjDb().then(
+      (db) =>
+        new Promise((ok, ko) => {
+          let tx = db.transaction("v", modo),
+            st = tx.objectStore("v"),
+            res;
+          let r = fn(st);
+          if (r) r.onsuccess = () => (res = r.result);
+          tx.oncomplete = () => ok(res);
+          tx.onerror = tx.onabort = () => ko(tx.error || new Error("No se pudo guardar el vídeo (¿falta espacio en el móvil?)."));
+        }),
+    );
+  }
+  const vjDue = () => `${curUser || ""}:${state.mode}`;
+  async function vjLista() {
+    let L = (await vjTx("readonly", (st) => st.index("mode").getAll(vjDue()))) || [];
+    return L.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  }
+  const vjMb = (n) => (n >= 1048576 ? (n / 1048576).toFixed(n >= 104857600 ? 0 : 1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
+  function vjSuelta() {
+    if (vjUrl) URL.revokeObjectURL(vjUrl);
+    vjUrl = "";
+    vjVer = null;
+  }
+  async function vjAbre() {
+    vjSuelta();
+    let L;
+    try {
+      L = await vjLista();
+    } catch (e) {
+      return ciOpen("Vídeos de jugadas", `<p>${esc(e.message || String(e))}</p>`);
+    }
+    ciOpen(
+      "Vídeos de jugadas",
+      `<p class="muted">Sube desde el móvil el vídeo de una jugada y enséñalo a pantalla completa cuando quieras. Se guardan <b>solo en este dispositivo</b>${MODES[state.mode] ? " (en " + esc(MN()) + ")" : ""}.</p><label class="primary vj-up">${ic("plus", 20)}Subir un vídeo<input type="file" accept="video/*" data-vjf hidden></label>${
+        L.length
+          ? `<div class="vj-list">${L.map(
+              (v) =>
+                `<div class="vj-it"><button type="button" class="ci-opt" data-vj="ver" data-id="${esc(v.id)}">${ic("play", 20)}<span><b>${esc(v.nombre)}</b><small>${esc(fmtDate(String(v.fecha).slice(0, 10)))} · ${vjMb(v.size || 0)}</small></span></button><button type="button" class="ib" data-vj="borrar" data-id="${esc(v.id)}" aria-label="Borrar ${esc(v.nombre)}">${ic("trash", 18)}</button></div>`,
+            ).join("")}</div>`
+          : `<p class="muted vj-vacio">Todavía no tienes vídeos de jugadas.</p>`
+      }`,
+    );
+  }
+  async function vjVerUno(id) {
+    let v = await vjTx("readonly", (st) => st.get(id));
+    if (!v) return vjAbre();
+    vjSuelta();
+    vjVer = v;
+    vjUrl = URL.createObjectURL(v.blob);
+    ciOpen(
+      v.nombre,
+      `<video class="vj-video" src="${vjUrl}" controls playsinline autoplay></video><div class="stack"><button type="button" class="primary" data-vj="full">${ic("maximize", 20)}Pantalla completa</button><button type="button" class="secondary" data-vj="share">${ic("share", 20)}Compartir o guardar</button><button type="button" class="secondary" data-vj="lista">${ic("back", 20)}Volver a mis vídeos</button></div>`,
+    );
+  }
+  async function vjSube(f) {
+    if (!f) return;
+    if (!/^video\//.test(f.type || "video/")) return note("Eso no parece un vídeo.");
+    if (f.size > VJ_MAX) return note("El vídeo es muy grande (más de 500 MB). Recórtalo en el móvil y vuelve a subirlo.");
+    let def = String(f.name || "").replace(/\.[a-z0-9]+$/i, "").slice(0, 60);
+    if (!def || /^(img|vid|mov|trim|video|pxl)[_-]?\d/i.test(def)) def = "Jugada " + fmtDate(ymd(new Date()));
+    let n = prompt("Ponle un nombre a la jugada:", def);
+    if (n === null) return;
+    n = n.trim().slice(0, 60) || def;
+    note("Guardando el vídeo…", true);
+    let v = { id: "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), mode: vjDue(), nombre: n, fecha: new Date().toISOString(), size: f.size, type: f.type || "video/mp4", blob: f };
+    await vjTx("readwrite", (st) => st.put(v));
+    note("Vídeo guardado en este dispositivo.", true);
+    vjAbre();
+  }
+  async function vjAct(b) {
+    let k = b.dataset.vj,
+      id = b.dataset.id;
+    if (k === "ver") return vjVerUno(id);
+    if (k === "lista") return vjAbre();
+    if (k === "borrar") {
+      if (!confirm("¿Borrar este vídeo de este dispositivo?")) return;
+      await vjTx("readwrite", (st) => st.delete(id));
+      note("Vídeo borrado.", true);
+      return vjAbre();
+    }
+    let vd = $("infoBody").querySelector(".vj-video");
+    if (k === "full" && vd) {
+      let fn = vd.requestFullscreen || vd.webkitRequestFullscreen || vd.webkitEnterFullscreen;
+      if (fn)
+        try {
+          await fn.call(vd);
+        } catch (e) {}
+      try {
+        await vd.play();
+      } catch (e) {}
+      return;
+    }
+    if (k === "share" && vjVer) {
+      let ext = /webm/.test(vjVer.type) ? "webm" : /quicktime/.test(vjVer.type) ? "mov" : "mp4",
+        nom = vjVer.nombre.replace(/[^\wáéíóúñü -]+/gi, "").trim().replace(/\s+/g, "-").toLowerCase() || "jugada";
+      return shareOrSave(new Blob([vjVer.blob], { type: vjVer.type }), `${nom}.${ext}`, vjVer.nombre, "Vídeo descargado.");
+    }
+  }
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-vj]");
+    if (b) vjAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("change", (e) => {
+    if (!e.target.matches("[data-vjf]")) return;
+    let f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    vjSube(f).catch((x) => note(x.message || String(x)));
+  });
+  $("closeInfo").addEventListener("click", () => {
+    let vd = $("infoBody").querySelector(".vj-video");
+    if (vd) vd.pause();
+    vjSuelta();
+    /* La tarjeta de la convocatoria en Partidos se pone al día al cerrar */
+    if ($("infoBody").querySelector("[data-cvt]")) render();
   });
   function ciPanel() {
     if (!state.ciOk) return "";
@@ -2244,7 +2634,7 @@
         return `<div class="checkline"><span>${esc(p.nombre)}${x && p.id === cap ? ' <em class="tg c" title="Capitán">C</em>' : ""}${x && p.id === gk ? ' <em class="tg g" title="Portero">POR</em>' : ""}</span><input type="checkbox" data-field="called" data-id="${p.id}" aria-label="Convocado: ${esc(p.nombre)}" ${x ? "checked" : ""}><input type="checkbox" data-field="starter" data-id="${p.id}" aria-label="Titular: ${esc(p.nombre)}" ${x?.starter ? "checked" : ""}><input type="number" data-field="minutes" data-id="${p.id}" aria-label="Minutos de ${esc(p.nombre)}" min="0" value="${x?.minutes || 0}" ${x ? "" : "disabled"}><input type="number" data-field="goals" data-id="${p.id}" aria-label="Goles de ${esc(p.nombre)}" min="0" value="${x?.goals || 0}" ${x ? "" : "disabled"}></div>`;
       })
       .join("");
-    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
+    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><span class="mbtns">${viendo ? "" : `<button class="secondary small" data-cv="desde">${ic("share", 18)}Convocatoria</button>`}<button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></span></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
 <div class="lineup-layout"><div><div class="position-help"><h3>Campo y posiciones</h3><select id="formation" aria-label="Formación">${Object.keys(
       formations[state.mode],
     )
@@ -2736,9 +3126,10 @@
     rr(g, fx, fy, fw, fh, 36);
     g.clip();
     const fsal = o.modalidad === "fs";
-    g.fillStyle = fsal ? "#0f3b57" : "#0e3a24";
+    g.fillStyle = o.limpia ? (fsal ? "#1a5f8a" : "#17603a") : fsal ? "#0f3b57" : "#0e3a24";
     g.fillRect(fx, fy, fw, fh);
-    if (fsal) {
+    if (o.limpia) {
+    } else if (fsal) {
       g.fillStyle = "#12476a";
       for (let i = 0; i < 14; i++)
         if (i % 2) g.fillRect(fx + (i * fw) / 14, fy, fw / 14, fh);
@@ -2761,8 +3152,8 @@
     vg.addColorStop(0, "rgba(0,0,0,0)");
     vg.addColorStop(1, "rgba(0,0,0,.35)");
     g.fillStyle = vg;
-    g.fillRect(fx, fy, fw, fh);
-    if (wm) {
+    if (!o.limpia) g.fillRect(fx, fy, fw, fh);
+    if (wm && !o.limpia) {
       g.save();
       g.globalAlpha = 0.3;
       g.drawImage(wm, fx + fw / 2 - 210, fy + fh / 2 - 210, 420, 420);
@@ -4093,6 +4484,16 @@
       ],
     },
     {
+      t: "Convocatoria",
+      p: [
+        "En <b>Partidos</b>, pulsa «Convocatoria». Pon el <b>rival</b>, el <b>lugar</b>, el <b>día</b>, la <b>hora del partido</b> y la <b>hora de citación</b>, y marca a los convocados (con «Todos» los marcas de golpe). Si quieres, añade una nota, por ejemplo «equipación azul» o «traed la ficha».",
+        "Abajo ves el mensaje ya escrito. «Enviar por WhatsApp» lo abre en WhatsApp para mandarlo al grupo; también puedes «Copiar el mensaje» y pegarlo donde quieras.",
+        "La convocatoria se queda guardada en tu móvil y sale arriba en Partidos hasta que empieces una nueva. «Crear el partido con estos convocados» abre el partido con ellos ya marcados: solo te queda elegir titulares.",
+        "Dentro de un partido también tienes el botón «Convocatoria», que coge los convocados de ese partido. La citación y el lugar se guardan en el partido y salen en la lista.",
+        "Es gratis para todos.",
+      ],
+    },
+    {
       t: "Partidos y alineaciones",
       p: [
         "Pulsa «+ Partido»: pon la fecha y el rival, marca convocados y titulares y elige la formación.",
@@ -4133,7 +4534,8 @@
         "Verás un calendario del mes. Toca un día y pulsa «Crear entrenamiento este día» (o «+ Entreno»). Con las flechas cambias de mes.",
         "Pasa lista con los jugadores de tu plantilla: <b>✓</b> vino, <b>🕒</b> llegó tarde, <b>✗</b> faltó y <b>J</b> falta justificada. Llegar tarde cuenta como que vino, pero se apunta aparte para que lo veas. Se guarda solo. «Todos vinieron» los marca a todos de una vez.",
         "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
-        "Puedes apuntar la hora y una nota (por ejemplo, «táctica» o «físico»). Cada día del calendario sale de un color según la asistencia.",
+        "Puedes apuntar la hora y <b>qué vais a trabajar</b> (por ejemplo, «juego de 4, defensa con cambio, activación»). Cada día del calendario sale de un color según la asistencia.",
+        "<b>Enviar el entreno a los jugadores</b>: prepara el entreno antes (qué vais a trabajar, los ejercicios con su explicación y el circuito) y pulsa «Enviar el entreno a los jugadores». Te sale el mensaje escrito para mandarlo por WhatsApp al grupo, así llegan sabiendo lo que se va a hacer y pierdes menos tiempo explicando.",
         "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido (y cuántas llegó tarde), faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
@@ -4190,6 +4592,8 @@
         "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
+        "<b>Limpia</b>: deja el campo liso, sin rayas ni escudo, para que se vean mejor las fichas y los movimientos. Vuelve a tocarlo para dejarlo como antes. La imagen y el vídeo salen también limpios. Junto con la pantalla completa tienes la pizarra grande y despejada.",
+        "<b>Vídeos</b>: sube desde el móvil el vídeo de una jugada (de un partido, de otro equipo…), ponle nombre y enséñalo cuando quieras, también a pantalla completa. Se guardan solo en ese dispositivo, cada modalidad con los suyos. Con «Compartir o guardar» lo mandas por WhatsApp.",
       ],
     },
     {
@@ -6308,6 +6712,7 @@
         tcol: x.tcol && typeof x.tcol === "object" ? x.tcol : {},
         tool: "move",
         est: typeof x.est === "string" ? x.est : "",
+        clean: !!x.clean,
       };
     });
   } catch (e) {}
@@ -6328,6 +6733,7 @@
           tcol: x.tcol,
           tool: x.tool,
           est: x.est || "",
+          clean: !!x.clean,
         };
       });
       let s = JSON.stringify(o);
@@ -6904,7 +7310,7 @@
         )}</div>`
       : "";
     boardWasLand = boardLand();
-    return `${state.present ? "" : estBarHtml()}<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}" id="boardPanel">
+    return `${state.present ? "" : estBarHtml()}<section class="panel board ${state.present ? "present" : ""}${playing ? " playing" : ""}${boardWasLand ? " land" : ""}${b.tool === "move" ? " tool-move" : ""}${b.clean ? " clean" : ""}" id="boardPanel">
 <div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
       ["move", "Mover fichas (no pinta)", "hand"],
       ["pen", "Lápiz", "penline"],
@@ -6926,7 +7332,7 @@
       )
       .join("")}${menu}</div></div>
 <div class="bbot"><div class="bsteps" role="toolbar" aria-label="Jugada en movimiento"><button class="bi" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${dis(b.step < 1)}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="bi" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${dis(b.step >= b.steps - 1)}>${ic("right")}</button><button class="bi" data-b="addstep" aria-label="Añadir paso" title="Añadir paso"${dis()}>${ic("plus")}</button><button class="bi d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${dis(b.steps < 2)}>${ic("x")}</button><span class="brs"></span><button class="bi go" data-b="play" aria-label="${playing ? "Parar" : "Ver jugada"}" title="${playing ? "Parar" : "Ver jugada"}">${ic(playing ? "stop" : "play")}</button><button class="bi" data-b="video" aria-label="Vídeo de la jugada" title="Vídeo de la jugada"${dis()}>${ic("film")}</button></div>
-<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div>${pick}</section>`;
+<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean ? " on" : ""}" data-b="clean" aria-pressed="${!!b.clean}" title="Pizarra limpia: campo liso, sin rayas ni escudo">${ic("eraser", 18)}Limpia</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}</div></div>${pick}</section>`;
   }
   let boardRO = null;
   function initBoard() {
@@ -6945,7 +7351,7 @@
     const here = (it) => it.p[b.step];
     const redraw = (pos) => {
       g.clearRect(0, 0, cv.width, cv.height);
-      if (!b.strokes.length && !b.items.length) {
+      if (!b.strokes.length && !b.items.length && !b.clean) {
         g.save();
         g.fillStyle = "rgba(241,247,234,.42)";
         g.font = `800 ${Math.round(Math.min(cv.width, cv.height) * 0.085)}px "Barlow Condensed","Arial Narrow",Impact,sans-serif`;
@@ -7148,6 +7554,7 @@
       players: [],
       alineacion: { formation: Object.keys(formations[state.mode])[0], slots: {} },
       pizarra: true,
+      limpia: !!b.clean,
       paint: pos
         ? (g, x, y, w, h) => {
             paintStrokes(g, b.strokes, x, y, w, h, 10);
@@ -7293,6 +7700,13 @@
       b.est = "";
       saveBoard();
       render();
+    } else if (k === "clean") {
+      b.clean = !b.clean;
+      saveBoard();
+      render();
+      note(b.clean ? "Pizarra limpia: campo liso, sin rayas ni escudo." : "Pizarra normal.", true);
+    } else if (k === "vids") {
+      vjAbre();
     } else if (k === "tool") {
       b.tool = t.dataset.v;
       saveBoard();
