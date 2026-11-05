@@ -113,6 +113,11 @@
     let t = new URLSearchParams(location.search).get("equipo") || "";
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null;
   })();
+  /* Enlace del preparador físico: ?carga=<código>. Solo para mirar, sin cuenta (v11.6). */
+  const PF = (() => {
+    let t = new URLSearchParams(location.search).get("carga") || "";
+    return !EQ && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null;
+  })();
   const state = {
     mode: "7",
     tab: "plantilla",
@@ -1581,14 +1586,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3 };
+  const LIM = { cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: convocatorias, envíos de entrenos, vídeos de jugadas, enlace del equipo, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: convocatorias, envíos de entrenos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -1718,7 +1723,11 @@
      La app del entrenador sube un resumen («datos») cada vez que cambia algo de ese equipo. */
   const ESP_TR_PRO = 30,
     ESP_VID_MB = 50,
-    ESP_VID_DIAS = 30;
+    ESP_VID_DIAS = 30,
+    /* v11.6: los jugadores anotan su esfuerzo de las sesiones de los últimos 7 días (gratis: solo la última) */
+    ESF_DIAS = 7,
+    ESF_PRO = 20,
+    CG_SEM_PRO = 6;
   /* Cada vídeo compartido se borra solo a los 30 días (del almacén y del enlace) */
   const vidCad = (v) => {
     let d = new Date(String(v.f || "").slice(0, 10) + "T12:00:00");
@@ -1730,15 +1739,76 @@
   let espOk = false,
     espL = [],
     espR = [],
+    espE = [],
+    espEsfOk = false,
+    espPfOk = false,
     espPub = {},
     espT = null;
   const espDe = () => espL.find((e) => e.modalidad === state.mode && (e.equipo_id || "") === (curTeam() || ""));
   const espUrl = (e) => location.origin + location.pathname + "?equipo=" + e.id;
+  const pfUrl = (e) => location.origin + location.pathname + "?carga=" + e.codigo_pf;
+  /* ¿Se pide el esfuerzo a los jugadores en este enlace? (por defecto, sí) */
+  const espEsfOn = (e) => !!(state.cgOk && espEsfOk && e && (e.datos || {}).pideEsf !== false);
+  const diasAntes = (n) => {
+    let d = new Date();
+    d.setDate(d.getDate() - n);
+    return ymd(d);
+  };
+  /* Sesiones de los últimos días en las que los jugadores pueden anotar su esfuerzo.
+     j = quién puede (los que vinieron / jugaron); null = todos. */
+  function espEsfLista() {
+    let hoy = ymd(new Date()),
+      desde = diasAntes(ESF_DIAS),
+      R = roster().map((p) => p.id),
+      L = [];
+    trainings()
+      .filter((t) => t.fecha >= desde && t.fecha <= hoy)
+      .forEach((t) => {
+        let a = t.asistencia || {},
+          vin = R.filter((id) => a[id] === "si" || a[id] === "tarde");
+        L.push({ t: "entreno", ref: t.id, f: t.fecha, h: t.hora || "", n: "Entreno", j: vin.length ? vin : null });
+      });
+    games()
+      .filter((m) => m.fecha >= desde && m.fecha <= hoy)
+      .forEach((m) => {
+        let E = entries(m),
+          con = E.filter((x) => Number(x.minutes) > 0).map((x) => x.id);
+        L.push({ t: "partido", ref: m.id, f: m.fecha, h: "", n: "Partido vs " + m.rival, j: con.length ? con : E.length ? E.map((x) => x.id) : null });
+      });
+    L.sort((a, b) => (b.f + (b.h || "99")).localeCompare(a.f + (a.h || "99")));
+    return L.slice(0, esPro() ? ESF_PRO : LIM.esf);
+  }
+  /* Lo que ve el preparador físico: sesiones de las últimas semanas con lo que anota el entrenador
+     (lo de los jugadores se suma en su página). Gratis: la semana actual. Pro: 6 semanas. */
+  function espCgDatos() {
+    let sem = esPro() ? CG_SEM_PRO : LIM.cgSem,
+      d = new Date(cgLunes(ymd(new Date())) + "T12:00:00");
+    d.setDate(d.getDate() - 7 * (sem - 1));
+    let desde = ymd(d),
+      hoy = ymd(new Date());
+    return {
+      sem,
+      pro: esPro(),
+      dd: cgDur(),
+      s: cgBase()
+        .filter((x) => x.f >= desde && x.f <= hoy)
+        .map((x) => {
+          let o = { t: x.t, ref: x.ref, f: x.f, n: x.n };
+          if (x.t === "entreno") o.dur = x.dur || 0;
+          else o.min = x.min;
+          o.rpe = x.rpe;
+          return o;
+        }),
+    };
+  }
   const espVids = (e) => (e && e.datos && Array.isArray(e.datos.videos) ? e.datos.videos : []);
   async function espCarga() {
     let r;
     try {
-      r = await db.from("espacios").select("id,modalidad,equipo_id,datos,actualizado");
+      r = await db.from("espacios").select("id,modalidad,equipo_id,datos,actualizado,codigo_pf");
+      espPfOk = !r.error;
+      /* Sin supabase-esfuerzo.sql no existe codigo_pf: el enlace sigue funcionando igual */
+      if (r.error) r = await db.from("espacios").select("id,modalidad,equipo_id,datos,actualizado");
     } catch (e) {
       r = { error: e };
     }
@@ -1763,17 +1833,29 @@
   }
   /* Al entrar en Entrenos o Partidos: trae lo último que han contestado los jugadores */
   async function espRefresca() {
-    let antes = JSON.stringify(espR);
+    let antes = JSON.stringify([espR, espE]);
     await espResp();
     let f = document.activeElement;
-    if (JSON.stringify(espR) !== antes && !(f && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)) && $("info").classList.contains("hidden")) render();
+    if (JSON.stringify([espR, espE]) !== antes && !(f && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)) && $("info").classList.contains("hidden")) render();
   }
   async function espResp() {
-    if (!espOk || !espL.length) return (espR = []);
+    if (!espOk || !espL.length) return (espR = espE = []);
     try {
-      let r = await db.from("espacio_respuestas").select("*");
+      let [r, f] = await Promise.all([
+        db.from("espacio_respuestas").select("*"),
+        db.from("espacio_esfuerzos").select("espacio_id,tipo,ref,jugador_id,rpe"),
+      ]);
       if (!r.error) espR = r.data || [];
+      espEsfOk = !!f && !f.error;
+      if (espEsfOk) espE = f.data || [];
     } catch (e) {}
+  }
+  /* Esfuerzo (1-10) que han anotado los jugadores desde el enlace: {id: rpe} */
+  function cgJug(tipo, ref) {
+    let e = espOk && espDe(),
+      o = {};
+    if (e) espE.forEach((x) => x.espacio_id === e.id && x.tipo === tipo && x.ref === ref && cgRpe(x.rpe) && (o[x.jugador_id] = cgRpe(x.rpe)));
+    return o;
   }
   /* Lo que contestan los jugadores de este equipo para un entreno o el partido */
   function espAvisos(tipo, ref) {
@@ -1807,11 +1889,14 @@
         };
       }),
       videos: espVids(e),
+      pideEsf: !e || !e.datos || e.datos.pideEsf !== false,
+      ...(espEsfOn(e) ? { esf: espEsfLista() } : {}),
+      ...(state.cgOk && e && e.codigo_pf ? { cg: espCgDatos() } : {}),
     };
   }
   /* Se llama en cada render: si algo ha cambiado, sube el resumen (como mucho cada 1,5 s) */
   function espSync(ya) {
-    if (!espOk || viendo || PUB || EQ) return;
+    if (!espOk || viendo || PUB || EQ || PF) return;
     let e = espDe();
     if (!e) return;
     clearTimeout(espT);
@@ -1861,7 +1946,7 @@
       wa = "https://wa.me/?text=" + encodeURIComponent(espTextoWa(e));
     ciOpen(
       "Enlace del equipo",
-      `<p class="muted">Compártelo en el grupo de <b>${esc(teamName())}</b>. Se pone al día solo cada vez que cambias la convocatoria o los entrenos.</p><input class="esp-url" readonly value="${esc(espUrl(e))}" aria-label="Enlace del equipo"><div class="stack"><a class="primary" href="${wa}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-esp="copiar">Copiar el enlace</button><a class="secondary" href="${esc(espUrl(e))}" target="_blank" rel="noopener">${ic("eye", 20)}Ver lo que ven los jugadores</a></div>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: los jugadores ven el próximo partido y los ${LIM.espTr} próximos entrenos, y puedes compartir ${LIM.espVid} vídeos. Con Pro, todos los entrenos y vídeos ilimitados.</p>`}<h3 class="ci-h3">Quién va y quién no puede</h3><div class="esp-av">${espAvisosHtml(e)}</div><h3 class="ci-h3">Vídeos de jugadas para el equipo</h3><p class="muted">Sube el vídeo de una jugada (por ejemplo, la que preparas en el ordenador) y los jugadores la ven desde el enlace. Máximo ${ESP_VID_MB} MB cada uno. Se borran solos a los ${ESP_VID_DIAS} días.</p><label class="primary vj-up">${ic("plus", 20)}Subir un vídeo<input type="file" accept="video/*" data-espf hidden></label>${
+      `<p class="muted">Compártelo en el grupo de <b>${esc(teamName())}</b>. Se pone al día solo cada vez que cambias la convocatoria o los entrenos.</p><input class="esp-url" readonly value="${esc(espUrl(e))}" aria-label="Enlace del equipo"><div class="stack"><a class="primary" href="${wa}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-esp="copiar">Copiar el enlace</button><a class="secondary" href="${esc(espUrl(e))}" target="_blank" rel="noopener">${ic("eye", 20)}Ver lo que ven los jugadores</a></div>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: los jugadores ven el próximo partido y los ${LIM.espTr} próximos entrenos, y puedes compartir ${LIM.espVid} vídeos. Con Pro, todos los entrenos y vídeos ilimitados.</p>`}<h3 class="ci-h3">Quién va y quién no puede</h3><div class="esp-av">${espAvisosHtml(e)}</div>${espEsfHtml(e)}<h3 class="ci-h3">Vídeos de jugadas para el equipo</h3><p class="muted">Sube el vídeo de una jugada (por ejemplo, la que preparas en el ordenador) y los jugadores la ven desde el enlace. Máximo ${ESP_VID_MB} MB cada uno. Se borran solos a los ${ESP_VID_DIAS} días.</p><label class="primary vj-up">${ic("plus", 20)}Subir un vídeo<input type="file" accept="video/*" data-espf hidden></label>${
         V.length
           ? `<div class="vj-list">${V.map(
               (v) =>
@@ -1871,6 +1956,40 @@
       }<div class="btools esp-fin"><button type="button" class="danger small" data-esp="borrar">Desactivar el enlace</button></div>`,
     );
     $("infoBody").scrollTop = 0;
+  }
+  /* v11.6: esfuerzo que anotan los jugadores y enlace para el preparador físico */
+  function espEsfHtml(e) {
+    if (!state.cgOk) return "";
+    let h = `<h3 class="ci-h3">💪 Esfuerzo y carga física</h3>`;
+    if (!espEsfOk) return h + '<p class="muted">Esto se está activando en el servidor. Vuelve a probar en un rato.</p>';
+    let on = espEsfOn(e),
+      L = on ? espEsfLista() : [],
+      nom = (id) => (state.players.find((p) => p.id === id) || {}).nombre || "Jugador";
+    h += `<label class="chk esp-esf"><input type="checkbox" data-esp="esf"${on ? " checked" : ""}><span>Pedir a los jugadores su <b>esfuerzo (del 1 al 10)</b> después de cada entreno y partido</span></label>`;
+    if (on) {
+      h += `<p class="muted">Al terminar, en el enlace les sale «¿Cuánto te ha costado?». Se suma solo a tu <b>Carga física</b> (en Entrenos) con un 📱. Si tú apuntas otro número, vale el tuyo.</p>`;
+      h += L.length
+        ? `<div class="esp-av">${L.map((x) => {
+            let J = cgJug(x.t, x.ref),
+              ids = Object.keys(J),
+              tot = x.j ? x.j.length : roster().length;
+            return `<div class="esp-av-it"><b>${esc(x.n)} · ${esc(fmtDate(x.f))}</b><small>📱 ${ids.length} de ${tot} han anotado su esfuerzo</small>${ids.length ? `<span class="esp-esf-l">${ids.map((id) => `<i style="--c:${cgCol(J[id])}">${esc(nom(id))} ${J[id]}</i>`).join("")}</span>` : ""}</div>`;
+          }).join("")}</div>`
+        : '<p class="muted">Cuando haya un entreno o un partido de los últimos días, les saldrá para anotar.</p>';
+      if (!esPro()) h += `<p class="muted lim-q">Plan gratuito: anotan solo la <b>última sesión</b>. Con Pro, todas las de los últimos ${ESF_DIAS} días.</p>`;
+    }
+    if (!espPfOk) return h;
+    h += `<h3 class="ci-h3">Enlace para el preparador físico</h3>`;
+    if (!e.codigo_pf)
+      return (
+        h +
+        `<p class="muted">Un enlace aparte, <b>solo para mirar</b>: el preparador físico ve la carga de cada jugador (esfuerzo × minutos) y el esfuerzo de cada sesión, sin cuenta y sin poder cambiar nada. Los jugadores no lo ven.</p>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: ve la semana actual. Con Pro, las últimas ${CG_SEM_PRO} semanas con el gráfico y los avisos de sobrecarga.</p>`}<div class="stack"><button type="button" class="secondary" data-esp="pf-crear">${ic("link", 20)}Crear enlace para el preparador físico</button></div>`
+      );
+    let wa = "https://wa.me/?text=" + encodeURIComponent(`💪 *Carga física · ${teamName()}*\nAquí ves el esfuerzo y la carga de cada jugador:\n${pfUrl(e)}`);
+    return (
+      h +
+      `<input class="esp-url" readonly value="${esc(pfUrl(e))}" aria-label="Enlace del preparador físico"><div class="stack"><a class="secondary" href="${wa}" target="_blank" rel="noopener">${ic("share", 20)}Enviar al preparador por WhatsApp</a><button type="button" class="secondary" data-esp="pf-copiar">Copiar el enlace del preparador</button><a class="secondary" href="${esc(pfUrl(e))}" target="_blank" rel="noopener">${ic("eye", 20)}Ver lo que ve el preparador</a><button type="button" class="danger small" data-esp="pf-quitar">Quitar el enlace del preparador</button></div>${esPro() ? "" : `<p class="muted lim-q">Plan gratuito: el preparador ve la semana actual. Con Pro, las últimas ${CG_SEM_PRO} semanas con el gráfico y los avisos de sobrecarga.</p>`}`
+    );
   }
   function espVidTotal() {
     return espL.reduce((n, e) => n + espVids(e).length, 0);
@@ -1923,12 +2042,39 @@
       b.disabled = false;
       if (r.error) return note(r.error.message);
       espL.push({ ...r.data[0], datos: {} });
+      await espResp();
       await espSube(espDe());
       espAbre();
       return note("Enlace creado. Compártelo en el grupo del equipo.", true);
     }
     if (!e) return;
     if (k === "copiar") return copiaTexto(espTextoWa(e), "Enlace copiado. Pégalo en el grupo del equipo.");
+    if (k === "esf") {
+      if (viendo) return note(SOLO_VER);
+      e.datos = { ...(e.datos || {}), pideEsf: !!b.checked };
+      delete espPub[e.id];
+      await espSube(e);
+      let y = $("infoBody").scrollTop;
+      espAbre().then(() => ($("infoBody").scrollTop = y));
+      return note(b.checked ? "Listo: los jugadores podrán anotar su esfuerzo en el enlace." : "Ya no se pide el esfuerzo en el enlace.", true);
+    }
+    if (k === "pf-crear" || k === "pf-quitar") {
+      if (viendo) return note(SOLO_VER);
+      if (k === "pf-quitar" && !confirm("¿Quitar el enlace del preparador físico? Ese enlace dejará de funcionar.")) return;
+      let cod = k === "pf-crear" ? crypto.randomUUID() : null;
+      b.disabled = true;
+      let r = await db.from("espacios").update({ codigo_pf: cod }).eq("id", e.id);
+      b.disabled = false;
+      if (r.error) return note(r.error.message);
+      e.codigo_pf = cod;
+      delete espPub[e.id];
+      await espSube(e);
+      let y = $("infoBody").scrollTop;
+      await espAbre();
+      $("infoBody").scrollTop = y;
+      return note(cod ? "Enlace del preparador creado. Mándaselo por WhatsApp." : "Enlace del preparador quitado.", true);
+    }
+    if (k === "pf-copiar") return copiaTexto(pfUrl(e), "Enlace del preparador copiado.");
     if (k === "quitar") {
       let v = espVids(e).find((x) => x.id === b.dataset.id);
       if (!v || !confirm(`¿Quitar «${v.n}» del enlace del equipo?`)) return;
@@ -2903,29 +3049,51 @@
     d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
     return ymd(d);
   }
-  /* Sesiones con carga del equipo elegido: [{f, tipo, nombre, por: {id: {rpe, min}}}] */
-  function cgSesiones() {
+  /* Sesiones del equipo elegido tal como las anota el entrenador (v11.6):
+     [{t: "entreno"|"partido", ref, f, n, dur, min: {id: minutos}, rpe: {id: 1-10}}] */
+  function cgBase() {
     let S = [];
     trainings().forEach((t) => {
-      let c = cgDeTr(t);
-      if (!c || !c.dur) return;
-      let por = {};
-      Object.entries(c.rpe).forEach(([id, r]) => (por[id] = { rpe: r, min: c.dur }));
-      if (Object.keys(por).length) S.push({ f: t.fecha, tipo: "e", nombre: "Entreno", por });
+      let c = cgDeTr(t) || { dur: 0, rpe: {} };
+      S.push({ t: "entreno", ref: t.id, f: t.fecha, n: "Entreno", dur: c.dur, rpe: c.rpe });
     });
     games().forEach((m) => {
-      let por = {};
+      let min = {},
+        rpe = {};
       entries(m).forEach((e) => {
-        let r = cgRpe(e.rpe),
-          mi = Number(e.minutes) || 0;
-        if (r && mi > 0) por[e.id] = { rpe: r, min: mi };
+        let mi = Number(e.minutes) || 0;
+        if (mi > 0) min[e.id] = mi;
+        if (cgRpe(e.rpe)) rpe[e.id] = cgRpe(e.rpe);
       });
-      if (Object.keys(por).length) S.push({ f: m.fecha, tipo: "p", nombre: "vs " + m.rival, por });
+      S.push({ t: "partido", ref: m.id, f: m.fecha, n: "vs " + m.rival, min, rpe });
     });
     return S;
   }
+  /* Junta lo del entrenador con lo que anotan los jugadores desde el enlace (manda el entrenador).
+     J(tipo, ref) → {id: 1-10}. dd = minutos del entreno si el entrenador no los ha puesto.
+     Devuelve [{f, tipo, nombre, por: {id: {rpe, min}}}] */
+  function cgMezcla(S, J, dd) {
+    let hoy = ymd(new Date()),
+      R = [];
+    S.forEach((s) => {
+      let j = s.f <= hoy && J ? J(s.t, s.ref) || {} : {},
+        rpe = { ...j, ...(s.rpe || {}) },
+        dur = s.t === "entreno" ? s.dur || (Object.keys(j).length ? dd || 75 : 0) : 0,
+        por = {};
+      Object.entries(rpe).forEach(([id, r]) => {
+        r = cgRpe(r);
+        let mi = s.t === "entreno" ? dur : Number((s.min || {})[id]) || 0;
+        if (r && mi > 0) por[id] = { rpe: r, min: mi };
+      });
+      if (Object.keys(por).length) R.push({ f: s.f, tipo: s.t === "entreno" ? "e" : "p", nombre: s.n, ref: s.ref, por });
+    });
+    return R;
+  }
+  function cgSesiones() {
+    return cgMezcla(cgBase(), cgJug, cgDur());
+  }
   /* Carga por jugador y semana: las 6 últimas semanas (la última es la actual) */
-  function cgSemanas() {
+  function cgSemanas(S) {
     let hoy = cgLunes(ymd(new Date())),
       W = [];
     for (let i = 5; i >= 0; i--) {
@@ -2935,7 +3103,7 @@
     }
     let por = {},
       eq = W.map(() => 0);
-    cgSesiones().forEach((s) => {
+    (S || cgSesiones()).forEach((s) => {
       let w = W.indexOf(cgLunes(s.f));
       if (w < 0) return;
       Object.entries(s.por).forEach(([id, x]) => {
@@ -2969,14 +3137,17 @@
   }
   function cgTrBloque(t) {
     if (!state.cgOk) return "";
-    let c = cgDeTr(t),
-      n = c ? Object.keys(c.rpe).length : 0;
+    let c = cgDeTr(t) || { dur: 0, rpe: {} },
+      J = cgJug("entreno", t.id),
+      jn = Object.keys(J).filter((id) => !c.rpe[id]).length,
+      R = Object.values({ ...J, ...c.rpe }),
+      n = R.length;
     if (!n)
       return viendo
         ? ""
         : `<div class="btools cg-add"><button type="button" class="secondary small" data-cg="tr" data-id="${t.id}">${ic("chart", 18)}Anotar esfuerzo (1-10)</button></div>`;
-    let media = Object.values(c.rpe).reduce((a, b) => a + b, 0) / n;
-    return `<div class="cg-res"><span><b style="color:${cgCol(Math.round(media))}">${media.toFixed(1).replace(".", ",")}</b> esfuerzo medio · ${c.dur} min · ${n} ${n === 1 ? "jugador" : "jugadores"}</span>${viendo ? "" : `<button type="button" class="secondary small" data-cg="tr" data-id="${t.id}">Cambiar</button>`}</div>`;
+    let media = R.reduce((a, b) => a + b, 0) / n;
+    return `<div class="cg-res"><span><b style="color:${cgCol(Math.round(media))}">${media.toFixed(1).replace(".", ",")}</b> esfuerzo medio · ${c.dur || cgDur()} min · ${n} ${n === 1 ? "jugador" : "jugadores"}${jn ? ` · <i class="cg-jug">📱 ${jn} desde el enlace</i>` : ""}</span>${viendo ? "" : `<button type="button" class="secondary small" data-cg="tr" data-id="${t.id}">${jn && !Object.keys(c.rpe).length ? "Revisar" : "Cambiar"}</button>`}</div>`;
   }
   function cgPanel() {
     if (!state.cgOk) return "";
@@ -2993,7 +3164,7 @@
     let sinEsf = viendo
         ? []
         : games()
-            .filter((m) => m.fecha >= ymd(hace) && m.fecha <= ymd(new Date()) && entries(m).some((e) => Number(e.minutes) > 0) && !entries(m).some((e) => cgRpe(e.rpe)))
+            .filter((m) => m.fecha >= ymd(hace) && m.fecha <= ymd(new Date()) && entries(m).some((e) => Number(e.minutes) > 0) && !entries(m).some((e) => cgRpe(e.rpe)) && !Object.keys(cgJug("partido", m.id)).length)
             .slice(0, 3),
       avisos = pro ? r.filter((x) => x.a && x.a.k === "l") : [],
       hay = eq.some((x) => x > 0);
@@ -3003,7 +3174,7 @@
         : ""
     }${
       !hay
-        ? `<p class="muted">Al terminar un entreno o un partido, pregunta a cada jugador cuánto le ha costado del 1 al 10 y apúntalo con «Anotar esfuerzo». La app multiplica por los minutos y te enseña la carga de cada semana.</p>`
+        ? `<p class="muted">Al terminar un entreno o un partido, pregunta a cada jugador cuánto le ha costado del 1 al 10 y apúntalo con «Anotar esfuerzo». La app multiplica por los minutos y te enseña la carga de cada semana.</p>${cgEnlaceHint()}`
         : `${
             pro
               ? `<div class="cg-eq"><small>Carga del equipo, últimas 6 semanas</small>${cgBarras(eq, W, 64)}<div class="cg-ejes">${W.map((w, i) => `<span>${i === 5 ? "esta" : cgSem(w)}</span>`).join("")}</div></div>${avisos.length ? `<div class="cg-alerta" role="status">⚠ ${avisos.map((x) => esc(x.p.nombre)).join(", ")}: esta semana ${avisos.length === 1 ? "lleva" : "llevan"} mucha más carga que su media. Vigila el cansancio y las molestias.</div>` : ""}`
@@ -3013,8 +3184,15 @@
               (o) =>
                 `<div class="row cg-row">${avatar(o.p)}<div class="info"><strong>${esc(o.p.nombre)}</strong>${pro && o.a ? `<small class="cg-a ${o.a.k}">${o.a.t}</small>` : `<small>esta semana</small>`}</div>${pro ? cgBarras(o.L, W, 34) : ""}<div class="big"><b>${o.L[5]}</b><small>carga</small></div></div>`,
             )
-            .join("")}`
+            .join("")}${cgEnlaceHint()}`
     }</section>`;
+  }
+  /* Aviso: que lo anoten los propios jugadores desde el enlace del equipo (v11.6) */
+  function cgEnlaceHint() {
+    if (viendo || !espOk) return "";
+    let e = espDe(),
+      on = e && espEsfOn(e);
+    return `<div class="cg-enl"><span>📱 ${on ? "Tus jugadores anotan su esfuerzo desde el <b>enlace del equipo</b> y aquí se suma solo." : "Que lo anoten <b>los propios jugadores</b> desde el enlace del equipo, y pásale la carga al <b>preparador físico</b>."}</span><button type="button" class="secondary small" data-esp="abrir">${e ? "Ver el enlace" : "Crear el enlace"}</button></div>`;
   }
   /* --- Ventana para anotar el esfuerzo --- */
   function cgEditorHtml() {
@@ -3024,13 +3202,13 @@
       e.tipo === "e"
         ? `<label class="ci-l">Minutos que ha durado el entreno<input type="number" inputmode="numeric" min="1" max="300" data-cgf="dur" value="${e.dur || ""}"></label>`
         : `<p class="muted">Se usan los minutos que ha jugado cada uno en el partido.</p>`
-    }<div class="cg-todos"><span>Poner a todos:</span>${[4, 5, 6, 7, 8].map((n) => `<button type="button" class="cg-n" style="--c:${cgCol(n)}" data-cg="todos" data-v="${n}">${n}</button>`).join("")}</div>${
+    }${e.jug && Object.keys(e.jug).length ? `<p class="muted cg-jtxt">📱 Los que llevan «lo anotó él» lo han puesto ellos desde el enlace del equipo. Si cambias el número, vale el tuyo.</p>` : ""}<div class="cg-todos"><span>Poner a todos:</span>${[4, 5, 6, 7, 8].map((n) => `<button type="button" class="cg-n" style="--c:${cgCol(n)}" data-cg="todos" data-v="${n}">${n}</button>`).join("")}</div>${
       ids.length
         ? ids
             .map((id) => {
               let p = state.players.find((x) => x.id === id) || { id, nombre: e.nombres[id] || "Jugador" },
                 v = e.rpe[id] || 0;
-              return `<div class="cg-j"><div class="cg-jn">${avatar(p)}<div class="info"><strong>${esc(p.nombre)}</strong><small>${v ? v + " · " + CG_ESF[v] : "Sin anotar"}${e.tipo === "p" ? " · " + (e.min[id] || 0) + " min" : ""}</small></div></div><div class="cg-esc" role="group" aria-label="Esfuerzo de ${esc(p.nombre)}">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+              return `<div class="cg-j"><div class="cg-jn">${avatar(p)}<div class="info"><strong>${esc(p.nombre)}</strong><small>${v ? v + " · " + CG_ESF[v] : "Sin anotar"}${e.tipo === "p" ? " · " + (e.min[id] || 0) + " min" : ""}${e.jug && e.jug[id] && e.jug[id] === v ? ' · <i class="cg-jug">📱 lo anotó él</i>' : ""}</small></div></div><div class="cg-esc" role="group" aria-label="Esfuerzo de ${esc(p.nombre)}">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
                 .map((n) => `<button type="button" class="cg-n${v === n ? " on" : ""}" style="--c:${cgCol(n)}" data-cg="v" data-pid="${id}" data-v="${n}" aria-pressed="${v === n}" aria-label="${n}, ${CG_ESF[n]}">${n}</button>`)
                 .join("")}</div></div>`;
             })
@@ -3063,27 +3241,29 @@
       let t = state.trainings.find((x) => x.id === b.dataset.id);
       if (!t) return;
       let c = cgDeTr(t) || { dur: 0, rpe: {} },
+        J = cgJug("entreno", t.id),
         a = t.asistencia || {},
         R = roster(),
         vinieron = R.filter((p) => a[p.id] === "si" || a[p.id] === "tarde").map((p) => p.id),
         ids = vinieron.length ? vinieron : Object.keys(a).length ? [] : R.map((p) => p.id);
-      Object.keys(c.rpe).forEach((id) => !ids.includes(id) && ids.push(id));
-      cgEd = { tipo: "e", id: t.id, ids, rpe: { ...c.rpe }, dur: c.dur || cgDur(), min: {}, nombres: {} };
+      Object.keys({ ...J, ...c.rpe }).forEach((id) => !ids.includes(id) && ids.push(id));
+      cgEd = { tipo: "e", id: t.id, ids, rpe: { ...J, ...c.rpe }, jug: J, dur: c.dur || cgDur(), min: {}, nombres: {} };
       return cgPinta();
     }
     if (k === "pa") {
       let m = state.matches.find((x) => x.id === b.dataset.id);
       if (!m) return;
-      let E = entries(m).filter((e) => Number(e.minutes) > 0 || cgRpe(e.rpe)),
+      let J = cgJug("partido", m.id),
+        E = entries(m).filter((e) => Number(e.minutes) > 0 || cgRpe(e.rpe) || J[e.id]),
         rpe = {},
         min = {},
         nombres = {};
       E.forEach((e) => {
-        if (cgRpe(e.rpe)) rpe[e.id] = cgRpe(e.rpe);
+        if (cgRpe(e.rpe) || J[e.id]) rpe[e.id] = cgRpe(e.rpe) || J[e.id];
         min[e.id] = Number(e.minutes) || 0;
         nombres[e.id] = e.nombre;
       });
-      cgEd = { tipo: "p", id: m.id, ids: E.map((e) => e.id), rpe, min, nombres, dur: 0 };
+      cgEd = { tipo: "p", id: m.id, ids: E.map((e) => e.id), rpe, jug: J, min, nombres, dur: 0 };
       return cgPinta();
     }
     if (!cgEd) return;
@@ -4816,11 +4996,11 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan en tu dispositivo y, si usas «Guardar» en la pizarra, también en tu cuenta. Si creas el <b>enlace del equipo</b>, quien tenga ese enlace ve el nombre del equipo, el nombre y dorsal de los jugadores, la convocatoria, los próximos entrenos y los vídeos que compartas; las respuestas «Voy» / «No puedo ir» y su motivo se guardan en tu cuenta (el motivo solo lo ves tú) y se borran a los 120 días. Puedes desactivar el enlace cuando quieras.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan en tu dispositivo y, si usas «Guardar» en la pizarra, también en tu cuenta. Si creas el <b>enlace del equipo</b>, quien tenga ese enlace ve el nombre del equipo, el nombre y dorsal de los jugadores, la convocatoria, los próximos entrenos y los vídeos que compartas; las respuestas «Voy» / «No puedo ir» y su motivo se guardan en tu cuenta (el motivo solo lo ves tú) y se borran a los 120 días. Si pides el esfuerzo, el número del 1 al 10 que anota cada jugador se guarda igual (120 días) y solo lo ves tú y, si creas su enlace, el preparador físico; los demás solo ven que ya lo ha anotado. Quien tenga el <b>enlace del preparador físico</b> ve el nombre y dorsal de los jugadores, su esfuerzo y su carga física (minutos × esfuerzo), sin poder cambiar nada. Puedes desactivar los enlaces cuando quieras.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias y envíos de entrenos al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas o lo que se ve en el enlace del equipo), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias y envíos de entrenos al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -5039,7 +5219,8 @@
         "En cada entreno y en el partido tienen los botones <b>«Voy»</b> y <b>«No puedo ir»</b> (con el motivo, por ejemplo «lesionado» o «examen»). Tú lo ves en el enlace («Quién va y quién no puede»), al <b>pasar lista</b> junto a cada jugador y en la <b>convocatoria</b>. El motivo solo lo ves tú.",
         "El enlace se pone al día solo cada vez que cambias la convocatoria o los entrenos desde tu móvil. Para que el partido salga, haz la convocatoria en «Partidos › Convocatoria».",
         "<b>Vídeos para el equipo</b>: en el enlace pulsa «Subir un vídeo» (máximo 50 MB cada uno), o en la pizarra › Vídeos abre uno y pulsa «Compartir con el equipo». Así puedes subir la jugada que preparas en el ordenador. Con la papelera lo quitas. Cada vídeo <b>se borra solo a los 30 días</b> (del enlace y del servidor); si lo quieres más tiempo, vuelve a subirlo.",
-        "Plan gratuito: los jugadores ven el próximo partido y los <b>2 próximos entrenos</b>, y puedes compartir <b>2 vídeos</b>. Con el plan Pro, todos los entrenos y vídeos ilimitados.",
+        "<b>Esfuerzo</b>: si tienes activado el control de entrenamientos, después de cada entreno o partido les sale «¿Cuánto te ha costado?» (del 1 al 10) y se suma solo a tu carga física. Desde aquí también creas el <b>enlace del preparador físico</b> (ver «Carga física»).",
+        "Plan gratuito: los jugadores ven el próximo partido y los <b>2 próximos entrenos</b>, puedes compartir <b>2 vídeos</b> y anotan el esfuerzo de la última sesión. Con el plan Pro, todos los entrenos, vídeos ilimitados y el esfuerzo de los últimos 7 días.",
         "«Desactivar el enlace» lo borra: el enlace deja de funcionar y se quitan los avisos y los vídeos compartidos. Puedes crear otro cuando quieras.",
       ],
     },
@@ -5125,6 +5306,9 @@
         "Al terminar el entreno, pregunta a cada jugador: «¿cuánto te ha costado, del 1 al 10?». Toca el día, pulsa «Anotar esfuerzo (1-10)», pon los minutos que ha durado y marca el número de cada uno. «Poner a todos» rellena a todos con el mismo número y luego cambias a quien haga falta.",
         "Solo salen los que has marcado como que <b>vinieron</b>. Si aún no has pasado lista, salen todos.",
         "Partidos: en «Carga física» salen los partidos de las últimas 3 semanas sin esfuerzo anotado. Tócalo y marca el esfuerzo; los minutos de cada jugador ya los pone la app.",
+        "<b>Que lo anoten ellos</b>: con el <b>enlace del equipo</b> (botón «Enlace», arriba), al terminar cada entreno o partido a cada jugador le sale «¿Cuánto te ha costado?» y toca un número del 1 al 10, sin app ni cuenta. Solo pueden los que vinieron al entreno (si has pasado lista) o los que jugaron el partido. Se suma solo a tu carga física con un 📱; al pulsar «Revisar» ves lo que ha puesto cada uno («lo anotó él») y, si cambias un número, vale el tuyo. Si los minutos del entreno no están puestos, se usan los de la última vez (75 si no hay).",
+        "<b>Preparador físico</b>: en «Enlace › Esfuerzo y carga física» pulsa «Crear enlace para el preparador físico» y mándaselo por WhatsApp. Lo abre sin cuenta y <b>solo puede mirar</b>: la carga de cada jugador y el esfuerzo de cada sesión. No ve la convocatoria, los motivos ni los vídeos. Con «Quitar el enlace del preparador» deja de funcionar.",
+        "Plan gratuito: los jugadores anotan solo la <b>última sesión</b> y el preparador ve la <b>semana actual</b>. Con el plan Pro, todas las sesiones de los últimos 7 días y 6 semanas con gráfico y avisos. Si no quieres pedirles el esfuerzo, desmarca «Pedir a los jugadores su esfuerzo» en el enlace.",
         "Verás la carga de esta semana de cada jugador y del equipo. La semana empieza el lunes.",
         "Con el <b>plan Pro</b>: gráfico de las últimas 6 semanas del equipo y de cada jugador, y <b>aviso de sobrecarga</b> cuando alguien lleva esta semana más de 1,5 veces su media de las 4 anteriores. Subir de golpe es cuando más lesiones hay.",
         "Es una ayuda para el entrenador, no un diagnóstico médico. El botón «?» lo explica.",
@@ -5170,8 +5354,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos y <b>2</b> vídeos, y las 10 estrategias TOP de fútbol sala.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física, emitir vídeo en el Directo y las 34 estrategias de fútbol sala.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el enlace del preparador físico con la <b>semana actual</b>, y las 10 estrategias TOP de fútbol sala.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo y las 34 estrategias de fútbol sala.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
@@ -7201,6 +7385,30 @@
     eqErr = false,
     eqUlt = "";
   const eqYoKey = () => "mf_eq_yo:" + EQ;
+  /* Esfuerzo que ha anotado este jugador en este móvil (el servidor solo dice si ya lo anotó) */
+  function eqEsfLee() {
+    try {
+      return JSON.parse(localStorage.getItem("mf_eq_esf:" + EQ) || "{}") || {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function eqEsfHtml(d, yo) {
+    if (!yo || d.pideEsf === false || !Array.isArray(d.esf)) return "";
+    let hoy = ymd(new Date()),
+      desde = diasAntes(ESF_DIAS),
+      L = d.esf.filter((x) => x && x.f >= desde && x.f <= hoy && (!Array.isArray(x.j) || x.j.includes(yo.id)));
+    if (!L.length) return "";
+    let mem = eqEsfLee(),
+      hechos = (eqD && eqD.esfuerzos) || [];
+    return `<section class="eq-sec eq-esf"><h3 class="ci-h3">💪 ¿Cuánto te ha costado?</h3><p class="muted">Del <b>1</b> (muy fácil) al <b>10</b> (lo máximo). Contesta un rato después de terminar, con sinceridad. Solo lo ven tu entrenador y el preparador físico.</p>${L.map((x) => {
+      let v = cgRpe(mem[yo.id + "|" + x.t + "|" + x.ref]),
+        ya = hechos.some((r) => r.tipo === x.t && r.ref === x.ref && r.j === yo.id);
+      return `<div class="eq-card"><b class="eq-tit">${esc(x.n)}</b><p>📅 ${esc(trDayLabel(x.f).replace(/^./, (c) => c.toUpperCase()))}${x.h ? " · " + esc(x.h) : ""}</p><div class="cg-esc" role="group" aria-label="Tu esfuerzo en ${esc(x.n)}">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        .map((n) => `<button type="button" class="cg-n${v === n ? " on" : ""}" style="--c:${cgCol(n)}" data-eqesf="${n}" data-t="${x.t}" data-ref="${esc(x.ref)}" aria-pressed="${v === n}" aria-label="${n}, ${CG_ESF[n]}">${n}</button>`)
+        .join("")}</div><p class="muted eq-cuenta">${v ? `Has anotado <b style="color:${cgCol(v)}">${v} · ${CG_ESF[v]}</b>. Si te equivocas, toca otro número.` : ya ? "✓ Ya lo has anotado. Si quieres cambiarlo, toca otro número." : "Toca un número."}</p></div>`;
+    }).join("")}</section>`;
+  }
   async function eqLoad() {
     let r;
     try {
@@ -7250,6 +7458,7 @@
       return;
     }
     h += `<p class="muted eq-hola">${yo ? `Hola, <b>${esc(yo.n)}</b>.` : "Estás mirando sin elegir jugador."} <button type="button" class="linkbtn" data-eqyo="">${yo ? "No soy yo" : "Elegir mi nombre"}</button></p>`;
+    h += eqEsfHtml(d, yo);
     let p = d.partido;
     h += `<section class="eq-sec"><h3 class="ci-h3">⚽ Próximo partido</h3>`;
     if (p) {
@@ -7299,6 +7508,28 @@
         eqPinta();
         return window.scrollTo(0, 0);
       }
+      let f = e.target.closest("[data-eqesf]");
+      if (f && eqYo && eqYo !== "-") {
+        let v = +f.dataset.eqesf,
+          k = eqYo + "|" + f.dataset.t + "|" + f.dataset.ref;
+        f.disabled = true;
+        let r;
+        try {
+          r = await db.rpc("anotar_esfuerzo", { codigo: EQ, p_tipo: f.dataset.t, p_ref: f.dataset.ref, p_jugador: eqYo, p_rpe: v });
+        } catch (x) {
+          r = { error: x };
+        }
+        f.disabled = false;
+        if (r.error) return note("No se pudo enviar: " + (r.error.message || "revisa tu conexión"));
+        let m = eqEsfLee();
+        m[k] = v;
+        try {
+          localStorage.setItem("mf_eq_esf:" + EQ, JSON.stringify(m));
+        } catch (x) {}
+        eqPinta();
+        note("¡Gracias! Tu entrenador ya tiene tu esfuerzo (" + v + ").", true);
+        return eqLoad();
+      }
       let b = e.target.closest("[data-eqr]");
       if (!b || !eqYo || eqYo === "-") return;
       let est = b.dataset.eqr,
@@ -7332,6 +7563,95 @@
     }, 60000);
   }
   if (EQ) startEq();
+
+  /* Página del preparador físico (?carga=<código>): carga de cada jugador, solo para mirar */
+  let pfD = null,
+    pfErr = false,
+    pfUlt = "";
+  async function pfLoad() {
+    let r;
+    try {
+      r = await db.rpc("ver_carga", { codigo: PF });
+    } catch (e) {
+      r = { error: e };
+    }
+    pfErr = !!r.error;
+    if (!r.error) {
+      let s = JSON.stringify(r.data || null);
+      if (s === pfUlt && $("pfData").querySelector(".kicker")) return;
+      pfUlt = s;
+      pfD = r.data || null;
+    }
+    pfPinta();
+  }
+  function pfPinta() {
+    let box = $("pfData");
+    if (!box) return;
+    if (!pfD || !pfD.cg) {
+      box.innerHTML = pfErr
+        ? '<h2 class="h2s">Carga física</h2><p class="muted">No se ha podido cargar. Revisa tu conexión; lo volvemos a intentar solos.</p>'
+        : '<h2 class="h2s">Enlace no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha quitado.</p>';
+      return;
+    }
+    let cg = pfD.cg,
+      Jg = Array.isArray(pfD.jugadores) ? pfD.jugadores : [],
+      E = Array.isArray(pfD.esfuerzos) ? pfD.esfuerzos : [],
+      J = (tipo, ref) => {
+        let o = {};
+        E.forEach((x) => x.tipo === tipo && x.ref === ref && cgRpe(x.rpe) && (o[x.j] = cgRpe(x.rpe)));
+        return o;
+      },
+      S = cgMezcla(Array.isArray(cg.s) ? cg.s : [], J, cg.dd),
+      { W, por, eq } = cgSemanas(S),
+      pro = !!cg.pro,
+      nom = (id) => (Jg.find((p) => p.id === id) || {}).n || "Jugador",
+      R = Jg.map((p) => {
+        let L = por[p.id] || W.map(() => 0);
+        return { p, L, a: cgAviso(L) };
+      }).sort((a, b) => b.L[5] - a.L[5] || String(a.p.n).localeCompare(String(b.p.n), "es")),
+      avisos = pro ? R.filter((x) => x.a && x.a.k === "l") : [],
+      h = `<div class="kicker">Preparador físico · ${esc(MN(pfD.modalidad))}</div><h2>${esc(pfD.equipo || "Mi equipo")}</h2><p class="muted">Carga física = <b>esfuerzo (1-10) × minutos</b>. Semana del ${cgSem(W[5])} · equipo: <b>${eq[5]}</b></p>`;
+    if (pro)
+      h += `<div class="cg-eq"><small>Carga del equipo, últimas 6 semanas</small>${cgBarras(eq, W, 64)}<div class="cg-ejes">${W.map((w, i) => `<span>${i === 5 ? "esta" : cgSem(w)}</span>`).join("")}</div></div>${avisos.length ? `<div class="cg-alerta" role="status">⚠ ${avisos.map((x) => esc(x.p.n)).join(", ")}: esta semana ${avisos.length === 1 ? "lleva" : "llevan"} mucha más carga que su media de las 4 anteriores.</div>` : ""}`;
+    h += `<section class="eq-sec"><h3 class="ci-h3">Carga de cada jugador</h3>${R.map(
+      (o) =>
+        `<div class="row cg-row"><span class="pf-av">${esc(o.p.d || String(o.p.n || "?").slice(0, 1))}</span><div class="info"><strong>${esc(o.p.n)}</strong>${pro && o.a ? `<small class="cg-a ${o.a.k}">${o.a.t}</small>` : `<small>esta semana</small>`}</div>${pro ? cgBarras(o.L, W, 34) : ""}<div class="big"><b>${o.L[5]}</b><small>carga</small></div></div>`,
+    ).join("")}</section>`;
+    let ses = S.slice().sort((a, b) => b.f.localeCompare(a.f)).slice(0, 12);
+    h += `<section class="eq-sec"><h3 class="ci-h3">Esfuerzo de cada sesión</h3>${
+      ses.length
+        ? ses
+            .map((x) => {
+              let ids = Object.keys(x.por),
+                media = ids.reduce((a, id) => a + x.por[id].rpe, 0) / ids.length;
+              return `<div class="esp-av-it"><b>${x.tipo === "e" ? "Entreno" : esc(x.nombre)} · ${esc(fmtDate(x.f))}</b><small><b style="color:${cgCol(Math.round(media))}">${media.toFixed(1).replace(".", ",")}</b> esfuerzo medio · ${ids.length} ${ids.length === 1 ? "jugador" : "jugadores"}</small><span class="esp-esf-l">${ids
+                .sort((a, b) => x.por[b].rpe - x.por[a].rpe)
+                .map((id) => `<i style="--c:${cgCol(x.por[id].rpe)}">${esc(nom(id))} ${x.por[id].rpe}</i>`)
+                .join("")}</span></div>`;
+            })
+            .join("")
+        : '<p class="muted">Todavía no hay esfuerzo anotado. Los jugadores lo anotan desde el enlace del equipo al terminar cada entreno o partido.</p>'
+    }</section>`;
+    if (!pro) h += `<p class="muted lim-q">El entrenador tiene el plan gratuito: aquí sale la <b>semana actual</b>. Con el plan Pro, las últimas 6 semanas con el gráfico de cada jugador y los avisos de sobrecarga.</p>`;
+    h += `<p class="muted lv-upd">Es una ayuda, no un diagnóstico médico · Actualizado: ${esc(new Date(pfD.actualizado || Date.now()).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</p>`;
+    box.innerHTML = h;
+  }
+  function startPf() {
+    $("login").classList.add("hidden");
+    $("app").classList.add("hidden");
+    let box = document.createElement("main");
+    box.id = "pub";
+    box.className = "pub eq pf";
+    document.body.appendChild(box);
+    document.title = "Carga física · Mi Fútbol JV32";
+    box.innerHTML = `<div class="pub-in"><div class="brand"><span class="mark" role="img" aria-label="Logo JV32"></span><span class="word">Mi Fútbol <i>JV32</i></span></div><section class="panel cg-panel"><div id="pfData"><p class="muted">Cargando…</p></div></section><p class="legal-links"><a href="${esc(location.pathname)}">¿Eres entrenador? Lleva tu equipo con Mi Fútbol JV32</a></p></div>`;
+    pfLoad();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") pfLoad();
+    });
+    setInterval(() => document.visibilityState === "visible" && pfLoad(), 60000);
+  }
+  if (PF) startPf();
 
 
   /* Pizarra: trazos (lápiz/flecha) + fichas que se arrastran (jugadores, rivales,
@@ -8586,7 +8906,7 @@
   });
 
   db.auth.onAuthStateChange((event, session) => {
-    if (PUB || EQ) return;
+    if (PUB || EQ || PF) return;
     if (event === "PASSWORD_RECOVERY") recovering = true;
     if (session && recovering) {
       $("login").classList.remove("hidden");
