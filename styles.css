@@ -5000,3 +5000,20 @@ body.presenting .est-bar {
   border-radius: 14px;
   background: #000;
 }
+/* Límites del plan gratuito (v11.4) */
+.pro-tag {
+  margin-left: 4px;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: var(--draw);
+  color: #1f1300;
+  font: 800 11px/1 var(--fd);
+  font-style: normal;
+}
+.lim-q {
+  margin: 6px 0;
+  font-size: 13px;
+}
+.disp-it .ci-opt {
+  margin-bottom: 0;
+}

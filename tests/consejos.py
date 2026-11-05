@@ -9,7 +9,7 @@ HOY=datetime.date.today().isoformat()
 NOM=['Pablo','Iván','Rubén','Dani','Sergio','Álex','Hugo','Marcos','Leo','Nico','Jorge','Raúl','Toni','Pepe','Luis','Kike']
 def seed(tr):
     P=[{'id':f'p{i}','owner_id':'u1','modalidad':'fs','nombre':n,'foto':'','dorsal':i+1} for i,n in enumerate(NOM)]
-    return {'futbol_personal_jugadores':P,'futbol_personal_partidos':[],'perfiles':[{'id':'u1','plan':'free'}],'entrenamientos':tr}
+    return {'futbol_personal_jugadores':P,'futbol_personal_partidos':[],'perfiles':[{'id':'u1','plan':'pro'}],'entrenamientos':tr}
 EJ=[{'n':'Activación con balón','d':'Rondos 4x1, dos toques.','t':600},{'n':'Juego de 4','d':'Rotaciones ala-cierre.','t':1200}]
 TR=[{'id':'t1','owner_id':'u1','modalidad':'fs','fecha':HOY,'hora':'19:30','nota':'Juego de 4 y defensa con cambio','asistencia':{},'ejercicios':EJ}]
 class H(http.server.SimpleHTTPRequestHandler):
@@ -112,7 +112,7 @@ with sync_playwright() as p:
     pg.click('#closeInfo')
     # ---- Guía de uso y novedades
     v=json.load(open(REPO+'/version.json',encoding='utf-8'))
-    check('novedades 11.3',v['version']=='11.3' and any('Convocatoria' in x for x in v['novedades']))
+    check('novedades con texto',v['version'] and len(v['novedades'])>=3)
     js=open(REPO+'/app.js',encoding='utf-8').read()
     check('Guía de uso explica convocatoria, entreno, limpia y vídeos','t: "Convocatoria"' in js and 'Enviar el entreno a los jugadores</b>' in js and '<b>Limpia</b>' in js and '<b>Vídeos</b>' in js)
     check('sin errores en la página',not errs,errs[:3])

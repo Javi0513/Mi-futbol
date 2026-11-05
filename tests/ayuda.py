@@ -71,7 +71,7 @@ with sync_playwright() as p:
     check('directo: explica cámara y emitir','Cámara' in t and 'Emitir' in t,t[:120])
     check('directo: explica el máximo de 25 personas viendo el vídeo','25 personas' in t)
     pg.locator('#info .ayuda summary',has_text='Plan gratuito y plan Pro').click();pg.wait_for_timeout(150)
-    t=pg.locator('#info .ayuda details',has_text='plan Pro quita').inner_text()
+    t=pg.locator('#info .ayuda details',has_text='Plan gratuito y plan Pro').inner_text()
     check('plan Pro: precio nuevo y por qué','39,99 €' in t and '¿Por qué' in t and 'mantiene' in t,t[:160])
     pg.screenshot(path=OUT+'/ayuda_directo.png')
     pg.click('#closeInfo')
