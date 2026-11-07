@@ -466,6 +466,8 @@
   }
   async function load() {
     if (viendo) return render();
+    /* Sin conexión con la cuenta no se carga nada: se dejaría la plantilla y el directo vacíos */
+    if (sesPerdida) return render();
     let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg, ej, eg] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
@@ -570,6 +572,7 @@
     );
   }
   function render() {
+    directoRecuerda();
     let eo = entrenosOn();
     if (!eo && state.tab === "entrenos") state.tab = "plantilla";
     document.querySelectorAll("[data-mode]").forEach((b) => {
@@ -4831,6 +4834,36 @@
     }
   }
   const diasQuedan = (iso) => Math.max(1, Math.ceil((Date.parse(iso) - Date.now()) / 864e5));
+  /* Si la app se cerró con un directo abierto (Android la cierra a veces cuando se
+     usa la cámara o pasa mucho rato en segundo plano), al volver se abre otra vez ese directo. */
+  const DIR_KEY = "mf_directo_abierto";
+  let dirAbierto = (() => {
+      try {
+        return localStorage.getItem(DIR_KEY) || "";
+      } catch (e) {
+        return "";
+      }
+    })(),
+    dirGuardado = dirAbierto;
+  function directoRecuerda() {
+    let v = state.live || "";
+    if (v === dirGuardado) return;
+    dirGuardado = v;
+    try {
+      if (v) localStorage.setItem(DIR_KEY, v);
+      else localStorage.removeItem(DIR_KEY);
+    } catch (e) {}
+  }
+  function directoReabre() {
+    let id = dirAbierto;
+    dirAbierto = "";
+    if (!id || state.live || state.draft || viendo) return;
+    let x = liveRows[id];
+    if (!liveOn(x) || !state.matches.some((m) => m.id === id)) return;
+    openLive(id)
+      .then(() => state.live === id && note("Has vuelto al directo del partido. Todo lo apuntado sigue aquí.", true))
+      .catch(() => {});
+  }
   async function enterApp() {
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
@@ -4844,6 +4877,9 @@
       else if (prueba === "terminada" && plan !== "pro")
         note("Tu prueba del plan Pro ha terminado. Ahora tienes el plan gratuito.");
       await load();
+      if (sesPerdida) return;
+      appCargada = true;
+      directoReabre();
       if (tutPending() && !state.players.length && !state.matches.length)
         tutOpen();
       else if (tutPending())
@@ -5179,6 +5215,11 @@
       loginNote("");
     });
   async function doLogout() {
+    saliendo = true;
+    try {
+      localStorage.removeItem("mf_sesion_copia");
+      localStorage.removeItem("mf_directo_abierto");
+    } catch (e) {}
     if (dispOk)
       try {
         await Promise.race([db.from("dispositivos").delete().eq("id", dispId()), new Promise((r) => setTimeout(r, 1500))]);
@@ -5654,6 +5695,7 @@
         "<b>Anotador</b>: si tú grabas o estás dirigiendo, otra persona (el delegado, un padre…) puede apuntarlo todo desde su móvil. En el Directo pulsa «Crear enlace de anotador» y mándaselo con «Enviar al anotador». No necesita cuenta.",
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
         "En tu móvil el marcador, los goleadores y el marcador del vídeo se actualizan solos en unos segundos, y todo se guarda en el partido y en las estadísticas. El anotador puede quitar con la ✕ lo que haya apuntado él. Con «Quitar el anotador» su enlace deja de funcionar. Con el plan gratuito, el anotador se puede usar en 3 partidos al mes; con Pro, sin límite.",
+        "<b>Sin cobertura en el campo</b>: la sesión ya no se cierra sola. Si se pierde la conexión, arriba sale «Sin conexión con tu cuenta»; sigue apuntando con normalidad y, en cuanto vuelva la cobertura, se guarda todo solo. Si el móvil cierra la app (por ejemplo al usar la cámara), al abrirla otra vez vuelves directamente al directo del partido.",
       ],
     },
     {
@@ -6320,6 +6362,11 @@
         return note(clubMsg(r.error));
       }
       $("info").classList.add("hidden");
+      saliendo = true;
+      try {
+        localStorage.removeItem("mf_sesion_copia");
+        localStorage.removeItem("mf_directo_abierto");
+      } catch (e) {}
       await db.auth.signOut();
       loginNote("Tu cuenta y tus datos se han borrado.", true);
     }
@@ -6565,10 +6612,12 @@
         ? "El directo aún no está activado en la base de datos (falta ejecutar supabase-directo.sql en Supabase)."
         : t;
   async function loadLive() {
-    liveRows = {};
     try {
       let r = await db.from("directos").select("*");
-      (r.data || []).forEach((x) => {
+      /* Si falla (sin cobertura) se queda lo que ya había, para no perder el directo abierto */
+      if (r.error || !Array.isArray(r.data)) return;
+      liveRows = {};
+      r.data.forEach((x) => {
         x._seen = new Set((Array.isArray(x.eventos) ? x.eventos : []).map((e) => e.id));
         liveRows[x.partido_id] = x;
       });
@@ -6818,7 +6867,7 @@
         .catch((e) => note(e.message));
     }, 400);
   }
-  /* ===== Ventanas de cambios (v11.9) =====
+  /* ===== Ventanas de cambios (v11.11) =====
      Desde juvenil (fútbol 11) hay 3 ventanas de cambios por parte y en cada una
      entran y salen los jugadores que quieras. Se activa o quita en el Directo
      (alineacion.vent = nº de ventanas, 0 = sin ventanas). Los cambios del Directo
@@ -9910,9 +9959,131 @@
     }
   });
 
+  /* ===== Que no se cierre la sesión sola (por ejemplo, en mitad de un partido) =====
+     Cada hora la app renueva el pase de la cuenta. Si en ese momento no hay cobertura
+     (campo de fútbol, el móvil estaba en el bolsillo o grabando), Supabase a veces da la
+     sesión por perdida y la app enseñaba la pantalla de «Entrar». Ahora solo se sale
+     cuando el entrenador pulsa «Cerrar sesión» (o el servidor dice que la sesión ya no vale):
+     si es por falta de conexión, la app sigue abierta con sus datos y lo reintenta sola. */
+  const SES_KEY = "mf_sesion_copia";
+  let saliendo = false,
+    appCargada = false,
+    sesPerdida = false,
+    sesTimer = null,
+    sesEspera = 3000;
+  const sesCopia = () => {
+    try {
+      let j = JSON.parse(localStorage.getItem(SES_KEY) || "null");
+      return j && j.rt && j.uid ? j : null;
+    } catch (e) {
+      return null;
+    }
+  };
+  function sesGuarda(s) {
+    try {
+      if (s && s.refresh_token && s.user)
+        localStorage.setItem(SES_KEY, JSON.stringify({ rt: s.refresh_token, uid: s.user.id }));
+      else localStorage.removeItem(SES_KEY);
+    } catch (e) {}
+  }
+  /* El pase que tenga guardado Supabase (puede ser más nuevo que la copia) */
+  function sesTokenActual() {
+    try {
+      for (let k of Object.keys(localStorage))
+        if (/^sb-.*-auth-token$/.test(k)) {
+          let j = JSON.parse(localStorage.getItem(k) || "null");
+          if (j && j.refresh_token) return j.refresh_token;
+        }
+    } catch (e) {}
+    let c = sesCopia();
+    return c ? c.rt : "";
+  }
+  /* true = el servidor dice que la sesión ya no vale (no es un problema de conexión) */
+  const sesDefinitivo = (e) =>
+    !!e &&
+    (["refresh_token_not_found", "refresh_token_already_used", "session_expired", "session_not_found", "user_not_found", "user_banned"].includes(e.code) ||
+      (e.status >= 400 && e.status < 500 && e.name !== "AuthRetryableFetchError"));
+  function sesAviso(on) {
+    let d = $("sesAviso");
+    if (!on) return d && d.remove();
+    if (!d) {
+      d = document.createElement("div");
+      d.id = "sesAviso";
+      d.setAttribute("role", "status");
+      d.innerHTML =
+        '<span><b>Sin conexión con tu cuenta</b><small>Tranquilo: no se ha cerrado la sesión y lo que apuntes se queda en este móvil. Se vuelve a conectar sola en cuanto haya cobertura.</small></span><button type="button" class="secondary small" data-ses="ya">Reintentar</button>';
+      document.body.appendChild(d);
+    }
+  }
+  async function sesRecupera() {
+    clearTimeout(sesTimer);
+    sesTimer = null;
+    if (!sesPerdida) return;
+    let rt = sesTokenActual(),
+      r;
+    if (!rt) return sesFin();
+    try {
+      r = await db.auth.refreshSession({ refresh_token: rt });
+    } catch (e) {
+      r = { error: e };
+    }
+    if (r && r.data && r.data.session) return; /* onAuthStateChange se encarga del resto */
+    if (r && sesDefinitivo(r.error)) return sesFin(true);
+    sesEspera = Math.min(30000, sesEspera * 2);
+    sesTimer = setTimeout(sesRecupera, sesEspera);
+  }
+  /* Ahora sí: se sale de verdad y se enseña la pantalla de entrar */
+  function sesFin(caducada) {
+    sesPerdida = false;
+    clearTimeout(sesTimer);
+    sesAviso(false);
+    sesGuarda(null);
+    salirDeVerdad();
+    if (caducada) loginNote("Tu sesión ha caducado. Vuelve a entrar con tu email y contraseña.");
+  }
+  function sesSinConexion() {
+    if (!sesPerdida) {
+      sesPerdida = true;
+      sesEspera = 3000;
+    }
+    /* Si la app aún no estaba abierta (se abrió sin cobertura) se enseña igual, sin cargar nada */
+    $("login").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    sesAviso(true);
+    if (!sesTimer) sesTimer = setTimeout(sesRecupera, 1500);
+  }
+  window.addEventListener("online", () => sesPerdida && sesRecupera());
+  document.addEventListener("visibilitychange", () => {
+    if (sesPerdida && document.visibilityState === "visible") sesRecupera();
+  });
+  document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest('[data-ses="ya"]')) {
+      sesEspera = 3000;
+      sesRecupera();
+    }
+  });
+  function salirDeVerdad() {
+    salirVer();
+    curUser = null;
+    appCargada = false;
+    liveRows = {};
+    Object.assign(state, {
+      players: [],
+      matches: [],
+      draft: null,
+      editing: null,
+      live: null,
+      tab: "plantilla",
+    });
+    $("info").classList.add("hidden");
+    $("login").classList.remove("hidden");
+    $("app").classList.add("hidden");
+    if (amode === "newpass" && !recovering) setAm("login");
+  }
   db.auth.onAuthStateChange((event, session) => {
     if (PUB || EQ || PF || AN) return;
     if (event === "PASSWORD_RECOVERY") recovering = true;
+    if (session) sesGuarda(session);
     if (session && recovering) {
       $("login").classList.remove("hidden");
       $("app").classList.add("hidden");
@@ -9920,26 +10091,33 @@
       return;
     }
     if (session) {
+      let volvio = sesPerdida;
+      sesPerdida = false;
+      clearTimeout(sesTimer);
+      sesTimer = null;
+      sesAviso(false);
       let first =
-        curUser !== session.user.id || $("app").classList.contains("hidden");
+        curUser !== session.user.id || !appCargada || (!volvio && $("app").classList.contains("hidden"));
       useUser(session.user);
       /* No esperar aquí: dentro de este aviso Supabase mantiene un bloqueo y cualquier consulta quedaría colgada */
       if (first) setTimeout(enterApp, 0);
+      else if (volvio)
+        setTimeout(() => {
+          /* Vuelve la conexión: se guarda lo que se apuntó sin cobertura en el directo */
+          let x = state.live && liveRows[state.live];
+          if (x) liveSave(x, () => liveMatch(x, null, 0));
+        }, 0);
     } else {
-      salirVer();
-      curUser = null;
-      Object.assign(state, {
-        players: [],
-        matches: [],
-        draft: null,
-        editing: null,
-        live: null,
-        tab: "plantilla",
-      });
-      $("info").classList.add("hidden");
-      $("login").classList.remove("hidden");
-      $("app").classList.add("hidden");
-      if (amode === "newpass" && !recovering) setAm("login");
+      let copia = sesCopia();
+      if (!saliendo && copia && (!curUser || curUser === copia.uid)) {
+        if (!curUser) curUser = copia.uid;
+        sesSinConexion();
+      } else {
+        sesPerdida = false;
+        sesAviso(false);
+        sesGuarda(null);
+        salirDeVerdad();
+      }
     }
   });
   const APP_VERSION =

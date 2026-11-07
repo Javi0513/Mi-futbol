@@ -5442,7 +5442,39 @@ body.presenting .est-bar {
 .lv-anot .hint {
   margin-top: 8px;
 }
-/* ventanas de cambios (v11.9) */
+/* Aviso de «Sin conexión con tu cuenta» (la sesión sigue abierta) */
+#sesAviso {
+  position: fixed;
+  z-index: 96;
+  left: 12px;
+  right: 12px;
+  top: calc(8px + env(safe-area-inset-top));
+  max-width: 560px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 14px;
+  background: #2d2205;
+  border: 1px solid #8a6a12;
+  color: #ffe9a8;
+  font-size: 14px;
+  box-shadow: 0 10px 30px #000a;
+}
+#sesAviso span {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+#sesAviso small {
+  opacity: 0.85;
+  font-size: 13px;
+}
+#sesAviso button {
+  flex: none;
+/* ventanas de cambios (v11.11) */
 .lv-vent {
   margin: 12px 0;
   padding: 10px 12px;

@@ -3,7 +3,7 @@
      si no hay conexión, usa la copia guardada (la app abre sin internet).
    - Letras, iconos y librería: primero la copia guardada (no cambian).
    - Las llamadas a Supabase NO se tocan nunca. */
-const VERSION = "11.9";
+const VERSION = "11.11";
 const CACHE = "jv32-" + VERSION;
 const SHELL = [
   "./",
@@ -71,20 +71,47 @@ self.addEventListener("fetch", (e) => {
   const networkFirst =
     req.mode === "navigate" || NETWORK_FIRST.test(url.pathname);
   if (networkFirst) {
+    /* Con poca cobertura (en el campo) no se espera más de 5 s a la red:
+       si hay copia guardada se abre con ella y la versión nueva llega la próxima vez. */
+    const red = fetch(req, { cache: "no-store" }).then((r) => {
+      if (r.ok) {
+        const copy = r.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
+      }
+      return r;
+    });
+    const copia = () =>
+      caches
+        .match(req, { ignoreSearch: true })
+        .then((m) => m || (req.mode === "navigate" ? caches.match("index.html") : undefined));
     e.respondWith(
-      fetch(req, { cache: "no-store" })
-        .then((r) => {
-          if (r.ok) {
-            const copy = r.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return r;
-        })
-        .catch(() =>
-          caches
-            .match(req, { ignoreSearch: true })
-            .then((m) => m || caches.match("index.html")),
-        ),
+      new Promise((ok, ko) => {
+        let hecho = false;
+        const t = setTimeout(() => {
+          copia().then((m) => {
+            if (m && !hecho) {
+              hecho = true;
+              ok(m);
+            }
+          });
+        }, 5000);
+        red
+          .then((r) => {
+            clearTimeout(t);
+            if (!hecho) {
+              hecho = true;
+              ok(r);
+            }
+          })
+          .catch(() => {
+            clearTimeout(t);
+            copia().then((m) => {
+              if (hecho) return;
+              hecho = true;
+              m ? ok(m) : ko(new Error("sin red"));
+            });
+          });
+      }),
     );
   } else {
     e.respondWith(
