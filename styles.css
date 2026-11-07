@@ -5442,3 +5442,137 @@ body.presenting .est-bar {
 .lv-anot .hint {
   margin-top: 8px;
 }
+/* ventanas de cambios (v11.9) */
+.lv-vent {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line2);
+  background: var(--s2);
+}
+.lv-vent.off {
+  padding: 6px 12px;
+}
+.lv-vsw,
+.md-vent .lv-vsw {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  min-height: 36px;
+}
+.lv-vsw input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--lime);
+}
+.vfila {
+  display: grid;
+  grid-template-columns: 50px 1fr 58px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  opacity: 0.6;
+}
+.vfila.act {
+  opacity: 1;
+}
+.vp,
+.vq {
+  font-size: 12px;
+  color: var(--mut);
+  font-weight: 700;
+}
+.vchs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  gap: 6px;
+}
+.vch {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 2px 4px;
+  border-radius: 12px;
+  border: 1px dashed var(--line2);
+  color: var(--mut);
+  font: 700 16px var(--fd);
+  line-height: 1.05;
+}
+.vch small {
+  font: 600 11px var(--fb, inherit);
+}
+.vch.used {
+  border-style: solid;
+  border-color: var(--lime);
+  color: var(--lime);
+}
+.vch.used.ex {
+  border-color: #ff8a8a;
+  color: #ff8a8a;
+}
+button.vch.next {
+  border: 2px solid var(--lime);
+  background: var(--lime);
+  color: var(--on-lime);
+}
+.lv-vw {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 107, 107, 0.14);
+  color: #ffb0b0;
+  font-weight: 600;
+}
+.lv-vw.s {
+  background: rgba(255, 200, 60, 0.14);
+  color: #ffd76a;
+}
+.lv-multi h4 {
+  margin: 12px 0 0;
+}
+.lv-multi h4 small {
+  color: var(--lime);
+  font-weight: 700;
+}
+.lv-multi .slotmenu button.selected {
+  background: var(--s3, #1a3a2b);
+}
+.lvn {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--on-lime);
+  font-size: 13px;
+}
+.lv-par {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.lv-par li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+}
+.lv-par .in {
+  color: var(--lime);
+}
+.lv-par .out {
+  color: var(--loss);
+}
+.md-vent {
+  margin: 8px 0;
+}
+.md-vent .w {
+  color: #ff8a8a;
+}
