@@ -1631,14 +1631,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { an: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1 };
+  const LIM = { an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: anotador del directo, convocatorias, envíos de entrenos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -3825,7 +3825,18 @@
         )
         .join(""),
       rv = esc(d.rival || "Rival");
-    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div>${mdStats(d)}<h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><label class="mdparte">Tiros del rival<input type="number" min="0" max="999" inputmode="numeric" data-mdr="tir" value="${Number((al.estR || {}).tir) || ""}" placeholder="0"></label><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
+    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}${mdVent(d)}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div>${mdStats(d)}<h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><label class="mdparte">Tiros del rival<input type="number" min="0" max="999" inputmode="numeric" data-mdr="tir" value="${Number((al.estR || {}).tir) || ""}" placeholder="0"></label><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
+  }
+  /* Ventanas de cambios en el editor del partido: resumen por parte e interruptor */
+  function mdVent(d) {
+    if (state.mode === "fs") return "";
+    let m0 = state.editing && state.matches.find((z) => z.id === state.editing),
+      n = ventDe({ modalidad: state.mode, equipo_id: m0 ? m0.equipo_id : curTeam(), alineacion: d.alineacion }),
+      sw = `<label class="lv-vsw"><input type="checkbox" id="mdVent" ${n ? "checked" : ""}> Ventanas de cambios (${VENT_N} por parte)</label>`;
+    if (!n) return `<div class="md-vent">${sw}</div>`;
+    let u = ventUsadas(mdList(d.alineacion, "cambios").filter((z) => z.sale || z.entra), mdParte(d, state.editing)),
+      t = (p) => `<span class="${u[p].length > n ? "w" : ""}">${p}ª parte: <b>${u[p].length} de ${n}</b>${u[p].length > n ? " (te has pasado)" : ""}</span>`;
+    return `<div class="md-vent">${sw}<p class="muted">Ventanas usadas · ${t(1)} · ${t(2)}</p><p class="hint">Los cambios del mismo minuto cuentan como una sola ventana. Los del descanso no gastan.</p></div>`;
   }
   /* Robos, pérdidas, tiros, paradas, asistencias y faltas de cada convocado + faltas acumuladas */
   function mdStats(d) {
@@ -5423,7 +5434,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -5658,7 +5669,7 @@
         "En «Datos del partido» también están los <b>minutos por parte</b> de ese partido (salen de la categoría o del Directo). «Calcular minutos» los usa.",
         "Ahí mismo apuntas los <b>cambios</b> (minuto, quién sale y quién entra, con su dorsal) y las <b>tarjetas</b> amarillas y rojas. «Calcular minutos» rellena los minutos de cada jugador con los titulares, los cambios y las expulsiones.",
         "Más abajo está el apartado del <b>rival</b>: sus cambios (dorsal que sale y dorsal que entra) y sus tarjetas (dorsal y nombre opcional), cada uno con su minuto.",
-        "Los cambios y tarjetas que apuntes en el Directo aparecen solos aquí. Las tarjetas de cada jugador salen en su ficha de Plantilla y en Estadísticas.",
+        "Los cambios y tarjetas que apuntes en el Directo aparecen solos aquí. Si el partido va con <b>ventanas de cambios</b>, debajo de los cambios ves cuántas ventanas has usado en cada parte (los cambios del mismo minuto cuentan como una sola ventana) y puedes quitarlas o ponerlas con la casilla. Las tarjetas de cada jugador salen en su ficha de Plantilla y en Estadísticas.",
         "En <b>Estadísticas de cada jugador</b> tienes una tabla con los robos, pérdidas, tiros a puerta, tiros fuera, paradas, asistencias y faltas de cada convocado (desliza a los lados si no cabe). Se rellena sola desde el Directo y puedes corregirla o apuntarla a mano después del partido. Debajo están las <b>faltas acumuladas</b> de cada parte y, en el apartado del rival, sus <b>tiros</b>.",
         "Puedes sacar una imagen de la alineación para mandarla por WhatsApp.",
       ],
@@ -5667,7 +5678,9 @@
       t: "Directo",
       p: [
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
-        "<b>Cambios</b>: pulsa «🔄 Cambio», elige quién sale y luego quién entra (salen con su dorsal). <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
+        "<b>Cambios</b>: pulsa «🔄 Cambio» y marca a <b>todos los que salen</b> y a <b>todos los que entran</b> a la vez (salen con su dorsal). Van por parejas en el orden en que los toques: el 1º que sale por el 1º que entra, el 2º por el 2º… Abajo ves las parejas y pulsas «Hacer 2 cambios» (o los que sean). Si sale uno y no entra nadie (por una lesión sin cambios), márcalo solo a él. Toca otra vez a un jugador para desmarcarlo. <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
+        "<b>Ventanas de cambios</b>: desde <b>juvenil en fútbol 11</b> (categoría Juvenil o Senior) se juega con <b>3 ventanas de cambios por parte</b> y en cada ventana cambias a los jugadores que quieras. En el Directo te salen las ventanas de la 1ª y la 2ª parte: toca la que toca («Ventana 1», «Ventana 2»…) o «🔄 Cambio», marca a los que salen y a los que entran y listo, esa ventana queda hecha con sus cambios. En la <b>penúltima</b> te avisa de que después solo te queda una, y en la <b>última</b> te avisa de que metas en ella todos los cambios que quieras hacer. Los cambios del <b>descanso no gastan ventana</b>. Si ya no te quedan y apuntas otro, te pregunta antes.",
+        "Las ventanas se activan solas con la categoría Juvenil o Senior en fútbol 11. En cualquier otro partido (fútbol 7 o fútbol 11 de otra categoría) puedes ponerlas o quitarlas con la casilla «Ventanas de cambios (3 por parte)». En fútbol sala no salen, porque los cambios son libres. Gratis: control de ventanas en 3 partidos al mes; con Pro, ilimitado. Cambiar a varios jugadores a la vez es gratis siempre.",
         "<b>Del rival</b>: al pulsar «🔄 Cambio», «Amarilla» o «Roja», elige arriba el nombre del rival. Pon el dorsal (en las tarjetas, también el nombre si quieres) y pulsa «Apuntar». Salen marcados con el nombre del rival.",
         "Los <b>minutos por parte</b> salen de la categoría del equipo. Si un día se juega con otra duración, cámbialos antes de pulsar «Empezar partido».",
         "Debajo eliges el <b>capitán</b> y el <b>portero</b>. Al pulsar «Terminar partido», los minutos de cada jugador se calculan solos con los cambios.",
@@ -5788,7 +5801,7 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
         "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
@@ -6771,7 +6784,7 @@
       capgk = ids.length
         ? `<div class="formgrid lv-cg"><label>Capitán<select id="lvCap">${so(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="lvGk">${so(gk, "—")}</select></label></div>`
         : "";
-    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? ventPanel(m, x) : ""}${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
   }
   /* Estadísticas en directo: eliges qué apuntar (robo, pérdida, tiro…) y tocas al jugador */
   function liveStats(m, x) {
@@ -6854,7 +6867,134 @@
         .catch((e) => note(e.message));
     }, 400);
   }
-  /* Elegir jugadores para un cambio (sale y luego entra) o una tarjeta */
+  /* ===== Ventanas de cambios (v11.11) =====
+     Desde juvenil (fútbol 11) hay 3 ventanas de cambios por parte y en cada una
+     entran y salen los jugadores que quieras. Se activa o quita en el Directo
+     (alineacion.vent = nº de ventanas, 0 = sin ventanas). Los cambios del Directo
+     llevan v (id de la ventana) y p (parte); ds:1 = hecho en el descanso (no gasta). */
+  const VENT_N = 3;
+  const ventDef = (m) => {
+      let c = catOf(m.modalidad, teamOf(m));
+      return String(m.modalidad) === "11" && c && (c[0] === "juvenil" || c[0] === "senior") ? VENT_N : 0;
+    },
+    ventDe = (m) => {
+      let v = m && m.alineacion && m.alineacion.vent;
+      return v === 0 || v === VENT_N ? v : m ? ventDef(m) : 0;
+    };
+  /* Ventanas usadas en cada parte. L: cambios {m, p?, v?, ds?}; pm: minutos por parte.
+     Los que no traen ventana (a mano o del anotador) se juntan por minuto. */
+  function ventUsadas(L, pm) {
+    let g = { 1: new Map(), 2: new Map() };
+    (L || []).forEach((z) => {
+      if (!z || z.ds) return;
+      let m = Number(z.m) || 0,
+        p = z.p === 1 || z.p === 2 ? z.p : m <= pm ? 1 : 2;
+      if (!z.p && m === pm) return; /* justo en el descanso: no gasta */
+      let k = z.v || "m" + m;
+      g[p].set(k, (g[p].get(k) || 0) + 1);
+    });
+    return { 1: [...g[1].values()], 2: [...g[2].values()] };
+  }
+  const lvSubs = (x) => (Array.isArray(x.eventos) ? x.eventos : []).filter((e) => e.t === "s" && !e.r),
+    lvParteV = (x) => (x.estado === "DES" ? 0 : x.estado === "2T" || x.estado === "FIN" ? 2 : 1);
+  /* Plan gratuito: control de ventanas en LIM.vt partidos al mes (Pro, ilimitado) */
+  const ventPuedeVer = (id) => esPro() || (envLee().vt || []).includes(id) || envUsados("vt") < LIM.vt;
+  function ventPanel(m, x) {
+    let n = ventDe(m),
+      ok = n && ventPuedeVer(x.partido_id),
+      sw = String(m.modalidad) === "fs" ? "" : `<label class="lv-vsw"><input type="checkbox" id="lvVent" ${n ? "checked" : ""}> Ventanas de cambios (${VENT_N} por parte)</label>`;
+    if (!n) return sw ? `<div class="lv-vent off">${sw}</div>` : "";
+    if (!ok)
+      return `<div class="lv-vent">${sw}<p class="muted lim-q">Plan gratuito: control de ventanas en ${LIM.vt} partidos al mes y este mes ya lo has usado. Los cambios se apuntan igual (varios a la vez). Con Pro, ilimitado.</p></div>`;
+    let u = ventUsadas(lvSubs(x), x.parte_min),
+      h = lvParteV(x),
+      fila = (p) => {
+        let us = u[p],
+          act = h === p && x.estado !== "FIN",
+          ch = [];
+        for (let i = 0; i < Math.max(n, us.length); i++) {
+          let c = us[i],
+            ex = i >= n ? " ex" : "";
+          if (c) ch.push(`<span class="vch used${ex}" aria-label="Ventana ${i + 1} hecha, ${c} ${c > 1 ? "cambios" : "cambio"}">✓ ${i + 1}<small>${c} ${c > 1 ? "cambios" : "cambio"}</small></span>`);
+          else if (act && i === us.length) ch.push(`<button class="vch next" data-live="sub" aria-label="Ventana ${i + 1}: hacer los cambios">${i + 1}<small>${i === n - 1 ? "la última" : i === n - 2 ? "penúltima" : "toca aquí"}</small></button>`);
+          else ch.push(`<span class="vch">${i + 1}</span>`);
+        }
+        let q = Math.max(0, n - us.length);
+        return `<div class="vfila${act ? " act" : ""}"><span class="vp">${p}ª parte</span><div class="vchs">${ch.join("")}</div><span class="vq">${q ? `Quedan ${q}` : "Sin ventanas"}</span></div>`;
+      };
+    let pie = "";
+    if (h === 0) pie = '<p class="hint">Descanso: los cambios que hagas ahora no gastan ventana.</p>';
+    else if (x.estado !== "FIN") {
+      let q = n - u[h].length;
+      if (q === 1) pie = `<p class="lv-vw">⚠️ Te queda la <b>última ventana</b> de la ${h}ª parte: mete en ella todos los cambios que quieras hacer.</p>`;
+      else if (q === 2) pie = `<p class="lv-vw s">Después de la próxima ventana solo te quedará una en la ${h}ª parte.</p>`;
+      else if (q <= 0) pie = `<p class="lv-vw">Ya has usado las ${n} ventanas de la ${h}ª parte.</p>`;
+    }
+    return `<div class="lv-vent">${sw}${fila(1)}${fila(2)}${pie}</div>`;
+  }
+  /* Cambio de varios a la vez: state.lvSub = {o: [salen], i: [entran]} en el orden tocado */
+  function liveSubMulti(m, x, c, side) {
+    let S = state.lvSub || (state.lvSub = { o: [], i: [] }),
+      al = m.alineacion || {},
+      ids = entries(m).map((e) => e.id),
+      gk = gkOf(al, ids),
+      srt = (a) => a.slice().sort((p, q) => name(p).localeCompare(name(q), "es")),
+      B = (id, k) => {
+        let L = S[k],
+          j = L.indexOf(id);
+        return `<button data-lvs${k}="${esc(id)}" class="${j >= 0 ? "selected" : ""}" aria-pressed="${j >= 0}">${j >= 0 ? `<b class="lvn">${j + 1}</b>` : ""}${esc(dname(id))}${id === al.capitan ? " (C)" : ""}${id === gk ? " (POR)" : ""}</button>`;
+      },
+      onL = srt([...c.on]),
+      banL = srt(ids.filter((id) => !c.on.has(id) && !c.fuera.has(id))),
+      n = ventDe(m),
+      vt = n && ventPuedeVer(x.partido_id),
+      h = lvParteV(x),
+      t = "🔄 Cambio",
+      aviso = "";
+    if (vt && h) {
+      let k = ventUsadas(lvSubs(x), x.parte_min)[h].length + 1;
+      t = `🔄 Ventana ${k} de ${n} · ${h}ª parte`;
+      if (k === n) aviso = `<p class="lv-vw">⚠️ <b>Es la última ventana de la ${h}ª parte.</b> Marca ahora todos los que vayan a cambiar: después ya no podrás hacer más cambios en esta parte.</p>`;
+      else if (k === n - 1) aviso = `<p class="lv-vw s">⚠️ <b>Penúltima ventana.</b> Después solo te quedará una en la ${h}ª parte.</p>`;
+      else if (k > n) aviso = `<p class="lv-vw">Ya has usado las ${n} ventanas de la ${h}ª parte. Si lo apuntas, contará como una ventana de más.</p>`;
+    } else if (vt && !h) t = "🔄 Cambios en el descanso";
+    let par = S.o
+        .map((o, j) => `<li><span class="out">▼ ${esc(dname(o))}</span>${S.i[j] ? `<span class="in">▲ ${esc(dname(S.i[j]))}</span>` : '<span class="muted">sin nadie que entre</span>'}</li>`)
+        .join(""),
+      nn = S.o.length;
+    return `<div class="lv-pick lv-multi"><h3>${t}</h3>${side}${aviso}<p class="hint">Toca a todos los que salen y a todos los que entran. Van por parejas en el orden en que los toques (1 por 1, 2 por 2…).</p><h4>▼ Salen <small>${nn ? nn + " marcados" : ""}</small></h4><div class="slotmenu">${onL.map((id) => B(id, "o")).join("") || '<span class="muted">No hay nadie en el campo.</span>'}</div><h4>▲ Entran <small>${S.i.length ? S.i.length + " marcados" : ""}</small></h4><div class="slotmenu">${banL.map((id) => B(id, "i")).join("") || '<span class="muted">No quedan suplentes convocados.</span>'}</div>${par ? `<ul class="lv-par">${par}</ul>` : ""}<div class="lv-ctl"><button class="primary" data-live="subok" ${nn ? "" : "disabled"}>${nn ? `Hacer ${nn > 1 ? nn + " cambios" : "el cambio"}` : "Marca quién sale"}</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`;
+  }
+  function liveSubOk(m, x) {
+    let S = state.lvSub || { o: [], i: [] },
+      c = liveCampo(m, x);
+    S.o = S.o.filter((id) => c.on.has(id));
+    S.i = S.i.filter((id) => !c.on.has(id) && !c.fuera.has(id));
+    if (!S.o.length) return note("Marca al menos un jugador que sale.");
+    if (S.i.length > S.o.length) return note("Entran más jugadores de los que salen. Marca también a los que salen.");
+    if (!Array.isArray(x.eventos)) x.eventos = [];
+    if (lvCount(x) + S.o.length > 80) return note("Demasiadas jugadas apuntadas en este partido.");
+    let n = ventDe(m),
+      vt = n && ventPuedeVer(x.partido_id),
+      h = lvParteV(x),
+      v = rid(),
+      mi = liveMin(x),
+      k = vt && h ? ventUsadas(lvSubs(x), x.parte_min)[h].length + 1 : 0;
+    if (vt) envPuede("vt", x.partido_id);
+    S.o.forEach((o, j) => {
+      let e = { id: rid(), m: mi, t: "s", v, p: h || 2 };
+      if (!h) e.ds = 1;
+      liveWho(e, o);
+      if (S.i[j]) liveWho(e, S.i[j], "i");
+      x.eventos.push(e);
+    });
+    state.lvPick = state.lvSub = null;
+    liveSave(x, () => liveMatch(x, null, 0));
+    let q = S.o.length > 1 ? S.o.length + " cambios apuntados" : "Cambio apuntado";
+    if (k && k === n) note(`${q}. Era la última ventana de la ${h}ª parte.`, true);
+    else if (k && k === n - 1) note(`${q}. Te queda una sola ventana en la ${h}ª parte.`, true);
+    else note(q + ".", true);
+  }
+  /* Elegir jugadores para un cambio (varios a la vez) o una tarjeta */
   function livePick2(m, x) {
     let k = state.lvPick;
     if (!k) return "";
@@ -6885,10 +7025,8 @@
           : num("lvRd", "Dorsal") + '<label>Nombre (opcional)<input id="lvRn" maxlength="30" autocomplete="off"></label>'
       }</div><div class="lv-ctl"><button class="primary" data-live="rok">Apuntar</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`;
     }
-    if (k === "sub") {
-      t = "Cambio · ¿Quién sale?";
-      list = L([...c.on]) || '<span class="muted">No hay nadie en el campo.</span>';
-    } else if (k.out) {
+    if (k === "sub") return liveSubMulti(m, x, c, side);
+    if (k.out) {
       t = `Cambio · ¿Quién entra por ${esc(name(k.out))}?`;
       list = L(ids.filter((id) => !c.on.has(id) && !c.fuera.has(id))) || '<span class="muted">No quedan suplentes convocados.</span>';
     } else {
@@ -7078,7 +7216,7 @@
       byMin = (a, b) => (Number(a.m) || 0) - (Number(b.m) || 0),
       dv = (v) => (v == null ? "" : String(v));
     al.cambios = mano("cambios")
-      .concat(ev.filter((z) => z.t === "s" && !z.r && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, sale: z.pid || "", entra: z.pin || "", lv: 1 })))
+      .concat(ev.filter((z) => z.t === "s" && !z.r && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, sale: z.pid || "", entra: z.pin || "", lv: 1, ...(z.v ? { v: z.v } : {}), ...(z.p ? { p: z.p } : {}), ...(z.ds ? { ds: 1 } : {}) })))
       .sort(byMin);
     al.tarjetas = mano("tarjetas")
       .concat(ev.filter((z) => (z.t === "a" || z.t === "r") && !z.r && !hay.has(z.id)).map((z) => ({ id: z.id, m: Number(z.m) || 0, pid: z.pid || "", c: z.t, lv: 1 })))
@@ -7290,7 +7428,17 @@
       lp = e.target.closest("[data-lvp]"),
       sd = e.target.closest("[data-lvside]"),
       lst = e.target.closest("[data-lvst]"),
-      lsp = e.target.closest("[data-lvsp]");
+      lsp = e.target.closest("[data-lvsp]"),
+      lso = e.target.closest("[data-lvso],[data-lvsi]");
+    if (lso && state.lvPick === "sub") {
+      let S = state.lvSub || (state.lvSub = { o: [], i: [] }),
+        k = lso.hasAttribute("data-lvso") ? "o" : "i",
+        id = lso.getAttribute(k === "o" ? "data-lvso" : "data-lvsi"),
+        j = S[k].indexOf(id);
+      if (j >= 0) S[k].splice(j, 1);
+      else S[k].push(id);
+      return render();
+    }
     if (lst) {
       state.lvSt = lst.dataset.lvst;
       return render();
@@ -7335,6 +7483,10 @@
       return render();
     }
     if (k === "rok") return liveRival(x);
+    if (k === "subok" && m) {
+      liveSubOk(m, x);
+      return render();
+    }
     if ((k === "rfal" || k === "rtir" || k === "undo") && m) {
       if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
       if (k === "undo") liveUndo(x, m);
@@ -7353,7 +7505,12 @@
       return render();
     }
     if (k === "sub" || k === "ta" || k === "tr") {
+      if (k === "sub" && m && ventDe(m) && ventPuedeVer(x.partido_id) && lvParteV(x) && x.estado !== "FIN") {
+        let h = lvParteV(x);
+        if (ventUsadas(lvSubs(x), x.parte_min)[h].length >= ventDe(m) && !confirm(`Ya has usado las ${ventDe(m)} ventanas de cambios de la ${h}ª parte. ¿Apuntar otro cambio igualmente?`)) return;
+      }
       state.livePick = false;
+      state.lvSub = null;
       state.lvSide = "n";
       state.lvPick = k === "sub" ? "sub" : k === "ta" ? "a" : "r";
       return render();
@@ -7364,7 +7521,7 @@
     if (k === "anoff") return anotOff(x);
     if (k === "anshare") return anotShare(x);
     if (k === "off") return liveOff(x);
-    if (k === "nopick") state.livePick = state.lvPick = null;
+    if (k === "nopick") state.livePick = state.lvPick = state.lvSub = null;
     if (k === "gf") {
       state.lvPick = null;
       if (m && entries(m).length) state.livePick = true;
@@ -7407,6 +7564,10 @@
     render();
   });
   $("view").addEventListener("change", (e) => {
+    if (e.target.id === "mdVent" && state.draft) {
+      state.draft.alineacion.vent = e.target.checked ? VENT_N : 0;
+      return render();
+    }
     let x = state.live && liveRows[state.live];
     if (!x) return;
     if (e.target.id === "lvTeam") {
@@ -7428,6 +7589,18 @@
         .update({ alineacion: JSON.stringify(m.alineacion) })
         .eq("id", m.id)
         .then((r) => r.error && note(r.error.message));
+      render();
+    }
+    if (e.target.id === "lvVent") {
+      let m = state.matches.find((z) => z.id === x.partido_id);
+      if (!m) return;
+      if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
+      m.alineacion.vent = e.target.checked ? VENT_N : 0;
+      db.from("futbol_personal_partidos")
+        .update({ alineacion: JSON.stringify(m.alineacion) })
+        .eq("id", m.id)
+        .then((r) => r.error && note(r.error.message));
+      note(e.target.checked ? `Ventanas de cambios activadas: ${VENT_N} por parte.` : "Sin ventanas de cambios en este partido.", true);
       render();
     }
     if (e.target.id === "lvDur") {
