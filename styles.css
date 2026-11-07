@@ -5468,7 +5468,7 @@ body.presenting .est-bar {
 }
 .vfila {
   display: grid;
-  grid-template-columns: 50px 1fr 58px;
+  grid-template-columns: 44px 1fr 50px;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
@@ -5485,7 +5485,7 @@ body.presenting .est-bar {
 }
 .vchs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 .vch {
@@ -5503,6 +5503,8 @@ body.presenting .est-bar {
 }
 .vch small {
   font: 600 11px var(--fb, inherit);
+  text-align: center;
+  line-height: 1.1;
 }
 .vch.used {
   border-style: solid;

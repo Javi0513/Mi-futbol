@@ -71,7 +71,7 @@ with sync_playwright() as p:
     pg.click('[data-tab=partidos]');pg.click('[data-action=live][data-id=m1]');pg.wait_for_selector('.lv-board')
     check('juvenil F11: ventanas activadas solas',pg.locator('#lvVent').is_checked() and pg.locator('.vfila').count()==2)
     pg.click('[data-live=start]');wait(pg,"d.estado==='1T'")
-    check('3 ventanas por parte y la 1ª se puede tocar',pg.locator('.vfila').nth(0).locator('.vch').count()==3 and pg.locator('.vch.next').inner_text().startswith('Ventana 1'))
+    check('3 ventanas por parte y la 1ª se puede tocar',pg.locator('.vfila').nth(0).locator('.vch').count()==3 and pg.locator('.vch.next').get_attribute('aria-label').startswith('Ventana 1'))
     pg.click('.vch.next');pg.wait_for_selector('.lv-multi')
     check('título con la ventana y la parte',pg.text_content('.lv-multi h3')=='🔄 Ventana 1 de 3 · 1ª parte')
     check('salen los 11 del campo y entran los 4 del banquillo',pg.locator('[data-lvso]').count()==11 and pg.locator('[data-lvsi]').count()==4)

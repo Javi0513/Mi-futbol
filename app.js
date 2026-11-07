@@ -6867,7 +6867,7 @@
           let c = us[i],
             ex = i >= n ? " ex" : "";
           if (c) ch.push(`<span class="vch used${ex}" aria-label="Ventana ${i + 1} hecha, ${c} ${c > 1 ? "cambios" : "cambio"}">✓ ${i + 1}<small>${c} ${c > 1 ? "cambios" : "cambio"}</small></span>`);
-          else if (act && i === us.length) ch.push(`<button class="vch next" data-live="sub">Ventana ${i + 1}<small>${i === n - 1 ? "la última" : i === n - 2 ? "penúltima" : "tocar para cambiar"}</small></button>`);
+          else if (act && i === us.length) ch.push(`<button class="vch next" data-live="sub" aria-label="Ventana ${i + 1}: hacer los cambios">${i + 1}<small>${i === n - 1 ? "la última" : i === n - 2 ? "penúltima" : "toca aquí"}</small></button>`);
           else ch.push(`<span class="vch">${i + 1}</span>`);
         }
         let q = Math.max(0, n - us.length);
