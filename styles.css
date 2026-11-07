@@ -5434,3 +5434,11 @@ body.presenting .est-bar {
 .cx-p.on b {
   color: var(--on-lime);
 }
+/* Anotador del directo (v11.8): botones grandes para apuntar goles con una mano */
+.an-goals button {
+  min-height: 72px;
+  font-size: 20px;
+}
+.lv-anot .hint {
+  margin-top: 8px;
+}
