@@ -19,6 +19,7 @@ window.__anotar=(c,ev)=>{let d=AN(c);if(!d)return{error:{message:'NO_EXISTE'}};
  else if(ev.r){e.r=1;if(ev.d)e.d=ev.d;if(ev.t==='s'&&ev.di)e.di=ev.di;if(ev.t!=='s'&&ev.n)e.n=ev.n}
  else if(ev.t!=='c'){if(ev.pid){let j=J(ev.pid);if(!j)return{error:{message:'JUGADOR'}};e.pid=j.id;e.n=j.n;if(j.d)e.d=j.d}
   if(ev.t==='s'){let j=J(ev.pin);if(!j)return{error:{message:'JUGADOR'}};e.pin=j.id;e.ni=j.n;if(j.d)e.di=j.d}}
+ if(ev.t==='s'&&!window.__oldSql){if(d.estado==='DES'||(ev.ds&&['2T','FIN'].includes(d.estado))){e.m=d.parte_min;e.ds=1;e.p=2}else e.p=['2T','FIN'].includes(d.estado)?2:1}
  d.eventos.push(e);if(ev.t==='f')d.gf++;if(ev.t==='c')d.gc++;d.actualizado=NOW();return{data:VA(d),error:null}};
 window.supabase={createClient:()=>{let cb=null,session=null;
  const q=(t)=>{let f=[],op='select',payload=null,sel=false;
@@ -129,6 +130,19 @@ with sync_playwright() as p:
     an.click('[data-an=r]');an.click('[data-anx="p2"]');an.wait_for_timeout(200)
     check('roja a un jugador tuyo',an.evaluate("window.__db.directos[0].eventos.slice(-1)[0]")['pid']=='p2')
     an.screenshot(path=OUT+'/anot_pagina.png',full_page=True)
+    # v11.12 Cambios del descanso desde el anotador (no gastan ventana)
+    check('en la 1ª parte no sale «Cambio del descanso»',an.locator('[data-an=subds]').count()==0)
+    an.evaluate("(()=>{let d=window.__db.directos[0];d.estado='2T';d.desde=new Date().toISOString();d.acum_ms=0})()")
+    an.wait_for_selector('[data-an=subds]',timeout=9000)
+    an.click('[data-an=subds]');an.wait_for_selector('.lv-pick h3:has-text("descanso")')
+    an.click('[data-anx="p3"]');an.click('[data-anx="p1"]');an.wait_for_timeout(300)
+    e=an.evaluate("window.__db.directos[0].eventos.slice(-1)[0]")
+    check('anotador: cambio del descanso en la 2ª parte con ds y minuto del descanso',e['t']=='s' and e.get('ds')==1 and e['m']==an.evaluate('window.__db.directos[0].parte_min') and e['p']==2 and 'No gasta ventana' in an.locator('.message').inner_text(),e)
+    check('se ve como «Desc.» en lo apuntado',an.locator('.lv-e b:has-text("Desc.")').count()>=1)
+    an.evaluate("window.__oldSql=true")
+    an.click('[data-an=subds]');an.click('[data-anx="p1"]');an.click('[data-anx="p3"]');an.wait_for_timeout(300)
+    check('sin el SQL nuevo avisa de que falta un paso','falta un paso' in an.locator('.message').inner_text())
+    an.evaluate("window.__oldSql=false")
     n0=an.evaluate("window.__db.directos[0].eventos.length")
     check('el anotador solo puede quitar lo suyo',an.locator('[data-anq]').count()==min(10,an.evaluate("window.__db.directos[0].eventos.filter(e=>e.an).length")) and an.locator('[data-anq]').count()<n0)
     gid=an.evaluate("window.__db.directos[0].eventos.find(e=>e.t==='f'&&e.pid==='p4').id")

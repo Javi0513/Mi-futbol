@@ -3836,7 +3836,7 @@
     if (!n) return `<div class="md-vent">${sw}</div>`;
     let u = ventUsadas(mdList(d.alineacion, "cambios").filter((z) => z.sale || z.entra), mdParte(d, state.editing)),
       t = (p) => `<span class="${u[p].length > n ? "w" : ""}">${p}ª parte: <b>${u[p].length} de ${n}</b>${u[p].length > n ? " (te has pasado)" : ""}</span>`;
-    return `<div class="md-vent">${sw}<p class="muted">Ventanas usadas · ${t(1)} · ${t(2)}</p><p class="hint">Los cambios del mismo minuto cuentan como una sola ventana. Los del descanso no gastan.</p></div>`;
+    return `<div class="md-vent">${sw}<p class="muted">Ventanas usadas · ${t(1)} · ${t(2)}</p><p class="hint">Los cambios del mismo minuto cuentan como una sola ventana. Los del descanso no gastan: apúntalos con el minuto ${mdParte(d, state.editing)} (el final de la 1ª parte).</p></div>`;
   }
   /* Robos, pérdidas, tiros, paradas, asistencias y faltas de cada convocado + faltas acumuladas */
   function mdStats(d) {
@@ -5679,7 +5679,9 @@
       p: [
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
         "<b>Cambios</b>: pulsa «🔄 Cambio» y marca a <b>todos los que salen</b> y a <b>todos los que entran</b> a la vez (salen con su dorsal). Van por parejas en el orden en que los toques: el 1º que sale por el 1º que entra, el 2º por el 2º… Abajo ves las parejas y pulsas «Hacer 2 cambios» (o los que sean). Si sale uno y no entra nadie (por una lesión sin cambios), márcalo solo a él. Toca otra vez a un jugador para desmarcarlo. <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
-        "<b>Ventanas de cambios</b>: desde <b>juvenil en fútbol 11</b> (categoría Juvenil o Senior) se juega con <b>3 ventanas de cambios por parte</b> y en cada ventana cambias a los jugadores que quieras. En el Directo te salen las ventanas de la 1ª y la 2ª parte: toca la que toca («Ventana 1», «Ventana 2»…) o «🔄 Cambio», marca a los que salen y a los que entran y listo, esa ventana queda hecha con sus cambios. En la <b>penúltima</b> te avisa de que después solo te queda una, y en la <b>última</b> te avisa de que metas en ella todos los cambios que quieras hacer. Los cambios del <b>descanso no gastan ventana</b>. Si ya no te quedan y apuntas otro, te pregunta antes.",
+        "<b>Ventanas de cambios</b>: desde <b>juvenil en fútbol 11</b> (categoría Juvenil o Senior) se juega con <b>3 ventanas de cambios por parte</b> y en cada ventana cambias a los jugadores que quieras. En el Directo te salen las ventanas de la 1ª y la 2ª parte: toca la que toca («Ventana 1», «Ventana 2»…) o «🔄 Cambio», marca a los que salen y a los que entran y listo, esa ventana queda hecha con sus cambios. En la <b>penúltima</b> te avisa de que después solo te queda una, y en la <b>última</b> te avisa de que metas en ella todos los cambios que quieras hacer. Si ya no te quedan y apuntas otro, te pregunta antes.",
+        "<b>Cambios del descanso</b>: no gastan ventana. Entre la 1ª y la 2ª parte tienes la fila «Descanso»: durante el descanso pulsa «🔄 Cambio» o «+ Cambio del descanso», y si se te olvidó apuntarlos, también puedes hacerlo ya en la 2ª parte con «+ Cambio del descanso». Se guardan con el minuto del descanso y en la lista salen como «Desc.».",
+        "<b>En diferido</b>: si no pudiste apuntar los cambios durante el partido, pulsa «Terminar partido» y luego, en la fila de cada parte, toca la ventana que quieras («apuntar»). Pon el minuto, marca los que salen y los que entran y listo. Los del descanso, con «+ Cambio del descanso». Los minutos de cada jugador se recalculan solos.",
         "Las ventanas se activan solas con la categoría Juvenil o Senior en fútbol 11. En cualquier otro partido (fútbol 7 o fútbol 11 de otra categoría) puedes ponerlas o quitarlas con la casilla «Ventanas de cambios (3 por parte)». En fútbol sala no salen, porque los cambios son libres. Gratis: control de ventanas en 3 partidos al mes; con Pro, ilimitado. Cambiar a varios jugadores a la vez es gratis siempre.",
         "<b>Del rival</b>: al pulsar «🔄 Cambio», «Amarilla» o «Roja», elige arriba el nombre del rival. Pon el dorsal (en las tarjetas, también el nombre si quieres) y pulsa «Apuntar». Salen marcados con el nombre del rival.",
         "Los <b>minutos por parte</b> salen de la categoría del equipo. Si un día se juega con otra duración, cámbialos antes de pulsar «Empezar partido».",
@@ -5694,6 +5696,7 @@
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
         "<b>Anotador</b>: si tú grabas o estás dirigiendo, otra persona (el delegado, un padre…) puede apuntarlo todo desde su móvil. En el Directo pulsa «Crear enlace de anotador» y mándaselo con «Enviar al anotador». No necesita cuenta.",
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
+        "En el <b>descanso</b>, el anotador apunta los cambios con «🔄 Cambio del descanso» y no gastan ventana. Si se le olvidó, en la 2ª parte tiene el botón «🔄 Cambio del descanso (no gasta ventana)».",
         "En tu móvil el marcador, los goleadores y el marcador del vídeo se actualizan solos en unos segundos, y todo se guarda en el partido y en las estadísticas. El anotador puede quitar con la ✕ lo que haya apuntado él. Con «Quitar el anotador» su enlace deja de funcionar. Con el plan gratuito, el anotador se puede usar en 3 partidos al mes; con Pro, sin límite.",
         "<b>Sin cobertura en el campo</b>: la sesión ya no se cierra sola. Si se pierde la conexión, arriba sale «Sin conexión con tu cuenta»; sigue apuntando con normalidad y, en cuanto vuelva la cobertura, se guarda todo solo. Si el móvil cierra la app (por ejemplo al usar la cámara), al abrirla otra vez vuelves directamente al directo del partido.",
       ],
@@ -6706,18 +6709,26 @@
                     : e.t === "a" || e.t === "r"
                       ? `<span><i class="tj ${e.t}" aria-label="Tarjeta ${e.t === "r" ? "roja" : "amarilla"}"></i>${a2 ? '<i class="tj r" aria-label="y expulsión"></i>' : ""} ${esc(lvN(e.n, e.d))}${a2 ? " <small>2ª amarilla · expulsado</small>" : e.t === "r" ? " <small>expulsado</small>" : ""}${rv}</span>`
                       : `<span>⚽ ${esc(e.t === "c" ? x.rival : e.n ? lvN(e.n, e.d) : x.equipo)}${e.t !== "c" && e.n ? ` <small>${esc(x.equipo)}</small>` : ""}</span>`;
-              return `<div class="lv-e ${e.t === "c" ? "c" : e.t === "s" ? "s" : e.t === "a" || e.t === "r" ? "t " + e.t : "f"}${e.r ? " rv" : ""}"><b>${m}'</b>${body}${own ? `<button class="ib d" data-lvdel="${esc(e.id)}" aria-label="Quitar ${Q[e.t] || "el gol"} del minuto ${m}" title="Quitar">${ic("x", 18)}</button>` : ""}</div>`;
+              return `<div class="lv-e ${e.t === "c" ? "c" : e.t === "s" ? "s" : e.t === "a" || e.t === "r" ? "t " + e.t : "f"}${e.r ? " rv" : ""}"><b>${e.ds ? '<abbr title="Descanso">Desc.</abbr>' : m + "'"}</b>${body}${own ? `<button class="ib d" data-lvdel="${esc(e.id)}" aria-label="Quitar ${Q[e.t] || "el gol"} del minuto ${m}" title="Quitar">${ic("x", 18)}</button>` : ""}</div>`;
             })
             .join("")
         : '<p class="muted">Aún no hay goles, cambios ni tarjetas.</p>'
     }</div>`;
   }
   /* Quién está en el campo según los titulares y lo apuntado en el Directo */
+  /* Orden del partido: 1ª parte, descanso y 2ª parte, y dentro por minuto (lo apuntado en diferido va en su sitio) */
+  function lvOrden(evs, pm) {
+    let fase = (e) => (e.ds ? 1 : e.p === 1 ? 0 : e.p === 2 ? 2 : Number(e.m) > pm ? 2 : Number(e.m) === pm && e.t === "s" ? 1 : 0);
+    return evs
+      .map((e, i) => [e, i])
+      .sort((a, b) => fase(a[0]) - fase(b[0]) || (Number(a[0].m) || 0) - (Number(b[0].m) || 0) || a[1] - b[1])
+      .map((z) => z[0]);
+  }
   function liveCampo(m, x) {
     let on = new Set(entries(m).filter((e) => e.starter).map((e) => e.id)),
       fuera = new Set(),
       am = {};
-    (Array.isArray(x.eventos) ? x.eventos : []).forEach((e) => {
+    lvOrden(Array.isArray(x.eventos) ? x.eventos : [], Number(x.parte_min) || 45).forEach((e) => {
       if (e.r) return;
       if (e.t === "s") {
         on.delete(e.pid);
@@ -6911,26 +6922,34 @@
       fila = (p) => {
         let us = u[p],
           act = h === p && x.estado !== "FIN",
+          /* Diferido: con el partido terminado se apunta cualquier ventana de las dos partes */
+          dif = x.estado === "FIN",
           ch = [];
         for (let i = 0; i < Math.max(n, us.length); i++) {
           let c = us[i],
             ex = i >= n ? " ex" : "";
           if (c) ch.push(`<span class="vch used${ex}" aria-label="Ventana ${i + 1} hecha, ${c} ${c > 1 ? "cambios" : "cambio"}">✓ ${i + 1}<small>${c} ${c > 1 ? "cambios" : "cambio"}</small></span>`);
+          else if (dif && i === us.length) ch.push(`<button class="vch dsb" data-live="subw" data-p="${p}" aria-label="Apuntar la ventana ${i + 1} de la ${p}ª parte">${i + 1}<small>apuntar</small></button>`);
           else if (act && i === us.length) ch.push(`<button class="vch next" data-live="sub" aria-label="Ventana ${i + 1}: hacer los cambios">${i + 1}<small>${i === n - 1 ? "la última" : i === n - 2 ? "penúltima" : "toca aquí"}</small></button>`);
           else ch.push(`<span class="vch">${i + 1}</span>`);
         }
         let q = Math.max(0, n - us.length);
-        return `<div class="vfila${act ? " act" : ""}"><span class="vp">${p}ª parte</span><div class="vchs">${ch.join("")}</div><span class="vq">${q ? `Quedan ${q}` : "Sin ventanas"}</span></div>`;
+        return `<div class="vfila${act ? " act" : dif ? " on" : ""}"><span class="vp">${p}ª parte</span><div class="vchs">${ch.join("")}</div><span class="vq">${q ? `Quedan ${q}` : "Sin ventanas"}</span></div>`;
       };
+    /* Cambios del descanso: no gastan ventana. Se pueden apuntar en el descanso o después */
+    let nds = lvSubs(x).filter((e) => e.ds || (!e.p && Number(e.m) === Number(x.parte_min))).length,
+      dsOk = x.estado === "DES" || x.estado === "2T" || x.estado === "FIN",
+      dsF = `<div class="vfila ds${h === 0 || dsOk ? " on" : ""}"><span class="vp">Descanso</span><div class="vchs vds">${nds ? `<span class="vch used">✓ ${nds}<small>${nds > 1 ? "cambios" : "cambio"}</small></span>` : ""}${dsOk ? `<button class="vch ${h === 0 ? "next" : "dsb"}" data-live="subds" aria-label="Apuntar cambios del descanso">+ Cambio<small>del descanso</small></button>` : '<span class="vch">—</span>'}</div><span class="vq">No gasta</span></div>`;
     let pie = "";
     if (h === 0) pie = '<p class="hint">Descanso: los cambios que hagas ahora no gastan ventana.</p>';
+    else if (x.estado === "FIN") pie = '<p class="hint"><b>En diferido</b>: con el partido terminado puedes apuntar cada ventana de las dos partes y los cambios del descanso, con su minuto. Pulsa la ventana que quieras.</p>';
     else if (x.estado !== "FIN") {
       let q = n - u[h].length;
       if (q === 1) pie = `<p class="lv-vw">⚠️ Te queda la <b>última ventana</b> de la ${h}ª parte: mete en ella todos los cambios que quieras hacer.</p>`;
       else if (q === 2) pie = `<p class="lv-vw s">Después de la próxima ventana solo te quedará una en la ${h}ª parte.</p>`;
       else if (q <= 0) pie = `<p class="lv-vw">Ya has usado las ${n} ventanas de la ${h}ª parte.</p>`;
     }
-    return `<div class="lv-vent">${sw}${fila(1)}${fila(2)}${pie}</div>`;
+    return `<div class="lv-vent">${sw}${fila(1)}${dsF}${fila(2)}${pie}</div>`;
   }
   /* Cambio de varios a la vez: state.lvSub = {o: [salen], i: [entran]} en el orden tocado */
   function liveSubMulti(m, x, c, side) {
@@ -6948,21 +6967,35 @@
       banL = srt(ids.filter((id) => !c.on.has(id) && !c.fuera.has(id))),
       n = ventDe(m),
       vt = n && ventPuedeVer(x.partido_id),
-      h = lvParteV(x),
+      ds = state.lvDs || lvParteV(x) === 0,
+      fin = x.estado === "FIN",
+      h = ds ? 0 : state.lvW || lvParteV(x),
       t = "🔄 Cambio",
       aviso = "";
-    if (vt && h) {
+    if (ds) {
+      t = "🔄 Cambios del descanso";
+      if (vt) aviso = `<p class="lv-vw s">Los cambios del descanso <b>no gastan ventana</b>.${lvParteV(x) ? " Se apuntan con el minuto del descanso." : ""}</p>`;
+    } else if (vt && h && fin) {
+      let k = ventUsadas(lvSubs(x), x.parte_min)[h].length + 1;
+      t = `🔄 Ventana ${k} de ${n} · ${h}ª parte`;
+      if (k > n) aviso = `<p class="lv-vw">Ya están apuntadas las ${n} ventanas de la ${h}ª parte. Si lo apuntas, contará como una ventana de más.</p>`;
+    } else if (vt && h) {
       let k = ventUsadas(lvSubs(x), x.parte_min)[h].length + 1;
       t = `🔄 Ventana ${k} de ${n} · ${h}ª parte`;
       if (k === n) aviso = `<p class="lv-vw">⚠️ <b>Es la última ventana de la ${h}ª parte.</b> Marca ahora todos los que vayan a cambiar: después ya no podrás hacer más cambios en esta parte.</p>`;
       else if (k === n - 1) aviso = `<p class="lv-vw s">⚠️ <b>Penúltima ventana.</b> Después solo te quedará una en la ${h}ª parte.</p>`;
       else if (k > n) aviso = `<p class="lv-vw">Ya has usado las ${n} ventanas de la ${h}ª parte. Si lo apuntas, contará como una ventana de más.</p>`;
-    } else if (vt && !h) t = "🔄 Cambios en el descanso";
+    }
     let par = S.o
         .map((o, j) => `<li><span class="out">▼ ${esc(dname(o))}</span>${S.i[j] ? `<span class="in">▲ ${esc(dname(S.i[j]))}</span>` : '<span class="muted">sin nadie que entre</span>'}</li>`)
         .join(""),
       nn = S.o.length;
-    return `<div class="lv-pick lv-multi"><h3>${t}</h3>${side}${aviso}<p class="hint">Toca a todos los que salen y a todos los que entran. Van por parejas en el orden en que los toques (1 por 1, 2 por 2…).</p><h4>▼ Salen <small>${nn ? nn + " marcados" : ""}</small></h4><div class="slotmenu">${onL.map((id) => B(id, "o")).join("") || '<span class="muted">No hay nadie en el campo.</span>'}</div><h4>▲ Entran <small>${S.i.length ? S.i.length + " marcados" : ""}</small></h4><div class="slotmenu">${banL.map((id) => B(id, "i")).join("") || '<span class="muted">No quedan suplentes convocados.</span>'}</div>${par ? `<ul class="lv-par">${par}</ul>` : ""}<div class="lv-ctl"><button class="primary" data-live="subok" ${nn ? "" : "disabled"}>${nn ? `Hacer ${nn > 1 ? nn + " cambios" : "el cambio"}` : "Marca quién sale"}</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`;
+    let pm = Number(x.parte_min) || 45,
+      minIn =
+        fin && !ds
+          ? `<label class="lv-smin">Minuto del cambio <small>(diferido)</small><input id="lvSubMin" type="number" min="${state.lvW === 2 ? pm + 1 : 1}" max="${state.lvW === 1 ? pm + 15 : pm * 2 + 15}" inputmode="numeric" value="${state.lvSubMin || (state.lvW === 1 ? pm : pm * 2)}"></label>`
+          : "";
+    return `<div class="lv-pick lv-multi"><h3>${t}</h3>${side}${aviso}${minIn}<p class="hint">Toca a todos los que salen y a todos los que entran. Van por parejas en el orden en que los toques (1 por 1, 2 por 2…).</p><h4>▼ Salen <small>${nn ? nn + " marcados" : ""}</small></h4><div class="slotmenu">${onL.map((id) => B(id, "o")).join("") || '<span class="muted">No hay nadie en el campo.</span>'}</div><h4>▲ Entran <small>${S.i.length ? S.i.length + " marcados" : ""}</small></h4><div class="slotmenu">${banL.map((id) => B(id, "i")).join("") || '<span class="muted">No quedan suplentes convocados.</span>'}</div>${par ? `<ul class="lv-par">${par}</ul>` : ""}<div class="lv-ctl"><button class="primary" data-live="subok" ${nn ? "" : "disabled"}>${nn ? `Hacer ${nn > 1 ? nn + " cambios" : "el cambio"}` : "Marca quién sale"}</button><button class="danger" data-live="nopick">Cancelar</button></div></div>`;
   }
   function liveSubOk(m, x) {
     let S = state.lvSub || { o: [], i: [] },
@@ -6970,14 +7003,24 @@
     S.o = S.o.filter((id) => c.on.has(id));
     S.i = S.i.filter((id) => !c.on.has(id) && !c.fuera.has(id));
     if (!S.o.length) return note("Marca al menos un jugador que sale.");
+    if (x.estado === "FIN" && !state.lvDs) {
+      let d0 = parseInt(($("lvSubMin") || {}).value),
+        pm0 = Number(x.parte_min) || 45;
+      if (!(d0 >= 0 && d0 <= 130)) return note("Pon el minuto del cambio.");
+      if (state.lvW === 1 && d0 > pm0 + 15) return note(`En la 1ª parte el minuto tiene que ser como mucho ${pm0} (o el de la prolongación).`);
+      if (state.lvW === 2 && d0 <= pm0) return note(`En la 2ª parte el minuto tiene que ser más de ${pm0}.`);
+    }
     if (S.i.length > S.o.length) return note("Entran más jugadores de los que salen. Marca también a los que salen.");
     if (!Array.isArray(x.eventos)) x.eventos = [];
     if (lvCount(x) + S.o.length > 80) return note("Demasiadas jugadas apuntadas en este partido.");
     let n = ventDe(m),
       vt = n && ventPuedeVer(x.partido_id),
-      h = lvParteV(x),
+      pm = Number(x.parte_min) || 45,
+      fin = x.estado === "FIN" && !state.lvDs,
+      dm = fin ? parseInt(($("lvSubMin") || {}).value) : NaN,
+      h = state.lvDs ? 0 : fin ? state.lvW || (dm > pm ? 2 : 1) : lvParteV(x),
       v = rid(),
-      mi = liveMin(x),
+      mi = !h ? pm : fin ? (dm >= 0 && dm <= 130 ? dm : h === 1 ? pm : pm * 2) : liveMin(x),
       k = vt && h ? ventUsadas(lvSubs(x), x.parte_min)[h].length + 1 : 0;
     if (vt) envPuede("vt", x.partido_id);
     S.o.forEach((o, j) => {
@@ -6987,12 +7030,13 @@
       if (S.i[j]) liveWho(e, S.i[j], "i");
       x.eventos.push(e);
     });
-    state.lvPick = state.lvSub = null;
+    state.lvPick = state.lvSub = state.lvW = state.lvSubMin = null;
+    state.lvDs = false;
     liveSave(x, () => liveMatch(x, null, 0));
     let q = S.o.length > 1 ? S.o.length + " cambios apuntados" : "Cambio apuntado";
     if (k && k === n) note(`${q}. Era la última ventana de la ${h}ª parte.`, true);
     else if (k && k === n - 1) note(`${q}. Te queda una sola ventana en la ${h}ª parte.`, true);
-    else note(q + ".", true);
+    else note(q + (h ? "." : ". No gastan ventana."), true);
   }
   /* Elegir jugadores para un cambio (varios a la vez) o una tarjeta */
   function livePick2(m, x) {
@@ -7476,6 +7520,7 @@
     let k = b.dataset.live,
       m = state.matches.find((z) => z.id === state.live);
     if (k === "close") {
+      state.lvDs = false;
       state.live = null;
       state.livePick = false;
       state.lvPick = null;
@@ -7504,7 +7549,27 @@
       }
       return render();
     }
+    if (k === "subw") {
+      state.livePick = false;
+      state.lvSub = state.lvSubMin = null;
+      state.lvSide = "n";
+      state.lvDs = false;
+      state.lvW = Number(b.dataset.p) === 2 ? 2 : 1;
+      state.lvPick = "sub";
+      return render();
+    }
+    if (k === "subds") {
+      state.lvW = null;
+      state.livePick = false;
+      state.lvSub = null;
+      state.lvSide = "n";
+      state.lvDs = true;
+      state.lvPick = "sub";
+      return render();
+    }
     if (k === "sub" || k === "ta" || k === "tr") {
+      state.lvDs = false;
+      state.lvW = state.lvSubMin = null;
       if (k === "sub" && m && ventDe(m) && ventPuedeVer(x.partido_id) && lvParteV(x) && x.estado !== "FIN") {
         let h = lvParteV(x);
         if (ventUsadas(lvSubs(x), x.parte_min)[h].length >= ventDe(m) && !confirm(`Ya has usado las ${ventDe(m)} ventanas de cambios de la ${h}ª parte. ¿Apuntar otro cambio igualmente?`)) return;
@@ -7521,7 +7586,10 @@
     if (k === "anoff") return anotOff(x);
     if (k === "anshare") return anotShare(x);
     if (k === "off") return liveOff(x);
-    if (k === "nopick") state.livePick = state.lvPick = state.lvSub = null;
+    if (k === "nopick") {
+      state.livePick = state.lvPick = state.lvSub = state.lvW = state.lvSubMin = null;
+      state.lvDs = false;
+    }
     if (k === "gf") {
       state.lvPick = null;
       if (m && entries(m).length) state.livePick = true;
@@ -7603,6 +7671,7 @@
       note(e.target.checked ? `Ventanas de cambios activadas: ${VENT_N} por parte.` : "Sin ventanas de cambios en este partido.", true);
       render();
     }
+    if (e.target.id === "lvSubMin") state.lvSubMin = e.target.value;
     if (e.target.id === "lvDur") {
       let d = parseInt(e.target.value);
       if (d >= 5 && d <= 60) {
@@ -8435,6 +8504,7 @@
      en el directo del entrenador. El minuto lo pone el servidor con el reloj del entrenador. */
   let anRow = null,
     anPick = null,
+    anDs = false,
     anSide = "n",
     anBusy = false,
     anErr = "";
@@ -8493,15 +8563,17 @@
     if (k === "f")
       return `<div class="lv-pick"><h3>¿Quién ha marcado?</h3><div class="slotmenu">${L(jug.map((j) => j.id), "anp")}<button data-anp="">Sin asignar</button>${no}</div></div>`;
     if (side && (anSide === "r" || !jug.length))
-      return `<div class="lv-pick"><h3>${k === "sub" ? "Cambio del rival" : tj(k) + " al rival"}</h3>${jug.length ? side : ""}<div class="formgrid lv-rf">${
+      return `<div class="lv-pick"><h3>${k === "sub" ? (anDs || x.estado === "DES" ? "Cambio del descanso del rival" : "Cambio del rival") : tj(k) + " al rival"}</h3>${jug.length ? side : ""}<div class="formgrid lv-rf">${
         k === "sub" ? num("anRs", "Dorsal que sale") + num("anRe", "Dorsal que entra") : num("anRd", "Dorsal") + '<label>Nombre (opcional)<input id="anRn" maxlength="30" autocomplete="off"></label>'
       }</div><div class="lv-ctl"><button class="primary" data-an="rok">Apuntar</button>${no}</div></div>`;
-    let t, list;
+    let t,
+      list,
+      dsT = anDs || x.estado === "DES" ? "Cambio del descanso" : "Cambio";
     if (k === "sub") {
-      t = "Cambio · ¿Quién sale?";
+      t = dsT + " · ¿Quién sale?";
       list = L(jug.map((j) => j.id).filter((id) => c.on.has(id)), "anx") || '<span class="muted">No hay nadie en el campo.</span>';
     } else if (k.out) {
-      t = `Cambio · ¿Quién entra por ${esc(anJn(k.out))}?`;
+      t = `${dsT} · ¿Quién entra por ${esc(anJn(k.out))}?`;
       list = L(jug.map((j) => j.id).filter((id) => !c.on.has(id) && !c.fuera.has(id)), "anx") || '<span class="muted">No quedan suplentes convocados.</span>';
     } else {
       t = tj(k) + " · ¿A quién?";
@@ -8537,13 +8609,19 @@
                 : `<i class="tj ${e.t}"></i> ${esc(lvN(e.n, e.d))}${e.r ? " <small>" + esc(x.rival) + "</small>" : ""}`;
     box.innerHTML = `<div class="kicker">Anotador · ${esc(MN(x.modalidad))}</div>${liveBoard(x, serverNow(), false)}${
       x.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Todo se apunta con el minuto en que vaya el reloj del entrenador.</p>' : ""
-    }${x.estado === "FIN" ? '<p class="hint">El partido ha terminado. Si falta algo, aún puedes apuntarlo.</p>' : ""}<div class="lv-goals an-goals">${B("f", "⚽ Gol nuestro", "primary")}${B("c", "⚽ Gol rival")}</div><div class="lv-ctl an-fal">${B("fan", `Falta nuestra <b>${f["n" + h]}</b>`)}${B("far", `Falta del rival <b>${f["r" + h]}</b>`)}</div><div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("a", '<i class="tj a"></i>Amarilla')}${B("r", '<i class="tj r"></i>Roja')}</div>${anPickHtml()}${
+    }${x.estado === "FIN" ? '<p class="hint">El partido ha terminado. Si falta algo, aún puedes apuntarlo.</p>' : ""}<div class="lv-goals an-goals">${B("f", "⚽ Gol nuestro", "primary")}${B("c", "⚽ Gol rival")}</div><div class="lv-ctl an-fal">${B("fan", `Falta nuestra <b>${f["n" + h]}</b>`)}${B("far", `Falta del rival <b>${f["r" + h]}</b>`)}</div><div class="lv-ctl lv-more">${B("sub", x.estado === "DES" ? "🔄 Cambio del descanso" : "🔄 Cambio")}${B("a", '<i class="tj a"></i>Amarilla')}${B("r", '<i class="tj r"></i>Roja')}</div>${
+      x.estado === "DES"
+        ? '<p class="hint">Descanso: los cambios que apuntes ahora no gastan ventana.</p>'
+        : x.estado === "2T" || x.estado === "FIN"
+          ? `<div class="lv-ctl">${B("subds", "🔄 Cambio del descanso (no gasta ventana)")}</div>`
+          : ""
+    }${anPickHtml()}${
       mios.length
         ? `<h3 class="lv-h">Apuntado desde aquí</h3><div class="lv-ev">${mios
             .slice(0, 10)
             .map(
               (e) =>
-                `<div class="lv-e ${e.t === "c" ? "c" : e.t === "s" ? "s" : e.t === "a" || e.t === "r" ? "t " + e.t : "f"}"><b>${Number(e.m) || 0}'</b><span>${txt(e)}</span><button class="ib d" data-anq="${esc(e.id)}" aria-label="Quitar ${AN_Q[e.t] || "esto"} del minuto ${Number(e.m) || 0}" title="Quitar">${ic("x", 18)}</button></div>`,
+                `<div class="lv-e ${e.t === "c" ? "c" : e.t === "s" ? "s" : e.t === "a" || e.t === "r" ? "t " + e.t : "f"}"><b>${e.ds ? "Desc." : (Number(e.m) || 0) + "'"}</b><span>${txt(e)}</span><button class="ib d" data-anq="${esc(e.id)}" aria-label="Quitar ${AN_Q[e.t] || "esto"} del minuto ${Number(e.m) || 0}" title="Quitar">${ic("x", 18)}</button></div>`,
             )
             .join("")}</div>`
         : ""
@@ -8576,6 +8654,7 @@
     if (anBusy) return;
     anBusy = true;
     anPick = null;
+    anDs = false;
     anView();
     let r;
     try {
@@ -8594,6 +8673,12 @@
     return " en el minuto " + (e ? Number(e.m) || 0 : 0) + ".";
   };
   const anApunta = (ev, txt) => anCall("anotar", { ev }, () => txt + anUlt());
+  /* Cambio del descanso apuntado ya en la 2ª parte: lo marca el servidor (supabase-anotador-descanso.sql) */
+  const anApuntaDs = (ev) =>
+    anCall("anotar", { ev }, () => {
+      let e = (anRow && Array.isArray(anRow.eventos) ? anRow.eventos : []).filter((z) => z.an).pop();
+      return e && e.ds ? "Cambio del descanso apuntado. No gasta ventana." : "Cambio apuntado, pero con el minuto de ahora: falta un paso en el servidor para los cambios del descanso. Avisa al entrenador.";
+    });
   function anRival() {
     let v = (id) => {
         let n = parseInt(($(id) || {}).value);
@@ -8601,6 +8686,7 @@
       },
       k = anPick,
       ev = { t: k === "sub" ? "s" : k, r: 1 };
+    if (k === "sub" && anDs) ev.ds = 1;
     if (k === "sub") {
       ev.d = v("anRs");
       ev.di = v("anRe");
@@ -8610,6 +8696,7 @@
       ev.n = (($("anRn") || {}).value || "").trim().slice(0, 30);
       if (!ev.d && !ev.n) return note("Pon el dorsal o el nombre del jugador.");
     }
+    if (ev.ds) return anApuntaDs(ev);
     anApunta(ev, k === "sub" ? "Cambio del rival apuntado" : "Tarjeta al rival apuntada");
   }
   function startAn() {
@@ -8640,7 +8727,7 @@
           anPick = { out: id };
           return anView();
         }
-        if (k.out) return anApunta({ t: "s", pid: k.out, pin: id }, "Cambio apuntado");
+        if (k.out) return anDs ? anApuntaDs({ t: "s", pid: k.out, pin: id, ds: 1 }) : anApunta({ t: "s", pid: k.out, pin: id }, "Cambio apuntado");
         return anApunta({ t: k, pid: id }, k === "r" ? "Roja apuntada" : "Amarilla apuntada");
       }
       if (q) {
@@ -8650,7 +8737,15 @@
       }
       if (!b) return;
       let k = b.dataset.an;
-      if (k === "no") anPick = null;
+      if (k === "no") {
+        anPick = null;
+        anDs = false;
+      }
+      if (k === "subds") {
+        anPick = "sub";
+        anDs = true;
+        anSide = anJug().length ? "n" : "r";
+      }
       if (k === "rok") return anRival();
       if (k === "c") return anApunta({ t: "c" }, "Gol del rival apuntado");
       if (k === "fan") return anApunta({ t: "fa" }, "Falta nuestra apuntada");
@@ -8661,6 +8756,7 @@
       }
       if (k === "sub" || k === "a" || k === "r") {
         anPick = k;
+        anDs = false;
         anSide = anJug().length ? "n" : "r";
       }
       anView();
