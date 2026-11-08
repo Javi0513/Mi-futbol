@@ -5474,6 +5474,7 @@ body.presenting .est-bar {
 }
 #sesAviso button {
   flex: none;
+}
 /* ventanas de cambios (v11.11) */
 .lv-vent {
   margin: 12px 0;
@@ -5609,4 +5610,30 @@ button.vch.next {
 }
 .md-vent .w {
   color: #ff8a8a;
+}
+.vds .vch:last-child {
+  grid-column: span 2;
+}
+.vds .vch:only-child {
+  grid-column: span 3;
+}
+button.vch.dsb {
+  border: 2px solid var(--lime);
+  background: transparent;
+  color: var(--lime);
+}
+.vfila.on {
+  opacity: 1;
+}
+.lv-smin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+.lv-smin input {
+  width: 84px;
+  font-size: 18px;
+  text-align: center;
 }
