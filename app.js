@@ -847,7 +847,7 @@
   }
   function matches() {
     let g = games();
-    return `<section class="panel"><div class="bar"><div><div class="kicker">Partidos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : games().length + " / " + MODES[state.mode].maxM + " partidos · "}Convocatoria, titulares, posiciones y goles.</p></div><div class="mbtns">${viendo ? "" : `<button class="secondary" data-cv="abrir">${ic("users")}Convocatoria</button>`}<button class="primary" data-action="add-match">${ic("plus")}Partido</button></div></div>${cvCard()}${
+    return `<section class="panel"><div class="bar"><div><div class="kicker">Partidos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : games().length + " / " + MODES[state.mode].maxM + " partidos · "}Convocatoria, titulares, posiciones y goles.</p></div><div class="mbtns">${viendo ? "" : `<button class="secondary" data-cv="abrir">${ic("users")}Convocatoria</button>`}<button class="primary" data-action="add-match">${ic("plus")}Partido</button></div></div>${cvCard()}${g.length ? `<div class="btools rs-tb"><button type="button" class="secondary small" data-rs="tmp">${ic("share", 18)}Resumen de la temporada</button></div>` : ""}${
       g.length
         ? g
             .map((m) => {
@@ -858,7 +858,7 @@
                   .filter((x) => x.starter)
                   .map((x) => esc(name(x.id)))
                   .join(", ") || "—"
-              }</small></div><div class="actions"><button class="ib lvb" data-action="live" data-id="${m.id}" aria-label="Directo del partido contra ${esc(m.rival)}" title="Directo">${ic("live")}</button><button class="ib" data-img="${m.id}" aria-label="Descargar imagen de la alineación" title="Descargar imagen">${ic("image")}</button><button class="ib" data-action="edit-match" data-id="${m.id}" aria-label="Editar partido contra ${esc(m.rival)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-match" data-id="${m.id}" aria-label="Borrar partido contra ${esc(m.rival)}" title="Borrar">${ic("trash")}</button></div></div>`;
+              }</small><button type="button" class="rs-b" data-rs="${m.id}" aria-label="Ver resumen del partido contra ${esc(m.rival)}">${ic("chart", 16)}Ver resumen y estadísticas</button></div><div class="actions"><button class="ib lvb" data-action="live" data-id="${m.id}" aria-label="Directo del partido contra ${esc(m.rival)}" title="Directo">${ic("live")}</button><button class="ib" data-img="${m.id}" aria-label="Descargar imagen de la alineación" title="Descargar imagen">${ic("image")}</button><button class="ib" data-action="edit-match" data-id="${m.id}" aria-label="Editar partido contra ${esc(m.rival)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-match" data-id="${m.id}" aria-label="Borrar partido contra ${esc(m.rival)}" title="Borrar">${ic("trash")}</button></div></div>`;
             })
             .join("")
         : empty(
@@ -924,11 +924,11 @@
         : '<p class="muted">Pon el resultado al guardar un partido y aquí saldrán victorias, empates, derrotas y goles a favor y en contra.</p>'
     }</section>`;
     let list = gs.length
-      ? `<section class="panel"><h2 class="h2s">Resultados</h2><div style="height:8px"></div>${gs
+      ? `<section class="panel"><div class="bar"><h2 class="h2s">Resultados</h2><button type="button" class="secondary small" data-rs="tmp">${ic("share", 18)}Resumen de la temporada</button></div><p class="muted">Toca un partido para ver su resumen: minutos, goles y estadísticas.</p><div style="height:8px"></div>${gs
           .map((m) => {
             let r = m.alineacion && m.alineacion.resultado,
               c = r ? (r.gf > r.gc ? "w" : r.gf < r.gc ? "l" : "d") : "";
-            return `<div class="row"><div class="avatar res ${c}">${r ? (c === "w" ? "V" : c === "l" ? "D" : "E") : "·"}</div><div class="info"><strong>${esc(m.rival)}</strong><small>${esc(fmtDate(m.fecha))} · ${r ? `${r.gf > r.gc ? "Victoria" : r.gf < r.gc ? "Derrota" : "Empate"} ${r.gf}-${r.gc}` : "Sin resultado"}</small></div></div>`;
+            return `<button type="button" class="row rs-row" data-rs="${m.id}" aria-label="Ver resumen del partido contra ${esc(m.rival)}"><div class="avatar res ${c}">${r ? (c === "w" ? "V" : c === "l" ? "D" : "E") : "·"}</div><div class="info"><strong>${esc(m.rival)}</strong><small>${esc(fmtDate(m.fecha))} · ${r ? `${r.gf > r.gc ? "Victoria" : r.gf < r.gc ? "Derrota" : "Empate"} ${r.gf}-${r.gc}` : "Sin resultado"}</small></div><span class="rs-go" aria-hidden="true">${ic("right", 18)}</span></button>`;
           })
           .join("")}</section>`
       : "";
@@ -1631,14 +1631,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1 };
+  const LIM = { an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -1664,6 +1664,8 @@
       return proLimite(
         tipo === "an"
           ? `En el plan gratuito puedes usar el <b>anotador en ${LIM.an} partidos al mes</b> y este mes ya lo has usado. El mes que viene vuelves a tener ${LIM.an}.`
+          : tipo === "rs"
+          ? `En el plan gratuito puedes compartir <b>${LIM.rs} resúmenes de partido al mes</b> (o de la temporada) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rs}.`
           : tipo === "cv"
           ? `En el plan gratuito puedes enviar <b>${LIM.cv} convocatorias al mes</b> y este mes ya las has usado. El mes que viene vuelves a tener ${LIM.cv}.`
           : `En el plan gratuito puedes enviar <b>${LIM.tr} entrenos al mes</b> a tus jugadores y este mes ya los has usado. El mes que viene vuelves a tener ${LIM.tr}.`,
@@ -1676,7 +1678,385 @@
     return true;
   }
   const envQuedan = (tipo) =>
-    esPro() ? "" : `<p class="muted lim-q">Plan gratuito: te quedan ${Math.max(0, LIM[tipo] - envUsados(tipo))} de ${LIM[tipo]} ${tipo === "cv" ? "convocatorias" : "envíos de entreno"} este mes. Con Pro, ilimitados.</p>`;
+    esPro() ? "" : `<p class="muted lim-q">Plan gratuito: te quedan ${Math.max(0, LIM[tipo] - envUsados(tipo))} de ${LIM[tipo]} ${tipo === "cv" ? "convocatorias" : tipo === "rs" ? "resúmenes para compartir" : "envíos de entreno"} este mes. Con Pro, ilimitados.</p>`;
+
+  /* ===== Resumen del partido (v11.13) =====
+     Ver un partido terminado sin entrar a editarlo: resultado, goles, minutos de cada jugador,
+     cambios, tarjetas y estadísticas. Se puede mandar por WhatsApp (texto o imagen) a quien no
+     tenga la app. También el resumen de toda la temporada. Ver es gratis; compartir: 3 al mes
+     en gratis (cada partido cuenta una vez), ilimitado con Pro. */
+  let rsId = "",
+    rsTxt = "";
+  const rsFind = (id) => state.matches.find((x) => x.id === id);
+  function rsDatos(m) {
+    let al = m.alineacion || {},
+      E = entries(m),
+      ids = E.map((e) => e.id),
+      r = al.resultado,
+      x = liveRows[m.id],
+      ev = x && Array.isArray(x.eventos) ? x.eventos : [],
+      tj = mdList(al, "tarjetas").filter((z) => z.pid),
+      tarj = (pid) => tj.filter((z) => z.pid === pid),
+      js = E.map((e) => ({
+        e,
+        id: e.id,
+        n: dname(e.id),
+        min: Number(e.minutes) || 0,
+        gol: Number(e.goals) || 0,
+        tit: !!e.starter,
+        am: tarj(e.id).filter((z) => z.c !== "r").length,
+        ro: tarj(e.id).filter((z) => z.c === "r").length,
+      })).sort((a, b) => b.min - a.min || b.tit - a.tit || name(a.id).localeCompare(name(b.id), "es")),
+      goles = lvOrden(ev.filter((z) => z.t === "f" || z.t === "c"), Number(x && x.parte_min) || 30).map((z) => ({
+        m: Number(z.m) || 0,
+        n: z.t === "c" ? (z.n ? lvN(z.n, z.d) : m.rival || "Rival") : z.n ? lvN(z.n, z.d) : teamName(m.modalidad, teamOf(m)),
+        riv: z.t === "c",
+      })),
+      st = ESTP.filter((s) => E.some((e) => stv(e, s[0]) > 0)),
+      F = al.faltas || {};
+    return {
+      al,
+      js,
+      r,
+      res: r ? (r.gf > r.gc ? ["w", "Victoria"] : r.gf < r.gc ? ["l", "Derrota"] : ["d", "Empate"]) : null,
+      eq: teamName(m.modalidad, teamOf(m)),
+      riv: m.rival || "Rival",
+      cap: al.capitan && ids.includes(al.capitan) ? al.capitan : "",
+      gk: E.length ? gkOf(al, ids) : "",
+      goles,
+      cb: mdList(al, "cambios")
+        .filter((z) => z.sale || z.entra)
+        .slice()
+        .sort((a, b) => (Number(a.m) || 0) - (Number(b.m) || 0)),
+      tj: tj.slice().sort((a, b) => (Number(a.m) || 0) - (Number(b.m) || 0)),
+      cbR: mdList(al, "cambiosR").filter((z) => z.sale || z.entra),
+      tjR: mdList(al, "tarjetasR").filter((z) => z.d || z.n),
+      tirR: Number((al.estR || {}).tir) || 0,
+      st,
+      fal: ["n1", "r1", "n2", "r2"].some((k) => Number(F[k]) > 0) ? F : null,
+    };
+  }
+  const rsMin = (z) => (z.ds ? "Desc." : z.m === "" || z.m == null ? "" : (Number(z.m) || 0) + "'");
+  function rsTexto(m) {
+    let d = rsDatos(m),
+      L = [],
+      tag = (j) => (j.id === d.cap ? " (C)" : "") + (j.id === d.gk ? " (POR)" : "");
+    L.push(`⚽ *${d.eq} ${d.r ? d.r.gf + " - " + d.r.gc : "vs"} ${d.riv}*`);
+    L.push(`${MN(m.modalidad)} · ${fmtDate(m.fecha)}${d.res ? " · " + d.res[1] : ""}`);
+    if (d.goles.length) {
+      L.push("", "*Goles*");
+      d.goles.forEach((g) => L.push(`${g.m}' ${g.riv && g.n !== d.riv ? "(" + d.riv + ") " : ""}${g.n}`));
+    } else if (d.js.some((j) => j.gol)) {
+      L.push("", "*Goles*");
+      d.js.filter((j) => j.gol).forEach((j) => L.push(`${j.n}${j.gol > 1 ? " x" + j.gol : ""}`));
+    }
+    if (d.js.length) {
+      L.push("", "*Minutos jugados*");
+      d.js.forEach((j) =>
+        L.push(
+          `${j.tit ? "⭐ " : ""}${j.n}${tag(j)}: ${j.min}'${j.gol ? " " + "⚽".repeat(Math.min(j.gol, 5)) : ""}${j.am ? " " + "🟨".repeat(Math.min(j.am, 2)) : ""}${j.ro ? " 🟥" : ""}`,
+        ),
+      );
+      L.push("⭐ = titular");
+    }
+    if (d.cb.length) {
+      L.push("", "*Cambios*");
+      d.cb.forEach((z) => L.push(`${rsMin(z)} ▲ ${z.entra ? name(z.entra) : "—"} ▼ ${z.sale ? name(z.sale) : "—"}`));
+    }
+    if (d.tj.length) {
+      L.push("", "*Tarjetas*");
+      d.tj.forEach((z) => L.push(`${z.c === "r" ? "🟥" : "🟨"} ${rsMin(z)} ${name(z.pid)}`));
+    }
+    if (d.st.length) {
+      L.push("", "*Estadísticas*");
+      d.js.forEach((j) => {
+        let v = d.st.filter((s) => stv(j.e, s[0]) > 0).map((s) => `${stv(j.e, s[0])} ${s[2].toLowerCase()}`);
+        if (v.length) L.push(`${name(j.id)}: ${v.join(", ")}`);
+      });
+    }
+    if (d.fal) L.push("", `*Faltas acumuladas*: nuestras ${Number(d.fal.n1) || 0} + ${Number(d.fal.n2) || 0} · rival ${Number(d.fal.r1) || 0} + ${Number(d.fal.r2) || 0}`);
+    if (d.tirR || d.cbR.length || d.tjR.length) {
+      L.push("", `*${d.riv}*`);
+      if (d.tirR) L.push(`Tiros: ${d.tirR}`);
+      d.tjR.forEach((z) => L.push(`${z.c === "r" ? "🟥" : "🟨"} ${rsMin(z)} ${lvN(z.n, z.d)}`));
+      if (d.cbR.length) L.push(`Cambios: ${d.cbR.length}`);
+    }
+    L.push("", "Hecho con Mi Fútbol JV32 · app.monetizaplus.com");
+    return L.join("\n");
+  }
+  function rsHtml(m) {
+    let d = rsDatos(m),
+      tag = (j) => (j.id === d.cap ? ' <abbr class="rs-tag" title="Capitán">C</abbr>' : "") + (j.id === d.gk ? ' <abbr class="rs-tag" title="Portero">POR</abbr>' : ""),
+      cards = (j) => `${j.am ? '<i class="tj a" aria-label="Amarilla"></i>'.repeat(Math.min(j.am, 2)) : ""}${j.ro ? '<i class="tj r" aria-label="Roja"></i>' : ""}`,
+      sec = (t, h) => (h ? `<h3 class="ci-h3">${t}</h3>${h}` : ""),
+      li = (L) => (L.length ? `<ul class="rs-l">${L.map((z) => `<li>${z}</li>`).join("")}</ul>` : "");
+    let head = `<div class="rs-sc ${d.res ? d.res[0] : ""}"><div class="rs-eq"><b>${esc(d.eq)}</b><span>${esc(d.riv)}</span></div><div class="rs-n">${d.r ? `${d.r.gf}<i>-</i>${d.r.gc}` : "–"}</div></div><p class="muted rs-m">${esc(MN(m.modalidad))} · ${esc(fmtDate(m.fecha))}${d.res ? ` · <span class="res ${d.res[0]}">${d.res[1]}</span>` : " · sin resultado"}</p>`;
+    let goles = d.goles.length
+      ? li(d.goles.map((g) => `<b>${g.m}'</b> ⚽ ${esc(g.n)}${g.riv && g.n !== d.riv ? ` <small class="muted">${esc(d.riv)}</small>` : ""}`))
+      : li(d.js.filter((j) => j.gol).map((j) => `⚽ ${esc(j.n)}${j.gol > 1 ? ` <b>x${j.gol}</b>` : ""}`));
+    let mins = d.js.length
+      ? `<div class="mdst rs-t"><table><thead><tr><th scope="col">Jugador</th><th scope="col">Min.</th><th scope="col">Goles</th><th scope="col">Tarj.</th></tr></thead><tbody>${d.js
+          .map((j) => `<tr><th scope="row">${j.tit ? '<span class="rs-tit" title="Titular">★</span>' : ""}${esc(j.n)}${tag(j)}</th><td>${j.min}'</td><td>${j.gol || ""}</td><td>${cards(j)}</td></tr>`)
+          .join("")}</tbody></table></div><p class="hint">★ = titular. Los minutos salen del Directo o de lo que pusieras al editar el partido.</p>`
+      : '<p class="muted">Este partido no tiene convocados.</p>';
+    let est = d.st.length
+      ? `<div class="mdst rs-t"><table><thead><tr><th scope="col">Jugador</th>${d.st.map((s) => `<th scope="col" title="${s[2]}">${s[3]}</th>`).join("")}</tr></thead><tbody>${d.js
+          .filter((j) => d.st.some((s) => stv(j.e, s[0]) > 0))
+          .map((j) => `<tr><th scope="row">${esc(j.n)}</th>${d.st.map((s) => `<td>${stv(j.e, s[0]) || ""}</td>`).join("")}</tr>`)
+          .join("")}</tbody></table></div>`
+      : "";
+    let cb = li(d.cb.map((z) => `<b>${rsMin(z)}</b> <span class="rs-in">▲ ${esc(z.entra ? dname(z.entra) : "—")}</span> <span class="rs-out">▼ ${esc(z.sale ? dname(z.sale) : "—")}</span>`)),
+      tj = li(d.tj.map((z) => `<b>${rsMin(z)}</b> <i class="tj ${z.c === "r" ? "r" : "a"}"></i> ${esc(dname(z.pid))}`)),
+      fal = d.fal ? `<p>Nuestras: <b>${Number(d.fal.n1) || 0}</b> (1ª) + <b>${Number(d.fal.n2) || 0}</b> (2ª) · Rival: <b>${Number(d.fal.r1) || 0}</b> + <b>${Number(d.fal.r2) || 0}</b></p>` : "",
+      riv = [d.tirR ? `Tiros: <b>${d.tirR}</b>` : "", ...d.tjR.map((z) => `<b>${rsMin(z)}</b> <i class="tj ${z.c === "r" ? "r" : "a"}"></i> ${esc(lvN(z.n, z.d))}`), ...d.cbR.map((z) => `<b>${rsMin(z)}</b> 🔄 ▲ ${esc(z.entra || "—")} ▼ ${esc(z.sale || "—")}`)].filter(Boolean);
+    return `${head}${sec("Goles", goles)}${sec("Minutos jugados", mins)}${sec("Estadísticas de cada jugador", est)}${sec("Cambios", cb)}${sec("Tarjetas", tj)}${sec("Faltas acumuladas", fal)}${sec(esc(d.riv) + " (rival)", li(riv))}<h3 class="ci-h3">Compartir</h3><p class="muted">Mándalo a quien quieras aunque no tenga la app: le llega como mensaje o como imagen y le queda guardado en el chat.</p>${envQuedan("rs")}<div class="stack"><a class="primary" data-rsx="wa" href="https://wa.me/?text=${encodeURIComponent(rsTexto(m))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-rsx="img">${ic("image", 20)}Imagen del resumen</button>${navigator.share ? '<button type="button" class="secondary" data-rsx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-rsx="copiar">Copiar el texto</button>${viendo ? "" : `<button type="button" class="secondary" data-rsx="edit">${ic("pencil", 20)}Editar el partido</button>`}</div>`;
+  }
+  function rsAbre(id) {
+    let m = rsFind(id);
+    if (!m) return;
+    rsId = id;
+    rsTxt = rsTexto(m);
+    ciOpen(`Resumen · ${m.rival || "Partido"}`, rsHtml(m));
+    $("infoBody").scrollTop = 0;
+  }
+  /* Resumen de toda la temporada (equipo actual): resultados y minutos/goles de cada jugador */
+  function tmpTexto() {
+    let gs = games().slice().sort((a, b) => a.fecha.localeCompare(b.fecha)),
+      rs = gs.filter((m) => m.alineacion && m.alineacion.resultado),
+      R = (m) => m.alineacion.resultado,
+      W = rs.filter((m) => R(m).gf > R(m).gc).length,
+      Lo = rs.filter((m) => R(m).gf < R(m).gc).length,
+      GF = rs.reduce((s, m) => s + R(m).gf, 0),
+      GC = rs.reduce((s, m) => s + R(m).gc, 0),
+      L = [`📋 *${teamName()} · ${MN()}*`, `Temporada hasta el ${fmtDate(ymd(new Date()))}`];
+    L.push(`${gs.length} partidos${rs.length ? ` · ${W}V ${rs.length - W - Lo}E ${Lo}D · goles ${GF}-${GC}` : ""}`);
+    if (gs.length) {
+      L.push("", "*Partidos*");
+      gs.forEach((m) => {
+        let r = m.alineacion && m.alineacion.resultado,
+          k = r ? (r.gf > r.gc ? "✅" : r.gf < r.gc ? "❌" : "➖") : "·";
+        L.push(`${k} ${fmtDate(m.fecha)} · ${m.rival || "Rival"}${r ? " " + r.gf + "-" + r.gc : ""}`);
+      });
+    }
+    let J = roster()
+      .map((p) => ({ p, t: totals(p.id) }))
+      .filter((x) => x.t.games)
+      .sort((a, b) => b.t.minutes - a.t.minutes || b.t.goals - a.t.goals || a.p.nombre.localeCompare(b.p.nombre, "es"));
+    if (J.length) {
+      L.push("", "*Jugadores* (partidos · minutos · goles)");
+      J.forEach((x) =>
+        L.push(`${dname(x.p.id)}: ${x.t.games} · ${x.t.minutes}' · ${x.t.goals} ⚽${x.t.amarillas ? " · " + x.t.amarillas + " 🟨" : ""}${x.t.rojas ? " · " + x.t.rojas + " 🟥" : ""}`),
+      );
+    }
+    L.push("", "Hecho con Mi Fútbol JV32 · app.monetizaplus.com");
+    return L.join("\n");
+  }
+  function tmpAbre() {
+    if (!games().length) return note("Todavía no hay partidos en este equipo.");
+    rsId = "tmp:" + state.mode + ":" + curTeam();
+    rsTxt = tmpTexto();
+    ciOpen(
+      "Resumen de la temporada",
+      `<p class="muted">Todos los partidos de <b>${esc(teamName())}</b> y los minutos y goles de cada jugador. Mándalo cuando quieras para que quien no tenga la app lleve el registro.</p>${envQuedan("rs")}<pre class="cv-txt">${esc(rsTxt)}</pre><div class="stack"><a class="primary" data-rsx="wa" href="https://wa.me/?text=${encodeURIComponent(rsTxt)}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${navigator.share ? '<button type="button" class="secondary" data-rsx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-rsx="copiar">Copiar el texto</button></div>`,
+    );
+    $("infoBody").scrollTop = 0;
+  }
+  /* Imagen del resumen (1080 de ancho, el alto según los jugadores) */
+  async function rsImagen(m) {
+    let d = rsDatos(m);
+    try {
+      await Promise.all([document.fonts.load('800 40px "Barlow Condensed"'), document.fonts.load('700 30px "Barlow Condensed"'), document.fonts.load('600 30px "Barlow Condensed"')]);
+    } catch (e) {}
+    const W = 1080,
+      ff = '"Barlow Condensed","Arial Narrow",Impact,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+      INK = "#f1f7ea",
+      LIME = "#2be36a",
+      MUT = "#a3bdad",
+      RC = { w: "#4ade80", d: "#fbbf24", l: "#fb7185" },
+      sv = (j, k) => (k === "tir" ? stv(j.e, "tp") + stv(j.e, "tf") : stv(j.e, k)),
+      cols = [["min", "MIN"], ["gol", "GOLES"]].concat(
+        [["asi", "ASIST."], ["tir", "TIROS"], ["rob", "ROBOS"], ["par", "PARADAS"], ["per", "PÉRD."], ["fal", "FALTAS"]].filter((c) => d.js.some((j) => sv(j, c[0]) > 0)).slice(0, 5),
+      ),
+      golTxt = d.goles.length
+        ? d.goles.map((g) => `${g.m}' ${g.n}`)
+        : d.js.filter((j) => j.gol).map((j) => j.n + (j.gol > 1 ? " x" + j.gol : "")),
+      RH = 62,
+      H = 520 + (golTxt.length ? 70 + Math.ceil(golTxt.length / 2) * 44 : 0) + 90 + Math.max(1, d.js.length) * RH + 130;
+    const cv = document.createElement("canvas");
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext("2d");
+    g.fillStyle = "#050f0a";
+    g.fillRect(0, 0, W, H);
+    let gr = g.createRadialGradient(W * 0.9, 0, 0, W * 0.9, 0, 1000);
+    gr.addColorStop(0, "#173b2a");
+    gr.addColorStop(1, "#050f0a");
+    g.fillStyle = gr;
+    g.fillRect(0, 0, W, H);
+    let logo = await new Promise((res) => {
+      let u = getComputedStyle(document.documentElement).getPropertyValue("--logo").trim().replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
+      if (!u) return res(null);
+      let im = new Image();
+      im.onload = () => res(im);
+      im.onerror = () => res(null);
+      im.src = u;
+    });
+    if (logo) g.drawImage(logo, 70, 40, 80, 80);
+    g.textAlign = "left";
+    g.fillStyle = INK;
+    g.font = `800 46px ${ff}`;
+    g.fillText("MI FÚTBOL", 170, 98);
+    let mw = g.measureText("MI FÚTBOL ").width;
+    g.fillStyle = LIME;
+    g.fillText("JV32", 170 + mw, 98);
+    g.fillStyle = MUT;
+    g.font = `600 34px ${ff}`;
+    g.textAlign = "right";
+    g.fillText(`RESUMEN · ${MN(m.modalidad).toUpperCase()} · ${fmtDate(m.fecha)}`, W - 70, 96);
+    /* Marcador */
+    g.textAlign = "center";
+    g.fillStyle = INK;
+    g.font = `800 56px ${ff}`;
+    g.fillText(clipTxt(g, d.eq.toUpperCase(), 380), 250, 250);
+    g.fillText(clipTxt(g, d.riv.toUpperCase(), 380), W - 250, 250);
+    g.font = `800 150px ${ff}`;
+    g.fillStyle = d.res ? RC[d.res[0]] : INK;
+    g.fillText(d.r ? `${d.r.gf}-${d.r.gc}` : "–", W / 2, 290);
+    if (d.res) {
+      g.font = `700 38px ${ff}`;
+      g.fillText(d.res[1].toUpperCase(), W / 2, 350);
+    }
+    let y = 430;
+    g.strokeStyle = "rgba(43,227,106,.35)";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(70, y);
+    g.lineTo(W - 70, y);
+    g.stroke();
+    if (golTxt.length) {
+      y += 60;
+      g.textAlign = "left";
+      g.fillStyle = LIME;
+      g.font = `800 40px ${ff}`;
+      g.fillText("GOLES", 70, y);
+      g.fillStyle = INK;
+      g.font = `600 34px ${ff}`;
+      golTxt.forEach((t, i) => {
+        if (i % 2 === 0) y += 44;
+        g.fillText("⚽ " + clipTxt(g, t, 420), i % 2 ? W / 2 + 10 : 70, y);
+      });
+      y += 30;
+    }
+    /* Tabla de minutos */
+    y += 70;
+    let cx = (i) => W - 70 - (cols.length - 1 - i) * 100 - 50;
+    g.font = `700 26px ${ff}`;
+    g.fillStyle = MUT;
+    g.textAlign = "left";
+    g.fillText("JUGADOR", 70, y);
+    g.textAlign = "center";
+    cols.forEach((c, i) => g.fillText(c[1], cx(i), y));
+    y += 18;
+    d.js.forEach((j, n) => {
+      if (n % 2 === 0) {
+        g.fillStyle = "rgba(255,255,255,.04)";
+        g.fillRect(56, y, W - 112, RH);
+      }
+      let by = y + RH / 2 + 12;
+      g.textAlign = "left";
+      g.fillStyle = j.tit ? LIME : MUT;
+      g.font = `800 30px ${ff}`;
+      g.fillText(j.tit ? "★" : "·", 72, by);
+      g.fillStyle = INK;
+      g.font = `600 34px ${ff}`;
+      let nm = j.n + (j.id === d.cap ? " (C)" : "");
+      g.fillText(clipTxt(g, nm, cx(0) - 60 - 110 - (j.am || j.ro ? 60 : 0)), 110, by);
+      let tw = Math.min(g.measureText(nm).width, cx(0) - 60 - 110 - (j.am || j.ro ? 60 : 0));
+      [...Array(Math.min(j.am, 2)).fill("#fbbf24"), ...(j.ro ? ["#ef4444"] : [])].forEach((c, k) => {
+        g.fillStyle = c;
+        g.fillRect(110 + tw + 14 + k * 24, by - 30, 18, 26);
+      });
+      g.textAlign = "center";
+      cols.forEach((c, i) => {
+        let v = c[0] === "min" ? j.min + "'" : c[0] === "gol" ? j.gol || "" : sv(j, c[0]) || "";
+        g.fillStyle = c[0] === "gol" && j.gol ? LIME : INK;
+        g.font = `${c[0] === "min" ? 800 : 700} 34px ${ff}`;
+        g.fillText(String(v), cx(i), by);
+      });
+      y += RH;
+    });
+    if (!d.js.length) {
+      g.textAlign = "left";
+      g.fillStyle = MUT;
+      g.font = `600 32px ${ff}`;
+      g.fillText("Sin convocados", 70, y + 44);
+    }
+    g.textAlign = "left";
+    g.fillStyle = MUT;
+    g.font = `600 26px ${ff}`;
+    g.fillText("★ titular", 70, H - 50);
+    g.textAlign = "right";
+    g.fillText("app.monetizaplus.com", W - 70, H - 50);
+    return cv;
+  }
+  async function rsImgExport(m) {
+    note("Preparando imagen…", true);
+    let cv = await rsImagen(m),
+      blob = await new Promise((r) => cv.toBlob(r, "image/png")),
+      slug = String(m.rival || "partido")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase(),
+      fname = `resumen-${MFN(m.modalidad)}-${slug || "partido"}-${m.fecha || ""}.png`,
+      file = new File([blob], fname, { type: "image/png" });
+    note("");
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && window.matchMedia("(pointer:coarse)").matches) {
+      try {
+        await navigator.share({ files: [file], title: "Resumen del partido" });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    note("Imagen descargada.", true);
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest && e.target.closest("[data-rs]");
+    if (!b) return;
+    e.preventDefault();
+    if (b.dataset.rs === "tmp") tmpAbre();
+    else rsAbre(b.dataset.rs);
+  });
+  $("info").addEventListener("click", async (e) => {
+    let b = e.target.closest("[data-rsx]");
+    if (!b || !rsId) return;
+    let k = b.dataset.rsx,
+      m = rsId.indexOf("tmp:") === 0 ? null : rsFind(rsId);
+    if (k === "edit") {
+      if (!m) return;
+      $("info").classList.add("hidden");
+      state.editing = m.id;
+      resetDraft(m);
+      return;
+    }
+    if (!envPuede("rs", rsId)) return e.preventDefault();
+    if (k === "wa") return;
+    if (k === "img") return m && rsImgExport(m).catch((x) => note(x.message || String(x)));
+    if (k === "share") {
+      try {
+        await navigator.share({ text: rsTxt });
+      } catch (x) {}
+    } else if (k === "copiar") copiaTexto(rsTxt, "Resumen copiado. Pégalo en WhatsApp.");
+  });
 
   /* --- Dispositivos (supabase-limites.sql) ---
      Plan gratuito: la misma cuenta en 3 dispositivos. Pro: sin límite.
@@ -5534,7 +5914,7 @@
     {
       el: '[data-tab="resumen"]',
       t: "Estadísticas",
-      p: "Ranking de tus jugadores por goles, minutos, partidos y titularidades.",
+      p: "Ranking de tus jugadores por goles, minutos, partidos y titularidades. En «Resultados» toca un partido para ver su resumen y mandarlo por WhatsApp.",
     },
     {
       el: "#sbtn",
@@ -5672,6 +6052,10 @@
         "Los cambios y tarjetas que apuntes en el Directo aparecen solos aquí. Si el partido va con <b>ventanas de cambios</b>, debajo de los cambios ves cuántas ventanas has usado en cada parte (los cambios del mismo minuto cuentan como una sola ventana) y puedes quitarlas o ponerlas con la casilla. Las tarjetas de cada jugador salen en su ficha de Plantilla y en Estadísticas.",
         "En <b>Estadísticas de cada jugador</b> tienes una tabla con los robos, pérdidas, tiros a puerta, tiros fuera, paradas, asistencias y faltas de cada convocado (desliza a los lados si no cabe). Se rellena sola desde el Directo y puedes corregirla o apuntarla a mano después del partido. Debajo están las <b>faltas acumuladas</b> de cada parte y, en el apartado del rival, sus <b>tiros</b>.",
         "Puedes sacar una imagen de la alineación para mandarla por WhatsApp.",
+        "<b>Ver un partido terminado sin editarlo</b>: en «Partidos», debajo de cada partido, pulsa «Ver resumen y estadísticas». Ves el resultado, los goles (con su minuto si usaste el Directo), los <b>minutos que ha jugado cada uno</b> (★ = titular), las tarjetas, los cambios, las estadísticas de cada jugador y lo del rival. Para cambiar algo, «Editar el partido» o el lápiz.",
+        "<b>Compartir el resumen con quien no tiene la app</b> (un segundo entrenador, el coordinador, la familia): dentro del resumen pulsa «Enviar por WhatsApp» (le llega como mensaje), «Imagen del resumen» (una imagen con el marcador y los minutos) o «Copiar el texto». Así se queda guardado en el chat y lleváis el registro de todos los partidos.",
+        "<b>Resumen de la temporada</b>: en «Partidos» (arriba de la lista) o en «Estadísticas › Resultados». Es un mensaje con todos los partidos y sus resultados y los partidos, minutos, goles y tarjetas de cada jugador, listo para mandar por WhatsApp.",
+        "Ver los resúmenes es gratis siempre. Con el plan gratuito puedes <b>compartir 3 resúmenes al mes</b> (cada partido cuenta una vez aunque lo mandes varias veces); con Pro, ilimitados.",
       ],
     },
     {
@@ -5795,6 +6179,7 @@
       t: "Estadísticas y buscador",
       p: [
         "En <b>Estadísticas</b> ves el ranking de tus jugadores por goles, minutos, partidos y titularidades.",
+        "En <b>Resultados</b> toca cualquier partido para ver su resumen (minutos, goles y estadísticas) y mandarlo por WhatsApp. Con «Resumen de la temporada» mandas todos los partidos de una vez.",
         "Debajo de cada jugador salen también sus <b>robos, pérdidas, tiros, paradas, asistencias y faltas</b> de toda la temporada (solo los que tenga apuntados).",
         "<b>Distancia recorrida</b>: no la medimos. Hace falta un GPS o un reloj deportivo puesto en cada jugador; con el móvil del entrenador no se puede saber.",
         "Con la lupa buscas cualquier jugador o partido de todas tus modalidades.",
@@ -5804,8 +6189,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },

@@ -5637,3 +5637,124 @@ button.vch.dsb {
   font-size: 18px;
   text-align: center;
 }
+/* Resumen del partido y de la temporada (v11.13) */
+.rs-b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 5px 11px;
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  background: var(--s2);
+  color: var(--lime);
+  font: 700 14px/1.2 var(--fb);
+  cursor: pointer;
+}
+.rs-b:active {
+  background: var(--s3);
+}
+.rs-tb {
+  margin: 4px 0 10px;
+}
+.rs-row {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.rs-row .rs-go {
+  margin-left: auto;
+  color: var(--mut);
+  display: flex;
+}
+.rs-sc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--s2);
+}
+.rs-eq {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.rs-eq b,
+.rs-eq span {
+  font: 800 20px/1.2 var(--fd);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rs-eq span {
+  color: var(--mut);
+}
+.rs-n {
+  font: 800 46px/1 var(--fd);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.rs-n i {
+  font-style: normal;
+  color: var(--mut);
+  margin: 0 4px;
+}
+.rs-sc.w .rs-n {
+  color: var(--win);
+}
+.rs-sc.d .rs-n {
+  color: var(--draw);
+}
+.rs-sc.l .rs-n {
+  color: var(--loss);
+}
+.rs-m {
+  margin: 8px 0 0;
+}
+.rs-l {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+}
+.rs-l li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.rs-l li b {
+  display: inline-block;
+  min-width: 42px;
+  color: var(--lime);
+}
+.rs-t td {
+  text-align: center;
+  min-width: 44px;
+  font-size: 15px;
+}
+.rs-t tbody th {
+  max-width: 170px;
+  font-size: 14px;
+}
+.rs-tit {
+  color: var(--lime);
+  margin-right: 4px;
+}
+.rs-tag {
+  text-decoration: none;
+  font-size: 11px;
+  color: var(--mut);
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  padding: 0 4px;
+}
+.rs-in {
+  color: var(--win);
+}
+.rs-out {
+  color: var(--loss);
+}
