@@ -5758,3 +5758,28 @@ button.vch.dsb {
 .rs-out {
   color: var(--loss);
 }
+/* v11.14 · Aviso 2 días antes de que termine el plan Pro */
+.fin-pro-aviso {
+  border: 1px solid var(--line2);
+  border-left: 4px solid var(--lime);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  background: var(--s1);
+}
+.fin-pro-aviso p {
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+.fin-pro-aviso .fin-acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.fin-pro-aviso .fin-acc > * {
+  flex: 1 1 140px;
+  text-align: center;
+}
+body.presenting .fin-pro-aviso {
+  display: none;
+}
