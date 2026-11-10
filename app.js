@@ -573,6 +573,9 @@
   }
   function render() {
     directoRecuerda();
+    try {
+      finProAviso();
+    } catch (e) {}
     let eo = entrenosOn();
     if (!eo && state.tab === "entrenos") state.tab = "plantilla";
     document.querySelectorAll("[data-mode]").forEach((b) => {
@@ -5347,6 +5350,7 @@
       club = null;
     }
     pintarEscudo();
+    finProAviso();
   }
   /* Escudo del club junto al logo, para todos los entrenadores del club */
   function pintarEscudo() {
@@ -6191,6 +6195,7 @@
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
         "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
         "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
@@ -6474,7 +6479,68 @@
   }
   /* El botón de la cuenta, arriba, enseña tu foto si la has puesto */
   let acctIcono = null;
+  /* v11.14 · Aviso 2 días antes de que termine el plan Pro: prueba gratis de tester,
+     suscripción cancelada (pro_hasta) o pack del club cancelado. Las suscripciones que
+     se renuevan solas no terminan, así que no salen. Se puede cerrar y vuelve al día siguiente. */
+  function finProDatos() {
+    if (enPrueba()) return { fin: pruebaHasta, tipo: "prueba" };
+    if (club && club.activo && club.pro_hasta) return { fin: club.pro_hasta, tipo: "club" };
+    if (plan === "pro" && proHasta && !(club && club.activo)) return { fin: proHasta, tipo: "cancelado" };
+    return null;
+  }
+  const diasCal = (iso) => {
+    let a = new Date(),
+      b = new Date(iso);
+    a.setHours(0, 0, 0, 0);
+    b.setHours(0, 0, 0, 0);
+    return Math.round((b - a) / 864e5);
+  };
+  const finProKey = (d) => `mf_finpro:${curUser}:${String(d.fin).slice(0, 10)}:${new Date().toDateString()}`;
+  function finProAviso() {
+    let el = $("finPro");
+    if (!el) return;
+    let d = finProDatos(),
+      n = d && Date.parse(d.fin) > Date.now() ? diasCal(d.fin) : -1,
+      cerrado = false;
+    if (d && n >= 0 && n <= 2)
+      try {
+        cerrado = localStorage.getItem(finProKey(d)) === "1";
+      } catch (e) {}
+    if (!d || n < 0 || n > 2 || cerrado || viendo) {
+      el.classList.add("hidden");
+      el.innerHTML = "";
+      return;
+    }
+    let cuando = n === 0 ? "<b>hoy</b>" : n === 1 ? "<b>mañana</b>" : `en <b>2 días</b> (el ${esc(fechaLarga(d.fin))})`,
+      txt =
+        d.tipo === "prueba"
+          ? `Tu prueba gratis del plan Pro termina ${cuando}.`
+          : d.tipo === "club"
+            ? `El plan Pro de tu club termina ${cuando}${club.soy_admin ? ": la suscripción del club está cancelada" : ""}.`
+            : `Tu plan Pro termina ${cuando}: cancelaste la suscripción.`,
+      btn = enAndroid
+        ? ""
+        : d.tipo === "prueba"
+          ? '<button type="button" class="primary" data-finpro="pro">Seguir con Pro · 39,99 €/año</button>'
+          : d.tipo === "cancelado" && c.portalUrl && stripeCliente
+            ? `<a class="primary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Reactivar mi suscripción</a>`
+            : "";
+    el.innerHTML = `<p><b>⏳ Aviso del plan Pro.</b> ${txt} Después pasarás al plan gratuito: no pierdes nada de lo guardado, solo vuelven los límites del plan gratuito.${d.tipo === "club" && !club.soy_admin ? " Habla con el encargado de tu club si queréis seguir." : ""}</p><div class="fin-acc">${btn}<button type="button" class="secondary" data-finpro="cerrar">Entendido</button></div>`;
+    el.classList.remove("hidden");
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest("[data-finpro]");
+    if (!b) return;
+    if (b.dataset.finpro === "pro") return showInfo("pro");
+    let d = finProDatos();
+    if (d)
+      try {
+        localStorage.setItem(finProKey(d), "1");
+      } catch (e) {}
+    finProAviso();
+  });
   function pintarCuenta() {
+    finProAviso();
     let b = $("acct");
     if (!b) return;
     if (acctIcono === null) acctIcono = b.innerHTML;
