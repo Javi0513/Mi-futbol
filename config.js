@@ -11,6 +11,7 @@ window.APP_CONFIG={
   clubPacks:[
     {plazas:5, precio:'149', url:'https://buy.stripe.com/7sY6oH3NWavR3kaewicbC01'},
     {plazas:10, precio:'259', url:'https://buy.stripe.com/4gM00j3NW7jF7Aq5ZMcbC02'},
+    {plazas:15, precio:'385', url:'https://buy.stripe.com/6oU5kDgAIeM77AqdsecbC08'},
     {plazas:20, precio:'459', url:'https://buy.stripe.com/14A28r3NWfQb2g687UcbC03'},
     {plazas:30, precio:'599', url:'https://buy.stripe.com/cNi8wP1FO0Vh9Iybk6cbC04'}
   ]

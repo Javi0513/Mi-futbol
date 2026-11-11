@@ -6212,7 +6212,7 @@
         "<b>Supervisor del club:</b> el encargado es siempre supervisor y puede pulsar «Hacer supervisor» junto a otra persona del club (por ejemplo, el gerente o el director deportivo). El supervisor ve el club como un árbol: arriba el escudo y el nombre del club, y debajo cada entrenador con su foto y su nombre. Con el club pagado, toca a un entrenador y la app le enseña su plantilla, partidos, alineaciones y entrenamientos en <b>solo lectura</b>: arriba sale «Viendo a…» y el botón «Volver a mis datos».",
         "<b>Escudo del club:</b> el encargado lo sube en «Mi cuenta › Plan para clubes › Escudo del club». Lo ven todos los entrenadores del club, arriba junto al logo de la app.",
         "<b>Foto de cada entrenador:</b> cada uno pone su foto de perfil y su nombre en «Mi cuenta». En el club solo los ve el supervisor, para saber de quién es cada cuenta. Los demás entrenadores no los ven.",
-        { texto: "Packs anuales: 5 entrenadores por 149 €, 10 por 259 €, 20 por 459 € y 30 por 599 € (IVA incluido). Cuantos más entrenadores, menos cuesta cada uno (de 29,80 € a 19,97 €).", soloWeb: true },
+        { texto: "Packs anuales: 5 entrenadores por 149 €, 10 por 259 €, 15 por 385 €, 20 por 459 € y 30 por 599 € (IVA incluido). Cuantos más entrenadores, menos cuesta cada uno, y siempre menos que el Pro individual (39,99 €): de 29,80 € con el pack de 5 a 19,97 € con el de 30. Si tu club tiene entre 11 y 15 entrenadores, el pack de 15 es el que mejor encaja: no pagas plazas que no vas a usar.", soloWeb: true },
       ],
     },
     {
