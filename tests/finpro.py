@@ -10,9 +10,10 @@ def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,portalUrl:'https://billing.stripe.com/p/login/test_xyz',")
 def iso(**k):return (datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(**k)).strftime('%Y-%m-%dT%H:%M:%SZ')
 SHOT=os.environ.get('FINPRO_SHOT')
-def abrir(b,perfil,club=None,ctx=None):
+def abrir(b,perfil,club=None,ctx=None,android=False):
     if ctx is None:
         ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block',device_scale_factor=2 if SHOT else 1)
+        if android: ctx.add_init_script("Object.defineProperty(document,'referrer',{get:()=>'android-app://com.monetizaplus.mifutbol/'})")
         ctx.add_init_script('window.__seed='+json.dumps({'futbol_personal_jugadores':[],'futbol_personal_partidos':[],'perfiles':[perfil]}))
     pg=ctx.new_page()
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:errs.append(m.text) if m.type=='error' and 'Failed to load resource' not in m.text else None)
@@ -81,6 +82,14 @@ with sync_playwright() as p:
     pg=abrir(b,{'id':'u1','plan':'gratis'})
     pg.click('#acct');pg.wait_for_timeout(200);pg.click('#info [data-info=ayuda]');pg.wait_for_timeout(200)
     check('Guía de uso: explica el aviso','Aviso antes de que termine el Pro' in pg.locator('#infoBody').text_content())
+    pg.context.close()
+    # 10) v11.17 · Android: el aviso también lleva el botón para pagar con Stripe
+    pg=abrir(b,{'id':'u1','plan':'pro','prueba_hasta':iso(days=1)},android=True)
+    check('Android: botón «Seguir con Pro» en el aviso',pg.locator('#finPro [data-finpro=pro]').count()==1)
+    if os.environ.get('FINPRO_SHOT_A'): pg.screenshot(path=os.environ['FINPRO_SHOT_A'])
+    pg.click('#finPro [data-finpro=pro]');pg.wait_for_timeout(300)
+    check('Android: lleva al pago de Stripe',pg.locator('#info [data-pro-pay], #info #wl').count()>=1)
+    if os.environ.get('FINPRO_SHOT_B'): pg.screenshot(path=os.environ['FINPRO_SHOT_B'])
     pg.context.close()
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)

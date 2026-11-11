@@ -77,7 +77,8 @@ with sync_playwright() as p:
     pg.click('#closeInfo')
     check('se cierra',pg.locator('#info.hidden').count()==1)
     ctx.close()
-    # App de Android: sin precios
+    # App de Android con el pago oculto (ocultarPagoAndroid): sin precios
+    CFG=CFG.replace("window.APP_CONFIG={","window.APP_CONFIG={ocultarPagoAndroid:true,")
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block')
     pg=page(ctx,OLD);pg.add_init_script("try{sessionStorage.setItem('mf_twa','1')}catch(e){}");login(pg)
     guia(pg)

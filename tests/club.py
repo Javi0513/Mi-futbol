@@ -19,7 +19,8 @@ def abrir(b,club,plan='gratis',q='',android=False,extra=None):
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:errs.append(m.text) if m.type=='error' else None)
     pg.on('dialog',lambda d:d.accept())
     pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
-    pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=CFG))
+    cfg=CFG.replace('window.APP_CONFIG = {','window.APP_CONFIG = {ocultarPagoAndroid:true,') if android=='oculto' else CFG
+    pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=cfg))
     pg.goto('http://127.0.0.1:8814/index.html'+q)
     pg.evaluate("c=>{window.__club=c;window.__cfg.rpcData=Object.assign({mi_club:()=>window.__club},window.__extra||{})}",club)
     if extra: pg.evaluate(extra)
@@ -96,11 +97,16 @@ with sync_playwright() as p:
     ctx,pg=abrir(b,None,q='?club=K7M2Q9XA4P')
     check('enlace de invitación rellena el código',pg.locator('#clubCod').count()==1 and pg.input_value('#clubCod')=='K7M2Q9XA4P')
     ctx.close()
-    # 8) App de Android: sin precios ni pagos
+    # 8) App de Android (v11.17): packs con pago, como en la web
     ctx,pg=abrir(b,ADMIN,q='?probarpago',android=True)
     pg.click('#acct');pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
+    check('Android (v11.17): packs con enlace de pago',pg.locator('#info a.pack[data-club-pay]').count()>0)
+    ctx.close()
+    # 8b) Android con ocultarPagoAndroid: sin precios ni pagos
+    ctx,pg=abrir(b,ADMIN,q='?probarpago',android='oculto')
+    pg.click('#acct');pg.click('#info [data-info=club]');pg.wait_for_timeout(200)
     t=body(pg)
-    check('Android: sin precios ni packs','€' not in t and pg.locator('#info .pack').count()==0,t[:200])
+    check('Android oculto: sin precios ni packs','€' not in t and pg.locator('#info .pack').count()==0,t[:200])
     ctx.close()
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)

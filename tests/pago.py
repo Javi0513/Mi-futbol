@@ -15,7 +15,8 @@ def abrir(b,android=False,prueba=True,seed=None):
     pg=ctx.new_page()
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:errs.append(m.text) if m.type=='error' else None)
     pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
-    pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=CFG))
+    cfg=CFG.replace('window.APP_CONFIG = {','window.APP_CONFIG = {ocultarPagoAndroid:true,') if android=='oculto' else CFG
+    pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=cfg))
     pg.goto('http://127.0.0.1:8812/index.html'+('?probarpago' if prueba else ''))
     pg.fill('input[name=email]','ana@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')
     return pg
@@ -47,13 +48,21 @@ with sync_playwright() as p:
     t=pg.locator('#info .pro-fin').inner_text() if pg.locator('#info .pro-fin').count() else ''
     check('tras cancelar: "activo hasta el 20 de noviembre de 2026"','activo hasta el 20 de noviembre de 2026' in t,t)
     pg.context.close()
+    # v11.17: en Android también se paga con Stripe (como en la web)
     pg=abrir(b,android=True)
     pg.click('#acct');pg.wait_for_timeout(200)
-    check('Android: sin botón "Pasar a Pro"',pg.locator('#info [data-info=pro]').count()==0)
+    check('Android (v11.17): botón "Pasar a Pro"',pg.locator('#info [data-info=pro]').count()==1)
+    pg.click('#info [data-info=pro]');pg.wait_for_timeout(300)
+    check('Android (v11.17): botón de pago que lleva a Stripe',pg.locator('[data-pro-pay]').count()==1 and 'buy.stripe.com' in (pg.locator('[data-pro-pay]').get_attribute('href') or ''))
+    pg.context.close()
+    # con ocultarPagoAndroid:true en config.js vuelve a ocultarse
+    pg=abrir(b,android='oculto')
+    pg.click('#acct');pg.wait_for_timeout(200)
+    check('Android oculto: sin botón "Pasar a Pro"',pg.locator('#info [data-info=pro]').count()==0)
     # el aviso de límite (lo abre el servidor con LIMITE_PLAN): se simula insertando su botón dentro de #info
     pg.evaluate("document.querySelector('#infoBody').insertAdjacentHTML('beforeend','<button id=tpro data-info=pro>x</button>')")
     pg.click('#tpro');pg.wait_for_timeout(200)
-    check('Android: aviso Pro sin precio ni botón de pago',pg.locator('#info [data-pro-pay]').count()==0 and pg.locator('#info .price').count()==0 and pg.locator('#wl').count()==0)
+    check('Android oculto: aviso Pro sin precio ni botón de pago',pg.locator('#info [data-pro-pay]').count()==0 and pg.locator('#info .price').count()==0 and pg.locator('#wl').count()==0)
     pg.context.close()
     pg=abrir(b,prueba=False)
     pg.click('#acct');pg.click('#info [data-info=pro]');pg.wait_for_timeout(300)
@@ -66,8 +75,12 @@ with sync_playwright() as p:
     check('enlace real: botón de pago sin ?probarpago',pg.locator('[data-pro-pay]').count()==1 and pg.locator('#wl').count()==0)
     pg.context.close()
     pg=abrir(b,android=True,prueba=False)
+    pg.click('#acct');pg.click('#info [data-info=pro]');pg.wait_for_timeout(300)
+    check('enlace real: en Android también se paga',pg.locator('[data-pro-pay]').count()==1)
+    pg.context.close()
+    pg=abrir(b,android='oculto',prueba=False)
     pg.click('#acct');pg.wait_for_timeout(200)
-    check('enlace real: en Android sigue sin pago',pg.locator('#info [data-info=pro]').count()==0 and pg.locator('[data-pro-pay]').count()==0)
+    check('enlace real: en Android oculto sigue sin pago',pg.locator('#info [data-info=pro]').count()==0 and pg.locator('[data-pro-pay]').count()==0)
     pg.context.close()
     CFG=CFG_T
     pg=abrir(b,prueba=False,seed="{futbol_personal_jugadores:[],futbol_personal_partidos:[],perfiles:[{id:'u1',plan:'pro',stripe_customer:'cus_1'}]}")
