@@ -25,8 +25,8 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('las novedades explican el pack de 15 entrenadores',all(w in body for w in ('PARA TODOS','15 entrenadores','385 €','25,67 €')),body[:200])
-    check('y que ahora hay 5 packs','5, 10, 15, 20 y 30' in body)
+    check('las novedades explican cómo pasar a Pro desde Android',all(w in body for w in ('PARA TODOS','app de Android','navegador')),body[:200])
+    check('y el email antes de que termine la prueba','email' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)

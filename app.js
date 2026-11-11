@@ -6195,7 +6195,8 @@
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
         "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
         "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
-        "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina.",
+        "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, también te llega un <b>email</b> con el enlace para seguir con el Pro.",
+        "<b>Si usas la app de Android:</b> desde ella no se puede contratar el Pro. Abre <b>app.monetizaplus.com</b> en el navegador del móvil (Chrome), entra con tu misma cuenta y ve a «Mi cuenta › Pasar a Pro». En cuanto pagues, tendrás el Pro también en la app de Android. En el aviso y en «Mi cuenta» tienes el botón «Copiar la dirección».",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
@@ -6343,7 +6344,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${bioPuede || (bioCfg() && bioCfg().uid === curUser) ? `<button type="button" class="secondary" data-acct="bio" aria-pressed="${!!(bioCfg() && bioCfg().uid === curUser)}">${bioCfg() && bioCfg().uid === curUser ? "Desactivar entrar con " + esc(bioNombre()) : "Entrar con " + esc(bioNombre())}</button>` : ""}${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}${enAndroid && (plan !== "pro" || enPrueba()) ? `<p class="pro-fin"><b>¿Quieres el plan Pro (39,99 €/año)?</b> Desde la app de Android no se puede contratar. Abre <b>${esc((location.host || "app.monetizaplus.com").replace(/^www\./, ""))}</b> en el navegador del móvil (Chrome), entra con tu misma cuenta y ve a «Mi cuenta › Pasar a Pro». En cuanto pagues, tendrás el Pro también en esta app.</p>` : ""}<div class="stack">${enAndroid ? (plan !== "pro" || enPrueba() ? '<button type="button" class="secondary" data-finpro="copiar">Copiar la dirección de la web</button>' : "") : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${bioPuede || (bioCfg() && bioCfg().uid === curUser) ? `<button type="button" class="secondary" data-acct="bio" aria-pressed="${!!(bioCfg() && bioCfg().uid === curUser)}">${bioCfg() && bioCfg().uid === curUser ? "Desactivar entrar con " + esc(bioNombre()) : "Entrar con " + esc(bioNombre())}</button>` : ""}${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
@@ -6498,6 +6499,20 @@
     return Math.round((b - a) / 864e5);
   };
   const finProKey = (d) => `mf_finpro:${curUser}:${String(d.fin).slice(0, 10)}:${new Date().toDateString()}`;
+  /* Copia la dirección de la web (para pagar desde el navegador, fuera de la app de Android) */
+  function copiarWeb(b) {
+    let url = "https://" + (location.host || "app.monetizaplus.com").replace(/^www\./, ""),
+      ok = () => {
+        let t = b.textContent;
+        b.textContent = "¡Copiada!";
+        setTimeout(() => (b.textContent = t), 2000);
+      };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        return navigator.clipboard.writeText(url).then(ok, () => prompt("Copia esta dirección:", url));
+    } catch (e) {}
+    prompt("Copia esta dirección:", url);
+  }
   function finProAviso() {
     let el = $("finPro");
     if (!el) return;
@@ -6520,20 +6535,31 @@
           : d.tipo === "club"
             ? `El plan Pro de tu club termina ${cuando}${club.soy_admin ? ": la suscripción del club está cancelada" : ""}.`
             : `Tu plan Pro termina ${cuando}: cancelaste la suscripción.`,
+      web = (location.host || "app.monetizaplus.com").replace(/^www\./, ""),
+      /* v11.17 · En la app de Android no se puede pagar (Google Play): se explica cómo seguir desde el navegador */
+      comoAndroid =
+        enAndroid && d.tipo === "prueba"
+          ? ` <b>Para seguir con el Pro (39,99 €/año)</b>, abre <b>${esc(web)}</b> en el navegador del móvil (Chrome), entra con tu misma cuenta y ve a «Mi cuenta › Pasar a Pro». En cuanto pagues, tendrás el Pro también en esta app. También te lo mandamos por email.`
+          : enAndroid && d.tipo === "cancelado"
+            ? ` Para reactivarla, abre <b>${esc(web)}</b> en el navegador del móvil (Chrome), entra con tu misma cuenta y ve a «Mi cuenta › Gestionar o cancelar mi suscripción».`
+            : "",
       btn = enAndroid
-        ? ""
+        ? comoAndroid
+          ? '<button type="button" class="primary" data-finpro="copiar">Copiar la dirección</button>'
+          : ""
         : d.tipo === "prueba"
           ? '<button type="button" class="primary" data-finpro="pro">Seguir con Pro · 39,99 €/año</button>'
           : d.tipo === "cancelado" && c.portalUrl && stripeCliente
             ? `<a class="primary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Reactivar mi suscripción</a>`
             : "";
-    el.innerHTML = `<p><b>⏳ Aviso del plan Pro.</b> ${txt} Después pasarás al plan gratuito: no pierdes nada de lo guardado, solo vuelven los límites del plan gratuito.${d.tipo === "club" && !club.soy_admin ? " Habla con el encargado de tu club si queréis seguir." : ""}</p><div class="fin-acc">${btn}<button type="button" class="secondary" data-finpro="cerrar">Entendido</button></div>`;
+    el.innerHTML = `<p><b>⏳ Aviso del plan Pro.</b> ${txt} Después pasarás al plan gratuito: no pierdes nada de lo guardado, solo vuelven los límites del plan gratuito.${comoAndroid}${d.tipo === "club" && !club.soy_admin ? " Habla con el encargado de tu club si queréis seguir." : ""}</p><div class="fin-acc">${btn}<button type="button" class="secondary" data-finpro="cerrar">Entendido</button></div>`;
     el.classList.remove("hidden");
   }
   document.addEventListener("click", (e) => {
     let b = e.target.closest("[data-finpro]");
     if (!b) return;
     if (b.dataset.finpro === "pro") return showInfo("pro");
+    if (b.dataset.finpro === "copiar") return copiarWeb(b);
     let d = finProDatos();
     if (d)
       try {
