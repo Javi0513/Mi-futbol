@@ -25,8 +25,8 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('las novedades explican el aviso de fin del plan Pro',all(w in body for w in ('PARA TODOS','2 días antes','Entendido','prueba gratis')),body[:200])
-    check('y que no se pierde nada al terminar','no pierdes nada' in body and 'se renueva sola' in body)
+    check('las novedades explican entrar con Face ID o huella',all(w in body for w in ('PARA TODOS','Face ID','huella','Gratis')),body[:200])
+    check('y que durante un directo no se bloquea','directo no se bloquea' in body and 'nunca salen' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)

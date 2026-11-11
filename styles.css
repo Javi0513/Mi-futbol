@@ -5783,3 +5783,48 @@ button.vch.dsb {
 body.presenting .fin-pro-aviso {
   display: none;
 }
+
+/* Entrar con Face ID / huella (v11.15): pantalla de bloqueo encima de todo */
+html.bio-on,
+html.bio-on body {
+  overflow: hidden;
+}
+#bioLock {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+#bioLock .bio-box {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+#bioLock .bio-ic {
+  color: var(--lime);
+  margin: 12px 0 0;
+}
+#bioLock p {
+  color: var(--mut);
+  margin: 0;
+}
+#bioLock p b {
+  color: var(--ink);
+}
+#bioLock .stack {
+  width: 100%;
+  margin-top: 8px;
+}
+#bioLock #bioMsg {
+  width: 100%;
+  text-align: left;
+}
