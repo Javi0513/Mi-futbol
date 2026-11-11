@@ -25,7 +25,7 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('las novedades explican cómo pasar a Pro desde Android',all(w in body for w in ('PARA TODOS','app de Android','navegador')),body[:200])
+    check('las novedades explican que se paga desde cualquier dispositivo',all(w in body for w in ('PARA TODOS','app de Android','Stripe')),body[:200])
     check('y el email antes de que termine la prueba','email' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
@@ -39,7 +39,7 @@ with sync_playwright() as p:
     ctx.close()
     ctx,pg=abre(b,android=True)
     body=pg.locator('#infoBody').inner_text() if pg.locator('#info').is_visible() else ''
-    check('en la app de Android no se habla del precio',body and '39,99' not in body and '€' not in body,body[:80])
+    check('en la app de Android también salen las novedades (v11.17: se paga igual que en la web)','app de Android' in body,body[:80])
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 sys.exit(0 if all(res) and not errs else 1)
