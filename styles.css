@@ -2484,6 +2484,10 @@ body.cam-on {
   color: var(--ink);
   text-decoration: none;
 }
+/* Con un número impar de packs, el último ocupa todo el ancho */
+.pack:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
 a.pack {
   border-color: var(--lime);
 }
