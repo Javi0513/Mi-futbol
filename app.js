@@ -5814,7 +5814,7 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: octubre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan en tu dispositivo y, si usas «Guardar» en la pizarra, también en tu cuenta. Si creas el <b>enlace del equipo</b>, quien tenga ese enlace ve el nombre del equipo, el nombre y dorsal de los jugadores, la convocatoria, los próximos entrenos y los vídeos que compartas; las respuestas «Voy» / «No puedo ir» y su motivo se guardan en tu cuenta (el motivo solo lo ves tú) y se borran a los 120 días. Si pides el esfuerzo, el número del 1 al 10 que anota cada jugador se guarda igual (120 días) y solo lo ves tú y, si creas su enlace, el preparador físico; los demás solo ven que ya lo ha anotado. Quien tenga el <b>enlace del preparador físico</b> ve el nombre y dorsal de los jugadores, su esfuerzo y su carga física (minutos × esfuerzo), sin poder cambiar nada. Puedes desactivar los enlaces cuando quieras.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: noviembre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan en tu dispositivo y, si usas «Guardar» en la pizarra, también en tu cuenta. Si creas el <b>enlace del equipo</b>, quien tenga ese enlace ve el nombre del equipo, el nombre y dorsal de los jugadores, la convocatoria, los próximos entrenos y los vídeos que compartas; las respuestas «Voy» / «No puedo ir» y su motivo se guardan en tu cuenta (el motivo solo lo ves tú) y se borran a los 120 días. Si pides el esfuerzo, el número del 1 al 10 que anota cada jugador se guarda igual (120 días) y solo lo ves tú y, si creas su enlace, el preparador físico; los demás solo ven que ya lo ha anotado. Quien tenga el <b>enlace del preparador físico</b> ve el nombre y dorsal de los jugadores, su esfuerzo y su carga física (minutos × esfuerzo), sin poder cambiar nada. Puedes desactivar los enlaces cuando quieras.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). Si activas «Entrar con Face ID / huella», la comprobación de tu cara o tu huella la hace tu propio dispositivo: nunca recibimos ni guardamos esos datos, solo se guarda en tu dispositivo un identificador de la llave creada. No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
@@ -6227,6 +6227,8 @@
       t: "Tu cuenta y tus datos",
       p: [
         "<b>Tu foto de perfil:</b> arriba del todo en «Mi cuenta» pulsa «Poner mi foto» y elige la que quieras; también puedes escribir tu nombre. La foto sale en el botón de tu cuenta, arriba a la derecha. Puedes cambiarla o quitarla cuando quieras.",
+        "<b>Entrar con Face ID o huella:</b> en «Mi cuenta» pulsa «Entrar con Face ID / Touch ID» (en Android, «Entrar con huella o cara») y confirma con tu cara o tu huella. Desde entonces, al abrir la app en ese dispositivo te pide la cara o la huella antes de enseñar tus datos. Es gratis y se activa en cada dispositivo por separado.",
+        "La cara o la huella las comprueba tu propio móvil: nunca salen de él. Si no te reconoce, pulsa «Desbloquear» otra vez o «Entrar con mi email y contraseña». Durante un directo no se bloquea; si dejas la app más de 5 minutos en segundo plano, al volver te la pide otra vez. Para quitarlo, «Mi cuenta › Desactivar entrar con…». Si no te sale la opción, tu dispositivo no lo permite (por ejemplo, algunos iPad antiguos) y entras como siempre.",
         "En «Mi cuenta» puedes descargar todos tus datos, leer la política de privacidad, cerrar sesión o borrar tu cuenta y tus datos.",
       ],
     },
@@ -6341,7 +6343,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${bioPuede || (bioCfg() && bioCfg().uid === curUser) ? `<button type="button" class="secondary" data-acct="bio" aria-pressed="${!!(bioCfg() && bioCfg().uid === curUser)}">${bioCfg() && bioCfg().uid === curUser ? "Desactivar entrar con " + esc(bioNombre()) : "Entrar con " + esc(bioNombre())}</button>` : ""}${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
@@ -6742,6 +6744,29 @@
       note(on ? "Control de entrenamientos activado: lo tienes en la pestaña «Entrenos»." : "Control de entrenamientos desactivado.", true);
       return;
     }
+    if (w === "bio") {
+      let cfg = bioCfg();
+      if (cfg && cfg.uid === curUser) {
+        if (!confirm(`¿Dejar de pedir tu ${bioNombre()} al abrir la app en este dispositivo?`)) return;
+        try {
+          localStorage.removeItem(BIO_KEY);
+        } catch (e) {}
+        note(`Listo: ya no se pedirá tu ${bioNombre()} al abrir la app.`, true);
+        return showInfo("account");
+      }
+      if (!curUser) return;
+      try {
+        await bioActivar();
+        note(`Activado: a partir de ahora, al abrir la app en este dispositivo te pedirá tu ${bioNombre()}.`, true);
+      } catch (e) {
+        note(
+          e && e.name === "NotAllowedError"
+            ? "No se ha activado (se ha cancelado o no se ha podido comprobar). Puedes volver a probar cuando quieras."
+            : `Este dispositivo no permite usar ${bioNombre()} en la app. Seguirás entrando como hasta ahora.`,
+        );
+      }
+      return showInfo("account");
+    }
     if (w === "novedades-ok") {
       $("info").classList.add("hidden");
       return;
@@ -6820,6 +6845,7 @@
       try {
         localStorage.removeItem("mf_sesion_copia");
         localStorage.removeItem("mf_directo_abierto");
+        localStorage.removeItem(BIO_KEY);
       } catch (e) {}
       await db.auth.signOut();
       loginNote("Tu cuenta y tus datos se han borrado.", true);
@@ -10545,6 +10571,153 @@
     let c = sesCopia();
     return c ? c.rt : "";
   }
+  /* ===== Entrar con Face ID / huella (v11.15, gratis para todos) =====
+     Bloqueo opcional de ESTE dispositivo. Usa WebAuthn (el sistema estándar que usan los bancos en la web):
+     la cara o la huella las comprueba el propio móvil y nunca salen de él, y no se guarda nada en el servidor.
+     La sesión de Supabase sigue guardada como siempre: esto solo pide la cara o la huella antes de enseñar la app.
+     Si el dispositivo no lo permite (p. ej. iPad antiguo desde el icono de inicio) la opción no aparece. */
+  const BIO_KEY = "mf_bio",
+    BIO_ESPERA = 5 * 60000; /* tras 5 min en segundo plano se vuelve a pedir (nunca durante un directo) */
+  const esIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const bioNombre = () => (esIOS ? "Face ID / Touch ID" : "huella o cara");
+  const bioCfg = () => {
+    try {
+      let j = JSON.parse(localStorage.getItem(BIO_KEY) || "null");
+      return j && j.uid && j.id ? j : null;
+    } catch (e) {
+      return null;
+    }
+  };
+  let bioPuede = null,
+    bioBloq = false,
+    bioEnCurso = false,
+    bioOculta = 0;
+  async function bioDisponible() {
+    if (bioPuede !== null) return bioPuede;
+    try {
+      bioPuede = !!(
+        window.isSecureContext &&
+        window.PublicKeyCredential &&
+        navigator.credentials &&
+        navigator.credentials.create &&
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable &&
+        (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
+      );
+    } catch (e) {
+      bioPuede = false;
+    }
+    return bioPuede;
+  }
+  const b64u = (buf) => {
+    let t = "",
+      a = new Uint8Array(buf);
+    for (let i = 0; i < a.length; i++) t += String.fromCharCode(a[i]);
+    return btoa(t).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
+  const deB64u = (s) => {
+    let t = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
+    let a = new Uint8Array(t.length);
+    for (let i = 0; i < t.length; i++) a[i] = t.charCodeAt(i);
+    return a;
+  };
+  const bioReto = () => crypto.getRandomValues(new Uint8Array(32));
+  async function bioActivar() {
+    let uid = new TextEncoder().encode(String(curUser).slice(0, 64));
+    let cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: bioReto(),
+        rp: { name: "Mi Fútbol JV32" },
+        user: { id: uid, name: curEmail || "entrenador", displayName: curEmail || "Mi Fútbol JV32" },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 },
+        ],
+        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" },
+        timeout: 60000,
+        attestation: "none",
+      },
+    });
+    if (!cred || !cred.rawId) throw new Error("cancelado");
+    localStorage.setItem(BIO_KEY, JSON.stringify({ uid: curUser, id: b64u(cred.rawId) }));
+  }
+  async function bioComprobar(cfg) {
+    let a = await navigator.credentials.get({
+      publicKey: {
+        challenge: bioReto(),
+        allowCredentials: [{ type: "public-key", id: deB64u(cfg.id), transports: ["internal"] }],
+        userVerification: "required",
+        timeout: 60000,
+      },
+    });
+    if (!a || !a.response || !a.response.authenticatorData) return false;
+    let f = new Uint8Array(a.response.authenticatorData);
+    /* byte 32 = banderas: 0x01 persona presente, 0x04 persona verificada (cara/huella/código) */
+    return f.length > 32 && (f[32] & 0x05) === 0x05;
+  }
+  function bioBloquear() {
+    if (bioBloq || $("bioLock")) return;
+    bioBloq = true;
+    let d = document.createElement("div");
+    d.id = "bioLock";
+    d.setAttribute("role", "dialog");
+    d.setAttribute("aria-modal", "true");
+    d.setAttribute("aria-label", "App bloqueada");
+    d.innerHTML = `<div class="bio-box"><span class="mark xl" role="img" aria-label="Logo JV32"></span><h1 class="login-h1">Mi Fútbol <i>JV32</i></h1><p class="bio-ic" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M7 21H5a2 2 0 0 1-2-2v-2M17 21h2a2 2 0 0 0 2-2v-2"/><path d="M9 9v1M15 9v1M12 9v4h-1M9 16c1.7 1.3 4.3 1.3 6 0"/></svg></p><p>Desbloquea con tu <b>${esc(bioNombre())}</b> para entrar.</p><div id="bioMsg" aria-live="polite"></div><div class="stack"><button type="button" class="primary" data-bio="ya">Desbloquear</button><button type="button" class="lnk" data-bio="pw">Entrar con mi email y contraseña</button></div></div>`;
+    document.body.appendChild(d);
+    document.documentElement.classList.add("bio-on");
+    /* En Android se abre solo; en iPhone/iPad Safari solo deja pedir Face ID al tocar un botón */
+    if (!esIOS) setTimeout(() => bioDesbloquear(true), 350);
+  }
+  function bioQuitar() {
+    bioBloq = false;
+    let d = $("bioLock");
+    if (d) d.remove();
+    document.documentElement.classList.remove("bio-on");
+  }
+  async function bioDesbloquear(auto) {
+    let cfg = bioCfg();
+    if (!cfg) return bioQuitar();
+    if (bioEnCurso) return;
+    bioEnCurso = true;
+    let m = $("bioMsg");
+    if (m) m.innerHTML = "";
+    let ok = false;
+    try {
+      ok = await bioComprobar(cfg);
+    } catch (e) {
+      ok = false;
+    }
+    bioEnCurso = false;
+    if (ok) return bioQuitar();
+    if ((m = $("bioMsg")) && !auto)
+      m.innerHTML = `<div class="message" role="alert"><span>No se ha podido comprobar. Pulsa «Desbloquear» para probar otra vez o entra con tu email y contraseña.</span></div>`;
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest && e.target.closest("#bioLock [data-bio]");
+    if (!b) return;
+    if (b.dataset.bio === "ya") bioDesbloquear(false);
+    else if (confirm("Se cerrará la sesión en este dispositivo y podrás entrar con tu email y contraseña. ¿Seguir?")) doLogout();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      bioOculta = Date.now();
+      return;
+    }
+    let cfg = bioCfg();
+    if (bioOculta && Date.now() - bioOculta > BIO_ESPERA && cfg && curUser && cfg.uid === curUser && !state.live && !$("app").classList.contains("hidden"))
+      bioBloquear();
+    bioOculta = 0;
+  });
+  /* Al abrir la app con la sesión guardada se pide la cara o la huella (no en los enlaces sin cuenta ni al recuperar la contraseña) */
+  (() => {
+    if (PUB || EQ || PF || AN || /type=recovery/.test(location.hash)) return;
+    let cfg = bioCfg(),
+      cp = sesCopia();
+    if (cfg && cp && cp.uid === cfg.uid) bioBloquear();
+  })();
+  bioDisponible();
   /* true = el servidor dice que la sesión ya no vale (no es un problema de conexión) */
   const sesDefinitivo = (e) =>
     !!e &&
