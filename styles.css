@@ -1624,6 +1624,25 @@ label.chk a {
   font: 500 14px var(--fb);
   color: var(--mut);
 }
+/* v11.18: Pro mensual */
+.price-mes {
+  margin: 2px 0 6px;
+  color: var(--mut);
+  font-size: 14px;
+}
+.price-mes b {
+  color: var(--ink);
+}
+.ahorro {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
 .porque {
   margin: 4px 0 12px;
   color: var(--mut);

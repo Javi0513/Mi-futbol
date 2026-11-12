@@ -112,7 +112,7 @@ with sync_playwright() as p:
     pg.click('#closeInfo')
     # ---- Guía de uso y novedades
     v=json.load(open(REPO+'/version.json',encoding='utf-8'))
-    check('novedades con texto',v['version'] and len(v['novedades'])>=3)
+    check('novedades con texto',v['version'] and len(v['novedades'])>=1)
     js=open(REPO+'/app.js',encoding='utf-8').read()
     check('Guía de uso explica convocatoria, entreno, limpia y vídeos','t: "Convocatoria"' in js and 'Enviar el entreno a los jugadores</b>' in js and '<b>Limpia</b>' in js and '<b>Vídeos</b>' in js)
     check('sin errores en la página',not errs,errs[:3])

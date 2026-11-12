@@ -5820,7 +5820,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual, o de 4,99 € al mes (IVA incluido), con renovación mensual y sin permanencia. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -5833,8 +5833,9 @@
     }
   })();
   const pagoActivo = !!c.proUrl && (!/\/test_/.test(c.proUrl) || probarPago);
-  function proLink() {
-    let u = pagoActivo ? c.proUrl : "";
+  /* Pro anual (proUrl) o mensual (proUrlMes, v11.18) */
+  function proLink(mes) {
+    let u = pagoActivo ? (mes ? c.proUrlMes || "" : c.proUrl) : "";
     if (!u || !curUser) return "";
     return (
       u +
@@ -5848,7 +5849,7 @@
     if (enAndroid) return "";
     let u = proLink();
     return u
-      ? `<a class="primary" href="${esc(u)}" target="_blank" rel="noopener" data-pro-pay>Quiero el plan Pro</a><p class="muted">El pago se hace en Stripe, de forma segura. Al volver a la app, el plan Pro se activa solo.</p>`
+      ? `<a class="primary" href="${esc(u)}" target="_blank" rel="noopener" data-pro-pay>Pro anual · 39,99 €/año <small class="ahorro">ahorras un 33 %</small></a>${proLink(true) ? `<a class="secondary" href="${esc(proLink(true))}" target="_blank" rel="noopener" data-pro-pay data-pro-mes>Pro mensual · 4,99 €/mes</a>` : ""}<p class="muted">El pago se hace en Stripe, de forma segura. Al volver a la app, el plan Pro se activa solo. El mensual se renueva cada mes y lo cancelas cuando quieras.</p>`
       : `<button type="button" class="primary" id="wl" data-acct="waitlist">Avísame cuando esté disponible</button><p class="muted" id="wlmsg">Te avisaremos por correo a <b>${esc(curEmail)}</b>. Sin compromiso.</p>`;
   }
   async function checkWaitlist() {
@@ -5994,7 +5995,7 @@
   const precioProHtml = () =>
     enAndroid
       ? ""
-      : `<p class="price">39,99 € <small>al año · IVA incluido · unos 3,33 € al mes · cancela cuando quieras</small></p><details class="porque"><summary>¿Por qué cuesta esto?</summary><p>${POR_QUE_PRECIO.replace(/^¿Por qué 39,99 €\? /, "")}</p></details>`;
+      : `<p class="price">39,99 € <small>al año · IVA incluido · unos 3,33 € al mes · cancela cuando quieras</small></p>${c.proUrlMes ? '<p class="price-mes">o <b>4,99 € al mes</b>, sin permanencia (al año son 59,88 €: con el anual ahorras un 33 %)</p>' : ""}<details class="porque"><summary>¿Por qué cuesta esto?</summary><p>${POR_QUE_PRECIO.replace(/^¿Por qué 39,99 €\? /, "")}</p></details>`;
   const AYUDA = [
     {
       t: "Empezar",
@@ -6200,8 +6201,8 @@
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>También en la app de Android:</b> puedes pagar el Pro o el pack de tu club desde «Mi cuenta» igual que en la web. El botón te lleva a la página de pago de Stripe; al pagar y volver a la app, el Pro se activa solo.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
-        { texto: "El plan Pro cuesta 39,99 € al año (IVA incluido), unos 3,33 € al mes. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
-        { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» pulsa «Quiero el plan Pro». Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. Se renueva cada año; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año pagado.", soloWeb: true },
+        { texto: "El plan Pro cuesta <b>39,99 € al año</b> (IVA incluido), unos 3,33 € al mes. Si prefieres pagar <b>mes a mes</b>, también puedes: <b>4,99 € al mes</b>, sin permanencia. Al año el mensual sale a 59,88 €, así que con el anual ahorras un 33 %. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
+        { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» elige <b>«Pro anual»</b> o <b>«Pro mensual»</b>. Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. El anual se renueva cada año y el mensual cada mes; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año o del mes pagado. Si un cobro mensual falla, Stripe lo reintenta unos días y, si no se paga, vuelves al plan gratuito sin perder nada.", soloWeb: true },
         { texto: POR_QUE_PRECIO, soloWeb: true },
       ],
     },
@@ -6331,6 +6332,8 @@
   window.addEventListener("resize", () => {
     if (tutI >= 0) tutShow();
   });
+  /* v11.18: «Pasar a Pro» desde Mi cuenta o desde el aviso no es por haber llegado al límite */
+  let proElegido = false;
   function showInfo(k) {
     let t, h;
     if (k === "proteam") {
@@ -6342,11 +6345,13 @@
     } else if (k === "pro") {
       let M = MODES[state.mode];
       t = "Plan Pro";
-      h = `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p><p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
+      let porLimite = !proElegido;
+      proElegido = false;
+      h = `${porLimite ? `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p>` : `<p>Puedes pagarlo <b>al año</b> (lo que más ahorra) o <b>al mes</b>, sin permanencia.</p>`}<p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · 39,99 €/año</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${bioPuede || (bioCfg() && bioCfg().uid === curUser) ? `<button type="button" class="secondary" data-acct="bio" aria-pressed="${!!(bioCfg() && bioCfg().uid === curUser)}">${bioCfg() && bioCfg().uid === curUser ? "Desactivar entrar con " + esc(bioNombre()) : "Entrar con " + esc(bioNombre())}</button>` : ""}${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · desde 3,33 €/mes</button>'}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${bioPuede || (bioCfg() && bioCfg().uid === curUser) ? `<button type="button" class="secondary" data-acct="bio" aria-pressed="${!!(bioCfg() && bioCfg().uid === curUser)}">${bioCfg() && bioCfg().uid === curUser ? "Desactivar entrar con " + esc(bioNombre()) : "Entrar con " + esc(bioNombre())}</button>` : ""}${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
@@ -6526,7 +6531,7 @@
       btn = enAndroid
         ? ""
         : d.tipo === "prueba"
-          ? '<button type="button" class="primary" data-finpro="pro">Seguir con Pro · 39,99 €/año</button>'
+          ? '<button type="button" class="primary" data-finpro="pro">Seguir con Pro · desde 3,33 €/mes</button>'
           : d.tipo === "cancelado" && c.portalUrl && stripeCliente
             ? `<a class="primary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Reactivar mi suscripción</a>`
             : "";
@@ -6536,7 +6541,10 @@
   document.addEventListener("click", (e) => {
     let b = e.target.closest("[data-finpro]");
     if (!b) return;
-    if (b.dataset.finpro === "pro") return showInfo("pro");
+    if (b.dataset.finpro === "pro") {
+      proElegido = true;
+      return showInfo("pro");
+    }
     let d = finProDatos();
     if (d)
       try {
@@ -6714,6 +6722,7 @@
     }
     let inf = e.target.closest("#info [data-info]");
     if (inf) {
+      proElegido = inf.dataset.info === "pro";
       showInfo(inf.dataset.info);
       return;
     }
