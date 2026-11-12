@@ -6,6 +6,8 @@ window.APP_CONFIG={
   legalDir:'Granada, España',
   contactEmail:'mifutboljv32@gmail.com',
   proUrl:'https://buy.stripe.com/00w4gz4S06fBaMC2NAcbC00',
+  // Pro mensual (v11.18): 4,99 €/mes, misma suscripción y mismo webhook que el anual
+  proUrlMes:'https://buy.stripe.com/fZu14n5W4fQbaMCewicbC09',
   portalUrl:'https://billing.stripe.com/p/login/00w4gz4S06fBaMC2NAcbC00',
   // Plan para clubes (v8.9): un enlace de pago de Stripe por cada pack anual
   clubPacks:[
