@@ -7,7 +7,7 @@ from fake2 import FAKE2
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 srv=http.server.ThreadingHTTPServer(('127.0.0.1',8797),functools.partial(http.server.SimpleHTTPRequestHandler,directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
-def seed(plan,n7=14,n11=25,nfs=16,m7=5):
+def seed(plan,n7=10,n11=16,nfs=10,m7=5):
     P=[]
     for m,n in (('7',n7),('11',n11),('fs',nfs)):
         for i in range(n):P.append({'id':f'{m}-{i}','owner_id':'u1','modalidad':m,'nombre':f'J{m}{i}','foto':'','created_at':''})
@@ -26,7 +26,7 @@ with sync_playwright() as p:
     pg=page(b,'gratis')
     check('3 modalidades en el selector',pg.locator('.switch button').count()==3 and pg.locator('[data-mode="fs"]').text_content()=='Fútbol sala')
     pg.screenshot(path=OUT+'/m_switch.png')
-    for mode,name,mx in (('7','Fútbol 7',14),('11','Fútbol 11',25),('fs','Fútbol sala',16)):
+    for mode,name,mx in (('7','Fútbol 7',10),('11','Fútbol 11',16),('fs','Fútbol sala',10)):
         pg.click(f'[data-mode="{mode}"]');pg.wait_for_timeout(100)
         check(f'{name}: título y contador {mx}/{mx}',name.lower() in pg.locator('#view h2').first.inner_text().lower() and f'{mx} / {mx}' in pg.locator('#view .muted').first.inner_text(),pg.locator('#view .muted').first.inner_text())
         pg.click('[data-action=add-player]');pg.wait_for_timeout(120)
@@ -46,19 +46,31 @@ with sync_playwright() as p:
     pg.click('[data-action=cancel]')
     # cuenta
     pg.click('#acct');pg.wait_for_timeout(100);t=pg.locator('#infoBody').inner_text()
-    check('cuenta: uso por modalidad y botón Pro',('fútbol sala' in t.lower() and '16' in t and 'pasar a pro' in t.lower()),t[:160]);pg.screenshot(path=OUT+'/m_cuenta.png')
+    check('cuenta: uso por modalidad y botón Pro',('fútbol sala' in t.lower() and '/10 jug' in t and '/16 jug' in t and 'pasar a pro' in t.lower()),t[:160]);pg.screenshot(path=OUT+'/m_cuenta.png')
     pg.click('#info [data-info=pro]');pg.wait_for_timeout(100);check('botón Pro abre el plan',pg.locator('#infoTitle').inner_text().lower()=='plan pro')
     pg.click('#closeInfo')
     # error del servidor LIMITE_PLAN (por si el cliente va desfasado)
     pg2=page(b,'gratis',n7=3,n11=0,nfs=0,m7=0);pg2.evaluate("window.__cfg.limit=true")
     pg2.click('[data-action=add-player]');pg2.fill('#playerForm input[name=nombre]','Nuevo');pg2.click('#playerForm .primary');pg2.wait_for_timeout(250)
     check('servidor devuelve LIMITE_PLAN → sale el plan Pro',vis(pg2,'#info') and 'plan pro' in pg2.locator('#infoTitle').inner_text().lower() and not vis(pg2,'#modal'))
+    # v11.23: quien ya tenía más jugadores que el nuevo límite los conserva
+    pg4=page(b,'gratis',n7=14,n11=22,nfs=0,m7=0)
+    check('v11.23: con 14 en F7 se ven los 14 (no se borra nada)',pg4.locator('#view [data-lim-jug]').count()==1 and '14 / 10' in pg4.locator('#view .muted').first.inner_text(),pg4.locator('#view .muted').first.inner_text())
+    check('v11.23: aviso «conservas tus 14 jugadores»','Conservas tus 14 jugadores' in pg4.locator('#view [data-lim-jug]').inner_text())
+    pg4.click('[data-action=add-player]');pg4.wait_for_timeout(120)
+    check('v11.23: por encima del límite no deja añadir → plan Pro',vis(pg4,'#info') and not vis(pg4,'#modal') and 'se quedan guardados' in pg4.locator('#infoBody').inner_text(),pg4.locator('#infoBody').inner_text()[:160])
+    pg4.click('#closeInfo')
+    pg4.click('[data-mode="11"]');pg4.wait_for_timeout(100)
+    check('v11.23: F11 con 22 → 22 / 16 y aviso','22 / 16' in pg4.locator('#view .muted').first.inner_text() and pg4.locator('#view [data-lim-jug]').count()==1)
+    pg4.click('[data-mode="fs"]');pg4.wait_for_timeout(100)
+    check('v11.23: sin pasarse no sale el aviso',pg4.locator('#view [data-lim-jug]').count()==0)
+    pg4.screenshot(path=OUT+'/m_limite_superado.png')
     # pro
     pg3=page(b,'pro')
     check('Pro: sin contadores de límite',' / ' not in pg3.locator('#view .muted').first.inner_text(),pg3.locator('#view .muted').first.inner_text())
-    pg3.click('[data-action=add-player]');pg3.wait_for_timeout(100);check('Pro: se abre el formulario aunque haya 14',vis(pg3,'#modal') and not vis(pg3,'#info'))
+    pg3.click('[data-action=add-player]');pg3.wait_for_timeout(100);check('Pro: se abre el formulario aunque haya 10',vis(pg3,'#modal') and not vis(pg3,'#info'))
     pg3.click('#closeModal');pg3.click('#acct');check('Pro: cuenta dice sin límites',('sin límites' in pg3.locator('#infoBody').inner_text()) and 'pasar a pro' not in pg3.locator('#infoBody').inner_text().lower())
     # términos con precio
-    pg3.click('#info [data-info=terms]');tt=pg3.locator('#infoBody').inner_text();check('términos: plan Pro y límites',('39,99' in tt and 'Fútbol sala' in tt and '5 partidos' in tt))
+    pg3.click('#info [data-info=terms]');tt=pg3.locator('#infoBody').inner_text();check('términos: plan Pro y límites',('39,99' in tt and '10 en Fútbol 7' in tt and '16 en Fútbol 11' in tt and 'Fútbol sala' in tt and '5 partidos' in tt))
     b.close()
 print('\nPASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
