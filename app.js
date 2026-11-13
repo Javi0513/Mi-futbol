@@ -3195,7 +3195,7 @@
     L.push("", `👥 *Convocados (${J.length}):*`);
     J.forEach((p, i) => L.push(`${i + 1}. ${p.nombre}${dorsal(p) ? " (" + dorsal(p) + ")" : ""}`));
     if (c.nota) L.push("", `📝 ${c.nota}`);
-    if (c.deDraft && c.dirUrl) L.push("", "📺 *Síguelo en directo* (marcador, goles, cambios y tarjetas, sin cuenta):", c.dirUrl);
+    if ((c.deDraft || c.dirId) && c.dirUrl) L.push("", "📺 *Síguelo en directo* (marcador, goles, cambios y tarjetas, sin cuenta):", c.dirUrl);
     return L.join("\n");
   }
   function cvResumen(c) {
@@ -3221,9 +3221,23 @@
     if (desde) {
       cv = { ...cv, ...desde };
       cvGuarda();
+    } else {
+      let m = cvPartido(cv);
+      if (m) {
+        cv.dirId = m.id;
+        if (liveRows[m.id]) cv.dirUrl = liveUrl(liveRows[m.id]);
+      }
     }
     ciOpen("Convocatoria", cvHtml());
     $("infoBody").scrollTop = 0;
+  }
+  /* Partido guardado al que corresponde la convocatoria (mismo día y, si hay varios, mismo rival) */
+  function cvPartido(c) {
+    if (!c || !c.fecha) return null;
+    let n = (t) => String(t || "").trim().toLowerCase(),
+      L = games().filter((m) => m.fecha === c.fecha && pePuede(m)),
+      R = L.filter((m) => n(m.rival) && n(m.rival) === n(c.rival));
+    return R[0] || (L.length === 1 ? L[0] : null);
   }
   function cvHtml() {
     let r = roster(),
@@ -3232,7 +3246,7 @@
       f = (k, lab, ty, ph, ml) =>
         `<label class="ci-l">${lab}<input data-cvf="${k}" type="${ty}"${ph ? ` placeholder="${ph}"` : ""}${ml ? ` maxlength="${ml}"` : ""} value="${esc(cv[k] || "")}" autocomplete="off"></label>`;
     return `<p class="muted">${cv.deDraft ? "Los convocados salen del partido. Si cambias alguno aquí, cambia solo en el mensaje: en el partido se marcan en la lista «Conv.»." : "Elige a los convocados y los datos del partido. La app te escribe el mensaje para el grupo de WhatsApp."}</p><div class="cv-grid">${f("rival", "Rival", "text", "Ej.: CD Alhambra", 100)}${f("lugar", "Lugar", "text", "Ej.: Pabellón Municipal", 120)}${f("fecha", "Día", "date")}${f("hora", "Hora del partido", "time")}${f("cita", "Hora de citación", "time")}</div>${
-      cv.deDraft
+      cv.deDraft || cv.dirId
         ? cv.dirId
           ? `<label class="cv-j cv-dir"><input type="checkbox" data-cvdir${cv.dirUrl ? " checked" : ""}><span>📺 Añadir el enlace del directo, para que la familia siga el partido en vivo</span></label>`
           : '<p class="hint">Guarda el partido y podrás añadir aquí el enlace del directo.</p>'
@@ -6619,7 +6633,7 @@
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
         "<b>Enlaces antes del partido</b>: no hace falta esperar a estar en el campo. En «Partidos», debajo de un partido que aún no se ha jugado, pulsa <b>«Preparar enlaces del directo»</b> (o, al editar el partido, «Enlaces del directo»). Ahí mandas por WhatsApp el <b>enlace para la familia</b> y creas y mandas el <b>enlace del anotador</b>. Son los mismos enlaces del Directo: cuando pulses «Empezar partido» se ponen en marcha solos, sin mandar nada más. Si cambias el rival o los convocados, el anotador los ve al momento.",
-        "Si prefieres mandarlo todo junto, en «Editar partido › Convocatoria» marca <b>«Añadir el enlace del directo»</b> y el enlace va al final del mensaje de la convocatoria.",
+        "Si prefieres mandarlo todo junto, en la <b>Convocatoria</b> (la tarjeta «Ver y enviar» de «Partidos» o «Editar partido › Convocatoria») marca <b>«Añadir el enlace del directo»</b> y el enlace va al final del mensaje. Sale cuando el partido ya está guardado con el mismo día (y rival) que la convocatoria.",
         "Con el plan gratuito puedes preparar los enlaces antes del partido en <b>3 partidos al mes</b> (cada partido cuenta una vez); con Pro, ilimitado. El enlace del directo lo tienes siempre gratis dentro del Directo.",
         "<b>Anotador</b>: si tú grabas o estás dirigiendo, otra persona (el delegado, un padre…) puede apuntarlo todo desde su móvil. En el Directo pulsa «Crear enlace de anotador» y mándaselo con «Enviar al anotador». No necesita cuenta.",
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
@@ -8297,7 +8311,8 @@
     let m = state.matches.find((z) => z.id === x.partido_id);
     if (!m) return;
     if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
-    m.alineacion.resultado = { gf: x.gf, gc: x.gc };
+    /* Sin empezar (estado «pre») no hay resultado todavía: no se marca el partido como jugado */
+    if (x.estado !== "pre" || x.gf || x.gc) m.alineacion.resultado = { gf: x.gf, gc: x.gc };
     let e = pid && entries(m).find((z) => z.id === pid);
     if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + d);
     if (Number(x.parte_min)) m.alineacion.parte = Number(x.parte_min);
@@ -8481,8 +8496,13 @@
      cuando empiece el partido se ponen en marcha solos. Gratis: 3 partidos al mes; Pro: ilimitado. */
   let peId = "";
   const peFind = (id) => state.matches.find((z) => z.id === id);
-  /* Partidos a los que aún se les pueden preparar enlaces: sin resultado y sin directo terminado */
-  const pePuede = (m) => !!m && !viendo && !(m.alineacion && m.alineacion.resultado) && !(liveRows[m.id] && liveRows[m.id].estado === "FIN");
+  /* Partidos a los que aún se les pueden preparar enlaces: sin directo terminado y, o bien sin resultado,
+     o con su directo ya creado y sin terminar (antes el Directo apuntaba 0-0 nada más tocarlo) */
+  const pePuede = (m) =>
+    !!m &&
+    !viendo &&
+    !(liveRows[m.id] && liveRows[m.id].estado === "FIN") &&
+    (!(m.alineacion && m.alineacion.resultado) || !!liveRows[m.id]);
   function peCuando(m) {
     let c = (m.alineacion && m.alineacion.conv) || {},
       d = m.fecha ? trDayLabel(m.fecha).replace(/^./, (z) => z.toUpperCase()) : "";
@@ -8530,7 +8550,7 @@
       e
         ? `<h3 class="ci-h3">👥 Para los jugadores</h3><p class="muted">En el enlace del equipo ven la convocatoria y dicen si van. Ya lo tienen; si alguien lo ha perdido, cópialo aquí.</p><div class="stack"><button type="button" class="secondary" data-pe="copy-e">Copiar el enlace del equipo</button></div>`
         : ""
-    }<p class="hint">¿Quieres mandarlo todo en un solo mensaje? En «Editar partido › Convocatoria» marca «Añadir el enlace del directo».</p>`;
+    }<p class="hint">¿Quieres mandarlo todo en un solo mensaje? En la Convocatoria («Ver y enviar» o «Editar partido › Convocatoria») marca «Añadir el enlace del directo».</p>`;
   }
   /* Abre la ventana de enlaces del partido; crea el directo (sin empezar) si aún no existe */
   async function peAbre(id) {
