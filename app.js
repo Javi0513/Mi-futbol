@@ -863,7 +863,7 @@
                   .filter((x) => x.starter)
                   .map((x) => esc(name(x.id)))
                   .join(", ") || "—"
-              }</small><button type="button" class="rs-b" data-rs="${m.id}" aria-label="Ver resumen del partido contra ${esc(m.rival)}">${ic("chart", 16)}Ver resumen y estadísticas</button></div><div class="actions"><button class="ib lvb" data-action="live" data-id="${m.id}" aria-label="Directo del partido contra ${esc(m.rival)}" title="Directo">${ic("live")}</button><button class="ib" data-img="${m.id}" aria-label="Descargar imagen de la alineación" title="Descargar imagen">${ic("image")}</button><button class="ib" data-action="edit-match" data-id="${m.id}" aria-label="Editar partido contra ${esc(m.rival)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-match" data-id="${m.id}" aria-label="Borrar partido contra ${esc(m.rival)}" title="Borrar">${ic("trash")}</button></div></div>`;
+              }</small><span class="mrow-b"><button type="button" class="rs-b" data-rs="${m.id}" aria-label="Ver resumen del partido contra ${esc(m.rival)}">${ic("chart", 16)}Ver resumen y estadísticas</button>${pePuede(m) ? `<button type="button" class="rs-b pe-b" data-peo="${m.id}" aria-label="Enlaces del directo del partido contra ${esc(m.rival)}">${ic("share", 16)}${liveRows[m.id] ? "Enlaces del directo" : "Preparar enlaces del directo"}</button>` : ""}</span></div><div class="actions"><button class="ib lvb" data-action="live" data-id="${m.id}" aria-label="Directo del partido contra ${esc(m.rival)}" title="Directo">${ic("live")}</button><button class="ib" data-img="${m.id}" aria-label="Descargar imagen de la alineación" title="Descargar imagen">${ic("image")}</button><button class="ib" data-action="edit-match" data-id="${m.id}" aria-label="Editar partido contra ${esc(m.rival)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-match" data-id="${m.id}" aria-label="Borrar partido contra ${esc(m.rival)}" title="Borrar">${ic("trash")}</button></div></div>`;
             })
             .join("")
         : empty(
@@ -1636,14 +1636,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
+  const LIM = { pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -1667,7 +1667,9 @@
     if (L.includes(clave)) return true;
     if (L.length >= LIM[tipo])
       return proLimite(
-        tipo === "an"
+        tipo === "pe"
+          ? `En el plan gratuito puedes preparar los <b>enlaces del directo antes del partido en ${LIM.pe} partidos al mes</b> y este mes ya los has usado. Puedes sacarlos igual en el Directo, cuando vayas a empezar. El mes que viene vuelves a tener ${LIM.pe}.`
+          : tipo === "an"
           ? `En el plan gratuito puedes usar el <b>anotador en ${LIM.an} partidos al mes</b> y este mes ya lo has usado. El mes que viene vuelves a tener ${LIM.an}.`
           : tipo === "rs"
           ? `En el plan gratuito puedes compartir <b>${LIM.rs} resúmenes de partido al mes</b> (o de la temporada) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rs}.`
@@ -2725,6 +2727,7 @@
     L.push("", `👥 *Convocados (${J.length}):*`);
     J.forEach((p, i) => L.push(`${i + 1}. ${p.nombre}${dorsal(p) ? " (" + dorsal(p) + ")" : ""}`));
     if (c.nota) L.push("", `📝 ${c.nota}`);
+    if (c.deDraft && c.dirUrl) L.push("", "📺 *Síguelo en directo* (marcador, goles, cambios y tarjetas, sin cuenta):", c.dirUrl);
     return L.join("\n");
   }
   function cvResumen(c) {
@@ -2745,6 +2748,8 @@
   function cvAbre(desde) {
     cv = cvLee() || cvNuevo();
     delete cv.deDraft;
+    delete cv.dirId;
+    delete cv.dirUrl;
     if (desde) {
       cv = { ...cv, ...desde };
       cvGuarda();
@@ -2758,7 +2763,13 @@
       J = cvJug(cv),
       f = (k, lab, ty, ph, ml) =>
         `<label class="ci-l">${lab}<input data-cvf="${k}" type="${ty}"${ph ? ` placeholder="${ph}"` : ""}${ml ? ` maxlength="${ml}"` : ""} value="${esc(cv[k] || "")}" autocomplete="off"></label>`;
-    return `<p class="muted">${cv.deDraft ? "Los convocados salen del partido. Si cambias alguno aquí, cambia solo en el mensaje: en el partido se marcan en la lista «Conv.»." : "Elige a los convocados y los datos del partido. La app te escribe el mensaje para el grupo de WhatsApp."}</p><div class="cv-grid">${f("rival", "Rival", "text", "Ej.: CD Alhambra", 100)}${f("lugar", "Lugar", "text", "Ej.: Pabellón Municipal", 120)}${f("fecha", "Día", "date")}${f("hora", "Hora del partido", "time")}${f("cita", "Hora de citación", "time")}</div><label class="ci-l">Nota (opcional)<input data-cvf="nota" maxlength="200" placeholder="Ej.: equipación azul, traed la ficha" value="${esc(cv.nota || "")}" autocomplete="off"></label><div class="cv-h"><h3 class="ci-h3">Convocados <b data-cvn>${J.length}</b>${cap ? ` <small class="muted">(máx. ${cap})</small>` : ""}</h3><span><button type="button" class="secondary small" data-cv="todos">Todos</button><button type="button" class="secondary small" data-cv="ninguno">Ninguno</button></span></div>${
+    return `<p class="muted">${cv.deDraft ? "Los convocados salen del partido. Si cambias alguno aquí, cambia solo en el mensaje: en el partido se marcan en la lista «Conv.»." : "Elige a los convocados y los datos del partido. La app te escribe el mensaje para el grupo de WhatsApp."}</p><div class="cv-grid">${f("rival", "Rival", "text", "Ej.: CD Alhambra", 100)}${f("lugar", "Lugar", "text", "Ej.: Pabellón Municipal", 120)}${f("fecha", "Día", "date")}${f("hora", "Hora del partido", "time")}${f("cita", "Hora de citación", "time")}</div>${
+      cv.deDraft
+        ? cv.dirId
+          ? `<label class="cv-j cv-dir"><input type="checkbox" data-cvdir${cv.dirUrl ? " checked" : ""}><span>📺 Añadir el enlace del directo, para que la familia siga el partido en vivo</span></label>`
+          : '<p class="hint">Guarda el partido y podrás añadir aquí el enlace del directo.</p>'
+        : ""
+    }<label class="ci-l">Nota (opcional)<input data-cvf="nota" maxlength="200" placeholder="Ej.: equipación azul, traed la ficha" value="${esc(cv.nota || "")}" autocomplete="off"></label><div class="cv-h"><h3 class="ci-h3">Convocados <b data-cvn>${J.length}</b>${cap ? ` <small class="muted">(máx. ${cap})</small>` : ""}</h3><span><button type="button" class="secondary small" data-cv="todos">Todos</button><button type="button" class="secondary small" data-cv="ninguno">Ninguno</button></span></div>${
       r.length
         ? `<div class="cv-list">${r
             .map(
@@ -2794,6 +2805,11 @@
       let c = d.alineacion.conv || {},
         x = { rival: d.rival, fecha: d.fecha, ids: d.players.map((p) => p.id), deDraft: 1 };
       ["hora", "cita", "lugar"].forEach((q) => c[q] && (x[q] = c[q]));
+      /* Partido ya guardado: se puede meter el enlace del directo en el mensaje (si ya está preparado, va marcado) */
+      if (state.editing) {
+        x.dirId = state.editing;
+        if (liveRows[state.editing]) x.dirUrl = liveUrl(liveRows[state.editing]);
+      }
       return cvAbre(x);
     }
     if (!cv) return;
@@ -2868,7 +2884,19 @@
     cv[k] = e.target.value;
     cvRefresca();
   });
-  $("info").addEventListener("change", (e) => {
+  $("info").addEventListener("change", async (e) => {
+    if (e.target.hasAttribute("data-cvdir") && cv && cv.dirId) {
+      let on = e.target.checked,
+        x = liveRows[cv.dirId],
+        m = state.matches.find((z) => z.id === cv.dirId);
+      if (on && !x) {
+        if (!m || !envPuede("pe", cv.dirId)) return (e.target.checked = false);
+        x = await liveCrea(m);
+        if (!x) return (e.target.checked = false);
+      }
+      cv.dirUrl = on && x ? liveUrl(x) : "";
+      return cvRefresca();
+    }
     let id = e.target.dataset.cvp;
     if (!id || !cv) return;
     let cap = MODES[state.mode].cap;
@@ -4117,7 +4145,7 @@
         return `<div class="checkline"><span>${esc(p.nombre)}${x && p.id === cap ? ' <em class="tg c" title="Capitán">C</em>' : ""}${x && p.id === gk ? ' <em class="tg g" title="Portero">POR</em>' : ""}</span><input type="checkbox" data-field="called" data-id="${p.id}" aria-label="Convocado: ${esc(p.nombre)}" ${x ? "checked" : ""}><input type="checkbox" data-field="starter" data-id="${p.id}" aria-label="Titular: ${esc(p.nombre)}" ${x?.starter ? "checked" : ""}><input type="number" data-field="minutes" data-id="${p.id}" aria-label="Minutos de ${esc(p.nombre)}" min="0" value="${x?.minutes || 0}" ${x ? "" : "disabled"}><input type="number" data-field="goals" data-id="${p.id}" aria-label="Goles de ${esc(p.nombre)}" min="0" value="${x?.goals || 0}" ${x ? "" : "disabled"}></div>`;
       })
       .join("");
-    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><span class="mbtns">${viendo ? "" : `<button class="secondary small" data-cv="desde">${ic("share", 18)}Convocatoria</button>`}<button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></span></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
+    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><span class="mbtns">${viendo ? "" : `<button class="secondary small" data-cv="desde">${ic("share", 18)}Convocatoria</button>`}${state.editing && pePuede(peFind(state.editing)) ? `<button class="secondary small" data-peo="${state.editing}">${ic("live", 18)}Enlaces del directo</button>` : ""}<button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></span></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
 <div class="lineup-layout"><div><div class="position-help"><h3>Campo y posiciones</h3><select id="formation" aria-label="Formación">${Object.keys(
       formations[state.mode],
     )
@@ -5083,10 +5111,12 @@
       : await db.from("futbol_personal_partidos").insert(payload);
     state.busy = false;
     if (result.error) return note(result.error.message);
+    let gid = state.editing;
     state.draft = null;
     state.editing = null;
     note("Partido, formación y posiciones guardados.", true);
     await load();
+    if (gid) peTrasGuardar(gid);
   }
   async function remove(table, id) {
     if (!confirm("¿Borrar este registro?")) return;
@@ -6085,6 +6115,9 @@
         "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
+        "<b>Enlaces antes del partido</b>: no hace falta esperar a estar en el campo. En «Partidos», debajo de un partido que aún no se ha jugado, pulsa <b>«Preparar enlaces del directo»</b> (o, al editar el partido, «Enlaces del directo»). Ahí mandas por WhatsApp el <b>enlace para la familia</b> y creas y mandas el <b>enlace del anotador</b>. Son los mismos enlaces del Directo: cuando pulses «Empezar partido» se ponen en marcha solos, sin mandar nada más. Si cambias el rival o los convocados, el anotador los ve al momento.",
+        "Si prefieres mandarlo todo junto, en «Editar partido › Convocatoria» marca <b>«Añadir el enlace del directo»</b> y el enlace va al final del mensaje de la convocatoria.",
+        "Con el plan gratuito puedes preparar los enlaces antes del partido en <b>3 partidos al mes</b> (cada partido cuenta una vez); con Pro, ilimitado. El enlace del directo lo tienes siempre gratis dentro del Directo.",
         "<b>Anotador</b>: si tú grabas o estás dirigiendo, otra persona (el delegado, un padre…) puede apuntarlo todo desde su móvil. En el Directo pulsa «Crear enlace de anotador» y mándaselo con «Enviar al anotador». No necesita cuenta.",
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
         "En el <b>descanso</b>, el anotador apunta los cambios con «🔄 Cambio del descanso» y no gastan ventana. Si se le olvidó, en la 2ª parte tiene el botón «🔄 Cambio del descanso (no gasta ventana)».",
@@ -6196,8 +6229,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>También en la app de Android:</b> puedes pagar el Pro o el pack de tu club desde «Mi cuenta» igual que en la web. El botón te lleva a la página de pago de Stripe; al pagar y volver a la app, el Pro se activa solo.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
@@ -7595,51 +7628,65 @@
     liveSave(x, () => liveMatch(x, null, 0));
     render();
   }
+  /* Crea el directo del partido sin empezar (estado «pre»). El enlace (su id) ya vale para
+     siempre: sirve para mandarlo antes del partido y es el mismo cuando empiece. */
+  async function liveCrea(m) {
+    let id = m.id,
+      x,
+      r0 = m.alineacion && m.alineacion.resultado,
+      eq = teamOf(m) ? teamName(m.modalidad, teamOf(m)) : "";
+    try {
+      if (!eq) eq = localStorage.getItem("mf_equipo") || "";
+    } catch (e) {}
+    let row = {
+        id: crypto.randomUUID(),
+        owner_id: curUser,
+        partido_id: id,
+        modalidad: m.modalidad,
+        equipo: eq || "Mi equipo",
+        rival: String(m.rival || "").slice(0, 100),
+        gf: r0 ? r0.gf : 0,
+        gc: r0 ? r0.gc : 0,
+        estado: "pre",
+        parte_min: parteDe(m.modalidad, teamOf(m)),
+        acum_ms: 0,
+        desde: null,
+        eventos: [],
+      },
+      r = await db.from("directos").insert(row).select();
+    if (r.error) {
+      note(liveErr(r.error.message));
+      return null;
+    }
+    x = liveRows[id] = (r.data && r.data[0]) || row;
+    liveSync(x);
+    return x;
+  }
+  /* Pone al día el directo con lo que hay ahora en el partido (rival, duración, convocados del anotador) */
+  function liveAlDia(x, m) {
+    let pm = parteDe(m.modalidad, teamOf(m)),
+      ch = false;
+    if (x.rival !== m.rival) {
+      x.rival = String(m.rival || "").slice(0, 100);
+      ch = true;
+    }
+    /* Antes de empezar, la duración sigue a la categoría del equipo */
+    if (x.estado === "pre" && catOf(m.modalidad, teamOf(m)) && x.parte_min !== pm) {
+      x.parte_min = pm;
+      ch = true;
+    }
+    if (ch) liveSave(x);
+    /* El anotador ve siempre los convocados de ahora */
+    if (x.anotador && JSON.stringify(anotJug(m)) !== JSON.stringify(x.anot_jug || [])) anotGuarda(x, { anot_jug: anotJug(m) });
+  }
   async function openLive(id) {
     let m = state.matches.find((z) => z.id === id);
     if (!m) return;
     let x = liveRows[id];
     if (!x) {
-      let r0 = m.alineacion && m.alineacion.resultado,
-        eq = teamOf(m) ? teamName(m.modalidad, teamOf(m)) : "";
-      try {
-        if (!eq) eq = localStorage.getItem("mf_equipo") || "";
-      } catch (e) {}
-      let row = {
-          id: crypto.randomUUID(),
-          owner_id: curUser,
-          partido_id: id,
-          modalidad: m.modalidad,
-          equipo: eq || "Mi equipo",
-          rival: String(m.rival || "").slice(0, 100),
-          gf: r0 ? r0.gf : 0,
-          gc: r0 ? r0.gc : 0,
-          estado: "pre",
-          parte_min: parteDe(m.modalidad, teamOf(m)),
-          acum_ms: 0,
-          desde: null,
-          eventos: [],
-        },
-        r = await db.from("directos").insert(row).select();
-      if (r.error) return note(liveErr(r.error.message));
-      x = liveRows[id] = (r.data && r.data[0]) || row;
-      liveSync(x);
-    } else {
-      let pm = parteDe(m.modalidad, teamOf(m)),
-        ch = false;
-      if (x.rival !== m.rival) {
-        x.rival = String(m.rival || "").slice(0, 100);
-        ch = true;
-      }
-      /* Antes de empezar, la duración sigue a la categoría del equipo */
-      if (x.estado === "pre" && catOf(m.modalidad, teamOf(m)) && x.parte_min !== pm) {
-        x.parte_min = pm;
-        ch = true;
-      }
-      if (ch) liveSave(x);
-      /* El anotador ve siempre los convocados de ahora */
-      if (x.anotador && JSON.stringify(anotJug(m)) !== JSON.stringify(x.anot_jug || [])) anotGuarda(x, { anot_jug: anotJug(m) });
-    }
+      x = await liveCrea(m);
+      if (!x) return;
+    } else liveAlDia(x, m);
     state.live = id;
     state.livePick = false;
     state.lvPick = null;
@@ -7914,6 +7961,134 @@
       if (n) n.select();
       note("Copia el enlace de la casilla.", true);
     }
+  }
+  /* ===== Enlaces del directo antes del partido (v11.19) =====
+     Desde la lista de partidos (o al editar uno) el entrenador prepara el enlace del directo para
+     la familia y el del anotador y los manda con tiempo. Son los mismos enlaces que en el Directo:
+     cuando empiece el partido se ponen en marcha solos. Gratis: 3 partidos al mes; Pro: ilimitado. */
+  let peId = "";
+  const peFind = (id) => state.matches.find((z) => z.id === id);
+  /* Partidos a los que aún se les pueden preparar enlaces: sin resultado y sin directo terminado */
+  const pePuede = (m) => !!m && !viendo && !(m.alineacion && m.alineacion.resultado) && !(liveRows[m.id] && liveRows[m.id].estado === "FIN");
+  function peCuando(m) {
+    let c = (m.alineacion && m.alineacion.conv) || {},
+      d = m.fecha ? trDayLabel(m.fecha).replace(/^./, (z) => z.toUpperCase()) : "";
+    return [d, c.hora ? "a las " + c.hora : ""].filter(Boolean).join(" ");
+  }
+  function peTxtFam(m, x) {
+    let w = peCuando(m),
+      c = (m.alineacion && m.alineacion.conv) || {};
+    return [
+      `📺 *${x.equipo} - ${x.rival}* · en directo`,
+      w ? `📅 ${w}` : "",
+      c.lugar ? `📍 ${c.lugar}` : "",
+      "",
+      "Desde este enlace verás el marcador, el minuto, los goles, los cambios y las tarjetas mientras se juega. No hace falta descargar nada ni tener cuenta. Guárdalo: se pone en marcha solo cuando empiece el partido.",
+      liveUrl(x),
+    ]
+      .filter((z, i) => z || i === 3)
+      .join("\n");
+  }
+  function peTxtAn(m, x) {
+    let w = peCuando(m);
+    return [
+      `✍️ *Anotador · ${x.equipo} - ${x.rival}*`,
+      w ? `📅 ${w}` : "",
+      "",
+      "Con este enlace apuntas desde tu móvil los goles (y quién marca), las faltas, los cambios y las tarjetas. No necesitas cuenta. Guárdalo para el día del partido y ábrelo cuando empiece:",
+      anotUrl(x),
+    ]
+      .filter((z, i) => z || i === 2)
+      .join("\n");
+  }
+  const peWa = (t) => "https://wa.me/?text=" + encodeURIComponent(t);
+  function peHtml(m, x) {
+    let an = x.anotador,
+      e = espDe(),
+      qAn = esPro() ? "" : `<p class="muted lim-q">Plan gratuito: anotador en ${LIM.an} partidos al mes (te quedan ${Math.max(0, LIM.an - envUsados("an"))}). Con Pro, ilimitado.</p>`,
+      sh = (k) => (navigator.share ? `<button type="button" class="secondary" data-pe="share-${k}">Compartir…</button>` : "");
+    return `<p class="muted"><b>${esc(x.equipo)} - ${esc(x.rival)}</b>${peCuando(m) ? " · " + esc(peCuando(m)) : ""}</p><p class="muted">Manda los enlaces ahora y despreocúpate el día del partido. Son los mismos que verás en el Directo: cuando pulses «Empezar», se ponen en marcha solos.</p>${
+      liveOn(x) ? '<p class="hint">El partido ya está en directo: los enlaces funcionan ya.</p>' : ""
+    }<h3 class="ci-h3">📺 Para la familia y la afición</h3><p class="muted">Ven el marcador, el minuto, los goleadores, los cambios y las tarjetas (y el vídeo, si lo emites con Pro). Sin cuenta.</p><input readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo" data-peurl="f"><div class="stack"><a class="primary" data-pe="wa-f" href="${peWa(peTxtFam(m, x))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a>${sh("f")}<button type="button" class="secondary" data-pe="copy-f">Copiar el mensaje</button></div><h3 class="ci-h3">✍️ Para el anotador</h3><p class="muted">Otra persona (el delegado, un padre…) apunta desde su móvil los goles, las faltas, los cambios y las tarjetas. Mándaselo solo a quien vaya a anotar.</p>${
+      an
+        ? `<input readonly value="${esc(anotUrl(x))}" aria-label="Enlace del anotador" data-peurl="a"><div class="stack"><a class="primary" data-pe="wa-a" href="${peWa(peTxtAn(m, x))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar al anotador por WhatsApp</a>${sh("a")}<button type="button" class="secondary" data-pe="copy-a">Copiar el mensaje</button><button type="button" class="danger" data-pe="an-off">Quitar el anotador</button></div>`
+        : `<div class="stack"><button type="button" class="secondary" data-pe="an-on">${ic("plus", 20)}Crear enlace de anotador</button></div>${qAn}`
+    }${
+      e
+        ? `<h3 class="ci-h3">👥 Para los jugadores</h3><p class="muted">En el enlace del equipo ven la convocatoria y dicen si van. Ya lo tienen; si alguien lo ha perdido, cópialo aquí.</p><div class="stack"><button type="button" class="secondary" data-pe="copy-e">Copiar el enlace del equipo</button></div>`
+        : ""
+    }<p class="hint">¿Quieres mandarlo todo en un solo mensaje? En «Editar partido › Convocatoria» marca «Añadir el enlace del directo».</p>`;
+  }
+  /* Abre la ventana de enlaces del partido; crea el directo (sin empezar) si aún no existe */
+  async function peAbre(id) {
+    let m = peFind(id);
+    if (!m) return;
+    if (viendo) return note(SOLO_VER);
+    let x = liveRows[id];
+    if (!liveOn(x) && !envPuede("pe", id)) return;
+    if (!x) {
+      x = await liveCrea(m);
+      if (!x) return;
+    } else liveAlDia(x, m);
+    peId = id;
+    ciOpen("Enlaces del directo", peHtml(m, x));
+    $("infoBody").scrollTop = 0;
+    render();
+  }
+  function pePinta() {
+    let m = peFind(peId),
+      x = m && liveRows[peId];
+    if (m && x && !$("info").classList.contains("hidden")) $("infoBody").innerHTML = peHtml(m, x);
+  }
+  async function peAct(b, ev) {
+    let m = peFind(peId),
+      x = m && liveRows[peId];
+    if (!m || !x) return;
+    let k = b.dataset.pe,
+      t = k.slice(-1) === "a" ? (x.anotador ? peTxtAn(m, x) : "") : k.slice(-1) === "f" ? peTxtFam(m, x) : "";
+    if (k.indexOf("wa-") === 0) return;
+    if (k === "an-on") {
+      if (!envPuede("an", x.partido_id)) return;
+      if (await anotGuarda(x, { anotador: crypto.randomUUID(), anot_jug: anotJug(m) })) {
+        pePinta();
+        render();
+        note("Enlace del anotador creado. Mándaselo con el botón verde.", true);
+      }
+      return;
+    }
+    if (k === "an-off") {
+      if (!confirm("El enlace del anotador dejará de funcionar. Lo que haya apuntado se queda. ¿Seguir?")) return;
+      if (await anotGuarda(x, { anotador: null, anot_jug: null })) pePinta();
+      return;
+    }
+    if (k === "copy-e") {
+      let e = espDe();
+      return e && copiaTexto(espUrl(e), "Enlace del equipo copiado.");
+    }
+    if (!t) return;
+    if (k.indexOf("share-") === 0) {
+      try {
+        await navigator.share({ text: t });
+      } catch (e) {}
+      return;
+    }
+    if (k.indexOf("copy-") === 0) copiaTexto(t, "Mensaje copiado. Pégalo en WhatsApp.");
+  }
+  $("info").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-pe]");
+    if (b && peId) peAct(b, e).catch((x) => note(x.message || String(x)));
+  });
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-peo]");
+    if (!b) return;
+    e.preventDefault();
+    peAbre(b.dataset.peo).catch((x) => note(x.message || String(x)));
+  });
+  /* Al guardar un partido con los enlaces ya preparados, el directo se pone al día (rival, convocados) */
+  function peTrasGuardar(id) {
+    let m = peFind(id),
+      x = liveRows[id];
+    if (m && x && x.estado === "pre") liveAlDia(x, m);
   }
   /* Con anotador, este móvil mira cada 4 s si hay goles nuevos (para el marcador y el vídeo) */
   setInterval(() => {
@@ -8648,7 +8823,7 @@
       liveSkew = Date.parse(pubRow.ahora) - Date.now();
     pubVideo((pubRow && pubRow.video_desde) || null);
     $("pubData").innerHTML = pubRow
-        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}</div>${liveBoard(pubRow, serverNow(), false)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
+        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}</div>${liveBoard(pubRow, serverNow(), false)}${pubRow.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Deja esta página abierta o vuelve a entrar con el mismo enlace cuando empiece: el marcador se pone en marcha solo.</p>' : ""}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
         : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>';
   }
   function startPub() {

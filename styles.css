@@ -5678,6 +5678,19 @@ button.vch.dsb {
 .rs-b:active {
   background: var(--s3);
 }
+/* Enlaces del directo antes del partido (v11.19) */
+.mrow-b {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+.pe-b {
+  color: var(--ink, #fff);
+}
+#infoBody input[data-peurl] {
+  width: 100%;
+  margin: 4px 0 8px;
+}
 .rs-tb {
   margin: 4px 0 10px;
 }
