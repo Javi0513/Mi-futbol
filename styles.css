@@ -6062,7 +6062,8 @@ html.bio-on body {
   .board.present.land .btsz {
     display: none;
   }
-/* Mapa de calor y campograma de tiro (v11.24) */
+}
+/* Mapa de calor y campograma de tiro (v11.27) */
 .campo {
   display: block;
   width: 100%;
