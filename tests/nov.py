@@ -25,10 +25,10 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('v11.26: las novedades explican la app en horizontal y la pizarra',all(w in body for w in ('PARA TODOS','horizontal','Portero','discontinua')),body[:200])
+    check('también siguen las de la v11.26: las novedades explican la app en horizontal y la pizarra',all(w in body for w in ('PARA TODOS','horizontal','Portero','discontinua')),body[:200])
     check('y el tamaño de las fichas','fichas más pequeñas' in body)
-    check('también siguen las de la v11.25: novedades explican el arreglo de los enlaces del directo',all(w in body for w in ('PARA TODOS','Preparar enlaces del directo','Añadir el enlace del directo','Ver y enviar')),body[:200])
-    check('y que el partido ya no sale como 0-0','Empate 0-0' in body)
+    check('v11.27: las novedades explican el mapa de calor y el campograma',all(w in body for w in ('PARA TODOS','Mapa de calor','campograma','toca en el campo')),body[:200])
+    check('y la hoja «Mapa» del Excel para Power BI','«Mapa»' in body and 'Power BI' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)
@@ -41,7 +41,7 @@ with sync_playwright() as p:
     ctx.close()
     ctx,pg=abre(b,android=True)
     body=pg.locator('#infoBody').inner_text() if pg.locator('#info').is_visible() else ''
-    check('en la app de Android también salen las novedades','Portero' in body,body[:80])
+    check('en la app de Android también salen las novedades','campograma' in body and 'Portero' in body,body[:80])
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 sys.exit(0 if all(res) and not errs else 1)

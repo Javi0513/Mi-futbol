@@ -432,6 +432,8 @@
       if (Object.keys(t).length) e.stm = t;
       else delete e.stm;
     }
+    /* Marcas en el campo (loc, v11.27): nunca más que el total */
+    if (Array.isArray(e.loc)) locTrim(e, k, s[k] || 0);
     if (!s[k]) delete s[k];
     if (Object.keys(s).length) e.st = s;
     else delete e.st;
@@ -585,6 +587,7 @@
   }
   function render() {
     directoRecuerda();
+    lvLocSync();
     try {
       finProAviso();
     } catch (e) {}
@@ -966,7 +969,7 @@
      partidos: minutos, goles (con su minuto si fue en el Directo), asistencias, robos, pérdidas,
      tiros, paradas, faltas y tarjetas, partido a partido. Plan gratuito: los 3 últimos partidos
      en la ficha y 2 exportaciones a Excel al mes; con Pro, todo y sin límite.
-     El Excel (.xlsx) se genera en el móvil, sin librerías: hojas Jugadores, Partidos, Acciones
+     El Excel (.xlsx) se genera en el móvil, sin librerías: hojas Jugadores, Partidos, Acciones, Mapa (v11.27)
      (cada acción con su minuto) y Equipo. */
   const POS = {
       c: [
@@ -1099,13 +1102,261 @@
         }`
       : `<p class="muted">Aún no ha jugado ningún partido. Cuando lo convoques, aquí saldrá todo lo que haga.</p>`;
     let bt = `<div class="stack">${viendo ? "" : `<button type="button" class="secondary" data-ficha-ed="${p.id}">${ic("pencil", 18)}Editar posición, pie y datos</button>`}<button type="button" class="primary" data-xl="go">${ic("download", 18)}Exportar el equipo a Excel</button></div>${xlQuedan()}`;
-    return cab + base + st + pp + bt;
+    let mp = mapasHtml(p.modalidad || state.mode, ver.flatMap((z) => locDe(z.e)), p.nombre);
+    if (ver.length < P.length && P.slice(FICHA_GRATIS).some((z) => locDe(z.e).length))
+      mp += `<p class="muted lim-q">Plan gratuito: los mapas salen con los ${FICHA_GRATIS} últimos partidos. Con Pro, con toda la temporada.</p>`;
+    return cab + base + st + mp + pp + bt;
   }
   function fichaAbre(pid) {
     let p = state.players.find((x) => x.id === pid);
     if (!p) return;
     ciOpen("Ficha del jugador", fichaHtml(pid));
     $("infoBody").scrollTop = 0;
+  }
+
+  /* ===== Mapa de calor y campograma de tiro (v11.27) =====
+     En el Directo, después de apuntar un dato (robo, pérdida, tiro…) o un gol, se puede tocar en
+     un campo dónde ha sido. Se guarda en la ficha de convocado: loc [[clave, x, y, minuto, evento?]].
+     x 0-100 desde nuestra portería hasta la del rival (siempre atacando hacia la derecha),
+     y 0-100 de banda a banda. Con eso salen el mapa de calor y el campograma de tiro en la
+     ficha del jugador y en el resumen del partido, y las coordenadas van al Excel.
+     Plan gratuito: marcar en el campo en LIM.mp partidos al mes. Pro: ilimitado. */
+  const LOC_K = [
+      ["rob", "Robos"],
+      ["per", "Pérdidas"],
+      ["tp", "Tiros a puerta"],
+      ["tf", "Tiros fuera"],
+      ["gol", "Goles"],
+      ["asi", "Asistencias"],
+      ["par", "Paradas"],
+      ["fal", "Faltas"],
+    ],
+    LOC_MAX = 400,
+    TIRO_K = ["gol", "tp", "tf"],
+    /* Medidas del campo (metros) para dibujarlo con sus proporciones */
+    CAMPO = {
+      11: { w: 105, h: 68, cc: 9.15, ar: [16.5, 40.3], ap: [5.5, 18.3], pp: 11, pt: 7.32 },
+      7: { w: 65, h: 45, cc: 6, ar: [13, 30], ap: [5, 15], pp: 9, pt: 6 },
+      fs: { w: 40, h: 20, cc: 3, pp: 6, pt: 3, sala: 1 },
+    },
+    campoDe = (mod) => CAMPO[mod] || CAMPO["7"],
+    locDe = (e) => (e && Array.isArray(e.loc) ? e.loc.filter((z) => Array.isArray(z) && z.length >= 3 && LOC_K.some((k) => k[0] === z[0])) : []),
+    locNom = (k) => (LOC_K.find((z) => z[0] === k) || ["", k])[1];
+  function locAdd(e, k, x, y, mi, ev) {
+    let L = Array.isArray(e.loc) ? e.loc.slice() : [];
+    if (L.length >= LOC_MAX) return false;
+    let r = [k, Math.round(Math.min(100, Math.max(0, x))), Math.round(Math.min(100, Math.max(0, y))), Number(mi) || 0];
+    if (ev) r.push(ev);
+    L.push(r);
+    e.loc = L;
+    return true;
+  }
+  /* Deja como mucho n marcas de una clave (al deshacer o bajar el número a mano se quitan las últimas) */
+  function locTrim(e, k, n) {
+    if (!Array.isArray(e.loc)) return;
+    let c = 0,
+      L = e.loc.filter((z) => z[0] !== k || ++c <= n);
+    if (L.length === e.loc.length) return;
+    if (L.length) e.loc = L;
+    else delete e.loc;
+  }
+  function locQuitaEv(m, ev) {
+    entries(m).forEach((e) => {
+      if (!Array.isArray(e.loc)) return;
+      let L = e.loc.filter((z) => z[4] !== ev);
+      if (L.length === e.loc.length) return;
+      if (L.length) e.loc = L;
+      else delete e.loc;
+    });
+  }
+  /* ¿Se puede marcar en el campo en este partido? (sin abrir avisos en mitad del partido) */
+  function locPuede(mid, gasta) {
+    if (esPro()) return true;
+    let x = envLee(),
+      L = x.mp || [];
+    if (L.includes(mid)) return true;
+    if (L.length >= LIM.mp) return false;
+    if (gasta) {
+      L.push(mid);
+      x.mp = L;
+      try {
+        localStorage.setItem(envKey(), JSON.stringify(x));
+      } catch (e) {}
+    }
+    return true;
+  }
+  const locOn = () => {
+    try {
+      return localStorage.getItem("mf_lvloc") !== "0";
+    } catch (e) {
+      return true;
+    }
+  };
+  /* Dibuja el campo (SVG). inner: lo que va encima, en metros. medio: solo la mitad del rival */
+  function campoSvg(mod, inner, o = {}) {
+    let c = campoDe(mod),
+      W = c.w,
+      H = c.h,
+      s = W / 105,
+      lw = Math.max(0.18, 0.35 * s * (c.sala ? 1.6 : 1)),
+      cy = H / 2,
+      L = `<rect x="0" y="0" width="${W}" height="${H}" class="cp-ln"/><line x1="${W / 2}" y1="0" x2="${W / 2}" y2="${H}" class="cp-ln"/><circle cx="${W / 2}" cy="${cy}" r="${c.cc}" class="cp-ln"/><circle cx="${W / 2}" cy="${cy}" r="${0.5 * s + 0.15}" class="cp-pt"/>`;
+    [0, 1].forEach((lado) => {
+      let X = (v) => (lado ? W - v : v),
+        pt = c.pt / 2;
+      if (c.sala) {
+        /* Área de fútbol sala: dos cuartos de círculo de 6 m unidos por una recta */
+        let r = 6,
+          sw = lado ? 0 : 1;
+        L += `<path d="M${X(0)} ${cy - pt - r} A${r} ${r} 0 0 ${sw} ${X(r)} ${cy - pt} L${X(r)} ${cy + pt} A${r} ${r} 0 0 ${sw} ${X(0)} ${cy + pt + r}" class="cp-ln"/><circle cx="${X(6)}" cy="${cy}" r="0.25" class="cp-pt"/><circle cx="${X(10)}" cy="${cy}" r="0.25" class="cp-pt"/>`;
+      } else {
+        let a = c.ar,
+          p = c.ap,
+          rx = (d, w) => `<rect x="${lado ? W - d : 0}" y="${cy - w / 2}" width="${d}" height="${w}" class="cp-ln"/>`;
+        L += rx(a[0], a[1]) + rx(p[0], p[1]) + `<circle cx="${X(c.pp)}" cy="${cy}" r="${0.4 * s + 0.1}" class="cp-pt"/>`;
+      }
+      let gd = Math.max(1, 2 * s);
+      L += `<rect x="${lado ? W : -gd}" y="${cy - pt}" width="${gd}" height="${c.pt}" class="cp-gol"/>`;
+    });
+    let m = Math.max(1.5, 3 * s),
+      x0 = o.medio ? W / 2 - m / 2 : -m,
+      vw = o.medio ? W / 2 + m * 1.5 : W + 2 * m;
+    /* Campograma: la mitad del rival en vertical, con su portería arriba */
+    if (o.vert)
+      return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${-m} ${-m} ${H + 2 * m} ${W / 2 + m * 1.5}" data-w="${W}" data-h="${H}" style="--lw:${lw}" role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${-m}" y="${-m}" width="${H + 2 * m}" height="${W / 2 + m * 1.5}" class="cp-bg"/><g transform="translate(0 ${W}) rotate(-90)">${L}${inner || ""}</g></svg>`;
+    return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${x0} ${-m} ${vw} ${H + 2 * m}" data-w="${W}" data-h="${H}" style="--lw:${lw}" ${o.attr || ""} role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${x0}" y="${-m}" width="${vw}" height="${H + 2 * m}" class="cp-bg"/>${L}${inner || ""}${o.flecha ? `<text x="${W / 2}" y="${-m * 0.25}" class="cp-tx" font-size="${Math.max(1.4, 2.6 * s)}" text-anchor="middle">Atacamos hacia aquí →</text>` : ""}</svg>`;
+  }
+  const locXY = (mod, z) => {
+    let c = campoDe(mod);
+    return [(z[1] / 100) * c.w, (z[2] / 100) * c.h];
+  };
+  let mapaN = 0;
+  /* Mapa de calor: manchas difuminadas (amarillo → rojo donde más se repite) y un punto por acción */
+  function mapaCalor(mod, L, label) {
+    let c = campoDe(mod),
+      s = c.w / 105,
+      id = "mc" + ++mapaN,
+      big = L.map((z) => {
+        let p = locXY(mod, z);
+        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(10 * s + 1).toFixed(1)}"/>`;
+      }).join(""),
+      sm = L.map((z) => {
+        let p = locXY(mod, z);
+        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(5 * s + 0.6).toFixed(1)}"/>`;
+      }).join(""),
+      dots = L.map((z) => {
+        let p = locXY(mod, z);
+        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(0.7 * s + 0.2).toFixed(2)}" class="mc-dot"/>`;
+      }).join(""),
+      op = L.length > 40 ? 0.2 : L.length > 15 ? 0.3 : 0.45;
+    return campoSvg(
+      mod,
+      `<defs><filter id="${id}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${(4 * s + 0.4).toFixed(2)}"/></filter></defs><g filter="url(#${id})"><g fill="#ffd60a" fill-opacity="${op}">${big}</g><g fill="#ff3b14" fill-opacity="${Math.min(0.75, op + 0.15)}">${sm}</g></g>${dots}`,
+      { flecha: 1, label, cls: "mc" },
+    );
+  }
+  /* Campograma de tiro: mitad del rival; gol verde, a puerta amarillo, fuera rojo hueco */
+  function campograma(mod, L, label) {
+    let s = campoDe(mod).w / 105,
+      r = (1.3 * s + 0.35).toFixed(2),
+      mk = (z) => {
+        let p = locXY(mod, z),
+          x = p[0].toFixed(1),
+          y = p[1].toFixed(1);
+        return z[0] === "gol"
+          ? `<circle cx="${x}" cy="${y}" r="${r}" class="cg-gol"/>`
+          : z[0] === "tp"
+          ? `<circle cx="${x}" cy="${y}" r="${r}" class="cg-tp"/>`
+          : `<circle cx="${x}" cy="${y}" r="${r}" class="cg-tf"/>`;
+      };
+    return campoSvg(mod, L.filter((z) => z[0] === "tf").map(mk).join("") + L.filter((z) => z[0] === "tp").map(mk).join("") + L.filter((z) => z[0] === "gol").map(mk).join(""), { vert: 1, label, cls: "cg" });
+  }
+  /* Bloque completo: filtros + mapa de calor + campograma. L: [[k,x,y,m,ev?]], todos de la misma modalidad */
+  let mapaCtx = null;
+  function mapasHtml(mod, L, quien) {
+    if (!L.length)
+      return `<h3 class="ci-h3">Mapa de calor y campograma de tiro</h3><p class="muted">Aún no hay acciones marcadas en el campo. En el Directo, después de apuntar un robo, un tiro o un gol, toca en el campo dónde ha sido y aquí saldrán sus mapas.</p>`;
+    mapaCtx = { mod, L, k: "" };
+    let ks = LOC_K.filter((k) => L.some((z) => z[0] === k[0])),
+      T = L.filter((z) => TIRO_K.includes(z[0])),
+      g = T.filter((z) => z[0] === "gol").length,
+      tp = T.filter((z) => z[0] === "tp").length,
+      tf = T.filter((z) => z[0] === "tf").length;
+    let cg = T.length
+      ? `<h3 class="ci-h3">Campograma de tiro</h3><div class="mapa-w">${campograma(mod, T, "Campograma de tiro de " + quien)}</div><p class="cg-ley"><span><i class="cg-i gol"></i>Gol <b>${g}</b></span><span><i class="cg-i tp"></i>A puerta <b>${tp}</b></span><span><i class="cg-i tf"></i>Fuera <b>${tf}</b></span></p><p class="muted">${T.length} tiros marcados${g ? ` · ${Math.round((g / T.length) * 100)} % acaban en gol` : ""}${tp + g ? ` · ${Math.round(((tp + g) / T.length) * 100)} % entre los palos` : ""}. La portería del rival, arriba.</p>`
+      : "";
+    return `<h3 class="ci-h3">Mapa de calor</h3><div class="mapa-f" role="group" aria-label="Qué acciones ver"><button type="button" data-mapk="" class="on" aria-pressed="true">Todas <b>${L.length}</b></button>${ks.map((k) => `<button type="button" data-mapk="${k[0]}" aria-pressed="false">${k[1]} <b>${L.filter((z) => z[0] === k[0]).length}</b></button>`).join("")}</div><div class="mapa-w" id="mapaHeat">${mapaCalor(mod, L, "Mapa de calor de " + quien)}</div><p class="hint">Más rojo = más acciones en esa zona. Siempre atacando hacia la derecha (la portería del rival).</p>${cg}`;
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest("[data-mapk]");
+    if (!b || !mapaCtx) return;
+    let k = b.dataset.mapk,
+      w = $("mapaHeat");
+    if (!w) return;
+    b.parentNode.querySelectorAll("[data-mapk]").forEach((n) => {
+      n.classList.toggle("on", n === b);
+      n.setAttribute("aria-pressed", n === b);
+    });
+    w.innerHTML = mapaCalor(mapaCtx.mod, k ? mapaCtx.L.filter((z) => z[0] === k) : mapaCtx.L, k ? locNom(k) : "Todas las acciones");
+  });
+  /* Directo: hoja de abajo para tocar dónde ha sido. state.lvLoc = {pid, k, ev?} */
+  function lvLocHtml(m) {
+    let q = state.lvLoc;
+    if (!q) return "";
+    let nom = q.k === "gol" ? "Gol" : (ESTP.find((s) => s[0] === q.k) || [])[1] || "";
+    return `<div class="lv-loc" role="dialog" aria-label="Dónde ha sido"><div class="lv-loc-in"><p class="lv-loc-t"><b>📍 ¿Dónde ha sido?</b> ${esc(nom)} · ${esc(dname(q.pid))}</p>${campoSvg(m.modalidad, "", { flecha: 1, label: "Toca dónde ha sido", attr: 'data-lvloc="1"', cls: "lv-campo" })}<div class="lv-ctl"><button type="button" class="secondary" data-lvloc-no>Sin marcar</button><button type="button" class="secondary" data-lvloc-off>No preguntar más</button></div></div></div>`;
+  }
+  function lvLocCtl(m) {
+    let on = locOn(),
+      ok = locPuede(m.id, false);
+    return `<div class="lv-locc"><button type="button" class="secondary small" data-lvloc-tg aria-pressed="${on}">📍 Marcar en el campo dónde fue: <b>${on ? "Sí" : "No"}</b></button>${
+      esPro() ? "" : ok ? `<p class="muted lim-q">Plan gratuito: mapa de calor y campograma en ${LIM.mp} partidos al mes (${(envLee().mp || []).includes(m.id) ? "este partido ya cuenta" : "te quedan " + Math.max(0, LIM.mp - envUsados("mp"))}). Con Pro, ilimitado.</p>` : `<p class="muted lim-q">Plan gratuito: este mes ya has marcado en el campo en ${LIM.mp} partidos. Puedes seguir apuntando datos; para marcar dónde fue, plan Pro. <button type="button" class="linkb" data-lvloc-pro>Ver el plan Pro</button></p>`
+    }</div>`;
+  }
+  /* La hoja va fuera de la pantalla del Directo (que se anima con transform) para quedarse fija abajo */
+  function lvLocSync() {
+    let m = state.live && state.lvLoc && state.lvLoc.mid === state.live && state.matches.find((z) => z.id === state.live),
+      h = $("lvLocHost");
+    if (!m) {
+      if (h) h.innerHTML = "";
+      if (state.lvLoc && state.lvLoc.mid !== state.live) state.lvLoc = null;
+      return;
+    }
+    if (!h) {
+      h = document.createElement("div");
+      h.id = "lvLocHost";
+      document.body.appendChild(h);
+    }
+    h.innerHTML = lvLocHtml(m);
+  }
+  function lvLocPide(m, pid, k, ev) {
+    if (!locOn() || !pid || !locPuede(m.id, false)) return;
+    state.lvLoc = { pid, k, ev: ev || "", mid: m.id };
+  }
+  function lvLocMarca(x, m, ev) {
+    let q = state.lvLoc,
+      svg = ev.target.closest("svg[data-lvloc]");
+    state.lvLoc = null;
+    if (!q || !svg || q.mid !== m.id) return;
+    let e = entries(m).find((z) => z.id === q.pid);
+    if (!e) return;
+    let W = Number(svg.dataset.w),
+      H = Number(svg.dataset.h),
+      pt = svg.createSVGPoint();
+    pt.x = ev.clientX;
+    pt.y = ev.clientY;
+    let ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    let p = pt.matrixTransform(ctm.inverse());
+    if (p.x < -W * 0.05 || p.x > W * 1.05 || p.y < -H * 0.08 || p.y > H * 1.08) return;
+    locPuede(m.id, true);
+    if (locAdd(e, q.k, (p.x / W) * 100, (p.y / H) * 100, liveMin(x), q.ev)) {
+      if (!q.ev) {
+        let u = state.lvUndo && state.lvUndo[state.lvUndo.length - 1];
+        if (u && u.pid === q.pid && u.k === q.k) u.loc = 1;
+      }
+      liveStatSave(m);
+    }
   }
 
   /* --- Exportar a Excel --- */
@@ -1304,6 +1555,8 @@
     let S2 = [["Fecha", "Rival", "Goles a favor", "Goles en contra", "Resultado", "Dorsal", "Jugador", "Posición", "Titular", "Minutos", "Goles", "Minuto de los goles", "Asistencias", "Robos", "Pérdidas", "Tiros a puerta", "Tiros fuera", "Paradas", "Faltas", "Amarillas", "Rojas", "Capitán", "Portero"]];
     /* Hoja 3: cada acción con su minuto */
     let S3 = [["Fecha", "Rival", "Minuto", "Parte", "Acción", "Dorsal", "Jugador", "Posición"]];
+    /* Hoja 5 (v11.27): dónde fue cada acción marcada en el campo, para Power BI o similares */
+    let S5 = [["Fecha", "Rival", "Minuto", "Parte", "Acción", "Dorsal", "Jugador", "Posición", "X (0-100)", "Y (0-100)", "X (metros)", "Y (metros)", "Tercio", "Carril"]];
     let S4 = [["Fecha", "Rival", "Goles a favor", "Goles en contra", "Resultado", "Convocados", "Robos", "Pérdidas", "Tiros", "Tiros del rival", "Faltas", "Faltas del rival"]];
     G.forEach((m) => {
       let al = m.alineacion || {},
@@ -1334,6 +1587,12 @@
           for (let i = 0; i < n; i++) acc(mins[i] != null ? Number(mins[i]) || 0 : "", 0, s[1], e.id);
         });
         if (!gol.length) for (let i = 0; i < (Number(e.goals) || 0); i++) acc("", 0, "Gol", e.id);
+        let cm = campoDe(m.modalidad);
+        locDe(e).forEach((z) => {
+          let mi = Number(z[3]) || 0,
+            ge = z[4] && ev.find((g) => g.id === z[4]);
+          S5.push([fe, riv, mi, parte(mi, ge ? ge.p : 0), z[0] === "gol" ? "Gol" : (ESTP.find((s) => s[0] === z[0]) || [])[1] || z[0], dor(e.id), name(e.id), pos(e.id), z[1], z[2], Math.round(z[1] * cm.w) / 100, Math.round(z[2] * cm.h) / 100, z[1] < 100 / 3 ? "Defensivo" : z[1] < 200 / 3 ? "Medio" : "Ofensivo", z[2] < 100 / 3 ? "Izquierdo" : z[2] < 200 / 3 ? "Central" : "Derecho"]);
+        });
       });
       gol.forEach((z) => (z.t === "f" ? acc(Number(z.m) || 0, z.p, "Gol", z.pid && ids.includes(z.pid) ? z.pid : "", z.n || "") : acc(Number(z.m) || 0, z.p, "Gol del rival", "", z.n ? (z.d ? z.d + " · " : "") + z.n : riv)));
       mdList(al, "cambios").forEach((z) => {
@@ -1352,6 +1611,7 @@
       { n: "Partidos", rows: S2, w: [12, 20, 8, 8, 10, 8, 22, 20, 8, 9, 7, 18] },
       { n: "Acciones", rows: S3, w: [12, 20, 9, 7, 16, 8, 22, 20] },
       { n: "Equipo", rows: S4, w: [12, 20] },
+      { n: "Mapa", rows: S5, w: [12, 20, 9, 7, 16, 8, 22, 20, 10, 10, 11, 11, 11, 10] },
     ];
   }
   async function bajaArchivo(blob, fname, titulo) {
@@ -2106,14 +2366,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -2286,7 +2546,10 @@
       tj = li(d.tj.map((z) => `<b>${rsMin(z)}</b> <i class="tj ${z.c === "r" ? "r" : "a"}"></i> ${esc(dname(z.pid))}`)),
       fal = d.fal ? `<p>Nuestras: <b>${Number(d.fal.n1) || 0}</b> (1ª) + <b>${Number(d.fal.n2) || 0}</b> (2ª) · Rival: <b>${Number(d.fal.r1) || 0}</b> + <b>${Number(d.fal.r2) || 0}</b></p>` : "",
       riv = [d.tirR ? `Tiros: <b>${d.tirR}</b>` : "", ...d.tjR.map((z) => `<b>${rsMin(z)}</b> <i class="tj ${z.c === "r" ? "r" : "a"}"></i> ${esc(lvN(z.n, z.d))}`), ...d.cbR.map((z) => `<b>${rsMin(z)}</b> 🔄 ▲ ${esc(z.entra || "—")} ▼ ${esc(z.sale || "—")}`)].filter(Boolean);
-    return `${head}${sec("Goles", goles)}${sec("Minutos jugados", mins)}${sec("Estadísticas de cada jugador", est)}${sec("Cambios", cb)}${sec("Tarjetas", tj)}${sec("Faltas acumuladas", fal)}${sec(esc(d.riv) + " (rival)", li(riv))}<h3 class="ci-h3">Compartir</h3><p class="muted">Mándalo a quien quieras aunque no tenga la app: le llega como mensaje o como imagen y le queda guardado en el chat.</p>${envQuedan("rs")}<div class="stack"><a class="primary" data-rsx="wa" href="https://wa.me/?text=${encodeURIComponent(rsTexto(m))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-rsx="img">${ic("image", 20)}Imagen del resumen</button>${navigator.share ? '<button type="button" class="secondary" data-rsx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-rsx="copiar">Copiar el texto</button>${viendo ? "" : `<button type="button" class="secondary" data-rsx="edit">${ic("pencil", 20)}Editar el partido</button>`}</div>`;
+    return `${head}${sec("Goles", goles)}${sec("Minutos jugados", mins)}${sec("Estadísticas de cada jugador", est)}${(() => {
+      let L = entries(m).flatMap(locDe);
+      return L.length ? mapasHtml(m.modalidad, L, "el equipo") : "";
+    })()}${sec("Cambios", cb)}${sec("Tarjetas", tj)}${sec("Faltas acumuladas", fal)}${sec(esc(d.riv) + " (rival)", li(riv))}<h3 class="ci-h3">Compartir</h3><p class="muted">Mándalo a quien quieras aunque no tenga la app: le llega como mensaje o como imagen y le queda guardado en el chat.</p>${envQuedan("rs")}<div class="stack"><a class="primary" data-rsx="wa" href="https://wa.me/?text=${encodeURIComponent(rsTexto(m))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-rsx="img">${ic("image", 20)}Imagen del resumen</button>${navigator.share ? '<button type="button" class="secondary" data-rsx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-rsx="copiar">Copiar el texto</button>${viendo ? "" : `<button type="button" class="secondary" data-rsx="edit">${ic("pencil", 20)}Editar el partido</button>`}</div>`;
   }
   function rsAbre(id) {
     let m = rsFind(id);
@@ -6443,7 +6706,7 @@
     {
       el: '[data-tab="partidos"]',
       t: "Comparte y juega en directo",
-      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto, goleadores, cambios, tarjetas, faltas acumuladas y estadísticas de cada jugador (robos, pérdidas, tiros…) en vivo, con un enlace para que la familia lo siga sin cuenta. Con la cámara del Directo grabas el partido con el marcador encima.",
+      p: "En cada partido puedes sacar una imagen de la alineación para mandarla por WhatsApp, y abrir el Directo: marcador, minuto, goleadores, cambios, tarjetas, faltas acumuladas y estadísticas de cada jugador (robos, pérdidas, tiros…) en vivo, tocando en el campo dónde fue cada una para sacar el mapa de calor y el campograma de tiro, con un enlace para que la familia lo siga sin cuenta. Con la cámara del Directo grabas el partido con el marcador encima.",
     },
     {
       el: '[data-tab="pizarra"]',
@@ -6564,10 +6827,21 @@
       ],
     },
     {
+      t: "Mapa de calor y campograma de tiro",
+      p: [
+        "En el <b>Directo</b>, cuando apuntas un robo, una pérdida, un tiro, una parada, una asistencia, una falta o un gol de un jugador, abajo sale un campo: <b>toca dónde ha sido</b>. Es opcional: si no quieres marcarlo, pulsa «Sin marcar» o sigue apuntando y se quita solo.",
+        "El campo se ve siempre <b>atacando hacia la derecha</b> (hacia la portería del rival), también en la segunda parte. Así todos los partidos se comparan igual.",
+        "Con el botón <b>«📍 Marcar en el campo dónde fue»</b> lo activas o lo quitas. Si te equivocas, «↶ Deshacer» quita el dato y su marca; si quitas un gol, también se quita su marca.",
+        "En la <b>ficha del jugador</b> y en el <b>resumen del partido</b> salen el <b>mapa de calor</b> (más rojo donde más acciones hace; puedes ver todas o solo robos, pérdidas, tiros…) y el <b>campograma de tiro</b>: en verde los goles, en amarillo los tiros a puerta y en rojo los tiros fuera, con el porcentaje de acierto.",
+        "En el <b>Excel</b> hay una hoja <b>«Mapa»</b> con cada acción marcada: minuto, parte, jugador, las coordenadas X e Y (de 0 a 100 y en metros), el tercio del campo y el carril. Sirve para llevarlo a <b>Power BI</b> u otra herramienta de análisis.",
+        "Con el plan gratuito puedes marcar en el campo en <b>2 partidos al mes</b> (apuntar los datos sigue siendo gratis). Con Pro, sin límite.",
+      ],
+    },
+    {
       t: "Exportar a Excel",
       p: [
         "En «Estadísticas», en el apartado Jugadores, pulsa <b>«Exportar a Excel»</b> (también está dentro de la ficha de cada jugador). Se crea un archivo <b>.xlsx</b> del equipo que tienes elegido que se abre en Excel, Google Sheets o Numbers.",
-        "Tiene 4 hojas: <b>Jugadores</b> (totales de cada uno con su posición, minutos, goles, asistencias, robos, pérdidas, tiros, paradas, faltas, tarjetas y, si llevas el control de entrenamientos, su asistencia), <b>Partidos</b> (una fila por jugador y partido), <b>Acciones</b> (cada gol, asistencia, robo, pérdida, tiro, parada, falta, cambio y tarjeta con su <b>minuto</b> y su parte) y <b>Equipo</b> (resultado y totales de cada partido).",
+        "Tiene 5 hojas: <b>Jugadores</b> (totales de cada uno con su posición, minutos, goles, asistencias, robos, pérdidas, tiros, paradas, faltas, tarjetas y, si llevas el control de entrenamientos, su asistencia), <b>Partidos</b> (una fila por jugador y partido), <b>Acciones</b> (cada gol, asistencia, robo, pérdida, tiro, parada, falta, cambio y tarjeta con su <b>minuto</b> y su parte) <b>Equipo</b> (resultado y totales de cada partido) y <b>Mapa</b> (dónde fue cada acción marcada en el campo, con sus coordenadas X e Y).",
         "Lo que apuntas en el Directo se guarda con su minuto. Lo que pongas a mano después del partido sale en «Acciones» sin minuto.",
         "En el móvil se abre el menú de compartir: guárdalo en Archivos, mándalo por WhatsApp o por email a tu analista. Con el plan gratuito puedes exportar <b>2 veces al mes</b>; con Pro, sin límite.",
       ],
@@ -6751,8 +7025,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>También en la app de Android:</b> puedes pagar el Pro o el pack de tu club desde «Mi cuenta» igual que en la web. El botón te lleva a la página de pago de Stripe; al pagar y volver a la app, el Pro se activa solo.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
@@ -7863,7 +8137,7 @@
       rt = Number((al.estR || {}).tir) || 0,
       f = liveFal(x),
       u = state.lvUndo && state.lvUndo.length;
-    return `<div class="lv-stats"><h3 class="lv-h">Estadísticas</h3><p class="hint">Elige qué apuntar y toca al jugador. Primero salen los que están en el campo.</p><div class="lv-acc" role="group" aria-label="Qué apuntar">${ESTP.map((s) => `<button data-lvst="${s[0]}" class="${s[0] === k ? "on" : ""}" aria-pressed="${s[0] === k}">${s[1]}</button>`).join("")}</div><div class="lv-pl">${on.map(btn).join("")}${rest.length ? `<p class="lv-bn">${on.length ? "Banquillo" : "Convocados"}</p>` + rest.map(btn).join("") : ""}</div><div class="lv-ctl lv-rvst"><button class="secondary" data-live="rfal">Falta del rival <b>${f.r1 + f.r2}</b></button><button class="secondary" data-live="rtir">Tiro del rival <b>${rt}</b></button><button class="secondary" data-live="undo" ${u ? "" : "disabled"}>↶ Deshacer</button></div><div class="lv-sum"><span>Robos <b>${tot("rob")}</b></span><span>Pérdidas <b>${tot("per")}</b></span><span>Tiros <b>${tot("tp") + tot("tf")}</b> <small>(${tot("tp")} a puerta)</small></span><span>Tiros rival <b>${rt}</b></span><span>Faltas <b>${f.n1 + f.n2}</b> - <b>${f.r1 + f.r2}</b></span></div></div>`;
+    return `<div class="lv-stats"><h3 class="lv-h">Estadísticas</h3><p class="hint">Elige qué apuntar y toca al jugador. Primero salen los que están en el campo.</p><div class="lv-acc" role="group" aria-label="Qué apuntar">${ESTP.map((s) => `<button data-lvst="${s[0]}" class="${s[0] === k ? "on" : ""}" aria-pressed="${s[0] === k}">${s[1]}</button>`).join("")}</div><div class="lv-pl">${on.map(btn).join("")}${rest.length ? `<p class="lv-bn">${on.length ? "Banquillo" : "Convocados"}</p>` + rest.map(btn).join("") : ""}</div><div class="lv-ctl lv-rvst"><button class="secondary" data-live="rfal">Falta del rival <b>${f.r1 + f.r2}</b></button><button class="secondary" data-live="rtir">Tiro del rival <b>${rt}</b></button><button class="secondary" data-live="undo" ${u ? "" : "disabled"}>↶ Deshacer</button></div>${lvLocCtl(m)}<div class="lv-sum"><span>Robos <b>${tot("rob")}</b></span><span>Pérdidas <b>${tot("per")}</b></span><span>Tiros <b>${tot("tp") + tot("tf")}</b> <small>(${tot("tp")} a puerta)</small></span><span>Tiros rival <b>${rt}</b></span><span>Faltas <b>${f.n1 + f.n2}</b> - <b>${f.r1 + f.r2}</b></span></div></div>`;
   }
   /* Apunta un dato a un jugador; la falta además suma a las faltas acumuladas del equipo */
   function liveStat(x, m, pid, k) {
@@ -7882,6 +8156,7 @@
       if (f) u.ev = f.id;
     }
     lvUndoPush(u);
+    lvLocPide(m, pid, k);
     if (u.ev) liveSave(x, () => liveMatch(x, null, 0));
     else liveStatSave(m);
   }
@@ -7901,6 +8176,11 @@
     if (!u) return;
     if (u.pid) {
       let e = entries(m).find((z) => z.id === u.pid);
+      if (e && u.loc && Array.isArray(e.loc)) {
+        let i = e.loc.map((z) => z[0]).lastIndexOf(u.k);
+        if (i >= 0) e.loc = e.loc.filter((z, j) => j !== i);
+        if (!e.loc.length) delete e.loc;
+      }
       if (e) stSet(e, u.k, -1);
     }
     if (u.rt) {
@@ -8379,6 +8659,7 @@
     } else x.gc = Math.min(99, x.gc + 1);
     x.eventos.push(e);
     liveSave(x, () => liveMatch(x, e.pid, 1));
+    return e;
   }
   /* Nombre y dorsal del jugador dentro del evento (se ve en el enlace público) */
   function liveWho(e, pid, k = "") {
@@ -8405,7 +8686,9 @@
     (x._del = x._del || new Set()).add(e.id);
     if (e.t === "c") x.gc = Math.max(0, x.gc - 1);
     else if (e.t === "f" || !e.t) x.gf = Math.max(0, x.gf - 1);
-    let gol = e.t === "f" || !e.t;
+    let gol = e.t === "f" || !e.t,
+      m = gol && state.matches.find((z) => z.id === x.partido_id);
+    if (m) locQuitaEv(m, e.id);
     liveSave(x, () => liveMatch(x, gol ? e.pid : null, gol ? -1 : 0));
   }
   async function liveShare(x) {
@@ -8676,6 +8959,28 @@
       lst = e.target.closest("[data-lvst]"),
       lsp = e.target.closest("[data-lvsp]"),
       lso = e.target.closest("[data-lvso],[data-lvsi]");
+    if (e.target.closest("[data-lvloc-pro]"))
+      return proLimite(`En el plan gratuito puedes marcar en el campo dónde fue cada acción (para el <b>mapa de calor</b> y el <b>campograma de tiro</b>) en <b>${LIM.mp} partidos al mes</b>. Apuntar los datos sigue siendo gratis.`);
+    if (e.target.closest("[data-lvloc-tg]")) {
+      try {
+        localStorage.setItem("mf_lvloc", locOn() ? "0" : "1");
+      } catch (er) {}
+      return render();
+    }
+    if (state.lvLoc) {
+      let m0 = state.matches.find((z) => z.id === state.live);
+      if (e.target.closest("[data-lvloc-off]"))
+        try {
+          localStorage.setItem("mf_lvloc", "0");
+        } catch (er) {}
+      if (e.target.closest("svg[data-lvloc]") && m0) lvLocMarca(x, m0, e);
+      if (e.target.closest("svg[data-lvloc],[data-lvloc-no],[data-lvloc-off]")) {
+        state.lvLoc = null;
+        return render();
+      }
+      /* Cualquier otro toque: se deja sin marcar y sigue */
+      state.lvLoc = null;
+    }
     if (lso && state.lvPick === "sub") {
       let S = state.lvSub || (state.lvSub = { o: [], i: [] }),
         k = lso.hasAttribute("data-lvso") ? "o" : "i",
@@ -8711,7 +9016,9 @@
     }
     if (sc) {
       state.livePick = false;
-      liveGoal(x, "f", sc.dataset.scorer);
+      let g = liveGoal(x, "f", sc.dataset.scorer),
+        m0 = state.matches.find((z) => z.id === state.live);
+      if (g && g.pid && m0) lvLocPide(m0, g.pid, "gol", g.id);
       return render();
     }
     if (dl) {

@@ -6062,4 +6062,150 @@ html.bio-on body {
   .board.present.land .btsz {
     display: none;
   }
+/* Mapa de calor y campograma de tiro (v11.24) */
+.campo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+.campo .cp-bg {
+  fill: #2c7a45;
+}
+.campo.sala .cp-bg {
+  fill: #2b5f9e;
+}
+.campo .cp-ln {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.82);
+  stroke-width: var(--lw);
+}
+.campo .cp-pt {
+  fill: rgba(255, 255, 255, 0.85);
+}
+.campo .cp-gol {
+  fill: rgba(255, 255, 255, 0.25);
+  stroke: #fff;
+  stroke-width: var(--lw);
+}
+.campo .cp-tx {
+  fill: rgba(255, 255, 255, 0.9);
+  font-family: var(--fd), sans-serif;
+  font-weight: 700;
+}
+.campo .mc-dot {
+  fill: #fff;
+  fill-opacity: 0.85;
+}
+.campo .cg-gol {
+  fill: #22c55e;
+  stroke: #fff;
+  stroke-width: calc(var(--lw) * 0.9);
+}
+.campo .cg-tp {
+  fill: #facc15;
+  stroke: #3b2f00;
+  stroke-width: calc(var(--lw) * 0.6);
+}
+.campo .cg-tf {
+  fill: rgba(239, 68, 68, 0.25);
+  stroke: #ff6b6b;
+  stroke-width: calc(var(--lw) * 1.3);
+}
+.mapa-w {
+  margin: 8px 0;
+}
+.mapa-f {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 4px;
+}
+.mapa-f button {
+  min-height: 36px;
+  padding: 0 11px;
+  border-radius: 18px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  color: var(--mut);
+  font: 700 14px var(--fd);
+}
+.mapa-f button b {
+  opacity: 0.75;
+  margin-left: 2px;
+}
+.mapa-f button.on {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--on-lime);
+}
+.cg-ley {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 4px 0;
+}
+.cg-ley span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cg-i {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+.cg-i.gol {
+  background: #22c55e;
+  border: 2px solid #fff;
+}
+.cg-i.tp {
+  background: #facc15;
+}
+.cg-i.tf {
+  background: rgba(239, 68, 68, 0.25);
+  border: 2px solid #ff6b6b;
+}
+.lv-locc {
+  margin: 10px 0 4px;
+}
+.lv-locc .lim-q {
+  margin-top: 6px;
+}
+.lv-loc {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 0 10px calc(10px + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.lv-loc-in {
+  pointer-events: auto;
+  max-width: 620px;
+  margin: 0 auto;
+  background: var(--s1, #0d1f16);
+  border: 1px solid var(--line2);
+  border-radius: 16px;
+  padding: 10px 10px 6px;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+}
+.lv-loc-t {
+  margin: 0 0 8px;
+}
+.lv-campo {
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+.lv-loc .lv-ctl {
+  margin-top: 8px;
+}
+.mapa-w .campo {
+  max-width: 560px;
+  margin: 0 auto;
+}
+.mapa-w .campo.cg {
+  max-width: 420px;
 }
