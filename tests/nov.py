@@ -25,8 +25,8 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('v11.23: las novedades explican el nuevo límite de jugadores',all(w in body for w in ('PARA TODOS','10 jugadores en fútbol 7','10 en fútbol sala','16 en fútbol 11')),body[:200])
-    check('y que no se borra ningún jugador','no se borra ninguno' in body)
+    check('v11.25: las novedades explican el arreglo de los enlaces del directo',all(w in body for w in ('PARA TODOS','Preparar enlaces del directo','Añadir el enlace del directo','Ver y enviar')),body[:200])
+    check('y que el partido ya no sale como 0-0','Empate 0-0' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)
@@ -39,7 +39,7 @@ with sync_playwright() as p:
     ctx.close()
     ctx,pg=abre(b,android=True)
     body=pg.locator('#infoBody').inner_text() if pg.locator('#info').is_visible() else ''
-    check('en la app de Android también salen las novedades','10 jugadores en fútbol 7' in body,body[:80])
+    check('en la app de Android también salen las novedades','Preparar enlaces del directo' in body,body[:80])
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 sys.exit(0 if all(res) and not errs else 1)
