@@ -248,6 +248,8 @@
     penline:
       '<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7.4 18.6a2 2 0 0 1-.9.5l-3 .9a.5.5 0 0 1-.6-.6l.9-3a2 2 0 0 1 .5-.9z"/>',
     arrow: '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>',
+    arrowd: '<path d="M4 20l1.8-1.8M9 15l1.8-1.8M14 10l1.8-1.8"/><path d="M10 5h9v9"/>',
+    tsz: '<circle cx="7" cy="15" r="3.5"/><circle cx="16" cy="9" r="5.5"/>',
     live: '<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.5M7.8 16.2a6 6 0 0 1 0-8.5M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/>',
     share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
     undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
@@ -3083,7 +3085,7 @@
       n = prompt("Nombre de la jugada:", def);
     if (n === null) return;
     n = n.trim().slice(0, 60) || def;
-    let datos = { strokes: b.strokes, items: b.items, steps: b.steps, tcol: b.tcol, bg: b.bg || "", clean: !!b.clean, est: b.est || "", f: FASE[b.f] ? b.f : e ? estFase(e) : "" },
+    let datos = { strokes: b.strokes, items: b.items, steps: b.steps, tcol: b.tcol, bg: b.bg || "", clean: !!b.clean, ts: tszOk(b.ts), est: b.est || "", f: FASE[b.f] ? b.f : e ? estFase(e) : "" },
       ya = jgMode().find((x) => x.nombre.toLowerCase() === n.toLowerCase());
     if (ya) {
       if (!confirm(`Ya tienes una jugada llamada «${ya.nombre}». ¿Cambiarla por la de ahora?`)) return;
@@ -3115,6 +3117,7 @@
     b.tcol = d.tcol && typeof d.tcol === "object" ? d.tcol : {};
     b.bg = d.bg || "";
     b.clean = !!d.clean;
+    if (d.ts) b.ts = tszOk(d.ts);
     b.est = typeof d.est === "string" && estDe(d.est) ? d.est : "";
     b.f = FASE[d.f] ? d.f : "";
     b.tool = "move";
@@ -6445,7 +6448,7 @@
     {
       el: '[data-tab="pizarra"]',
       t: "Pizarra táctica",
-      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, rivales, balón, conos y vallas, y arrástralos. Toca un jugador para cambiarle el color. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo. En Fútbol sala tienes además «Estrategias de fútbol sala» y en fútbol 7 y 11, «Jugadas a balón parado (ABP)»: córners, faltas, saques de banda y más, listos para cargar y verlos moverse.",
+      p: "Campo grande con los botones alrededor: pon jugadores con su dorsal, porteros, rivales, balón, conos y vallas, y arrástralos. Toca un jugador para cambiarle el color y con − / + haz las fichas más pequeñas o más grandes. Flecha continua para el pase o el tiro y discontinua para el movimiento del jugador. Crea pasos con el + y pulsa ▶ para ver la jugada en movimiento, o sácala en imagen o vídeo. En Fútbol sala tienes además «Estrategias de fútbol sala» y en fútbol 7 y 11, «Jugadas a balón parado (ABP)»: córners, faltas, saques de banda y más, listos para cargar y verlos moverse.",
     },
     {
       el: '[data-tab="resumen"]',
@@ -6707,12 +6710,14 @@
       t: "Pizarra táctica",
       p: [
         "El campo ocupa casi toda la pantalla y los botones están alrededor. Si dejas el dedo (o el ratón) sobre un botón, te dice para qué sirve.",
-        "En tablet, ordenador o con el móvil girado, el campo se pone en <b>horizontal</b> y los botones se reparten a los lados. Si giras el móvil, la pizarra se abre a pantalla completa (con la X vuelves). Lo que hayas hecho se mantiene al girarlo.",
-        "Con los iconos de <b>debajo del campo</b> (a la derecha en horizontal) pones jugadores, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
+        "En tablet, ordenador o con el móvil girado, el campo se pone en <b>horizontal</b> y los botones se reparten a los lados. Si giras el móvil, la pizarra se abre a pantalla completa (con la X vuelves). Lo que hayas hecho se mantiene al girarlo. Toda la app se puede usar en horizontal (con el móvil girado, las secciones pasan a la izquierda): si no gira, mira que la rotación automática de la tablet o del móvil esté activada.",
+        "Con los iconos de <b>debajo del campo</b> (a la derecha en horizontal) pones jugadores, porteros, rivales, balón, conos, vallas, picas y porterías. Arrástralos con el dedo para colocarlos. Toca una valla o una portería para girarla.",
+        "<b>Portero</b>: el botón «Portero» (la ficha amarilla con la P) pone a <b>tu portero</b> (amarillo) o al <b>portero rival</b> (morado). Se mueven y se colorean como cualquier ficha, y «A todos los míos» no les cambia el color.",
+        "<b>Tamaño de las fichas</b>: debajo del campo, con <b>−</b> y <b>+</b> haces todas las fichas más pequeñas o más grandes (del 50 % al 130 %). Muy útil en las ABP: con muchas fichas en el área, hazlas pequeñas y verás bien el área y la portería. El tamaño sale también en la imagen y en el vídeo, y se guarda con la jugada.",
         "Al tocar «Jugador» eliges a uno de tu plantilla (sale con su dorsal) o una ficha con número. Con «Poner titulares de…» llevas al campo la alineación de un partido.",
         "La <b>mano</b> («Mover») es el modo normal: con ella mueves las fichas y, aunque toques fuera de una ficha, no se pinta nada.",
         "<b>Color de los jugadores</b>: toca un jugador o un rival (sin arrastrarlo) y abajo sale su color. Elige una muestra o mueve la barra de color hasta el que quieras; la segunda barra lo hace más claro u oscuro. «A todos los míos» (o «A todos los rivales») los pinta a todos igual, y los que añadas después saldrán de ese color. «Color normal» lo deja como estaba. Toca el campo o la X para cerrarlo.",
-        "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o la flecha y eliges el color. La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
+        "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o las flechas y eliges el color: la <b>flecha continua</b> es para el golpeo (pase o tiro) y la <b>flecha discontinua</b> para el movimiento del jugador (desmarque, carrera sin balón). La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
         "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
         "<b>Limpia</b> (plan Pro): deja el campo liso, sin rayas ni escudo, para que se vean mejor las fichas y los movimientos. Vuelve a tocarlo para dejarlo como antes. La imagen y el vídeo salen también limpios. Junto con la pantalla completa tienes la pizarra grande y despejada.",
@@ -9992,6 +9997,17 @@
     goal: '<path d="M4 7v10h16V7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M4 11h16M4 14h16M9 7v10M15 7v10" stroke="#fff" stroke-width=".8" opacity=".6"/>',
   };
   const BCOL = { own: "#2be36a", riv: "#ff4d5e", ball: "#ffffff" };
+  /* Porteros: ficha de jugador o de rival con la «P» y su propio color. */
+  const GK_OWN = "#ffd60a",
+    GK_RIV = "#b388ff",
+    BKI_GK = '<circle cx="12" cy="12" r="8" fill="#ffd60a" stroke="#fff" stroke-width="2"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="800" font-family="Arial,sans-serif" fill="#111">P</text>';
+  /* Tamaño de las fichas (para ABP con muchas fichas): 50 % a 130 %. */
+  const esGK = (i) => !i.pid && (i.n === "P" || i.n === "PJ");
+  const TSZ = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3];
+  function tszOk(v) {
+    v = Number(v);
+    return TSZ.indexOf(v) >= 0 ? v : 1;
+  }
   const boardState = {};
   const cleanItems = (L, n) =>
     (Array.isArray(L) ? L : [])
@@ -10021,6 +10037,7 @@
     tool: "move",
     est: "",
     f: "",
+    ts: 1,
   });
   try {
     let r = JSON.parse(localStorage.getItem("mf_pizarra_v1") || "{}");
@@ -10042,6 +10059,7 @@
         est: typeof x.est === "string" ? x.est : "",
         f: typeof x.f === "string" ? x.f : "",
         clean: !!x.clean,
+        ts: tszOk(x.ts),
       };
     });
   } catch (e) {}
@@ -10064,6 +10082,7 @@
           est: x.est || "",
           f: x.f || "",
           clean: !!x.clean,
+          ts: tszOk(x.ts),
         };
       });
       let s = JSON.stringify(o);
@@ -10097,6 +10116,8 @@
       g.strokeStyle = s.c;
       g.fillStyle = s.c;
       g.lineWidth = lw;
+      /* Flecha discontinua: movimiento del jugador (la continua es pase o tiro). */
+      g.setLineDash(s.t === "darrow" ? [lw * 2.4, lw * 1.9] : []);
       g.shadowColor = "rgba(0,0,0,.55)";
       g.shadowBlur = lw * 0.8;
       g.beginPath();
@@ -10111,7 +10132,7 @@
         g.lineTo(P[P.length - 1][0], P[P.length - 1][1]);
       }
       g.stroke();
-      if (s.t === "arrow" && P.length > 1) {
+      if ((s.t === "arrow" || s.t === "darrow") && P.length > 1) {
         let k = P.length - 1,
           e = P[k],
           j = k;
@@ -10155,7 +10176,7 @@
   }
   /* Dibuja trayectorias (del paso anterior al actual) y fichas. pos(it) da la posición 0..1. */
   function paintScene(g, b, x0, y0, w, h, pos, trails, map) {
-    let u = tokU(Math.min(w, h), state.mode),
+    let u = tokU(Math.min(w, h), state.mode) * tszOk(b.ts),
       ff = '"Barlow Condensed","Arial Narrow",Impact,sans-serif',
       XY = (q) => {
         let m = map ? map(q) : q;
@@ -10395,7 +10416,7 @@
     };
     boardAnim.raf = requestAnimationFrame(tick);
   }
-  function addItem(k, pid) {
+  function addItem(k, pid, o) {
     let b = bd(),
       n = b.items.length,
       q = [
@@ -10413,10 +10434,10 @@
     b.items.push({
       id: Math.random().toString(36).slice(2, 10),
       k,
-      n: pid ? "" : lab,
+      n: o && o.n ? o.n : pid ? "" : lab,
       pid: pid || "",
       r: 0,
-      c: isHex((b.tcol || {})[k]) ? b.tcol[k] : "",
+      c: o && o.c ? o.c : isHex((b.tcol || {})[k]) ? b.tcol[k] : "",
       p: Array.from({ length: b.steps }, () => q.slice()),
     });
     if (b.tool === "erase") b.tool = "move";
@@ -10647,7 +10668,11 @@
       ["#38bdf8", "Azul"],
     ];
     let onB = new Set(b.items.map((i) => i.pid).filter(Boolean)),
-      menu = state.boardMenu
+      gkMenu =
+        state.boardMenu === "gk"
+          ? `<div class="bmenu" role="menu"><button role="menuitem" data-b="addgk" data-v="own"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${BKI_GK}</svg>Mi portero</button><button role="menuitem" data-b="addgk" data-v="riv"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${BKI_GK.replace(GK_OWN, GK_RIV)}</svg>Portero rival</button></div>`
+          : "",
+      menu = state.boardMenu === true
         ? `<div class="bmenu" role="menu"><button role="menuitem" data-b="addp" data-v=""><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${BKI.own}</svg>Ficha con número</button>${roster()
             .filter((p) => !onB.has(p.id))
             .map(
@@ -10672,7 +10697,8 @@
 <div class="bw"><div class="br br-t" role="toolbar" aria-label="Dibujar">${[
       ["move", "Mover fichas (no pinta)", "hand"],
       ["pen", "Lápiz", "penline"],
-      ["arrow", "Flecha", "arrow"],
+      ["arrow", "Flecha continua: pase o tiro (golpeo)", "arrow"],
+      ["darrow", "Flecha discontinua: movimiento del jugador", "arrowd"],
       ["erase", "Goma: borra la línea o la ficha que toques", "eraser"],
     ]
       .map(
@@ -10686,11 +10712,11 @@
 <div class="br br-p" role="toolbar" aria-label="Añadir al campo">${Object.keys(BK)
       .map(
         (k) =>
-          `<button class="bpc" data-b="add" data-v="${k}" aria-label="Añadir ${BK[k].toLowerCase()}" title="Añadir ${BK[k].toLowerCase()}"${k === "own" ? ` aria-haspopup="menu" aria-expanded="${!!state.boardMenu}"` : ""}><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${BKI[k]}</svg><small>${BK[k]}</small></button>`,
+          `<button class="bpc" data-b="add" data-v="${k}" aria-label="Añadir ${BK[k].toLowerCase()}" title="Añadir ${BK[k].toLowerCase()}"${k === "own" ? ` aria-haspopup="menu" aria-expanded="${state.boardMenu === true}"` : ""}><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${BKI[k]}</svg><small>${BK[k]}</small></button>${k === "own" ? `<button class="bpc" data-b="add" data-v="gk" aria-label="Añadir portero" title="Añadir portero (tuyo o rival)" aria-haspopup="menu" aria-expanded="${state.boardMenu === "gk"}"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${BKI_GK}</svg><small>Portero</small></button>` : ""}`,
       )
-      .join("")}${menu}</div></div>
+      .join("")}${menu}${gkMenu}</div></div>
 <div class="bbot"><div class="bsteps" role="toolbar" aria-label="Jugada en movimiento"><button class="bi" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${dis(b.step < 1)}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="bi" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${dis(b.step >= b.steps - 1)}>${ic("right")}</button><button class="bi" data-b="addstep" aria-label="Añadir paso" title="Añadir paso"${dis()}>${ic("plus")}</button><button class="bi d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${dis(b.steps < 2)}>${ic("x")}</button><span class="brs"></span><button class="bi go" data-b="play" aria-label="${playing ? "Parar" : "Ver jugada"}" title="${playing ? "Parar" : "Ver jugada"}">${ic(playing ? "stop" : "play")}</button><button class="bi" data-b="video" aria-label="Vídeo de la jugada" title="Vídeo de la jugada"${dis()}>${ic("film")}</button></div>
-<div class="bextra"><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean && esPro() ? " on" : ""}" data-b="clean" aria-pressed="${!!(b.clean && esPro())}" title="Pizarra limpia: campo liso, sin rayas ni escudo${esPro() ? "" : " (plan Pro)"}">${ic("eraser", 18)}Limpia${esPro() ? "" : '<em class="pro-tag">PRO</em>'}</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}<button class="btx" data-b="jg" title="Guardar la jugada con un nombre y ver «Mis jugadas»">${ic("download", 18)}Guardar</button></div></div>${pick}</section>`;
+<div class="bextra"><span class="btsz" role="group" aria-label="Tamaño de las fichas"><button class="bi" data-b="tsz" data-v="-1" aria-label="Fichas más pequeñas" title="Fichas más pequeñas"${dis(tszOk(b.ts) <= TSZ[0])}><i aria-hidden="true">−</i></button><b class="btsz-n" title="Tamaño de las fichas">${ic("tsz", 16)}${Math.round(tszOk(b.ts) * 100)}%</b><button class="bi" data-b="tsz" data-v="1" aria-label="Fichas más grandes" title="Fichas más grandes"${dis(tszOk(b.ts) >= TSZ[TSZ.length - 1])}><i aria-hidden="true">+</i></button></span><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean && esPro() ? " on" : ""}" data-b="clean" aria-pressed="${!!(b.clean && esPro())}" title="Pizarra limpia: campo liso, sin rayas ni escudo${esPro() ? "" : " (plan Pro)"}">${ic("eraser", 18)}Limpia${esPro() ? "" : '<em class="pro-tag">PRO</em>'}</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}<button class="btx" data-b="jg" title="Guardar la jugada con un nombre y ver «Mis jugadas»">${ic("download", 18)}Guardar</button></div></div>${pick}</section>`;
   }
   let boardRO = null;
   function initBoard() {
@@ -10760,7 +10786,7 @@
     };
     const hitItem = (p) => {
       let r = box(),
-        u = tokU(r.width, state.mode),
+        u = tokU(r.width, state.mode) * tszOk(b.ts),
         L = byOrd(b.items).reverse();
       return L.find(
         (it) =>
@@ -11051,7 +11077,7 @@
     let b = bd(),
       k = t.dataset.b;
     if (boardAnim && k !== "play" && k !== "present" && k !== "est" && k !== "jg" && k !== "jgsave") return;
-    if (k !== "add" && k !== "addp") state.boardMenu = false;
+    if (k !== "add" && k !== "addp" && k !== "addgk") state.boardMenu = false;
     if (k === "est") {
       estOpen();
     } else if (k === "estx") {
@@ -11098,7 +11124,8 @@
         render();
       }
     } else if (k === "add") {
-      if (t.dataset.v === "own") state.boardMenu = !state.boardMenu;
+      if (t.dataset.v === "own") state.boardMenu = state.boardMenu === true ? false : true;
+      else if (t.dataset.v === "gk") state.boardMenu = state.boardMenu === "gk" ? false : "gk";
       else {
         state.boardMenu = false;
         addItem(t.dataset.v);
@@ -11107,6 +11134,17 @@
     } else if (k === "addp") {
       state.boardMenu = false;
       addItem("own", t.dataset.v);
+      render();
+    } else if (k === "addgk") {
+      state.boardMenu = false;
+      let r = t.dataset.v === "riv";
+      addItem(r ? "riv" : "own", "", { n: "P", c: r ? GK_RIV : GK_OWN });
+      render();
+      note(r ? "Portero rival en el campo: arrástralo a su portería." : "Portero en el campo: arrástralo a la portería.", true);
+    } else if (k === "tsz") {
+      let i = TSZ.indexOf(tszOk(b.ts)) + (t.dataset.v === "1" ? 1 : -1);
+      b.ts = TSZ[Math.min(TSZ.length - 1, Math.max(0, i))];
+      saveBoard();
       render();
     } else if (k === "prev" || k === "next") {
       b.step = Math.min(b.steps - 1, Math.max(0, b.step + (k === "next" ? 1 : -1)));
@@ -11173,8 +11211,9 @@
         boardPickH = true;
       }
       if (all) {
+        /* Los porteros (P) no cogen el color de todos, salvo si tocas uno de ellos. */
         b.items.forEach((i) => {
-          if (i.k === it.k) i.c = c;
+          if (i.k === it.k && (i === it || esGK(i) === esGK(it))) i.c = c;
         });
         b.tcol = { ...(b.tcol || {}), [it.k]: c };
       } else it.c = c;
