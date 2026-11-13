@@ -20,8 +20,8 @@
     "path": "./android.keystore",
     "alias": "mifutbol"
   },
-  "appVersionName": "7.9",
-  "appVersionCode": 1,
+  "appVersionName": "11.22",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "unknown",
   "webManifestUrl": "https://app.monetizaplus.com/manifest.webmanifest",
@@ -35,7 +35,7 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://app.monetizaplus.com/",
   "minSdkVersion": 24,
-  "orientation": "portrait",
+  "orientation": "any",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
@@ -43,5 +43,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "7.9"
+  "appVersion": "11.22"
 }
