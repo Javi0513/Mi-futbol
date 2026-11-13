@@ -422,6 +422,14 @@
   function stSet(e, k, v, fija) {
     let s = { ...(e.st && typeof e.st === "object" ? e.st : {}) };
     s[k] = Math.min(999, Math.max(0, fija ? Number(v) || 0 : (Number(s[k]) || 0) + v));
+    /* Minuto de cada dato apuntado en el Directo (stm {clave: [minutos]}, v11.21): nunca más que el total */
+    if (e.stm && Array.isArray(e.stm[k]) && e.stm[k].length > s[k]) {
+      let t = { ...e.stm };
+      t[k] = fija ? t[k].slice(0, s[k]) : t[k].slice(0, -1);
+      if (!t[k].length) delete t[k];
+      if (Object.keys(t).length) e.stm = t;
+      else delete e.stm;
+    }
     if (!s[k]) delete s[k];
     if (Object.keys(s).length) e.st = s;
     else delete e.st;
@@ -840,7 +848,7 @@
         ? r
             .map((p) => {
               let t = totals(p.id);
-              return `<div class="row" data-pid="${p.id}">${avatar(p, true)}<div class="info"><strong>${dorsal(p) ? `<span class="dor" aria-label="Dorsal ${dorsal(p)}">${dorsal(p)}</span>` : ""}${esc(p.nombre)}</strong>${mini(t)}</div><div class="actions"><button class="ib" data-action="edit-player" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-player" data-id="${p.id}" aria-label="Borrar ${esc(p.nombre)}" title="Borrar">${ic("trash")}</button></div></div>`;
+              return `<div class="row" data-pid="${p.id}">${avatar(p, true)}<div class="info fi-tap" data-ficha="${p.id}" role="button" tabindex="0" aria-label="Ver la ficha de ${esc(p.nombre)}"><strong>${dorsal(p) ? `<span class="dor" aria-label="Dorsal ${dorsal(p)}">${dorsal(p)}</span>` : ""}${esc(p.nombre)}${posChip(p)}</strong>${mini(t)}<span class="fi-ver">Ver ficha ›</span></div><div class="actions"><button class="ib" data-action="edit-player" data-id="${p.id}" aria-label="Editar ${esc(p.nombre)}" title="Editar">${ic("pencil")}</button><button class="ib d" data-action="delete-player" data-id="${p.id}" aria-label="Borrar ${esc(p.nombre)}" title="Borrar">${ic("trash")}</button></div></div>`;
             })
             .join("")
         : empty(
@@ -948,8 +956,468 @@
           b.t.minutes - a.t.minutes ||
           a.p.nombre.localeCompare(b.p.nombre, "es"),
       );
-    return `<section class="panel"><h2 class="h2s">Jugadores</h2><p class="muted">Ordenados por goles y minutos · ${MN()}</p><div style="height:6px"></div>${r.length ? r.map((x, i) => `<div class="row"><div class="rank">${i + 1}</div>${avatar(x.p)}<div class="info"><strong>${esc(x.p.nombre)}</strong>${mini(x.t)}${miniSt(x.t)}</div><div class="big"><b>${x.t.goals}</b><small>goles</small></div></div>`).join("") : empty("chart", "Aún no hay datos.", "Añade jugadores y partidos para ver el resumen.")}</section>`;
+    return `<section class="panel"><div class="bar"><h2 class="h2s">Jugadores</h2>${r.length ? `<button type="button" class="secondary small" data-xl="go">${ic("download", 18)}Exportar a Excel</button>` : ""}</div><p class="muted">Ordenados por goles y minutos · ${MN()}. Toca un jugador para ver su ficha.</p><div style="height:6px"></div>${r.length ? r.map((x, i) => `<div class="row fi-tap" data-ficha="${x.p.id}" role="button" tabindex="0" aria-label="Ver la ficha de ${esc(x.p.nombre)}"><div class="rank">${i + 1}</div>${avatar(x.p)}<div class="info"><strong>${esc(x.p.nombre)}${posChip(x.p)}</strong>${mini(x.t)}${miniSt(x.t)}</div><div class="big"><b>${x.t.goals}</b><small>goles</small></div></div>`).join("") : empty("chart", "Aún no hay datos.", "Añade jugadores y partidos para ver el resumen.")}</section>`;
   }
+  /* ===== Ficha del jugador y exportar a Excel (v11.21) =====
+     Cada jugador tiene posición habitual, otra posición y pie (columnas posicion, posicion2 y pie
+     de futbol_personal_jugadores: supabase-ficha.sql). La ficha junta todo lo que ha hecho en los
+     partidos: minutos, goles (con su minuto si fue en el Directo), asistencias, robos, pérdidas,
+     tiros, paradas, faltas y tarjetas, partido a partido. Plan gratuito: los 3 últimos partidos
+     en la ficha y 2 exportaciones a Excel al mes; con Pro, todo y sin límite.
+     El Excel (.xlsx) se genera en el móvil, sin librerías: hojas Jugadores, Partidos, Acciones
+     (cada acción con su minuto) y Equipo. */
+  const POS = {
+      c: [
+        ["POR", "Portero"],
+        ["LD", "Lateral derecho"],
+        ["LI", "Lateral izquierdo"],
+        ["DFC", "Central"],
+        ["CAR", "Carrilero"],
+        ["MCD", "Mediocentro defensivo"],
+        ["MC", "Mediocentro"],
+        ["MP", "Mediapunta"],
+        ["ED", "Extremo derecho"],
+        ["EI", "Extremo izquierdo"],
+        ["DC", "Delantero centro"],
+      ],
+      fs: [
+        ["POR", "Portero"],
+        ["CIE", "Cierre"],
+        ["ALD", "Ala derecho"],
+        ["ALI", "Ala izquierdo"],
+        ["PIV", "Pívot"],
+        ["UNI", "Universal"],
+      ],
+    },
+    PIE = [
+      ["D", "Diestro"],
+      ["Z", "Zurdo"],
+      ["A", "Ambidiestro"],
+    ],
+    posL = (mod) => (mod === "fs" ? POS.fs : POS.c),
+    posNom = (mod, c) => (posL(mod).find((x) => x[0] === c) || [])[1] || "",
+    pieNom = (c) => (PIE.find((x) => x[0] === c) || [])[1] || "",
+    FICHA_GRATIS = 3;
+  /* Rellena los desplegables de la ficha en el formulario del jugador */
+  function fichaForm(p) {
+    let f = $("playerForm"),
+      mod = (p && p.modalidad) || state.mode,
+      op = (L, v, nada) =>
+        `<option value="">${nada}</option>` +
+        L.map((x) => `<option value="${x[0]}"${x[0] === v ? " selected" : ""}>${esc(x[1])}</option>`).join("");
+    if (!f.posicion) return;
+    f.posicion.innerHTML = op(posL(mod), p && p.posicion, "Sin indicar");
+    f.posicion2.innerHTML = op(posL(mod), p && p.posicion2, "Ninguna");
+    f.pie.innerHTML = op(PIE, p && p.pie, "Sin indicar");
+  }
+  const posChip = (p) =>
+    p && posNom(p.modalidad, p.posicion)
+      ? `<span class="pos-chip" title="${esc(posNom(p.modalidad, p.posicion))}">${esc(p.posicion)}</span>`
+      : "";
+  /* Lo que ha hecho un jugador en cada partido (del más reciente al más antiguo) */
+  function fichaPartidos(pid) {
+    let L = [];
+    games().forEach((m) => {
+      let E = entries(m),
+        e = E.find((x) => x.id === pid);
+      if (!e) return;
+      let al = m.alineacion || {},
+        x = liveRows[m.id],
+        ev = x && Array.isArray(x.eventos) ? x.eventos : [],
+        tj = mdList(al, "tarjetas").filter((z) => z.pid === pid);
+      L.push({
+        m,
+        e,
+        r: al.resultado,
+        tit: !!e.starter,
+        min: Number(e.minutes) || 0,
+        gol: Number(e.goals) || 0,
+        gm: ev
+          .filter((z) => z.t === "f" && z.pid === pid)
+          .map((z) => Number(z.m) || 0)
+          .sort((a, b) => a - b),
+        am: tj.filter((z) => z.c !== "r").length,
+        ro: tj.filter((z) => z.c === "r").length,
+        cap: al.capitan === pid,
+        gk: gkOf(al, E.map((z) => z.id)) === pid,
+      });
+    });
+    return L;
+  }
+  function fichaHtml(pid) {
+    let p = state.players.find((x) => x.id === pid);
+    if (!p) return "";
+    let t = totals(pid),
+      P = fichaPartidos(pid),
+      tir = t.tp + t.tf,
+      pos = posNom(p.modalidad, p.posicion),
+      pos2 = posNom(p.modalidad, p.posicion2),
+      pie = pieNom(p.pie),
+      tile = (a, b) => `<div class="stat"><small>${a}</small><b>${b}</b></div>`,
+      ver = esPro() ? P : P.slice(0, FICHA_GRATIS),
+      res = (r) => (r ? (r.gf > r.gc ? ["w", "V"] : r.gf < r.gc ? ["l", "D"] : ["d", "E"]) : ["", "·"]);
+    let cab = `<div class="fi-cab">${avatar(p)}<div><b class="fi-nom">${dorsal(p) ? `<span class="dor">${dorsal(p)}</span>` : ""}${esc(p.nombre)}</b><p class="muted">${pos ? "<b>" + esc(pos) + "</b>" : "Posición sin indicar"}${pos2 ? " · también " + esc(pos2.toLowerCase()) : ""}${pie ? " · " + esc(pie.toLowerCase()) : ""}</p></div></div>`;
+    let base = `<div class="tstats fi-st">${[
+      ["Partidos", t.games],
+      ["Titular", t.starts],
+      ["Minutos", t.minutes],
+      ["Goles", t.goals],
+      ["Asistencias", t.asi],
+      ["Goles + asist.", t.goals + t.asi],
+      ["Min. por partido", t.games ? Math.round(t.minutes / t.games) : 0],
+      ["Min. por gol", t.goals ? Math.round(t.minutes / t.goals) : "—"],
+    ]
+      .map((x) => tile(x[0], x[1]))
+      .join("")}</div>`;
+    let dir = [
+      ["Robos", t.rob],
+      ["Pérdidas", t.per],
+      ["Tiros", tir],
+      ["A puerta", tir ? t.tp + " (" + Math.round((t.tp / tir) * 100) + " %)" : t.tp],
+      ["Paradas", t.par],
+      ["Faltas", t.fal],
+      ["Amarillas", t.amarillas],
+      ["Rojas", t.rojas],
+      ["Capitán", t.cap],
+    ].filter((x, i) => i < 4 || x[1]);
+    let st = `<h3 class="ci-h3">Estadísticas del Directo</h3><div class="tstats fi-st">${dir.map((x) => tile(x[0], x[1])).join("")}</div>${
+      t.rob || t.per ? `<p class="muted">Balance robos − pérdidas: <b>${t.rob - t.per > 0 ? "+" : ""}${t.rob - t.per}</b></p>` : ""
+    }`;
+    let pp = P.length
+      ? `<h3 class="ci-h3">Partido a partido</h3>${ver
+          .map((z) => {
+            let k = res(z.r),
+              d = ESTP.filter((s) => stv(z.e, s[0]) > 0).map((s) => `${stv(z.e, s[0])} ${s[3]}`);
+            return `<div class="row fi-p"><div class="avatar res ${k[0]}">${k[1]}</div><div class="info"><strong>${esc(z.m.rival || "Rival")}${z.r ? ` <small>${z.r.gf}-${z.r.gc}</small>` : ""}</strong><small>${esc(fmtDate(z.m.fecha))} · ${z.tit ? "★ Titular" : "Suplente"} · ${z.min}'${z.cap ? " · (C)" : ""}${z.gk ? " · POR" : ""}</small><small>${z.gol ? `⚽ ${z.gol}${z.gm.length ? " (" + z.gm.map((n) => n + "'").join(", ") + ")" : ""}` : ""}${z.am ? ' <i class="tj a"></i>' + (z.am > 1 ? z.am : "") : ""}${z.ro ? ' <i class="tj r"></i>' : ""}${d.length ? (z.gol || z.am || z.ro ? " · " : "") + d.join(" · ") : ""}</small></div></div>`;
+          })
+          .join("")}${
+          ver.length < P.length
+            ? `<p class="muted lim-q">Plan gratuito: ves los ${FICHA_GRATIS} últimos partidos de ${P.length}. Con Pro, todos. <button type="button" class="linkb" data-info="pro">Ver el plan Pro</button></p>`
+            : ""
+        }`
+      : `<p class="muted">Aún no ha jugado ningún partido. Cuando lo convoques, aquí saldrá todo lo que haga.</p>`;
+    let bt = `<div class="stack">${viendo ? "" : `<button type="button" class="secondary" data-ficha-ed="${p.id}">${ic("pencil", 18)}Editar posición, pie y datos</button>`}<button type="button" class="primary" data-xl="go">${ic("download", 18)}Exportar el equipo a Excel</button></div>${xlQuedan()}`;
+    return cab + base + st + pp + bt;
+  }
+  function fichaAbre(pid) {
+    let p = state.players.find((x) => x.id === pid);
+    if (!p) return;
+    ciOpen("Ficha del jugador", fichaHtml(pid));
+    $("infoBody").scrollTop = 0;
+  }
+
+  /* --- Exportar a Excel --- */
+  const xlKey = () => `mf_excel:${curUser || ""}:${ymd(new Date()).slice(0, 7)}`;
+  function xlUsados() {
+    try {
+      return Number(localStorage.getItem(xlKey())) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+  const xlQuedan = () =>
+    esPro() ? "" : `<p class="muted lim-q">Plan gratuito: te quedan ${Math.max(0, LIM.xl - xlUsados())} de ${LIM.xl} exportaciones a Excel este mes. Con Pro, ilimitadas.</p>`;
+  /* CRC32 para el zip */
+  let crcT = null;
+  function crc32(b) {
+    if (!crcT) {
+      crcT = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        crcT[n] = c >>> 0;
+      }
+    }
+    let c = 0xffffffff;
+    for (let i = 0; i < b.length; i++) c = crcT[(c ^ b[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  /* Zip sin comprimir (suficiente para un .xlsx y funciona en cualquier navegador) */
+  function zipStore(files) {
+    let enc = new TextEncoder(),
+      parts = [],
+      cen = [],
+      off = 0,
+      dd = ((2026 - 1980) << 9) | (1 << 5) | 1;
+    files.forEach((f) => {
+      let nm = enc.encode(f[0]),
+        da = enc.encode(f[1]),
+        crc = crc32(da),
+        h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true);
+      h.setUint16(4, 20, true);
+      h.setUint16(6, 0x0800, true);
+      h.setUint16(8, 0, true);
+      h.setUint16(10, 0, true);
+      h.setUint16(12, dd, true);
+      h.setUint32(14, crc, true);
+      h.setUint32(18, da.length, true);
+      h.setUint32(22, da.length, true);
+      h.setUint16(26, nm.length, true);
+      h.setUint16(28, 0, true);
+      let c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true);
+      c.setUint16(4, 20, true);
+      c.setUint16(6, 20, true);
+      c.setUint16(8, 0x0800, true);
+      c.setUint16(10, 0, true);
+      c.setUint16(12, 0, true);
+      c.setUint16(14, dd, true);
+      c.setUint32(16, crc, true);
+      c.setUint32(20, da.length, true);
+      c.setUint32(24, da.length, true);
+      c.setUint16(28, nm.length, true);
+      c.setUint32(42, off, true);
+      parts.push(h.buffer, nm, da);
+      cen.push(c.buffer, nm);
+      off += 30 + nm.length + da.length;
+    });
+    let cs = cen.reduce((a, b) => a + (b.byteLength || b.length), 0),
+      e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true);
+    e.setUint16(8, files.length, true);
+    e.setUint16(10, files.length, true);
+    e.setUint32(12, cs, true);
+    e.setUint32(16, off, true);
+    return new Blob(parts.concat(cen, [e.buffer]), {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  }
+  const xe = (s) =>
+    String(s)
+      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "")
+      .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const xcol = (i) => {
+    let s = "";
+    for (i++; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + ((i - 1) % 26)) + s;
+    return s;
+  };
+  /* Fecha de Excel (número de días) a partir de "AAAA-MM-DD" */
+  const xfecha = (f) => {
+    let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f || "");
+    return m ? { d: (Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30)) / 864e5 } : f || "";
+  };
+  /* sheets: [{n: nombre, w: [anchos], rows: [[cabecera...], [valores...]]}] */
+  function xlsxBlob(sheets) {
+    let F = [],
+      ns = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
+      rel = "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+      hd = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    F.push([
+      "[Content_Types].xml",
+      hd +
+        `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets
+          .map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`)
+          .join("")}</Types>`,
+    ]);
+    F.push([
+      "_rels/.rels",
+      hd + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${rel}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    ]);
+    F.push([
+      "xl/workbook.xml",
+      hd +
+        `<workbook ${ns} xmlns:r="${rel}"><sheets>${sheets.map((s, i) => `<sheet name="${xe(s.n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets><definedNames>${sheets
+          .map((s, i) =>
+            s.rows.length > 1
+              ? `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${xe(s.n)}'!$A$1:$${xcol(s.rows[0].length - 1)}$${s.rows.length}</definedName>`
+              : "",
+          )
+          .join("")}</definedNames></workbook>`,
+    ]);
+    F.push([
+      "xl/_rels/workbook.xml.rels",
+      hd +
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets
+          .map((s, i) => `<Relationship Id="rId${i + 1}" Type="${rel}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`)
+          .join("")}<Relationship Id="rId${sheets.length + 1}" Type="${rel}/styles" Target="styles.xml"/></Relationships>`,
+    ]);
+    F.push([
+      "xl/styles.xml",
+      hd +
+        `<styleSheet ${ns}><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0B6B3A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
+    ]);
+    sheets.forEach((s, i) => {
+      let filas = s.rows
+        .map(
+          (r, y) =>
+            `<row r="${y + 1}">${r
+              .map((v, x) => {
+                if (v === "" || v == null) return "";
+                let ref = xcol(x) + (y + 1);
+                if (v && typeof v === "object" && typeof v.d === "number") return `<c r="${ref}" s="2"><v>${v.d}</v></c>`;
+                if (typeof v === "number" && isFinite(v)) return `<c r="${ref}"><v>${v}</v></c>`;
+                return `<c r="${ref}" t="inlineStr"${y ? "" : ' s="1"'}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;
+              })
+              .join("")}</row>`,
+        )
+        .join("");
+      F.push([
+        `xl/worksheets/sheet${i + 1}.xml`,
+        hd +
+          `<worksheet ${ns}><sheetViews><sheetView workbookViewId="0"${i ? "" : ' tabSelected="1"'}><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${s.rows[0]
+            .map((h, x) => `<col min="${x + 1}" max="${x + 1}" width="${(s.w && s.w[x]) || Math.max(9, String(h).length + 3)}" customWidth="1"/>`)
+            .join("")}</cols><sheetData>${filas}</sheetData>${s.rows.length > 1 ? `<autoFilter ref="A1:${xcol(s.rows[0].length - 1)}${s.rows.length}"/>` : ""}</worksheet>`,
+      ]);
+    });
+    return zipStore(F);
+  }
+  /* Los datos del equipo elegido, en 4 hojas */
+  function xlHojas() {
+    let G = games()
+        .slice()
+        .sort((a, b) => a.fecha.localeCompare(b.fecha)),
+      R = roster(),
+      pj = (id) => state.players.find((p) => p.id === id),
+      dor = (id) => {
+        let d = dorsal(pj(id));
+        return d ? Number(d) : "";
+      },
+      pos = (id) => {
+        let p = pj(id);
+        return p ? posNom(p.modalidad, p.posicion) : "";
+      },
+      resTxt = (r) => (r ? (r.gf > r.gc ? "Victoria" : r.gf < r.gc ? "Derrota" : "Empate") : ""),
+      tr = entrenosOn() && state.trOk ? trainings().filter((t) => t.fecha <= ymd(new Date())) : null;
+    /* Hoja 1: jugadores (totales) */
+    let H1 = ["Dorsal", "Jugador", "Posición", "Otra posición", "Pie", "Partidos", "Titular", "Suplente", "Minutos", "Min. por partido", "Goles", "Asistencias", "Goles + asist.", "Min. por gol", "Robos", "Pérdidas", "Balance robos-pérdidas", "Tiros a puerta", "Tiros fuera", "Tiros", "% a puerta", "Paradas", "Faltas", "Amarillas", "Rojas", "Capitán"];
+    if (tr) H1.push("Entrenos: vino", "Entrenos: tarde", "Entrenos: faltó", "Entrenos: justificada");
+    let S1 = [H1].concat(
+      R.map((p) => {
+        let t = totals(p.id),
+          tir = t.tp + t.tf,
+          r = [dor(p.id), p.nombre, posNom(p.modalidad, p.posicion), posNom(p.modalidad, p.posicion2), pieNom(p.pie), t.games, t.starts, t.games - t.starts, t.minutes, t.games ? Math.round(t.minutes / t.games) : 0, t.goals, t.asi, t.goals + t.asi, t.goals ? Math.round(t.minutes / t.goals) : "", t.rob, t.per, t.rob - t.per, t.tp, t.tf, tir, tir ? Math.round((t.tp / tir) * 100) : "", t.par, t.fal, t.amarillas, t.rojas, t.cap];
+        if (tr) {
+          let c = { si: 0, tarde: 0, no: 0, jus: 0 };
+          tr.forEach((x) => {
+            let v = (x.asistencia || {})[p.id];
+            if (c[v] !== undefined) c[v]++;
+          });
+          r.push(c.si, c.tarde, c.no, c.jus);
+        }
+        return r;
+      }),
+    );
+    /* Hoja 2: una fila por jugador y partido */
+    let S2 = [["Fecha", "Rival", "Goles a favor", "Goles en contra", "Resultado", "Dorsal", "Jugador", "Posición", "Titular", "Minutos", "Goles", "Minuto de los goles", "Asistencias", "Robos", "Pérdidas", "Tiros a puerta", "Tiros fuera", "Paradas", "Faltas", "Amarillas", "Rojas", "Capitán", "Portero"]];
+    /* Hoja 3: cada acción con su minuto */
+    let S3 = [["Fecha", "Rival", "Minuto", "Parte", "Acción", "Dorsal", "Jugador", "Posición"]];
+    let S4 = [["Fecha", "Rival", "Goles a favor", "Goles en contra", "Resultado", "Convocados", "Robos", "Pérdidas", "Tiros", "Tiros del rival", "Faltas", "Faltas del rival"]];
+    G.forEach((m) => {
+      let al = m.alineacion || {},
+        r = al.resultado,
+        E = entries(m),
+        ids = E.map((e) => e.id),
+        gk = gkOf(al, ids),
+        x = liveRows[m.id],
+        ev = x && Array.isArray(x.eventos) ? x.eventos : [],
+        pm = Number(al.parte) || Number(x && x.parte_min) || 0,
+        tj = mdList(al, "tarjetas"),
+        fe = xfecha(m.fecha),
+        riv = m.rival || "Rival",
+        A = [],
+        parte = (mi, p) => (p === 1 || p === 2 ? p : mi === "" || !pm ? "" : mi <= pm ? 1 : 2),
+        acc = (mi, p, que, id, nom) => A.push([fe, riv, mi, parte(mi, p), que, id ? dor(id) : "", id ? name(id) : nom || "", id ? pos(id) : ""]),
+        tot = (k) => E.reduce((a, e) => a + stv(e, k), 0),
+        F = al.faltas || {},
+        gol = ev.filter((z) => z.t === "f" || z.t === "c");
+      E.forEach((e) => {
+        let gm = ev.filter((z) => z.t === "f" && z.pid === e.id).map((z) => Number(z.m) || 0),
+          t = tj.filter((z) => z.pid === e.id);
+        S2.push([fe, riv, r ? r.gf : "", r ? r.gc : "", resTxt(r), dor(e.id), name(e.id), pos(e.id), e.starter ? "Sí" : "No", Number(e.minutes) || 0, Number(e.goals) || 0, gm.map((n) => n + "'").join(", "), stv(e, "asi"), stv(e, "rob"), stv(e, "per"), stv(e, "tp"), stv(e, "tf"), stv(e, "par"), stv(e, "fal"), t.filter((z) => z.c !== "r").length, t.filter((z) => z.c === "r").length, al.capitan === e.id ? "Sí" : "", gk === e.id ? "Sí" : ""]);
+        /* Datos del Directo: los apuntados con la app llevan su minuto (stm); los puestos a mano, sin minuto */
+        ESTP.forEach((s) => {
+          let n = stv(e, s[0]),
+            mins = (e.stm && Array.isArray(e.stm[s[0]]) ? e.stm[s[0]] : []).slice().sort((a, b) => a - b);
+          for (let i = 0; i < n; i++) acc(mins[i] != null ? Number(mins[i]) || 0 : "", 0, s[1], e.id);
+        });
+        if (!gol.length) for (let i = 0; i < (Number(e.goals) || 0); i++) acc("", 0, "Gol", e.id);
+      });
+      gol.forEach((z) => (z.t === "f" ? acc(Number(z.m) || 0, z.p, "Gol", z.pid && ids.includes(z.pid) ? z.pid : "", z.n || "") : acc(Number(z.m) || 0, z.p, "Gol del rival", "", z.n ? (z.d ? z.d + " · " : "") + z.n : riv)));
+      mdList(al, "cambios").forEach((z) => {
+        let mi = z.ds ? (pm || "") : z.m === "" || z.m == null ? "" : Number(z.m) || 0,
+          p = z.ds ? 0 : z.p;
+        if (z.sale) acc(mi, p, "Cambio: sale", z.sale);
+        if (z.entra) acc(mi, p, "Cambio: entra", z.entra);
+      });
+      tj.forEach((z) => acc(z.m === "" || z.m == null ? "" : Number(z.m) || 0, 0, z.c === "r" ? "Roja" : "Amarilla", z.pid));
+      A.sort((a, b) => (a[2] === "" ? 999 : a[2]) - (b[2] === "" ? 999 : b[2]));
+      S3.push(...A);
+      S4.push([fe, riv, r ? r.gf : "", r ? r.gc : "", resTxt(r), E.length, tot("rob"), tot("per"), tot("tp") + tot("tf"), Number((al.estR || {}).tir) || 0, (Number(F.n1) || 0) + (Number(F.n2) || 0), (Number(F.r1) || 0) + (Number(F.r2) || 0)]);
+    });
+    return [
+      { n: "Jugadores", rows: S1, w: [8, 22, 20, 20, 12] },
+      { n: "Partidos", rows: S2, w: [12, 20, 8, 8, 10, 8, 22, 20, 8, 9, 7, 18] },
+      { n: "Acciones", rows: S3, w: [12, 20, 9, 7, 16, 8, 22, 20] },
+      { n: "Equipo", rows: S4, w: [12, 20] },
+    ];
+  }
+  async function bajaArchivo(blob, fname, titulo) {
+    let file = null;
+    try {
+      file = new File([blob], fname, { type: blob.type });
+    } catch (e) {}
+    if (file && navigator.canShare && navigator.canShare({ files: [file] }) && window.matchMedia("(pointer:coarse)").matches) {
+      try {
+        await navigator.share({ files: [file], title: titulo });
+        return true;
+      } catch (e) {
+        if (e && e.name === "AbortError") return false;
+      }
+    }
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return true;
+  }
+  async function xlExporta() {
+    if (!roster().length && !games().length) return note("Aún no hay jugadores ni partidos que exportar.");
+    if (!esPro() && xlUsados() >= LIM.xl)
+      return proLimite(`En el plan gratuito puedes exportar a Excel <b>${LIM.xl} veces al mes</b> y este mes ya lo has hecho. Ver la ficha de cada jugador en la app es gratis. El mes que viene vuelves a tener ${LIM.xl}.`);
+    let slug = String(teamName(state.mode) || "equipo")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase(),
+      fname = `estadisticas-${MFN(state.mode)}-${slug || "equipo"}-${ymd(new Date())}.xlsx`,
+      ok = await bajaArchivo(xlsxBlob(xlHojas()), fname, "Estadísticas");
+    if (!ok) return;
+    if (!esPro())
+      try {
+        localStorage.setItem(xlKey(), String(xlUsados() + 1));
+      } catch (e) {}
+    note("Excel listo: " + fname, true);
+    if (!$("info").classList.contains("hidden") && $("infoTitle").textContent === "Ficha del jugador") {
+      let q = $("infoBody").querySelector(".lim-q:last-child");
+      if (q) q.outerHTML = xlQuedan() || "<span></span>";
+    }
+  }
+  document.addEventListener("click", (e) => {
+    let f = e.target.closest("[data-ficha]");
+    if (f && !e.target.closest(".zoomable,[data-action]")) {
+      fichaAbre(f.dataset.ficha);
+      return;
+    }
+    let ed = e.target.closest("[data-ficha-ed]");
+    if (ed) {
+      $("info").classList.add("hidden");
+      playerEdit(ed.dataset.fichaEd);
+      return;
+    }
+    if (e.target.closest("[data-xl]")) xlExporta().catch((x) => note("No se pudo crear el Excel: " + (x.message || x)));
+  });
+  document.addEventListener("keydown", (e) => {
+    let f = e.target && e.target.closest && e.target.closest("[data-ficha]");
+    if (f && (e.key === "Enter" || e.key === " ") && !e.target.closest(".zoomable")) {
+      e.preventDefault();
+      fichaAbre(f.dataset.ficha);
+    }
+  });
   /* ===== Control de entrenamientos (opcional: se activa en Mi cuenta) =====
      Un calendario por equipo; en cada entrenamiento se marca quién vino, quién faltó
      y quién tuvo falta justificada. Asistencia: {id del jugador: "si" | "tarde" | "no" | "jus"}. «tarde» (v11.1) cuenta como que vino. */
@@ -1636,14 +2104,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
+  const LIM = { xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -4969,7 +5437,13 @@
     let dv = String(form.dorsal.value || "").trim(),
       dn = parseInt(dv);
     if (dv && !(dn >= 0 && dn <= 99)) throw Error("El dorsal tiene que ser un número del 0 al 99.");
-    let payload = { modalidad: state.mode, nombre: name, foto, dorsal: dv ? dn : null };
+    let payload = { modalidad: state.mode, nombre: name, foto, dorsal: dv ? dn : null },
+      fp = original ? original.modalidad : state.mode,
+      fv = (k, L) => (form[k] && L.some((x) => x[0] === form[k].value) ? form[k].value : null),
+      ficha = { posicion: fv("posicion", posL(fp)), posicion2: fv("posicion2", posL(fp)), pie: fv("pie", PIE) };
+    if (ficha.posicion2 === ficha.posicion) ficha.posicion2 = null;
+    /* Solo se manda la ficha si tiene algo o ya tenía algo (así no falla sin supabase-ficha.sql) */
+    if (Object.values(ficha).some((v) => v) || (original && (original.posicion || original.posicion2 || original.pie))) Object.assign(payload, ficha);
     if (!original && curTeam()) payload.equipo_id = curTeam();
     if (!original && full("p")) {
       $("modal").classList.add("hidden");
@@ -4988,7 +5462,16 @@
             .eq("id", original.id)
         : db.from("futbol_personal_jugadores").insert(payload);
     let { error } = await send(),
-      sinDorsal = false;
+      sinDorsal = false,
+      sinFicha = false;
+    /* Si la base de datos aún no tiene las columnas de la ficha (supabase-ficha.sql), se guarda el resto. */
+    if (error && /posicion|pie\b/i.test(error.message || "")) {
+      delete payload.posicion;
+      delete payload.posicion2;
+      delete payload.pie;
+      sinFicha = true;
+      ({ error } = await send());
+    }
     /* Si la base de datos aún no tiene la columna del dorsal, se guarda el resto. */
     if (error && /dorsal/i.test(error.message || "")) {
       delete payload.dorsal;
@@ -5002,8 +5485,10 @@
     note(
       sinDorsal
         ? "Jugador guardado, pero el dorsal aún no se puede guardar: falta activarlo en el servidor."
-        : "Jugador guardado.",
-      !sinDorsal,
+        : sinFicha
+          ? "Jugador guardado, pero la posición y el pie aún no se pueden guardar: falta activarlo en el servidor."
+          : "Jugador guardado.",
+      !sinDorsal && !sinFicha,
     );
   }
   async function resize(file) {
@@ -5931,7 +6416,7 @@
     {
       el: '[data-tab="plantilla"]',
       t: "Plantilla",
-      p: "Pulsa «+ Jugador» para añadir a cada jugador con su nombre y, si quieres, su foto. Toca el lápiz para editarlo y la foto para verla en grande.",
+      p: "Pulsa «+ Jugador» para añadir a cada jugador con su nombre, su posición y, si quieres, su foto. Toca su nombre para ver su ficha con todas sus estadísticas, el lápiz para editarlo y la foto para verla en grande.",
     },
     {
       el: '[data-tab="partidos"]',
@@ -5951,7 +6436,7 @@
     {
       el: '[data-tab="resumen"]',
       t: "Estadísticas",
-      p: "Ranking de tus jugadores por goles, minutos, partidos y titularidades. En «Resultados» toca un partido para ver su resumen y mandarlo por WhatsApp.",
+      p: "Ranking de tus jugadores por goles, minutos, partidos y titularidades. Toca un jugador para ver su ficha y con «Exportar a Excel» te llevas todos los datos (con el minuto de cada acción) para analizarlos. En «Resultados» toca un partido para ver su resumen y mandarlo por WhatsApp.",
     },
     {
       el: "#sbtn",
@@ -6050,6 +6535,24 @@
         "Pulsa «+ Jugador» y escribe el nombre. Si quieres, añade su <b>dorsal</b> (el número de su camiseta) y su foto.",
         "El dorsal sale junto a su nombre, en el campo de la alineación, en la imagen para WhatsApp y en la pizarra.",
         "Toca el lápiz para editar a un jugador y su foto para verla en grande.",
+      ],
+    },
+    {
+      t: "Ficha del jugador",
+      p: [
+        "Al crear o editar un jugador (lápiz) eliges su <b>posición habitual</b>, <b>otra posición</b> en la que también juega y su <b>pie</b> (diestro, zurdo o ambidiestro). En fútbol 7 y 11: portero, laterales, central, carrilero, mediocentros, mediapunta, extremos y delantero centro; en fútbol sala: portero, cierre, alas, pívot y universal. La posición sale con sus siglas junto al nombre.",
+        "Toca el <b>nombre</b> de un jugador en «Plantilla» («Ver ficha ›») o el jugador en «Estadísticas» para abrir su <b>ficha</b>: partidos, titularidades, minutos, goles, asistencias, goles + asistencias, minutos por partido y por gol, y lo que apuntaste en el Directo (robos, pérdidas, tiros y % a puerta, paradas, faltas, tarjetas y veces de capitán).",
+        "Debajo está <b>partido a partido</b>: resultado, si fue titular, sus minutos, sus goles con el minuto (si usaste el Directo) y sus estadísticas de ese partido.",
+        "Con el plan gratuito, en la ficha ves sus <b>3 últimos partidos</b>; con Pro, todos.",
+      ],
+    },
+    {
+      t: "Exportar a Excel",
+      p: [
+        "En «Estadísticas», en el apartado Jugadores, pulsa <b>«Exportar a Excel»</b> (también está dentro de la ficha de cada jugador). Se crea un archivo <b>.xlsx</b> del equipo que tienes elegido que se abre en Excel, Google Sheets o Numbers.",
+        "Tiene 4 hojas: <b>Jugadores</b> (totales de cada uno con su posición, minutos, goles, asistencias, robos, pérdidas, tiros, paradas, faltas, tarjetas y, si llevas el control de entrenamientos, su asistencia), <b>Partidos</b> (una fila por jugador y partido), <b>Acciones</b> (cada gol, asistencia, robo, pérdida, tiro, parada, falta, cambio y tarjeta con su <b>minuto</b> y su parte) y <b>Equipo</b> (resultado y totales de cada partido).",
+        "Lo que apuntas en el Directo se guarda con su minuto. Lo que pongas a mano después del partido sale en «Acciones» sin minuto.",
+        "En el móvil se abre el menú de compartir: guárdalo en Archivos, mándalo por WhatsApp o por email a tu analista. Con el plan gratuito puedes exportar <b>2 veces al mes</b>; con Pro, sin límite.",
       ],
     },
     {
@@ -6229,8 +6732,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>También en la app de Android:</b> puedes pagar el Pro o el pack de tu club desde «Mi cuenta» igual que en la web. El botón te lleva a la página de pago de Stripe; al pagar y volver a la app, el Pro se activa solo.",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
@@ -6909,6 +7412,16 @@
     if (viendo || !d || !(d.players.length || d.rival || d.gf || d.gc)) return true;
     return confirm("Tienes un partido sin guardar. ¿Salir sin guardar?");
   }
+  function playerEdit(id) {
+    let p = state.players.find((x) => x.id === id);
+    if (!p) return;
+    state.playerId = id;
+    $("playerForm").nombre.value = p.nombre;
+    $("playerForm").dorsal.value = dorsal(p);
+    fichaForm(p);
+    $("modalTitle").textContent = "Editar jugador";
+    openModal();
+  }
   function openModal() {
     $("modal").classList.remove("hidden");
     setTimeout(() => {
@@ -6979,17 +7492,11 @@
         }
         state.playerId = null;
         $("playerForm").reset();
+        fichaForm(null);
         $("modalTitle").textContent = "Nuevo jugador";
         openModal();
       }
-      if (a.dataset.action === "edit-player") {
-        let p = state.players.find((x) => x.id === id);
-        state.playerId = id;
-        $("playerForm").nombre.value = p.nombre;
-        $("playerForm").dorsal.value = dorsal(p);
-        $("modalTitle").textContent = "Editar jugador";
-        openModal();
-      }
+      if (a.dataset.action === "edit-player") playerEdit(id);
       if (a.dataset.action === "delete-player")
         remove("futbol_personal_jugadores", id);
       if (a.dataset.action === "add-match") {
@@ -7344,6 +7851,12 @@
     let e = entries(m).find((z) => z.id === pid);
     if (!e) return;
     stSet(e, k, 1);
+    /* Guarda también el minuto (para la hoja «Acciones» del Excel) */
+    let tm = { ...(e.stm && typeof e.stm === "object" ? e.stm : {}) },
+      ml = Array.isArray(tm[k]) ? tm[k].slice() : [];
+    if (ml.length < stv(e, k)) ml.push(liveMin(x));
+    tm[k] = ml;
+    e.stm = tm;
     let u = { pid, k };
     if (k === "fal") {
       let f = liveFoulEv(x);

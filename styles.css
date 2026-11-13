@@ -5864,3 +5864,95 @@ html.bio-on body {
   width: 100%;
   text-align: left;
 }
+/* Ficha del jugador (v11.21) */
+.fi-tap {
+  cursor: pointer;
+}
+.fi-tap:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
+.pos-chip {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  color: var(--lime);
+}
+.fi-cab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.fi-cab .avatar {
+  width: 64px;
+  height: 64px;
+  font-size: 1.6em;
+}
+.fi-cab p {
+  margin: 4px 0 0;
+}
+.fi-nom {
+  font-size: 1.25em;
+}
+.fi-p .info small {
+  display: block;
+}
+.fi-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 420px) {
+  .fi-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fi-form label:first-child {
+    grid-column: 1 / -1;
+  }
+}
+.linkb {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--lime);
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
+}
+.fi-st {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.fi-st .stat {
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+.fi-st .stat small {
+  font-size: 0.78em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.fi-st .stat b {
+  font-size: 26px;
+}
+@media (min-width: 520px) {
+  .fi-st {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.fi-ver {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--lime);
+}
