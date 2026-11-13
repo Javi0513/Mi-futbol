@@ -71,6 +71,8 @@ with sync_playwright() as p:
     pg.keyboard.press('Escape');pg.wait_for_timeout(100)
     # ---- tamaño de las fichas
     check('control de tamaño: 100 %','100%' in pg.inner_text('.btsz-n'))
+    ys=[pg.locator(x).bounding_box() for x in ['[data-b=tsz][data-v="-1"]','.btsz-n','[data-b=tsz][data-v="1"]']]
+    check('control de tamaño en una sola fila (− 100 % +)',max(y['y']+y['height']/2 for y in ys)-min(y['y']+y['height']/2 for y in ys)<6 and ys[0]['x']<ys[1]['x']<ys[2]['x'],ys)
     r100=pg.evaluate(RAD,[0.7,0.6])
     for _ in range(5):pg.click('[data-b=tsz][data-v="-1"]');pg.wait_for_timeout(60)
     r50=pg.evaluate(RAD,[0.7,0.6])

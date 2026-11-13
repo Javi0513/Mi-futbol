@@ -5961,6 +5961,7 @@ html.bio-on body {
   font-size: 0.82em;
   font-weight: 600;
   color: var(--lime);
+}
 /* Tamaño de las fichas de la pizarra (− 100 % +) */
 .btsz {
   display: inline-flex;
@@ -5991,7 +5992,7 @@ html.bio-on body {
 /* Móvil girado (horizontal, poca altura): la barra de secciones pasa a la izquierda
    y la cabecera deja de quedarse fija, para que se vea más contenido. */
 @media (orientation: landscape) and (max-height: 520px) {
-  .head {
+  body:not(.presenting) .head {
     position: relative;
   }
   .dock {
@@ -6009,6 +6010,7 @@ html.bio-on body {
   .dock button {
     min-height: 0;
     font-size: 11px;
+    letter-spacing: 0;
   }
   .dock button[aria-current="page"]:before {
     top: auto;
@@ -6017,11 +6019,11 @@ html.bio-on body {
     height: 30px;
     border-radius: 0 3px 3px 0;
   }
-  .head,
-  .wrap {
+  body:not(.presenting) .head,
+  body:not(.presenting) .wrap {
     padding-left: calc(76px + 16px + env(safe-area-inset-left));
   }
-  .wrap {
+  body:not(.presenting) .wrap {
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
   .savebar {
@@ -6040,5 +6042,24 @@ html.bio-on body {
 @media (max-width: 1023px) {
   .lineup-layout {
     grid-template-columns: 1fr;
+  }
+}
+/* La pizarra entra sin desplazarse: un «transform» en la animación hace que el
+   selector de color (fijo) salga fuera de sitio mientras dura. */
+@keyframes mf-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.enter > .board {
+  animation-name: mf-fade;
+}
+/* Móvil girado a pantalla completa: sin el control de tamaño (no cabe). */
+@media (max-height: 560px) {
+  .board.present.land .btsz {
+    display: none;
   }
 }
