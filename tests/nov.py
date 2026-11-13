@@ -25,8 +25,8 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('v11.19: las novedades explican los enlaces antes del partido',all(w in body for w in ('PARA TODOS','Preparar enlaces del directo','anotador','Convocatoria')),body[:200])
-    check('y el tope del plan gratuito','3 partidos al mes' in body)
+    check('v11.21: las novedades explican la ficha del jugador y el Excel',all(w in body for w in ('PARA TODOS','Ficha del jugador','Exportar a Excel','Acciones')),body[:200])
+    check('y el tope del plan gratuito','2 exportaciones al mes' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)
@@ -39,7 +39,7 @@ with sync_playwright() as p:
     ctx.close()
     ctx,pg=abre(b,android=True)
     body=pg.locator('#infoBody').inner_text() if pg.locator('#info').is_visible() else ''
-    check('en la app de Android también salen las novedades','Preparar enlaces del directo' in body,body[:80])
+    check('en la app de Android también salen las novedades','Ficha del jugador' in body,body[:80])
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 sys.exit(0 if all(res) and not errs else 1)
