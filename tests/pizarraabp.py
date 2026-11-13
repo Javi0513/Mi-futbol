@@ -111,7 +111,7 @@ with sync_playwright() as p:
     check('guía de uso: portero, tamaño, flecha discontinua y horizontal','<b>Portero</b>' in js and '<b>Tamaño de las fichas</b>' in js and '<b>flecha discontinua</b>' in js and 'Toda la app se puede usar en horizontal' in js)
     check('tutorial menciona tamaño y flecha discontinua','con − / + haz las fichas' in js)
     t=' '.join(x['texto'] for x in nov['novedades'])
-    check('novedades 11.22 (PARA TODOS)',nov['version']=='11.22' and 'Portero' in t and 'discontinua' in t and 'horizontal' in t and all(x['texto'].startswith('✅ PARA TODOS') for x in nov['novedades']))
+    check('novedades 11.26 (PARA TODOS)',nov['version']=='11.26' and 'Portero' in t and 'discontinua' in t and 'horizontal' in t and all(x['texto'].startswith('✅ PARA TODOS') for x in nov['novedades']))
     # ---- móvil vertical: botón portero y tamaño caben
     m=b.new_context(viewport={'width':375,'height':812},device_scale_factor=2,has_touch=True,is_mobile=True).new_page()
     m.on('pageerror',lambda e:errs.append('PAGEERR '+str(e)))

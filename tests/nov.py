@@ -25,8 +25,10 @@ with sync_playwright() as p:
     t=pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and VER['version'] in t,t)
     body=pg.locator('#infoBody').inner_text()
-    check('v11.22: las novedades explican la app en horizontal y la pizarra',all(w in body for w in ('PARA TODOS','horizontal','Portero','discontinua')),body[:200])
+    check('v11.26: las novedades explican la app en horizontal y la pizarra',all(w in body for w in ('PARA TODOS','horizontal','Portero','discontinua')),body[:200])
     check('y el tamaño de las fichas','fichas más pequeñas' in body)
+    check('también siguen las de la v11.25: novedades explican el arreglo de los enlaces del directo',all(w in body for w in ('PARA TODOS','Preparar enlaces del directo','Añadir el enlace del directo','Ver y enviar')),body[:200])
+    check('y que el partido ya no sale como 0-0','Empate 0-0' in body)
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)

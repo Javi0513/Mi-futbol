@@ -156,9 +156,9 @@
     boardPick: null,
   };
   const MODES = {
-    7: { name: "Fútbol 7", n: 7, maxP: 14, maxM: 5, maxE: 5, cap: 14 },
-    11: { name: "Fútbol 11", n: 11, maxP: 25, maxM: 5, maxE: 5, cap: 0 },
-    fs: { name: "Fútbol sala", n: 5, maxP: 16, maxM: 5, maxE: 5, cap: 14 },
+    7: { name: "Fútbol 7", n: 7, maxP: 10, maxM: 5, maxE: 5, cap: 14 },
+    11: { name: "Fútbol 11", n: 11, maxP: 16, maxM: 5, maxE: 5, cap: 0 },
+    fs: { name: "Fútbol sala", n: 5, maxP: 10, maxM: 5, maxE: 5, cap: 14 },
   };
   const MN = (k) => (MODES[k || state.mode] || MODES["7"]).name,
     MFN = (k) => (k === "fs" ? "fs" : "f" + k);
@@ -845,7 +845,7 @@
   }
   function players() {
     let r = roster();
-    return `<section class="panel"><div class="bar"><div><div class="kicker">Plantilla</div><h2>${MN()}</h2><p class="muted">${r.length}${plan === "pro" ? "" : " / " + MODES[state.mode].maxP} ${r.length === 1 ? "jugador" : "jugadores"}</p></div><button class="primary" data-action="add-player">${ic("plus")}Jugador</button></div>${
+    return `<section class="panel"><div class="bar"><div><div class="kicker">Plantilla</div><h2>${MN()}</h2><p class="muted">${r.length}${plan === "pro" ? "" : " / " + MODES[state.mode].maxP} ${r.length === 1 ? "jugador" : "jugadores"}</p></div><button class="primary" data-action="add-player">${ic("plus")}Jugador</button></div>${plan !== "pro" && r.length > MODES[state.mode].maxP ? `<p class="muted lim-q" data-lim-jug>El plan gratuito permite ${MODES[state.mode].maxP} jugadores en ${esc(MN().toLowerCase())}. Conservas tus ${r.length} jugadores, pero para añadir más necesitas el <b>plan Pro</b>.</p>` : ""}${
       r.length
         ? r
             .map((p) => {
@@ -3198,7 +3198,7 @@
     L.push("", `👥 *Convocados (${J.length}):*`);
     J.forEach((p, i) => L.push(`${i + 1}. ${p.nombre}${dorsal(p) ? " (" + dorsal(p) + ")" : ""}`));
     if (c.nota) L.push("", `📝 ${c.nota}`);
-    if (c.deDraft && c.dirUrl) L.push("", "📺 *Síguelo en directo* (marcador, goles, cambios y tarjetas, sin cuenta):", c.dirUrl);
+    if ((c.deDraft || c.dirId) && c.dirUrl) L.push("", "📺 *Síguelo en directo* (marcador, goles, cambios y tarjetas, sin cuenta):", c.dirUrl);
     return L.join("\n");
   }
   function cvResumen(c) {
@@ -3224,9 +3224,23 @@
     if (desde) {
       cv = { ...cv, ...desde };
       cvGuarda();
+    } else {
+      let m = cvPartido(cv);
+      if (m) {
+        cv.dirId = m.id;
+        if (liveRows[m.id]) cv.dirUrl = liveUrl(liveRows[m.id]);
+      }
     }
     ciOpen("Convocatoria", cvHtml());
     $("infoBody").scrollTop = 0;
+  }
+  /* Partido guardado al que corresponde la convocatoria (mismo día y, si hay varios, mismo rival) */
+  function cvPartido(c) {
+    if (!c || !c.fecha) return null;
+    let n = (t) => String(t || "").trim().toLowerCase(),
+      L = games().filter((m) => m.fecha === c.fecha && pePuede(m)),
+      R = L.filter((m) => n(m.rival) && n(m.rival) === n(c.rival));
+    return R[0] || (L.length === 1 ? L[0] : null);
   }
   function cvHtml() {
     let r = roster(),
@@ -3235,7 +3249,7 @@
       f = (k, lab, ty, ph, ml) =>
         `<label class="ci-l">${lab}<input data-cvf="${k}" type="${ty}"${ph ? ` placeholder="${ph}"` : ""}${ml ? ` maxlength="${ml}"` : ""} value="${esc(cv[k] || "")}" autocomplete="off"></label>`;
     return `<p class="muted">${cv.deDraft ? "Los convocados salen del partido. Si cambias alguno aquí, cambia solo en el mensaje: en el partido se marcan en la lista «Conv.»." : "Elige a los convocados y los datos del partido. La app te escribe el mensaje para el grupo de WhatsApp."}</p><div class="cv-grid">${f("rival", "Rival", "text", "Ej.: CD Alhambra", 100)}${f("lugar", "Lugar", "text", "Ej.: Pabellón Municipal", 120)}${f("fecha", "Día", "date")}${f("hora", "Hora del partido", "time")}${f("cita", "Hora de citación", "time")}</div>${
-      cv.deDraft
+      cv.deDraft || cv.dirId
         ? cv.dirId
           ? `<label class="cv-j cv-dir"><input type="checkbox" data-cvdir${cv.dirUrl ? " checked" : ""}><span>📺 Añadir el enlace del directo, para que la familia siga el partido en vivo</span></label>`
           : '<p class="hint">Guarda el partido y podrás añadir aquí el enlace del directo.</p>'
@@ -6338,7 +6352,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (25 en Fútbol 11, 14 en Fútbol 7 y 16 en Fútbol sala), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual, o de 4,99 € al mes (IVA incluido), con renovación mensual y sin permanencia. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: octubre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (16 en Fútbol 11, 10 en Fútbol 7 y 10 en Fútbol sala; quien ya tuviera más antes de este cambio los conserva, pero no puede añadir otros), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual, o de 4,99 € al mes (IVA incluido), con renovación mensual y sin permanencia. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -6622,7 +6636,7 @@
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
         "<b>Enlaces antes del partido</b>: no hace falta esperar a estar en el campo. En «Partidos», debajo de un partido que aún no se ha jugado, pulsa <b>«Preparar enlaces del directo»</b> (o, al editar el partido, «Enlaces del directo»). Ahí mandas por WhatsApp el <b>enlace para la familia</b> y creas y mandas el <b>enlace del anotador</b>. Son los mismos enlaces del Directo: cuando pulses «Empezar partido» se ponen en marcha solos, sin mandar nada más. Si cambias el rival o los convocados, el anotador los ve al momento.",
-        "Si prefieres mandarlo todo junto, en «Editar partido › Convocatoria» marca <b>«Añadir el enlace del directo»</b> y el enlace va al final del mensaje de la convocatoria.",
+        "Si prefieres mandarlo todo junto, en la <b>Convocatoria</b> (la tarjeta «Ver y enviar» de «Partidos» o «Editar partido › Convocatoria») marca <b>«Añadir el enlace del directo»</b> y el enlace va al final del mensaje. Sale cuando el partido ya está guardado con el mismo día (y rival) que la convocatoria.",
         "Con el plan gratuito puedes preparar los enlaces antes del partido en <b>3 partidos al mes</b> (cada partido cuenta una vez); con Pro, ilimitado. El enlace del directo lo tienes siempre gratis dentro del Directo.",
         "<b>Anotador</b>: si tú grabas o estás dirigiendo, otra persona (el delegado, un padre…) puede apuntarlo todo desde su móvil. En el Directo pulsa «Crear enlace de anotador» y mándaselo con «Enviar al anotador». No necesita cuenta.",
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
@@ -6736,8 +6750,8 @@
     {
       t: "Plan gratuito y plan Pro",
       p: [
-        "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y un máximo de jugadores. Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
         "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>También en la app de Android:</b> puedes pagar el Pro o el pack de tu club desde «Mi cuenta» igual que en la web. El botón te lleva a la página de pago de Stripe; al pagar y volver a la app, el Pro se activa solo.",
@@ -6888,7 +6902,7 @@
       t = "Plan Pro";
       let porLimite = !proElegido;
       proElegido = false;
-      h = `${porLimite ? `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.</p>` : `<p>Puedes pagarlo <b>al año</b> (lo que más ahorra) o <b>al mes</b>, sin permanencia.</p>`}<p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
+      h = `${porLimite ? `<p>Has llegado al límite del plan gratuito en <b>${esc(MN())}</b>: hasta ${M.maxP} jugadores y ${M.maxM} partidos.${plan !== "pro" && roster().length > M.maxP ? " Tus " + roster().length + " jugadores se quedan guardados, pero con el plan gratuito no puedes añadir más." : ""}</p>` : `<p>Puedes pagarlo <b>al año</b> (lo que más ahorra) o <b>al mes</b>, sin permanencia.</p>`}<p>Con el <b>plan Pro</b> tienes <b>jugadores y partidos ilimitados</b> y <b>varios equipos</b> en Fútbol 7, Fútbol 11 y Fútbol sala, y todas las novedades.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`;
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
@@ -8302,7 +8316,8 @@
     let m = state.matches.find((z) => z.id === x.partido_id);
     if (!m) return;
     if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
-    m.alineacion.resultado = { gf: x.gf, gc: x.gc };
+    /* Sin empezar (estado «pre») no hay resultado todavía: no se marca el partido como jugado */
+    if (x.estado !== "pre" || x.gf || x.gc) m.alineacion.resultado = { gf: x.gf, gc: x.gc };
     let e = pid && entries(m).find((z) => z.id === pid);
     if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + d);
     if (Number(x.parte_min)) m.alineacion.parte = Number(x.parte_min);
@@ -8486,8 +8501,13 @@
      cuando empiece el partido se ponen en marcha solos. Gratis: 3 partidos al mes; Pro: ilimitado. */
   let peId = "";
   const peFind = (id) => state.matches.find((z) => z.id === id);
-  /* Partidos a los que aún se les pueden preparar enlaces: sin resultado y sin directo terminado */
-  const pePuede = (m) => !!m && !viendo && !(m.alineacion && m.alineacion.resultado) && !(liveRows[m.id] && liveRows[m.id].estado === "FIN");
+  /* Partidos a los que aún se les pueden preparar enlaces: sin directo terminado y, o bien sin resultado,
+     o con su directo ya creado y sin terminar (antes el Directo apuntaba 0-0 nada más tocarlo) */
+  const pePuede = (m) =>
+    !!m &&
+    !viendo &&
+    !(liveRows[m.id] && liveRows[m.id].estado === "FIN") &&
+    (!(m.alineacion && m.alineacion.resultado) || !!liveRows[m.id]);
   function peCuando(m) {
     let c = (m.alineacion && m.alineacion.conv) || {},
       d = m.fecha ? trDayLabel(m.fecha).replace(/^./, (z) => z.toUpperCase()) : "";
@@ -8535,7 +8555,7 @@
       e
         ? `<h3 class="ci-h3">👥 Para los jugadores</h3><p class="muted">En el enlace del equipo ven la convocatoria y dicen si van. Ya lo tienen; si alguien lo ha perdido, cópialo aquí.</p><div class="stack"><button type="button" class="secondary" data-pe="copy-e">Copiar el enlace del equipo</button></div>`
         : ""
-    }<p class="hint">¿Quieres mandarlo todo en un solo mensaje? En «Editar partido › Convocatoria» marca «Añadir el enlace del directo».</p>`;
+    }<p class="hint">¿Quieres mandarlo todo en un solo mensaje? En la Convocatoria («Ver y enviar» o «Editar partido › Convocatoria») marca «Añadir el enlace del directo».</p>`;
   }
   /* Abre la ventana de enlaces del partido; crea el directo (sin empezar) si aún no existe */
   async function peAbre(id) {
