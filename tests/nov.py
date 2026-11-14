@@ -34,6 +34,7 @@ with sync_playwright() as p:
     check('v11.31: novedades: ya en Google Play y valorar la app',all(w in body for w in ('Google Play','valorarla')),body[:200])
     check('v11.28: las novedades explican el código promocional JV32PLAY',all(w in body for w in ('Códigos promocionales','JV32PLAY','sin tarjeta')),body[:200])
     check('v11.30: las novedades explican que el anotador lleva el reloj (descanso)',all(w in body for w in ('anotador','«Descanso»','«Empezar 2ª parte»','«Terminar partido»')),body[:300])
+    check('v11.34: las novedades explican el mapa de calor como en Power BI',all(w in body for w in ('mapa de calor, como en Power BI','verde a rayas','azul donde hay pocas')),body[:300])
     check('v11.34: las novedades explican el arreglo del reloj y «Reiniciar reloj»',all(w in body for w in ('Arreglado el reloj del Directo','Reiniciar reloj','Sin empezar')),body[:300])
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())

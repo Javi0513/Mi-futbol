@@ -6095,9 +6095,40 @@ html.bio-on body {
   font-family: var(--fd), sans-serif;
   font-weight: 700;
 }
-.campo .mc-dot {
-  fill: #fff;
-  fill-opacity: 0.85;
+/* v11.34 · Mapa de calor como en Power BI: césped verde a rayas y manchas azul → verde */
+.campo.mc .cp-bg {
+  fill: #2f7322;
+}
+.campo.mc .cp-cesped {
+  fill: #3f8f2c;
+}
+.campo.mc.sala .cp-bg {
+  fill: #2f7322;
+}
+.campo .cp-ray {
+  fill: rgba(0, 0, 0, 0.1);
+}
+.campo.mc .cp-ln {
+  stroke: rgba(255, 255, 255, 0.92);
+}
+.campo .mc-img {
+  image-rendering: auto;
+}
+.mc-ley {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0 4px;
+  font-size: 13px;
+  color: var(--mut);
+}
+.mc-grad {
+  display: inline-block;
+  width: 140px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, rgba(25, 80, 210, 0.6), #1e78e6, #28bed7, #46e1aa, #96ffa0);
 }
 .campo .cg-gol {
   fill: #22c55e;

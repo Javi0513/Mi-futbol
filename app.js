@@ -1222,38 +1222,103 @@
     let m = Math.max(1.5, 3 * s),
       x0 = o.medio ? W / 2 - m / 2 : -m,
       vw = o.medio ? W / 2 + m * 1.5 : W + 2 * m;
+    /* Rayas del césped (mapa de calor), una franja más clara cada dos */
+    let ry = "";
+    if (o.rayas) {
+      let n = c.sala ? 10 : 20,
+        fw = W / n;
+      for (let i = 0; i < n; i += 2) ry += `<rect x="${(i * fw).toFixed(2)}" y="0" width="${fw.toFixed(2)}" height="${H}" class="cp-ray"/>`;
+    }
     /* Campograma: la mitad del rival en vertical, con su portería arriba */
     if (o.vert)
       return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${-m} ${-m} ${H + 2 * m} ${W / 2 + m * 1.5}" data-w="${W}" data-h="${H}" style="--lw:${lw}" role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${-m}" y="${-m}" width="${H + 2 * m}" height="${W / 2 + m * 1.5}" class="cp-bg"/><g transform="translate(0 ${W}) rotate(-90)">${L}${inner || ""}</g></svg>`;
-    return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${x0} ${-m} ${vw} ${H + 2 * m}" data-w="${W}" data-h="${H}" style="--lw:${lw}" ${o.attr || ""} role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${x0}" y="${-m}" width="${vw}" height="${H + 2 * m}" class="cp-bg"/>${L}${inner || ""}${o.flecha ? `<text x="${W / 2}" y="${-m * 0.25}" class="cp-tx" font-size="${Math.max(1.4, 2.6 * s)}" text-anchor="middle">Atacamos hacia aquí →</text>` : ""}</svg>`;
+    return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${x0} ${-m} ${vw} ${H + 2 * m}" data-w="${W}" data-h="${H}" style="--lw:${lw}" ${o.attr || ""} role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${x0}" y="${-m}" width="${vw}" height="${H + 2 * m}" class="cp-bg"/>${o.rayas ? `<rect x="0" y="0" width="${W}" height="${H}" class="cp-cesped"/>${ry}${inner || ""}${L}` : L + (inner || "")}${o.flecha ? `<text x="${W / 2}" y="${-m * 0.25}" class="cp-tx" font-size="${Math.max(1.4, 2.6 * s)}" text-anchor="middle">Atacamos hacia aquí →</text>` : ""}</svg>`;
   }
   const locXY = (mod, z) => {
     let c = campoDe(mod);
     return [(z[1] / 100) * c.w, (z[2] / 100) * c.h];
   };
-  let mapaN = 0;
-  /* Mapa de calor: manchas difuminadas (amarillo → rojo donde más se repite) y un punto por acción */
+  /* Mapa de calor (v11.35, como en Power BI): campo verde a rayas y manchas suaves de densidad
+     (azul donde hay pocas acciones → turquesa → verde claro donde más se repiten).
+     Se calcula una densidad (suma de campanas de Gauss) en una rejilla pequeña, se pinta en un
+     canvas y va dentro del SVG como imagen; el navegador la suaviza al estirarla. Solo canvas 2D,
+     sirve en iPad antiguos. */
+  const MC_COL = [
+    [0, 20, 60, 190, 0],
+    [0.12, 25, 80, 210, 0.45],
+    [0.35, 30, 120, 230, 0.7],
+    [0.6, 40, 190, 215, 0.82],
+    [0.82, 70, 225, 170, 0.9],
+    [1, 150, 255, 160, 0.95],
+  ];
+  function mcColor(v) {
+    for (let i = 1; i < MC_COL.length; i++) {
+      let b = MC_COL[i];
+      if (v <= b[0]) {
+        let a = MC_COL[i - 1],
+          t = (v - a[0]) / (b[0] - a[0]);
+        return [1, 2, 3, 4].map((j) => a[j] + (b[j] - a[j]) * t);
+      }
+    }
+    return MC_COL[MC_COL.length - 1].slice(1);
+  }
+  function mcDensidad(mod, L) {
+    let c = campoDe(mod),
+      px = c.sala ? 6 : 105 / c.w > 1.4 ? 3 : 2,
+      gw = Math.round(c.w * px),
+      gh = Math.round(c.h * px),
+      sg = Math.max(1, 0.024 * c.w) * px,
+      R = Math.ceil(sg * 3),
+      d = new Float32Array(gw * gh),
+      ker = [],
+      mx = 0;
+    for (let k = -R; k <= R; k++) ker.push(Math.exp(-(k * k) / (2 * sg * sg)));
+    L.forEach((z) => {
+      let p = locXY(mod, z),
+        cx = Math.round(p[0] * px),
+        cy = Math.round(p[1] * px);
+      for (let y = Math.max(0, cy - R); y <= Math.min(gh - 1, cy + R); y++) {
+        let ky = ker[y - cy + R],
+          o = y * gw;
+        for (let x = Math.max(0, cx - R); x <= Math.min(gw - 1, cx + R); x++) d[o + x] += ky * ker[x - cx + R];
+      }
+    });
+    for (let i = 0; i < d.length; i++) if (d[i] > mx) mx = d[i];
+    let cv = document.createElement("canvas");
+    cv.width = gw;
+    cv.height = gh;
+    let ctx = cv.getContext && cv.getContext("2d");
+    if (!ctx || !mx) return null;
+    let im = ctx.createImageData(gw, gh),
+      q = im.data,
+      top = Math.max(mx, 2.4);
+    for (let i = 0; i < d.length; i++) {
+      let v = d[i] / top;
+      if (v < 0.03) continue;
+      let col = mcColor(Math.min(1, v));
+      q[i * 4] = col[0];
+      q[i * 4 + 1] = col[1];
+      q[i * 4 + 2] = col[2];
+      q[i * 4 + 3] = Math.round(col[3] * 255 * Math.min(1, v / 0.12));
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv;
+  }
+  function mcUrl(mod, L) {
+    let cv = L.length ? mcDensidad(mod, L) : null;
+    try {
+      return cv ? cv.toDataURL("image/png") : "";
+    } catch (e) {
+      return "";
+    }
+  }
   function mapaCalor(mod, L, label) {
     let c = campoDe(mod),
-      s = c.w / 105,
-      id = "mc" + ++mapaN,
-      big = L.map((z) => {
-        let p = locXY(mod, z);
-        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(10 * s + 1).toFixed(1)}"/>`;
-      }).join(""),
-      sm = L.map((z) => {
-        let p = locXY(mod, z);
-        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(5 * s + 0.6).toFixed(1)}"/>`;
-      }).join(""),
-      dots = L.map((z) => {
-        let p = locXY(mod, z);
-        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(0.7 * s + 0.2).toFixed(2)}" class="mc-dot"/>`;
-      }).join(""),
-      op = L.length > 40 ? 0.2 : L.length > 15 ? 0.3 : 0.45;
+      url = mcUrl(mod, L);
     return campoSvg(
       mod,
-      `<defs><filter id="${id}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${(4 * s + 0.4).toFixed(2)}"/></filter></defs><g filter="url(#${id})"><g fill="#ffd60a" fill-opacity="${op}">${big}</g><g fill="#ff3b14" fill-opacity="${Math.min(0.75, op + 0.15)}">${sm}</g></g>${dots}`,
-      { flecha: 1, label, cls: "mc" },
+      url ? `<image class="mc-img" x="0" y="0" width="${c.w}" height="${c.h}" preserveAspectRatio="none" href="${url}" xlink:href="${url}"/>` : "",
+      { flecha: 1, label, cls: "mc", rayas: 1, attr: `data-n="${L.length}"` },
     );
   }
   /* Campograma de tiro: mitad del rival; gol verde, a puerta amarillo, fuera rojo hueco */
@@ -1286,7 +1351,7 @@
     let cg = T.length
       ? `<h3 class="ci-h3">Campograma de tiro</h3><div class="mapa-w">${campograma(mod, T, "Campograma de tiro de " + quien)}</div><p class="cg-ley"><span><i class="cg-i gol"></i>Gol <b>${g}</b></span><span><i class="cg-i tp"></i>A puerta <b>${tp}</b></span><span><i class="cg-i tf"></i>Fuera <b>${tf}</b></span></p><p class="muted">${T.length} tiros marcados${g ? ` · ${Math.round((g / T.length) * 100)} % acaban en gol` : ""}${tp + g ? ` · ${Math.round(((tp + g) / T.length) * 100)} % entre los palos` : ""}. La portería del rival, arriba.</p>`
       : "";
-    return `<h3 class="ci-h3">Mapa de calor</h3><div class="mapa-f" role="group" aria-label="Qué acciones ver"><button type="button" data-mapk="" class="on" aria-pressed="true">Todas <b>${L.length}</b></button>${ks.map((k) => `<button type="button" data-mapk="${k[0]}" aria-pressed="false">${k[1]} <b>${L.filter((z) => z[0] === k[0]).length}</b></button>`).join("")}</div><div class="mapa-w" id="mapaHeat">${mapaCalor(mod, L, "Mapa de calor de " + quien)}</div><p class="hint">Más rojo = más acciones en esa zona. Siempre atacando hacia la derecha (la portería del rival).</p>${cg}`;
+    return `<h3 class="ci-h3">Mapa de calor</h3><div class="mapa-f" role="group" aria-label="Qué acciones ver"><button type="button" data-mapk="" class="on" aria-pressed="true">Todas <b>${L.length}</b></button>${ks.map((k) => `<button type="button" data-mapk="${k[0]}" aria-pressed="false">${k[1]} <b>${L.filter((z) => z[0] === k[0]).length}</b></button>`).join("")}</div><div class="mapa-w" id="mapaHeat">${mapaCalor(mod, L, "Mapa de calor de " + quien)}</div><p class="mc-ley"><span>Pocas</span><i class="mc-grad"></i><span>Muchas acciones</span></p><p class="hint">Azul = pocas acciones en esa zona; turquesa y verde claro = donde más se repiten. Siempre atacando hacia la derecha (la portería del rival).</p>${cg}`;
   }
   document.addEventListener("click", (e) => {
     let b = e.target.closest("[data-mapk]");
@@ -3038,13 +3103,17 @@
       pt = c.pt / 2,
       s = c.w / 105;
     g.save();
-    g.fillStyle = "#0d3b22";
+    /* Mismo aspecto que el mapa de calor de la app: césped a rayas y manchas azul → verde */
+    let nr = c.sala ? 10 : 20;
+    g.fillStyle = "#3f8f2c";
     g.fillRect(x0, y0, fw, fh);
-    for (let i = 0; i < 10; i++)
-      if (i % 2) {
-        g.fillStyle = "rgba(255,255,255,.035)";
-        g.fillRect(x0 + (fw / 10) * i, y0, fw / 10, fh);
-      }
+    g.fillStyle = "rgba(0,0,0,.1)";
+    for (let i = 0; i < nr; i += 2) g.fillRect(x0 + (fw / nr) * i, y0, fw / nr, fh);
+    let hc = L.length ? mcDensidad(mod, L) : null;
+    if (hc) {
+      g.imageSmoothingEnabled = true;
+      g.drawImage(hc, x0, y0, fw, fh);
+    }
     g.strokeStyle = "rgba(255,255,255,.75)";
     g.lineWidth = Math.max(2, 0.3 * k);
     g.strokeRect(x0, y0, fw, fh);
@@ -3076,25 +3145,12 @@
       let gd = Math.max(6, 1.6 * s * k);
       g.fillRect(lado ? X(c.w) : X(0) - gd, Y(cy - pt), gd, c.pt * k);
     });
-    let P = (z) => [X((z[1] / 100) * c.w), Y((z[2] / 100) * c.h)],
-      op = L.length > 40 ? 0.18 : L.length > 15 ? 0.28 : 0.42;
-    L.forEach((z) => {
-      let p = P(z),
-        R = (10 * s + 1) * k,
-        gr = g.createRadialGradient(p[0], p[1], 0, p[0], p[1], R);
-      gr.addColorStop(0, `rgba(255,59,20,${Math.min(0.8, op + 0.2)})`);
-      gr.addColorStop(0.45, `rgba(255,214,10,${op})`);
-      gr.addColorStop(1, "rgba(255,214,10,0)");
-      g.fillStyle = gr;
-      g.beginPath();
-      g.arc(p[0], p[1], R, 0, Math.PI * 2);
-      g.fill();
-    });
+    let P = (z) => [X((z[1] / 100) * c.w), Y((z[2] / 100) * c.h)];
     let rr2 = Math.max(9, 1.3 * s * k);
     L.forEach((z) => {
       let p = P(z);
-      g.beginPath();
       if (TIRO_K.includes(z[0])) {
+        g.beginPath();
         g.arc(p[0], p[1], rr2, 0, Math.PI * 2);
         if (z[0] === "tf") {
           g.lineWidth = 4;
@@ -3107,10 +3163,6 @@
           g.strokeStyle = "#04140b";
           g.stroke();
         }
-      } else {
-        g.arc(p[0], p[1], 5, 0, Math.PI * 2);
-        g.fillStyle = "#fff";
-        g.fill();
       }
     });
     g.restore();
@@ -7502,7 +7554,7 @@
         "En el <b>Directo</b>, cuando apuntas un robo, una pérdida, un tiro, una parada, una asistencia, una falta o un gol de un jugador, abajo sale un campo: <b>toca dónde ha sido</b>. Es opcional: si no quieres marcarlo, pulsa «Sin marcar» o sigue apuntando y se quita solo.",
         "El campo se ve siempre <b>atacando hacia la derecha</b> (hacia la portería del rival), también en la segunda parte. Así todos los partidos se comparan igual.",
         "Con el botón <b>«📍 Marcar en el campo dónde fue»</b> lo activas o lo quitas. Si te equivocas, «↶ Deshacer» quita el dato y su marca; si quitas un gol, también se quita su marca.",
-        "En la <b>ficha del jugador</b> y en el <b>resumen del partido</b> salen el <b>mapa de calor</b> (más rojo donde más acciones hace; puedes ver todas o solo robos, pérdidas, tiros…) y el <b>campograma de tiro</b>: en verde los goles, en amarillo los tiros a puerta y en rojo los tiros fuera, con el porcentaje de acierto.",
+        "En la <b>ficha del jugador</b> y en el <b>resumen del partido</b> salen el <b>mapa de calor</b>, como en Power BI: el campo verde a rayas y manchas suaves, <b>azul</b> donde hay pocas acciones y <b>turquesa o verde claro</b> donde más se repiten (puedes ver todas o solo robos, pérdidas, tiros…) y el <b>campograma de tiro</b>: en verde los goles, en amarillo los tiros a puerta y en rojo los tiros fuera, con el porcentaje de acierto.",
         "En el <b>Excel</b> hay una hoja <b>«Mapa»</b> con cada acción marcada: minuto, parte, jugador, las coordenadas X e Y (de 0 a 100 y en metros), el tercio del campo y el carril. Sirve para llevarlo a <b>Power BI</b> u otra herramienta de análisis.",
         "Con el plan gratuito puedes marcar en el campo en <b>2 partidos al mes</b> (apuntar los datos sigue siendo gratis). Con Pro, sin límite.",
       ],
