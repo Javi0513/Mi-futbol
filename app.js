@@ -1604,7 +1604,7 @@
         if (z.entra) acc(mi, p, "Cambio: entra", z.entra);
       });
       tj.forEach((z) => acc(z.m === "" || z.m == null ? "" : Number(z.m) || 0, 0, z.c === "r" ? "Roja" : "Amarilla", z.pid));
-      A.sort((a, b) => (a[2] === "" ? 999 : a[2]) - (b[2] === "" ? 999 : b[2]));
+      A.sort((a, b) => (a[3] === "" ? 999 : a[3]) - (b[3] === "" ? 999 : b[3]));
       S3.push(...A);
       S4.push([fe, riv, jo, r ? r.gf : "", r ? r.gc : "", resTxt(r), E.length, tot("rob"), tot("per"), tot("tp") + tot("tf"), Number((al.estR || {}).tir) || 0, (Number(F.n1) || 0) + (Number(F.n2) || 0), (Number(F.r1) || 0) + (Number(F.r2) || 0)]);
     });

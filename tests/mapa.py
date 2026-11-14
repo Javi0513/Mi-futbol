@@ -127,12 +127,12 @@ with sync_playwright() as p:
     wb=openpyxl.load_workbook(f)
     check('el Excel trae la hoja «Mapa»','Mapa' in wb.sheetnames,wb.sheetnames)
     ws=wb['Mapa'];rows=list(ws.values)
-    check('cabecera con X, Y, metros, tercio y carril',rows[0][8:]==('X (0-100)','Y (0-100)','X (metros)','Y (metros)','Tercio','Carril'),rows[0])
-    gol=[r for r in rows[1:] if r[4]=='Gol']
+    check('cabecera con X, Y, metros, tercio y carril',rows[0][9:]==('X (0-100)','Y (0-100)','X (metros)','Y (metros)','Tercio','Carril'),rows[0])
+    gol=[r for r in rows[1:] if r[5]=='Gol']
     check('una fila por acción marcada (5)',len(rows)==6,len(rows))
-    check('el gol: Pablo, ofensivo, central, X en metros',len(gol)==1 and gol[0][6]=='Pablo' and gol[0][12]=='Ofensivo' and gol[0][13]=='Central' and isinstance(gol[0][8],(int,float)) and 55<gol[0][10]<=65,gol)
-    rob=[r for r in rows[1:] if r[6]=='Leo'][0]
-    check('el robo de Leo: defensivo, carril izquierdo',rob[12]=='Defensivo' and rob[13]=='Izquierdo',rob)
+    check('el gol: Pablo, ofensivo, central, X en metros',len(gol)==1 and gol[0][7]=='Pablo' and gol[0][13]=='Ofensivo' and gol[0][14]=='Central' and isinstance(gol[0][9],(int,float)) and 55<gol[0][11]<=65,gol)
+    rob=[r for r in rows[1:] if r[7]=='Leo'][0]
+    check('el robo de Leo: defensivo, carril izquierdo',rob[13]=='Defensivo' and rob[14]=='Izquierdo',rob)
     pg.click('#closeInfo')
     # Resumen del partido
     pg.click('[data-tab=partidos]');pg.click('[data-rs=m1]');pg.wait_for_selector('#info:not(.hidden)')

@@ -119,17 +119,17 @@ with sync_playwright() as p:
     check('Partidos: fecha de Excel, minutos y minuto de los goles',isinstance(pl[0],datetime.datetime) and pl[0].date()==datetime.date(2026,11,8) and pl[H2.index('Minutos')]==50 and pl[H2.index('Minuto de los goles')]=="7', 44'" and pl[H2.index('Capitán')]=='Sí',pl)
     check('Partidos: 9 + 3 filas (no sale el partido sin jugar sin datos?)',len(r2)>=12,len(r2))
     ws=wb['Acciones'];H3=[c.value for c in ws[1]];a=[[c.value for c in r] for r in ws.iter_rows(min_row=2)]
-    los=[r for r in a if r[1]=='Los Pinos'];acc=[(r[2],r[4],r[6]) for r in los]
+    los=[r for r in a if r[1]=='Los Pinos'];acc=[(r[3],r[5],r[7]) for r in los]
     check('Acciones: goles con minuto',(7,'Gol','Pablo') in acc and (44,'Gol','Pablo') in acc and (18,'Gol del rival','Los Pinos') in acc,acc[:8])
     check('Acciones: robos con su minuto (ordenados)',(5,'Robo','Pablo') in acc and (12,'Robo','Pablo') in acc and (40,'Robo','Pablo') in acc)
     check('Acciones: cambios y tarjetas',(25,'Cambio: sale','Iker') in acc and (25,'Cambio: entra','Nico') in acc and (30,'Amarilla','Álex') in acc)
     check('Acciones: lo puesto a mano sale sin minuto',(None,'Parada','Hugo') in acc and (None,'Asistencia','Dani') in acc)
-    mins=[r[2] for r in los if r[2] is not None]
-    check('Acciones: en orden de minuto y con su parte',mins==sorted(mins) and [r[3] for r in los if r[2]==40][0]==2 and [r[3] for r in los if r[2]==12][0]==1)
+    mins=[r[3] for r in los if r[3] is not None]
+    check('Acciones: en orden de minuto y con su parte',mins==sorted(mins) and [r[4] for r in los if r[3]==40][0]==2 and [r[4] for r in los if r[3]==12][0]==1)
     otros=[r for r in a if r[1]=='CD Río']
-    check('sin Directo: los goles salen sin minuto',otros==[] or all(r[2] is None for r in otros) and any(r[4]=='Gol' for r in otros),otros)
+    check('sin Directo: los goles salen sin minuto',otros==[] or all(r[3] is None for r in otros) and any(r[5]=='Gol' for r in otros),otros)
     e=[[c.value for c in r] for r in wb['Equipo'].iter_rows(min_row=2)]
-    check('Equipo: un partido por fila',len(e)==5 and any(r[1]=='Los Pinos' and r[2]==3 and r[3]==1 and r[4]=='Victoria' and r[9]==5 for r in e),e[:2])
+    check('Equipo: un partido por fila',len(e)==5 and any(r[1]=='Los Pinos' and r[3]==3 and r[4]==1 and r[5]=='Victoria' and r[10]==5 for r in e),e[:2])
     pg.wait_for_timeout(300)
     with pg.expect_download() as dl: pg.click('#view [data-xl]')
     pg.wait_for_timeout(300);pg.click('#view [data-xl]');pg.wait_for_timeout(300)
