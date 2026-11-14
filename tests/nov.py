@@ -30,6 +30,7 @@ with sync_playwright() as p:
     check('v11.27: las novedades explican el mapa de calor y el campograma',all(w in body for w in ('PARA TODOS','Mapa de calor','campograma','toca en el campo')),body[:200])
     check('y la hoja «Mapa» del Excel para Power BI','«Mapa»' in body and 'Power BI' in body)
     check('v11.28: las novedades explican el código promocional JV32PLAY',all(w in body for w in ('Códigos promocionales','JV32PLAY','sin tarjeta')),body[:200])
+    check('v11.30: las novedades explican que el anotador lleva el reloj (descanso)',all(w in body for w in ('anotador','«Descanso»','«Empezar 2ª parte»','«Terminar partido»')),body[:300])
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)
