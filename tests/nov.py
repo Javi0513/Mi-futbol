@@ -37,6 +37,7 @@ with sync_playwright() as p:
     check('v11.34: las novedades explican el mapa de calor como en Power BI',all(w in body for w in ('mapa de calor, como en Power BI','verde a rayas','azul donde hay pocas')),body[:300])
     check('v11.34: las novedades explican el arreglo del reloj y «Reiniciar reloj»',all(w in body for w in ('Arreglado el reloj del Directo','Reiniciar reloj','Sin empezar')),body[:300])
     check('v11.35: las novedades explican la nueva pantalla de Inicio',all(w in body for w in ('Nueva pantalla de Inicio','Empezar el Directo','primeros pasos')),body[:300])
+    check('v11.36: las novedades explican la animación de entrada',all(w in body for w in ('animación de entrada','Saltar')),body[:300])
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)

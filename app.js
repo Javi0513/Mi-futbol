@@ -7750,6 +7750,7 @@
         "Arriba eliges la modalidad: <b>Fútbol 7</b>, <b>Fútbol 11</b> o <b>Fútbol sala</b>. Cada una tiene sus jugadores y partidos por separado.",
         "Añade a tus jugadores en <b>Plantilla</b> y luego crea tu primer partido en <b>Partidos</b>.",
         "Al abrir la app sale el <b>Inicio</b>: tu próximo partido con el botón «Empezar el Directo» (o «Volver al directo» si ya está en marcha), cómo va la temporada, accesos rápidos a todo, tus mejores jugadores, el próximo entreno con «Pasar lista» y la carga de la semana. Mientras empiezas, te marca los <b>primeros pasos</b>. Vuelves a él con el botón «Inicio».",
+        "Al abrir la app sin haber iniciado sesión sale una animación de entrada de unos segundos. Tócala o pulsa «Saltar» para ir directo a entrar.",
         "Puedes volver a ver el tutorial de bienvenida en «Mi cuenta › Ver el tutorial».",
       ],
     },
@@ -13006,6 +13007,43 @@
     $("login").classList.remove("hidden");
     $("app").classList.add("hidden");
     if (amode === "newpass" && !recovering) setAm("login");
+    introPlay();
+  }
+  /* ===== Animación de entrada (v11.36): antes de iniciar sesión =====
+     Se dibuja el campo, entra el balón, aparece el logo y lo que hace la app; después sale el acceso.
+     Una vez por sesión del navegador; se salta tocando. APP_CONFIG.noIntro la quita. */
+  let introHecha = false;
+  function introPlay() {
+    if (introHecha) return;
+    introHecha = true;
+    if (c.noIntro || $("actu") || (navigator.webdriver && !window.__probarIntro)) return;
+    try {
+      if (sessionStorage.getItem("mf_intro") === "1") return;
+      sessionStorage.setItem("mf_intro", "1");
+    } catch (e) {}
+    let corta = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches,
+      d = document.createElement("div"),
+      tit = "MI FÚTBOL",
+      F = ["Directo", "Pizarra", "Entrenos", "Estadísticas"];
+    d.id = "intro";
+    d.className = corta ? "corta" : "";
+    d.setAttribute("role", "img");
+    d.setAttribute("aria-label", "Mi Fútbol JV32");
+    d.innerHTML = `<svg class="in-campo" viewBox="0 0 200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect class="in-l" x="16" y="16" width="168" height="268" rx="3" pathLength="1"/><path class="in-l" d="M16 150H184" pathLength="1"/><circle class="in-l" cx="100" cy="150" r="30" pathLength="1"/><path class="in-l" d="M56 16v44h88V16" pathLength="1"/><path class="in-l" d="M56 284v-44h88v44" pathLength="1"/><path class="in-l" d="M80 16v16h40V16" pathLength="1"/><path class="in-l" d="M80 284v-16h40v16" pathLength="1"/></g></svg><div class="in-c"><div class="in-logo"><svg class="in-balon" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#fff"/><path d="M20 11l6.5 4.7-2.5 7.6h-8l-2.5-7.6z" fill="#0b1a12"/><g stroke="#0b1a12" stroke-width="1.6" fill="none"><path d="M20 11V3M26.5 15.7l7-3M24 23.3l5 6.5M16 23.3l-5 6.5M13.5 15.7l-7-3"/></g></svg><span class="mark xl in-mark" role="img" aria-label="Logo JV32"></span></div><h1 class="in-t" aria-hidden="true">${[...tit]
+      .map((ch, i) => `<span style="animation-delay:${(1.45 + i * 0.045).toFixed(2)}s">${ch === " " ? "&nbsp;" : ch}</span>`)
+      .join("")}&nbsp;<i style="animation-delay:1.95s">JV32</i></h1><p class="in-f">${F.map((x, i) => `<span style="animation-delay:${(2.15 + i * 0.22).toFixed(2)}s">${x}</span>`).join("<b>·</b>")}</p></div><div class="in-bar"><i></i></div><button type="button" class="in-skip">Saltar</button>`;
+    document.body.appendChild(d);
+    document.body.classList.add("intro-on");
+    let fin = () => {
+      if (!d.parentNode || d.classList.contains("fuera")) return;
+      d.classList.add("fuera");
+      document.body.classList.remove("intro-on");
+      $("login").classList.add("login-in");
+      setTimeout(() => d.remove(), 600);
+      setTimeout(() => $("login").classList.remove("login-in"), 1400);
+    };
+    d.addEventListener("click", fin);
+    setTimeout(fin, corta ? 1300 : 3700);
   }
   db.auth.onAuthStateChange((event, session) => {
     if (PUB || EQ || PF || AN) return;
