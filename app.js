@@ -71,7 +71,8 @@
   const c = window.APP_CONFIG || {};
   /* App Android (Google Play). Hasta la v11.16 allí no se mostraba el pago con Stripe.
      v11.17: Javi decide mostrar el pago también en Android (botones que llevan a Stripe).
-     Para volver a ocultarlo, pon ocultarPagoAndroid: true en config.js. */
+     Para volver a ocultarlo, pon ocultarPagoAndroid: true en config.js.
+     v11.29: la app ya es pública en Google Play → ocultarPagoAndroid: true (norma de pagos de Google Play). */
   const enAndroid = c.ocultarPagoAndroid === true && (() => {
     try {
       if (/^android-app:\/\/com\.monetizaplus\.mifutbol/.test(document.referrer))
@@ -6066,7 +6067,7 @@
         try {
           localStorage.setItem(tutKey(), "1");
         } catch (e) {}
-      novedadesRevisa();
+      novedadesRevisa().then(valoraRevisa, () => {});
       if (/[?&]pro=ok/.test(location.search)) {
         history.replaceState(null, "", location.pathname);
         payPending = true;
@@ -6780,6 +6781,44 @@
     showInfo("novedades");
     novedadesMarca();
   }
+  /* v11.29: pedir una valoración en Google Play (solo en Android). Sale una vez, cuando ya se
+     ha usado la app 3 días distintos y hay algún partido guardado. «Ahora no» vuelve a preguntar
+     a los 14 días; «No, gracias» o «Valorar» no vuelven a preguntar. Sin premios a cambio (norma de Google Play). */
+  const PLAY_ID = "com.monetizaplus.mifutbol";
+  const VAL_KEY = "mf_valora";
+  function valoraLee() {
+    try {
+      return JSON.parse(localStorage.getItem(VAL_KEY) || "{}") || {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function valoraGuarda(v) {
+    try {
+      localStorage.setItem(VAL_KEY, JSON.stringify(v));
+    } catch (e) {}
+  }
+  function valoraRevisa() {
+    if (navigator.webdriver && !window.__probarValora) return;
+    if (!/Android/i.test(navigator.userAgent || "") || viendo) return;
+    let v = valoraLee();
+    if (v.hecho) return;
+    let hoy = new Date().toISOString().slice(0, 10);
+    v.dias = (v.dias || []).filter((d) => d !== hoy).concat(hoy).slice(-5);
+    valoraGuarda(v);
+    if (v.dias.length < 3 || !state.matches.length) return;
+    if (v.otra && Date.now() < v.otra) return;
+    if ($("tut") || !$("info").classList.contains("hidden")) return;
+    showInfo("valora");
+  }
+  function valoraUrl() {
+    let web = "https://play.google.com/store/apps/details?id=" + PLAY_ID;
+    try {
+      if (sessionStorage.getItem("mf_twa") === "1" || /^android-app:/.test(document.referrer))
+        return "market://details?id=" + PLAY_ID;
+    } catch (e) {}
+    return web;
+  }
   let tutI = -1;
   /* Guía de uso (Mi cuenta › Guía de uso). Cada cambio que se note en la app o
      traiga opciones nuevas debe actualizar también esta guía y, si hace falta, el tutorial.
@@ -7030,7 +7069,8 @@
         "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
-        "<b>También en la app de Android:</b> puedes pagar el Pro o el pack de tu club desde «Mi cuenta» igual que en la web. El botón te lleva a la página de pago de Stripe; al pagar y volver a la app, el Pro se activa solo.",
+        { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
+        "<b>Valorar la app</b>: en Android, cuando ya llevas unos días usándola, la app te pregunta una vez si quieres valorarla en Google Play. Puedes decir «Ahora no» (vuelve a preguntar en 2 semanas) o «No, gracias» (no vuelve a preguntar).",
         "<b>Dispositivos</b>: en «Mi cuenta › Mis dispositivos» ves dónde tienes abierta la app y puedes quitar alguno. Al cerrar sesión, ese dispositivo deja su sitio libre. Si entras en un 4º dispositivo con el plan gratuito, la app te pide cerrar la sesión en otro.",
         { texto: "El plan Pro cuesta <b>39,99 € al año</b> (IVA incluido), unos 3,33 € al mes. Si prefieres pagar <b>mes a mes</b>, también puedes: <b>4,99 € al mes</b>, sin permanencia. Al año el mensual sale a 59,88 €, así que con el anual ahorras un 33 %. Se contrata y se cancela desde «Mi cuenta».", soloWeb: true },
         { texto: "<b>Cómo se paga:</b> en «Mi cuenta › Pasar a Pro» elige <b>«Pro anual»</b> o <b>«Pro mensual»</b>. Pagas con tarjeta en <b>Stripe</b>, de forma segura (nosotros nunca vemos tu tarjeta). Al volver a la app, el plan Pro se activa solo. El anual se renueva cada año y el mensual cada mes; en «Gestionar o cancelar mi suscripción» ves tus facturas, cambias la tarjeta o cancelas, y sigues con el Pro hasta el final del año o del mes pagado. Si un cobro mensual falla, Stripe lo reintenta unos días y, si no se paga, vuelves al plan gratuito sin perder nada.", soloWeb: true },
@@ -7186,6 +7226,9 @@
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
+    } else if (k === "valora") {
+      t = "¿Nos ayudas?";
+      h = `<p>Mi Fútbol JV32 lo hace una sola persona y acaba de salir en <b>Google Play</b>. Si la app te está siendo útil, una <b>valoración</b> con un par de palabras ayuda muchísimo a que otros entrenadores la encuentren.</p><p class="muted">Tarda 10 segundos. Gracias.</p><div class="stack"><a class="primary" href="${esc(valoraUrl())}" target="_blank" rel="noopener" data-valora="si">Valorar en Google Play</a><button type="button" class="secondary" data-valora="luego">Ahora no</button><button type="button" class="secondary" data-valora="no">No, gracias</button></div>`;
     } else if (k === "codigo") {
       t = "Código promocional";
       h = codigoHtml();
@@ -7606,6 +7649,16 @@
     }
     if (e.target.id === "info") {
       $("info").classList.add("hidden");
+      return;
+    }
+    let va = e.target.closest("#info [data-valora]");
+    if (va) {
+      let v = valoraLee(), w = va.dataset.valora;
+      if (w === "luego") v.otra = Date.now() + 14 * 864e5;
+      else v.hecho = w;
+      valoraGuarda(v);
+      $("info").classList.add("hidden");
+      if (w === "si") note("¡Muchas gracias por tu valoración!", true);
       return;
     }
     let inf = e.target.closest("#info [data-info]");

@@ -5,6 +5,9 @@ window.APP_CONFIG={
   legalNif:'15471491N',
   legalDir:'Granada, España',
   contactEmail:'mifutboljv32@gmail.com',
+  // v11.29: la app ya es pública en Google Play: allí no se puede cobrar con Stripe (norma de pagos de Google).
+  // El Pro se paga en la web. Para volver a mostrar el pago en Android, quita esta línea.
+  ocultarPagoAndroid:true,
   proUrl:'https://buy.stripe.com/00w4gz4S06fBaMC2NAcbC00',
   // Pro mensual (v11.18): 4,99 €/mes, misma suscripción y mismo webhook que el anual
   proUrlMes:'https://buy.stripe.com/fZu14n5W4fQbaMCewicbC09',
