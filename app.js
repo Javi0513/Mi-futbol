@@ -3323,7 +3323,7 @@
       y += FH + 50;
       let Tn = r.loc.filter((z) => TIRO_K.includes(z[0])),
         ley = [
-          ["#fff", `${r.loc.length - Tn.length} ${r.loc.length - Tn.length === 1 ? "acción" : "acciones"}`, 0],
+          ["", `${r.loc.length} ${r.loc.length === 1 ? "acción" : "acciones"}`, 3],
           ["#2be36a", `Gol ${Tn.filter((z) => z[0] === "gol").length}`, 1],
           ["#fbbf24", `A puerta ${Tn.filter((z) => z[0] === "tp").length}`, 1],
           ["#fb7185", `Fuera ${Tn.filter((z) => z[0] === "tf").length}`, 2],
@@ -3332,6 +3332,20 @@
       g.textAlign = "left";
       g.font = `600 28px ${ff}`;
       ley.forEach((l) => {
+        if (l[2] === 3) {
+          /* Escala del mapa de calor: azul (pocas) → verde claro (muchas) */
+          let gg = g.createLinearGradient(lx, 0, lx + 56, 0);
+          gg.addColorStop(0, "#1950d2");
+          gg.addColorStop(0.4, "#1e78e6");
+          gg.addColorStop(0.7, "#28bed7");
+          gg.addColorStop(1, "#96ffa0");
+          g.fillStyle = gg;
+          g.fillRect(lx, y - 17, 56, 16);
+          g.fillStyle = INK;
+          g.fillText(l[1], lx + 68, y);
+          lx += g.measureText(l[1]).width + 112;
+          return;
+        }
         g.beginPath();
         g.arc(lx + 12, y - 9, l[2] ? 12 : 6, 0, Math.PI * 2);
         if (l[2] === 2) {
