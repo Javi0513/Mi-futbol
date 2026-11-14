@@ -21,6 +21,15 @@ window.__anotar=(c,ev)=>{let d=AN(c);if(!d)return{error:{message:'NO_EXISTE'}};
   if(ev.t==='s'){let j=J(ev.pin);if(!j)return{error:{message:'JUGADOR'}};e.pin=j.id;e.ni=j.n;if(j.d)e.di=j.d}}
  if(ev.t==='s'&&!window.__oldSql){if(d.estado==='DES'||(ev.ds&&['2T','FIN'].includes(d.estado))){e.m=d.parte_min;e.ds=1;e.p=2}else e.p=['2T','FIN'].includes(d.estado)?2:1}
  d.eventos.push(e);if(ev.t==='f')d.gf++;if(ev.t==='c')d.gc++;d.actualizado=NOW();return{data:VA(d),error:null}};
+window.__reloj=(c,a)=>{let d=AN(c);if(!d)return{error:{message:'NO_EXISTE'}};
+ let ms=Math.min(36000000,d.acum_ms+(d.desde?Math.max(0,Date.now()-Date.parse(d.desde)):0)),T=()=>new Date().toISOString(),st=d.estado;
+ if(a==='start'&&st==='pre')Object.assign(d,{estado:'1T',acum_ms:0,desde:T()});
+ else if(a==='pause'&&['1T','2T'].includes(st)&&d.desde)Object.assign(d,{acum_ms:ms,desde:null});
+ else if(a==='resume'&&['1T','2T'].includes(st)&&!d.desde)d.desde=T();
+ else if(a==='half'&&st==='1T')Object.assign(d,{estado:'DES',acum_ms:ms,desde:null});
+ else if(a==='start2'&&st==='DES')Object.assign(d,{estado:'2T',acum_ms:0,desde:T()});
+ else if(a==='end'&&st==='2T')Object.assign(d,{estado:'FIN',acum_ms:ms,desde:null});
+ d.actualizado=NOW();return{data:VA(d),error:null}};
 window.supabase={createClient:()=>{let cb=null,session=null;
  const q=(t)=>{let f=[],op='select',payload=null,sel=false;
   const o={select(){sel=true;return o},order(){return o},eq(c,v){f.push([c,v]);return o},insert(p){op='insert';payload=p;return o},update(p){op='update';payload=p;return o},delete(){op='delete';return o},
@@ -39,6 +48,7 @@ window.supabase={createClient:()=>{let cb=null,session=null;
    if(n==='ver_directo'){let r=(window.__db.directos||[]).find(x=>x.id===a.codigo);return{data:r?{...CP(r),ahora:new Date().toISOString()}:null,error:null}}
    if(n==='ver_anotador')return{data:VA(AN(a.codigo)),error:null};
    if(n==='anotar')return window.__anotar(a.codigo,a.ev);
+   if(n==='anotar_reloj')return window.__noReloj?{data:null,error:{message:'Could not find the function public.anotar_reloj(accion, codigo) in the schema cache'}}:window.__reloj(a.codigo,a.accion);
    if(n==='anotar_quitar'){let d=AN(a.codigo);if(!d)return{error:{message:'NO_EXISTE'}};let e=d.eventos.find(z=>z.id===a.evento&&z.an);
      if(e){d.eventos=d.eventos.filter(z=>z!==e);if(e.t==='f')d.gf--;if(e.t==='c')d.gc--;d.actualizado=NOW()}return{data:VA(d),error:null}}
    return{error:null}},
@@ -150,6 +160,47 @@ with sync_playwright() as p:
     check('quitar un gol del anotador resta el marcador',True)
     bad=page(b,db);bad.goto(URL+'?anotar=00000000-0000-4000-8000-000000000000');bad.wait_for_selector('#anData h2')
     check('enlace de anotador que no existe: aviso claro','no disponible' in bad.locator('#anData h2').text_content())
+    # v11.30 El anotador lleva el reloj (empezar, pausar, descanso, 2ª parte, terminar)
+    check('el anotador tiene los botones del reloj en la 2ª parte',an.locator('[data-anr=pause]').count()==1 and an.locator('[data-anr=end]').count()==1)
+    ar=page(b,{**db,'directos':[{**db['directos'][0],'estado':'pre','acum_ms':0,'desde':None,'eventos':[]}]});ar.goto(URL+'?anotar='+code);ar.wait_for_selector('#anData .lv-board')
+    ES=lambda:ar.evaluate("(()=>{let d=window.__db.directos[0];return [d.estado,!!d.desde]})()")
+    check('sin empezar: el anotador puede «Empezar partido»',ar.locator('[data-anr=start]').count()==1 and ar.locator('[data-anr=half]').count()==0)
+    ar.screenshot(path=OUT+'/anot_reloj_pre.png',full_page=True)
+    ar.click('[data-anr=start]');ar.wait_for_selector('[data-anr=half]')
+    check('«Empezar partido» arranca la 1ª parte',ES()==['1T',True] and 'empezado' in ar.locator('.message').inner_text())
+    ar.click('[data-anr=pause]');ar.wait_for_selector('[data-anr=resume]')
+    check('«Pausar» para el reloj',ES()==['1T',False])
+    ar.click('[data-anr=resume]');ar.wait_for_selector('[data-anr=pause]')
+    check('«Reanudar» lo vuelve a poner en marcha',ES()==['1T',True])
+    ar.screenshot(path=OUT+'/anot_reloj_1t.png',full_page=True)
+    ar.click('[data-anr=half]');ar.wait_for_selector('[data-anr=start2]')
+    check('«Descanso» para el partido en el descanso',ES()==['DES',False] and 'Descanso' in ar.locator('.lv-clock').text_content(),[ES(),ar.locator('.lv-clock').text_content()])
+    check('en el descanso, los cambios son del descanso','descanso' in ar.locator('[data-an=sub]').text_content().lower(),ar.locator('[data-an=sub]').inner_text())
+    ar.screenshot(path=OUT+'/anot_reloj_descanso.png',full_page=True)
+    ar.click('[data-anr=start2]');ar.wait_for_selector('[data-anr=end]')
+    check('«Empezar 2ª parte»',ES()==['2T',True])
+    ar.click('[data-anr=end]');ar.wait_for_function("()=>!document.querySelector('[data-anr]')")
+    check('«Terminar partido» y ya no hay botones del reloj',ES()==['FIN',False])
+    nr=page(b,{**db,'directos':[{**db['directos'][0],'estado':'pre','acum_ms':0,'desde':None}]},'window.__noReloj=true;');nr.goto(URL+'?anotar='+code);nr.wait_for_selector('[data-anr=start]')
+    nr.click('[data-anr=start]');nr.wait_for_timeout(400)
+    check('sin el SQL del reloj, avisa de que falta un paso','Falta un paso' in nr.locator('.message').inner_text())
+    # El entrenador ve al momento lo que toca el anotador, y no lo pisa al guardar
+    pg.evaluate("c=>window.__reloj(c,'pause')",code)
+    pg.wait_for_selector('[data-live=resume]',timeout=7000)
+    check('el Directo del entrenador se para cuando el anotador pausa',True)
+    pg.evaluate("c=>window.__reloj(c,'resume')",code);pg.wait_for_selector('[data-live=pause]',timeout=7000)
+    pg.evaluate("c=>window.__reloj(c,'half')",code)
+    pg.wait_for_selector('[data-live=start2]',timeout=7000)
+    check('el Directo del entrenador pasa al descanso cuando lo hace el anotador','Descanso' in pg.locator('.lv-clock').text_content(),pg.locator('.lv-clock').text_content())
+    pg.click('[data-live=gc]');wait(pg,"d.gc===3");pg.wait_for_timeout(300)
+    check('al guardar algo el entrenador no deshace el descanso',D(pg,"d.estado")=='DES')
+    pg.click('[data-live=start2]');wait(pg,"d.estado==='2T'&&!!d.desde")
+    check('el entrenador sigue pudiendo llevar el reloj',True)
+    pg.evaluate("c=>window.__reloj(c,'end')",code)
+    pg.wait_for_selector('[data-live=reopen]',timeout=7000)
+    pg.wait_for_function("()=>JSON.parse(window.__db.futbol_personal_partidos[0].participaciones).some(x=>x.minutes>0)",timeout=6000)
+    check('si el anotador termina el partido, los minutos se calculan solos',True)
+    pg.click('[data-live=reopen]');wait(pg,"d.estado==='2T'")
     # Quitar el anotador
     pg.click('[data-live=anoff]');wait(pg,"d.anotador===null")
     check('«Quitar el anotador» desactiva su enlace y deja lo apuntado',D(pg,'d.anotador===null&&d.eventos.length>0') and pg.locator('[data-live=anon]').count()==1)

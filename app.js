@@ -6953,6 +6953,7 @@
         "Con el plan gratuito puedes preparar los enlaces antes del partido en <b>3 partidos al mes</b> (cada partido cuenta una vez); con Pro, ilimitado. El enlace del directo lo tienes siempre gratis dentro del Directo.",
         "<b>Anotador</b>: si tú grabas o estás dirigiendo, otra persona (el delegado, un padre…) puede apuntarlo todo desde su móvil. En el Directo pulsa «Crear enlace de anotador» y mándaselo con «Enviar al anotador». No necesita cuenta.",
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
+        "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
         "En el <b>descanso</b>, el anotador apunta los cambios con «🔄 Cambio del descanso» y no gastan ventana. Si se le olvidó, en la 2ª parte tiene el botón «🔄 Cambio del descanso (no gasta ventana)».",
         "En tu móvil el marcador, los goleadores y el marcador del vídeo se actualizan solos en unos segundos, y todo se guarda en el partido y en las estadísticas. El anotador puede quitar con la ✕ lo que haya apuntado él. Con «Quitar el anotador» su enlace deja de funcionar. Con el plan gratuito, el anotador se puede usar en 3 partidos al mes; con Pro, sin límite.",
         "<b>Sin cobertura en el campo</b>: la sesión ya no se cierra sola. Si se pierde la conexión, arriba sale «Sin conexión con tu cuenta»; sigue apuntando con normalidad y, en cuanto vuelva la cobertura, se guarda todo solo. Si el móvil cierra la app (por ejemplo al usar la cámara), al abrirla otra vez vuelves directamente al directo del partido.",
@@ -8056,6 +8057,7 @@
       liveRows = {};
       r.data.forEach((x) => {
         x._seen = new Set((Array.isArray(x.eventos) ? x.eventos : []).map((e) => e.id));
+        x._clk = liveClk(x);
         liveRows[x.partido_id] = x;
       });
     } catch (e) {}
@@ -8066,6 +8068,9 @@
       ? `<span class="res lv">● En directo ${x.gf}-${x.gc}</span> `
       : "";
   }
+  /* Huella del reloj (parte, tiempo y hora de arranque): sirve para saber si el anotador
+     ha tocado el reloj desde la última vez que este móvil lo vio en el servidor */
+  const liveClk = (o) => [o.estado, Math.round(Number(o.acum_ms) || 0), o.desde ? Date.parse(o.desde) : ""].join("|");
   function liveSync(row) {
     if (row && row.actualizado)
       liveSkew = Date.parse(row.actualizado) - Date.now();
@@ -8657,9 +8662,14 @@
           x.desde = s.desde;
           x.actualizado = s.actualizado;
           x._seen = new Set((Array.isArray(s.eventos) ? s.eventos : []).map((e) => e.id));
+          x._clk = liveClk(s);
           x._del = null;
         }
         for (let [pid, d] of ch) await liveMatch(x, pid, d);
+        if (x._fin) {
+          x._fin = false;
+          await liveMatch(x, null, 0, true);
+        }
         if (after) await after();
       })
       .catch((e) => note(e.message));
@@ -8701,6 +8711,19 @@
       x._cambio = true;
     }
     x._seen = ids;
+    /* Reloj: si el anotador lo ha movido (empezar, pausar, descanso, 2ª parte, terminar) y aquí
+       no se ha tocado, manda el del servidor. Si los dos lo han tocado, gana este móvil. */
+    if (x._clk === undefined) x._clk = liveClk(x);
+    let sc = liveClk(s);
+    if (sc !== x._clk && liveClk(x) === x._clk) {
+      if (s.estado === "FIN" && x.estado !== "FIN") x._fin = true;
+      x.estado = s.estado;
+      x.acum_ms = Number(s.acum_ms) || 0;
+      x.desde = s.desde || null;
+      if (Number(s.parte_min)) x.parte_min = Number(s.parte_min);
+      x._clk = sc;
+      x._cambio = true;
+    }
     return ch;
   }
   /* Pasa el resultado y los goles al partido (estadísticas) */
@@ -8826,7 +8849,7 @@
     let q = esPro() ? "" : `<p class="muted lim-q">Plan gratuito: anotador en ${LIM.an} partidos al mes (te quedan ${Math.max(0, LIM.an - envUsados("an"))}). Con Pro, ilimitado.</p>`;
     return `<div class="lv-share lv-anot"><h3>Anotador</h3><p class="muted">Mientras tú grabas, otra persona (el delegado, un padre…) apunta desde su móvil los goles (con quién ha marcado), las faltas, los cambios y las tarjetas de los dos equipos. El minuto se pone solo, el marcador del vídeo cambia en unos segundos y todo se guarda en el partido. No necesita cuenta.</p>${
       x.anotador
-        ? `<input id="anUrl" readonly value="${esc(anotUrl(x))}" aria-label="Enlace del anotador"><div class="lv-ctl"><button class="primary" data-live="anshare">${ic("share", 18)}Enviar al anotador</button><button class="danger" data-live="anoff">Quitar el anotador</button></div><p class="hint">Con este enlace se apunta el partido: mándalo solo a quien vaya a anotar. Para la familia, usa el enlace de abajo.</p>`
+        ? `<input id="anUrl" readonly value="${esc(anotUrl(x))}" aria-label="Enlace del anotador"><div class="lv-ctl"><button class="primary" data-live="anshare">${ic("share", 18)}Enviar al anotador</button><button class="danger" data-live="anoff">Quitar el anotador</button></div><p class="hint">Con este enlace se apunta el partido: mándalo solo a quien vaya a anotar. También puede empezar, pausar, pasar al descanso y terminar el partido: el reloj es el mismo para los dos. Para la familia, usa el enlace de abajo.</p>`
         : `<div class="lv-ctl"><button class="secondary" data-live="anon">${ic("plus", 18)}Crear enlace de anotador</button></div>${q}`
     }</div>`;
   }
@@ -9038,7 +9061,10 @@
         liveSync(s);
         if (!x._cambio) return;
         for (let [pid, d] of ch) await liveMatch(x, pid, d);
-        if (!ch.length) await liveMatch(x, null, 0);
+        if (x._fin) {
+          x._fin = false;
+          await liveMatch(x, null, 0, true);
+        } else if (!ch.length) await liveMatch(x, null, 0);
         let a = document.activeElement;
         if (state.live === x.partido_id && !(a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && !a.readOnly)) render();
         if (cam) camBotones();
@@ -10130,7 +10156,9 @@
     anBusy = false,
     anErr = "";
   const anMsg = (t) =>
-    /NO_EXISTE/.test(t)
+    /anotar_reloj/i.test(t)
+      ? "Falta un paso en el servidor para llevar el reloj desde aquí. Avisa al entrenador."
+      : /NO_EXISTE/.test(t)
       ? "Este enlace de anotador ya no funciona: el entrenador lo ha quitado."
       : /DEMASIADOS/.test(t)
         ? "Ya hay demasiadas jugadas apuntadas en este partido."
@@ -10165,6 +10193,14 @@
     });
     return { on, fuera };
   }
+  const AN_R = {
+    start: "Partido empezado.",
+    pause: "Reloj parado.",
+    resume: "Reloj en marcha.",
+    half: "Descanso. Cuando empiece la 2ª parte, pulsa «Empezar 2ª parte».",
+    start2: "2ª parte empezada.",
+    end: "Partido terminado.",
+  };
   const AN_Q = { f: "el gol", c: "el gol", s: "el cambio", a: "la tarjeta", r: "la tarjeta", fa: "la falta" };
   function anPickHtml() {
     let k = anPick;
@@ -10228,9 +10264,22 @@
               : e.t === "s"
                 ? `🔄 ▲ ${esc(lvN(e.ni, e.di))} ▼ ${esc(lvN(e.n, e.d))}${e.r ? " <small>" + esc(x.rival) + "</small>" : ""}`
                 : `<i class="tj ${e.t}"></i> ${esc(lvN(e.n, e.d))}${e.r ? " <small>" + esc(x.rival) + "</small>" : ""}`;
+    let st = x.estado,
+      run = !!x.desde,
+      R = (k, t, cl = "secondary") => `<button class="${cl}" data-anr="${k}" ${d}>${t}</button>`,
+      reloj =
+        st === "pre"
+          ? R("start", "Empezar partido", "primary")
+          : st === "1T" || st === "2T"
+            ? R(run ? "pause" : "resume", run ? "Pausar" : "Reanudar") + (st === "1T" ? R("half", "Descanso", "primary") : R("end", "Terminar partido", "primary"))
+            : st === "DES"
+              ? R("start2", "Empezar 2ª parte", "primary")
+              : "";
     box.innerHTML = `<div class="kicker">Anotador · ${esc(MN(x.modalidad))}</div>${liveBoard(x, serverNow(), false)}${
-      x.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Todo se apunta con el minuto en que vaya el reloj del entrenador.</p>' : ""
-    }${x.estado === "FIN" ? '<p class="hint">El partido ha terminado. Si falta algo, aún puedes apuntarlo.</p>' : ""}<div class="lv-goals an-goals">${B("f", "⚽ Gol nuestro", "primary")}${B("c", "⚽ Gol rival")}</div><div class="lv-ctl an-fal">${B("fan", `Falta nuestra <b>${f["n" + h]}</b>`)}${B("far", `Falta del rival <b>${f["r" + h]}</b>`)}</div><div class="lv-ctl lv-more">${B("sub", x.estado === "DES" ? "🔄 Cambio del descanso" : "🔄 Cambio")}${B("a", '<i class="tj a"></i>Amarilla')}${B("r", '<i class="tj r"></i>Roja')}</div>${
+      reloj ? `<div class="lv-ctl an-reloj" role="group" aria-label="Reloj del partido">${reloj}</div>` : ""
+    }${
+      st === "pre" ? '<p class="hint">El partido aún no ha empezado. Puedes empezarlo tú o el entrenador: el reloj es el mismo para los dos.</p>' : ""
+    }${st === "FIN" ? '<p class="hint">El partido ha terminado. Si falta algo, aún puedes apuntarlo.</p>' : ""}<div class="lv-goals an-goals">${B("f", "⚽ Gol nuestro", "primary")}${B("c", "⚽ Gol rival")}</div><div class="lv-ctl an-fal">${B("fan", `Falta nuestra <b>${f["n" + h]}</b>`)}${B("far", `Falta del rival <b>${f["r" + h]}</b>`)}</div><div class="lv-ctl lv-more">${B("sub", x.estado === "DES" ? "🔄 Cambio del descanso" : "🔄 Cambio")}${B("a", '<i class="tj a"></i>Amarilla')}${B("r", '<i class="tj r"></i>Roja')}</div>${
       x.estado === "DES"
         ? '<p class="hint">Descanso: los cambios que apuntes ahora no gastan ventana.</p>'
         : x.estado === "2T" || x.estado === "FIN"
@@ -10334,8 +10383,15 @@
         p = e.target.closest("[data-anp]"),
         q = e.target.closest("[data-anq]"),
         xx = e.target.closest("[data-anx]"),
-        sd = e.target.closest("[data-ans]");
+        sd = e.target.closest("[data-ans]"),
+        rl = e.target.closest("[data-anr]");
       if (anBusy) return;
+      if (rl) {
+        let a = rl.dataset.anr;
+        if (a === "half" && !confirm("¿Pasar al descanso? El reloj se para.")) return;
+        if (a === "end" && !confirm("¿Terminar el partido?")) return;
+        return anCall("anotar_reloj", { accion: a }, () => AN_R[a]);
+      }
       if (p) return anApunta({ t: "f", pid: p.dataset.anp }, "Gol apuntado");
       if (sd) {
         anSide = sd.dataset.ans;
