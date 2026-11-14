@@ -945,7 +945,7 @@
       cat = catOf(state.mode, curTeam()),
       nom = perfil && perfil.nombre ? String(perfil.nombre).trim().split(/\s+/)[0] : "",
       esc0 = club && club.escudo ? `<img class="ini-esc" src="${esc(club.escudo)}" alt="Escudo de ${esc(club.nombre)}">` : `<span class="mark ini-esc" role="img" aria-label="Logo JV32"></span>`,
-      top = `<div class="ini-top">${esc0}<div><small class="ini-hola">${iniSaludo()}${nom ? ", " + esc(nom) : ""} 👋</small><h2 class="ini-eq">${esc(eq)}</h2><p class="ini-sub">${esc(MN())}${cat ? " · " + esc(cat[1]) : ""} · ${roster().length} ${roster().length === 1 ? "jugador" : "jugadores"}</p></div></div>`,
+      top = `<div class="ini-top">${esc0}<div><small class="ini-hola">${viendo ? "Viendo a " + esc((viendo.m && (viendo.m.nombre || viendo.m.email)) || viendo.email || "otro entrenador") + " · solo mirar" : iniSaludo() + (nom ? ", " + esc(nom) : "") + " 👋"}</small><h2 class="ini-eq">${esc(eq)}</h2><p class="ini-sub">${esc(MN())}${cat ? " · " + esc(cat[1]) : ""} · ${roster().length} ${roster().length === 1 ? "jugador" : "jugadores"}</p></div></div>`,
       x = iniProx(),
       body = "";
     if (x && x.m) {
@@ -7105,6 +7105,7 @@
     YA_EN_CLUB: "Ya estás en un club. Para cambiar de club, sal antes del tuyo.",
     CODIGO_NO_VALIDO: "Ese código no es de ningún club. Revisa que esté bien escrito.",
     CLUB_LLENO: "Ese club ya tiene todas sus plazas ocupadas. Avisa al encargado del club.",
+    CLUB_SIN_PAGAR: "Tu club todavía no ha pagado su pack. Cuando el encargado lo pague, vuelve a escribir el código y tendrás el plan Pro.",
     ADMIN_NO_PUEDE_SALIR: "Eres el encargado del club: no puedes salir de él. Si ya no lo usáis, cancela la suscripción y borra el club.",
     CLUB_PAGADO: "El club tiene una suscripción en marcha. Cancélala antes en «Gestionar la suscripción del club».",
     CLUB_NOMBRE: "Escribe el nombre del club (entre 2 y 60 letras).",
@@ -8003,7 +8004,8 @@
         "El club paga una sola suscripción y <b>todos sus entrenadores tienen el plan Pro</b>.",
         "Los entrenadores <b>no ven nada de los demás</b>. Solo el <b>supervisor del club</b> puede ver, sin cambiar nada, los equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos de cada entrenador que lo acepte. Nunca ve contraseñas ni datos de la cuenta.",
         "<b>Si eres entrenador:</b> entra en «Mi cuenta › Plan para clubes», escribe el código que te ha dado tu club, marca que aceptas que el supervisor vea tus datos y pulsa «Unirme al club». Puedes dejar de compartirlos o salir del club cuando quieras; tus datos se quedan contigo.",
-        "<b>Si eres el encargado del club:</b> en «Mi cuenta › Plan para clubes» escribe el nombre del club, pulsa «Crear el club» y elige el pack. Comparte el código con tus entrenadores (Copiar o WhatsApp). Desde ahí ves quién se ha unido, puedes quitar entrenadores y cambiar el código.",
+        "<b>Si eres el encargado del club:</b> en «Mi cuenta › Plan para clubes» escribe el nombre del club, pulsa «Crear el club» y elige y paga el pack (desde el navegador, en app.monetizaplus.com). <b>Cuando esté pagado</b>, comparte el código con tus entrenadores (Copiar o WhatsApp); si alguien lo escribe antes, la app le avisa de que el club aún no ha pagado. Desde ahí ves quién se ha unido, puedes quitar entrenadores y cambiar el código.",
+        "<b>Plazas del pack:</b> el encargado ocupa una de las plazas. Un pack de 5 son 5 cuentas con el plan Pro: la tuya y la de 4 entrenadores más. Si quitas a un entrenador, su plaza queda libre para otro. Si os quedáis sin plazas y necesitáis un pack más grande, escríbenos y te lo cambiamos.",
         "<b>Supervisor del club:</b> el encargado es siempre supervisor y puede pulsar «Hacer supervisor» junto a otra persona del club (por ejemplo, el gerente o el director deportivo). El supervisor ve el club como un árbol: arriba el escudo y el nombre del club, y debajo cada entrenador con su foto y su nombre. Con el club pagado, toca a un entrenador y la app le enseña su plantilla, partidos, alineaciones y entrenamientos en <b>solo lectura</b>: arriba sale «Viendo a…» y el botón «Volver a mis datos».",
         "<b>Escudo del club:</b> el encargado lo sube en «Mi cuenta › Plan para clubes › Escudo del club». Lo ven todos los entrenadores del club, arriba junto al logo de la app.",
         "<b>Foto de cada entrenador:</b> cada uno pone su foto de perfil y su nombre en «Mi cuenta». En el club solo los ve el supervisor, para saber de quién es cada cuenta. Los demás entrenadores no los ven.",
@@ -8241,7 +8243,8 @@
     );
   }
   function clubPacksHtml(conPago) {
-    if (enAndroid) return "";
+    /* v11.37: en la app de Android no se paga, pero se explica dónde contratar el pack */
+    if (enAndroid) return '<p class="hint">El pack del club se contrata desde el navegador, en app.monetizaplus.com › Mi cuenta › Plan para clubes. Después funciona también en esta app.</p>';
     let packs = c.clubPacks || [];
     if (!packs.length) return "";
     return `<div class="packs">${packs
@@ -8251,16 +8254,16 @@
           ? `<a class="pack" href="${esc(clubPackLink(p))}" target="_blank" rel="noopener" data-club-pay>${precio}</a>`
           : `<div class="pack">${precio}</div>`;
       })
-      .join("")}</div><p class="muted">IVA incluido · renovación anual · cancela cuando quieras.${conPago && !pagoClubActivo ? ` Muy pronto podrás contratarlo desde aquí; mientras, escríbenos a ${esc(c.contactEmail || "")}.` : ""}</p>`;
+      .join("")}</div><p class="muted">IVA incluido · renovación anual · cancela cuando quieras. El encargado ocupa una de las plazas del pack.${conPago && !pagoClubActivo ? ` Muy pronto podrás contratarlo desde aquí; mientras, escríbenos a ${esc(c.contactEmail || "")}.` : ""}</p>`;
   }
   function clubHtml() {
     const privado =
       '<p class="pro-fin">Los entrenadores <b>no ven nada de los demás</b>. Solo el <b>supervisor del club</b> (el encargado y quien él nombre) puede <b>ver, sin cambiar nada</b>, los equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos de cada entrenador que lo acepte. Nunca ve tu contraseña ni los datos de tu cuenta.</p>';
     if (!club)
-      return `<p>Con el <b>plan para clubes</b>, el club paga una sola suscripción y <b>todos sus entrenadores tienen el plan Pro</b>.</p>${privado}<h3>Me ha dado un código mi club</h3><label>Código del club<input id="clubCod" autocomplete="off" autocapitalize="characters" maxlength="14" placeholder="Ej.: K7M2Q9XA4P"></label><label class="chk"><input type="checkbox" id="clubAcepto"><span>Acepto que el supervisor del club vea mis equipos, jugadores, partidos y entrenamientos (solo mirar, sin poder cambiarlos). Puedo dejar de compartirlos cuando quiera.</span></label><div class="stack"><button type="button" class="primary" data-acct="club-unirse">Unirme al club</button></div><h3>Soy el encargado del club</h3><p>Crea el club, elige el pack y comparte el código con tus entrenadores.</p>${clubPacksHtml(false)}<label>Nombre del club<input id="clubNom" maxlength="60" autocomplete="organization"></label><div class="stack"><button type="button" class="secondary" data-acct="club-crear">Crear el club</button></div>`;
+      return `<p>Con el <b>plan para clubes</b>, el club paga una sola suscripción y <b>todos sus entrenadores tienen el plan Pro</b>.</p>${privado}<h3>Me ha dado un código mi club</h3><label>Código del club<input id="clubCod" autocomplete="off" autocapitalize="characters" maxlength="14" placeholder="Ej.: K7M2Q9XA4P"></label><label class="chk"><input type="checkbox" id="clubAcepto"><span>Acepto que el supervisor del club vea mis equipos, jugadores, partidos y entrenamientos (solo mirar, sin poder cambiarlos). Puedo dejar de compartirlos cuando quiera.</span></label><div class="stack"><button type="button" class="primary" data-acct="club-unirse">Unirme al club</button></div><h3>Soy el encargado del club</h3><p>Crea el club, paga el pack y después comparte el código con tus entrenadores.</p>${clubPacksHtml(false)}<label>Nombre del club<input id="clubNom" maxlength="60" autocomplete="organization"></label><div class="stack"><button type="button" class="secondary" data-acct="club-crear">Crear el club</button></div>`;
     let estado = club.activo
-      ? `<p>Estado: <b>activo</b>${club.soy_admin ? ` · ${club.usadas} de ${club.plazas} entrenadores` : ""}. ${club.soy_admin ? "Todos los entrenadores del club tienen el plan Pro." : "Tienes el plan Pro gracias a tu club."}</p>${club.pro_hasta ? `<p class="pro-fin">La suscripción del club está cancelada. El plan Pro del club estará activo hasta el <b>${esc(fechaLarga(club.pro_hasta))}</b>.</p>` : ""}`
-      : `<p>Estado: <b>pendiente de pago</b>. ${club.soy_admin ? "Cuando el club pague, todos sus entrenadores tendrán el plan Pro." : "Cuando el club pague, tendrás el plan Pro."}</p>`;
+      ? `<p>Estado: <b>activo</b>${club.soy_admin ? ` · ${club.usadas} de ${club.plazas} plazas ocupadas (tú ocupas una)` : ""}. ${club.soy_admin ? "Todos los entrenadores del club tienen el plan Pro." : "Tienes el plan Pro gracias a tu club."}</p>${club.pro_hasta ? `<p class="pro-fin">La suscripción del club está cancelada. El plan Pro del club estará activo hasta el <b>${esc(fechaLarga(club.pro_hasta))}</b>.</p>` : ""}`
+      : `<p>Estado: <b>pendiente de pago</b>. ${club.soy_admin ? (club.plazas > 0 ? "La suscripción del club ha terminado. Elige otra vez un pack para que todos los entrenadores vuelvan a tener el plan Pro." : "Primero elige y paga el pack. En cuanto esté pagado, tus entrenadores podrán unirse con el código y todos tendréis el plan Pro.") : "Cuando el club pague, tendrás el plan Pro."}</p>`;
     if (!club.soy_admin)
       return `${escudoVer()}${estado}${compartirHtml()}${club.soy_supervisor ? supervisarHtml() : privado}${perfilEnClub()}<div class="stack"><button type="button" class="danger" data-acct="club-salir">Salir del club</button></div>`;
     let enlace = location.origin + location.pathname + "?club=" + encodeURIComponent(club.codigo);
@@ -8273,7 +8276,7 @@
           ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar la suscripción del club</a>`
           : ""
         : "";
-    return `${escudoVer()}${estado}<h3>Código para tus entrenadores</h3><p class="club-cod">${esc(club.codigo)}</p><p class="muted">Cada entrenador entra con su propia cuenta en «Mi cuenta › Plan para clubes» y escribe este código.</p><div class="hbtns"><button type="button" class="secondary" data-acct="club-copiar">Copiar</button><a class="secondary" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="secondary" data-acct="club-codigo">Cambiar</button></div>${club.activo ? "" : `<h3>Elige el pack del club</h3>${clubPacksHtml(true)}`}<h3>Entrenadores del club</h3>${privado}${club.soy_supervisor && club.activo ? '<p class="muted">Toca a un entrenador para ver sus datos. Pulsa «Hacer supervisor» para que otra persona del club (por ejemplo, el director deportivo) también pueda verlos.</p>' : ""}${lista}${compartirHtml()}${escudoEditar()}${perfilEnClub()}<div class="stack">${pago}${club.activo ? "" : '<button type="button" class="danger" data-acct="club-borrar">Borrar el club</button>'}</div>`;
+    return `${escudoVer()}${estado}<h3>Código para tus entrenadores</h3><p class="club-cod">${esc(club.codigo)}</p><p class="muted">Cada entrenador entra con su propia cuenta en «Mi cuenta › Plan para clubes» y escribe este código.</p><div class="hbtns"><button type="button" class="secondary" data-acct="club-copiar">Copiar</button><a class="secondary" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a><button type="button" class="secondary" data-acct="club-codigo">Cambiar</button></div>${club.activo ? (club.usadas >= club.plazas ? `<p class="pro-fin">Ya no quedan plazas libres en el pack del club. Si necesitáis un pack más grande, escríbenos${c.contactEmail ? " a " + esc(c.contactEmail) : ""} y te lo cambiamos.</p>` : "") : `<h3>Elige el pack del club</h3>${clubPacksHtml(true)}`}<h3>Entrenadores del club</h3>${privado}${club.soy_supervisor && club.activo ? '<p class="muted">Toca a un entrenador para ver sus datos. Pulsa «Hacer supervisor» para que otra persona del club (por ejemplo, el director deportivo) también pueda verlos.</p>' : ""}${lista}${compartirHtml()}${escudoEditar()}${perfilEnClub()}<div class="stack">${pago}${club.activo ? "" : '<button type="button" class="danger" data-acct="club-borrar">Borrar el club</button>'}</div>`;
   }
   /* Supervisor del club (supabase-supervisor.sql). Si el servidor aún no lo tiene,
      mi_club no trae «comparto» y no se muestra nada de esto. */
@@ -8502,7 +8505,7 @@
       if (v.length < 2) return note(CLUB_ERR.CLUB_NOMBRE);
       ac.disabled = true;
       if (!(await clubRpc("crear_club", { nombre: v }))) ac.disabled = false;
-      else note("Club creado. Ahora elige el pack y comparte el código con tus entrenadores.", true);
+      else note("Club creado. Ahora elige y paga el pack; después comparte el código con tus entrenadores.", true);
     } else if (w === "club-compartir") {
       if (await clubRpc("club_compartir", { si: true })) note("Gracias. El supervisor del club ya puede ver tus datos (sin cambiarlos).", true);
     } else if (w === "club-nocompartir") {

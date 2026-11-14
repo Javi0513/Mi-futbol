@@ -100,12 +100,15 @@ Deno.serve(async (req) => {
         (o.cancel_at_period_end ? (o.current_period_end ?? o.items?.data?.[0]?.current_period_end) : null);
       const hasta = activo && fin ? new Date(fin * 1000).toISOString() : null;
       const filtro = `stripe_customer=eq.${encodeURIComponent(o.customer)}`;
-      if (o.metadata?.club) {
+      // v11.37: las plazas se leen primero del precio (pack) actual de la suscripción. Así, si se
+      // cambia el pack de un club en Stripe (p. ej. de 5 a 10 entrenadores), las plazas cambian solas.
+      const precio = o.items?.data?.[0]?.price?.metadata ?? {};
+      if (o.metadata?.club || precio.club) {
         await actualizar(filtro, cuando, {
           stripe_subscription: o.id,
           stripe_estado: o.status,
           pro_hasta: hasta,
-          ...plazasDe(o.metadata),
+          ...(plazasDe(precio).plazas ? plazasDe(precio) : plazasDe(o.metadata)),
         }, "clubes");
       } else {
         await actualizar(filtro, cuando, {
