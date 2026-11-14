@@ -38,6 +38,7 @@ with sync_playwright() as p:
     check('v11.34: las novedades explican el arreglo del reloj y «Reiniciar reloj»',all(w in body for w in ('Arreglado el reloj del Directo','Reiniciar reloj','Sin empezar')),body[:300])
     check('v11.35: las novedades explican la nueva pantalla de Inicio',all(w in body for w in ('Nueva pantalla de Inicio','Empezar el Directo','primeros pasos')),body[:300])
     check('v11.36: las novedades explican la animación de entrada',all(w in body for w in ('animación de entrada','Saltar')),body[:300])
+    check('v11.37: las novedades explican el plan para clubes más claro',all(w in body for w in ('Plan para clubes más claro','todavía no ha pagado','pack más grande')),body[:300])
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)
     check('«Entendido» las cierra',pg.locator('#info').is_hidden())
     entra(pg)

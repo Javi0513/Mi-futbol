@@ -18,14 +18,14 @@ DATOS={'email':'luis@x.es','equipos':[{'id':'e1','modalidad':'7','nombre':'Alev�
        'jugadores':[{'id':'q1','modalidad':'7','equipo_id':'e1','nombre':'Luis Uno','foto':''},{'id':'q2','modalidad':'7','equipo_id':'e1','nombre':'Luis Dos','foto':''}],
        'partidos':[{'id':'m9','modalidad':'7','equipo_id':'e1','fecha':'2026-10-18','rival':'Los Pinos','participaciones':json.dumps(PART),'alineacion':'{"formation":"3-2-1","slots":{"0":"q1"}}'}],
        'entrenamientos':[{'id':'t1','modalidad':'7','equipo_id':'e1','fecha':'2026-10-20','asistencia':{'q1':'si'}}]}
-def abrir(b,club,plan='pro'):
+def abrir(b,club,plan='pro',cfg=None):
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block')
     ctx.add_init_script('window.__seed='+json.dumps({'futbol_personal_jugadores':json.loads(json.dumps(MIOS)),'futbol_personal_partidos':[],'perfiles':[{'id':'u1','plan':plan}]}))
     pg=ctx.new_page()
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:errs.append(m.text) if m.type=='error' else None)
     pg.on('dialog',lambda d:d.accept())
     pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
-    pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=CFG))
+    pg.route('**/config.js*',lambda r:r.fulfill(content_type='application/javascript',body=cfg or CFG))
     pg.goto('http://127.0.0.1:8815/index.html')
     pg.evaluate("a=>{window.__club=a[0];window.__datos=a[1];window.__cfg.rpcData={mi_club:()=>window.__club,club_datos_entrenador:x=>x.entrenador==='u9'?window.__datos:{__error:'NO_COMPARTE'}}}",[club,DATOS])
     pg.fill('input[name=email]','ana@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')
@@ -109,6 +109,14 @@ with sync_playwright() as p:
     check('privacidad explica el supervisor','supervisor del club' in body(pg) and 'sin poder cambiarlos' in body(pg))
     pg.click('#closeInfo');pg.click('#acct');pg.click('#info [data-info=ayuda]');pg.wait_for_timeout(200)
     check('la guía de uso explica el supervisor','Supervisor del club' in pg.locator('#infoBody').inner_html())
+    ctx.close()
+    # v11.37: con la pantalla de Inicio, al ver a un entrenador no sale «Buenos días, <supervisor>»
+    ctx,pg=abrir(b,ADMIN,cfg=CFG.replace('noInicio:true','noInicio:false').replace('noInicio: true','noInicio: false'))
+    pg.evaluate("window.__db.perfiles[0].nombre='Coordinación'")
+    club_pane(pg);pg.locator('[data-acct=club-ver]').click();pg.wait_for_timeout(500)
+    if not pg.locator('.ini-hola').count(): pg.click('[data-tab=inicio]');pg.wait_for_timeout(300)
+    h=pg.locator('.ini-hola').inner_text() if pg.locator('.ini-hola').count() else ''
+    check('v11.37: Inicio al supervisar dice «Viendo a …», no saluda al supervisor','Viendo a' in h and 'luis@x.es' in h and 'Coordinación' not in h and 'Buen' not in h,h)
     ctx.close()
     b.close()
 bad=[e for e in errs if 'favicon' not in e]
