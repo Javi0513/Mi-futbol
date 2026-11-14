@@ -7,7 +7,7 @@ from fake2 import FAKE2
 srv=http.server.ThreadingHTTPServer(('127.0.0.1',8814),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
-CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,")
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,noInicio:true,")
 FIN=(__import__('datetime').datetime.utcnow()+__import__('datetime').timedelta(days=7,minutes=-1)).strftime('%Y-%m-%dT%H:%M:%SZ')
 RPC="""fin=>{window.__cfg.rpcData={revisar_prueba_pro:'',canjear_codigo:(a)=>{
   if(a.p_codigo==='JV32PLAY'){window.__db.perfiles[0].plan='pro';window.__db.perfiles[0].prueba_hasta=fin;return {r:'ok',hasta:fin,dias:7}}

@@ -58,6 +58,9 @@ with sync_playwright() as p:
     check('se abre la guía',pg.locator('#infoTitle').text_content()=='Guía de uso')
     tits=pg.locator('#info .ayuda summary').all_text_contents()
     check('tiene todos los apartados',len(tits)>=20 and 'Ficha del jugador' in tits and 'Exportar a Excel' in tits and 'Ejercicios del entreno' in tits and 'Convocatoria' in tits and 'Enlace del equipo' in tits,tits)
+    pg.locator('#info .ayuda summary',has_text='Empezar').first.click();pg.wait_for_timeout(150)
+    check('Empezar: la guía explica el Inicio','Inicio' in pg.locator('#info .ayuda details[open]').first.inner_text() and 'primeros pasos' in pg.locator('#info .ayuda details[open]').first.inner_text())
+    pg.locator('#info .ayuda summary',has_text='Empezar').first.click();pg.wait_for_timeout(150)
     for k in ['Tus equipos','Directo','Plan para clubes','Actualizaciones']:
         check('apartado: '+k,k in tits)
     check('los apartados empiezan cerrados',pg.locator('#info .ayuda details[open]').count()==0)

@@ -16,7 +16,7 @@ def dataurl(b):
     import base64;return 'data:image/png;base64,'+base64.b64encode(b).decode()
 FOTO_P=dataurl(png(64,64,lambda d:d.ellipse([4,4,60,60],fill=(240,180,40))))
 ESC_P=dataurl(png(64,64,lambda d:d.polygon([(32,2),(62,10),(56,44),(32,62),(8,44),(2,10)],fill=(200,20,40))))
-CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,")
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,noInicio:true,")
 MIEMBROS=[{'id':'u1','email':'ana@x.es','desde':'2026-10-27T10:00:00Z','admin':True,'supervisor':True,'comparte':False,'nombre':None,'foto':None},
           {'id':'u9','email':'luis@x.es','desde':'2026-10-27T11:00:00Z','admin':False,'supervisor':False,'comparte':True,'nombre':'Luis García','foto':FOTO_P},
           {'id':'u8','email':'eva@x.es','desde':'2026-10-27T12:00:00Z','admin':False,'supervisor':False,'comparte':False,'nombre':None,'foto':None}]

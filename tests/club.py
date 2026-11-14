@@ -8,7 +8,7 @@ srv=http.server.ThreadingHTTPServer(('127.0.0.1',8814),functools.partial(type('Q
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 PACKS="clubPacks:[{plazas:5,precio:'149',url:'https://buy.stripe.com/test_c5'},{plazas:10,precio:'259',url:'https://buy.stripe.com/test_c10'},{plazas:15,precio:'385',url:'https://buy.stripe.com/test_c15'},{plazas:20,precio:'459',url:'https://buy.stripe.com/test_c20'},{plazas:30,precio:'599',url:'https://buy.stripe.com/test_c30'}],portalUrl:'https://billing.stripe.com/p/login/test_x',contactEmail:'club@x.es',"
-CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,"+PACKS)
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,noInicio:true,"+PACKS)
 ADMIN={'id':'c1','nombre':'CD Granada Norte','activo':False,'soy_admin':True,'codigo':'K7M2Q9XA4P','plazas':0,'usadas':2,'pagado':False,
        'miembros':[{'id':'u1','email':'ana@x.es','desde':'2026-10-27T10:00:00Z','admin':True},{'id':'u9','email':'luis@x.es','desde':'2026-10-27T11:00:00Z','admin':False}]}
 def abrir(b,club,plan='gratis',q='',android=False,extra=None):

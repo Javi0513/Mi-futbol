@@ -7,7 +7,7 @@ from fake2 import FAKE2
 srv=http.server.ThreadingHTTPServer(('127.0.0.1',8815),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
-CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,")
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,noInicio:true,")
 MIOS=[{'id':'mio1','owner_id':'u1','modalidad':'7','nombre':'Mio Uno','foto':''}]
 MIEMBROS=[{'id':'u1','email':'ana@x.es','desde':'2026-10-27T10:00:00Z','admin':True,'supervisor':True,'comparte':False},
           {'id':'u9','email':'luis@x.es','desde':'2026-10-27T11:00:00Z','admin':False,'supervisor':False,'comparte':True},
