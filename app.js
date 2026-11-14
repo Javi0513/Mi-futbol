@@ -6978,6 +6978,7 @@
       t: "Directo",
       p: [
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
+        "<b>El reloj</b>: «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». Con «−1'» y «+1'» corriges el minuto. <b>«↺ Reiniciar reloj»</b> lo deja otra vez en «Sin empezar» (0'), por ejemplo después de un partido de prueba; los goles y lo apuntado se quedan (los quitas con la ✕ si quieres).",
         "<b>Cambios</b>: pulsa «🔄 Cambio» y marca a <b>todos los que salen</b> y a <b>todos los que entran</b> a la vez (salen con su dorsal). Van por parejas en el orden en que los toques: el 1º que sale por el 1º que entra, el 2º por el 2º… Abajo ves las parejas y pulsas «Hacer 2 cambios» (o los que sean). Si sale uno y no entra nadie (por una lesión sin cambios), márcalo solo a él. Toca otra vez a un jugador para desmarcarlo. <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
         "<b>Ventanas de cambios</b>: desde <b>juvenil en fútbol 11</b> (categoría Juvenil o Senior) se juega con <b>3 ventanas de cambios por parte</b> y en cada ventana cambias a los jugadores que quieras. En el Directo te salen las ventanas de la 1ª y la 2ª parte: toca la que toca («Ventana 1», «Ventana 2»…) o «🔄 Cambio», marca a los que salen y a los que entran y listo, esa ventana queda hecha con sus cambios. En la <b>penúltima</b> te avisa de que después solo te queda una, y en la <b>última</b> te avisa de que metas en ella todos los cambios que quieras hacer. Si ya no te quedan y apuntas otro, te pregunta antes.",
         "<b>Cambios del descanso</b>: no gastan ventana. Entre la 1ª y la 2ª parte tienes la fila «Descanso»: durante el descanso pulsa «🔄 Cambio» o «+ Cambio del descanso», y si se te olvidó apuntarlos, también puedes hacerlo ya en la 2ª parte con «+ Cambio del descanso». Se guardan con el minuto del descanso y en la lista salen como «Desc.».",
@@ -8101,8 +8102,12 @@
       let r = await db.from("directos").select("*");
       /* Si falla (sin cobertura) se queda lo que ya había, para no perder el directo abierto */
       if (r.error || !Array.isArray(r.data)) return;
+      let viejo = liveRows;
       liveRows = {};
       r.data.forEach((x) => {
+        /* El Directo que está abierto se queda como está en este móvil (puede tener un toque del
+           reloj o un gol aún guardándose): si se cambiara por lo del servidor, se perdería */
+        if (state.live === x.partido_id && viejo[x.partido_id]) return (liveRows[x.partido_id] = viejo[x.partido_id]);
         x._seen = new Set((Array.isArray(x.eventos) ? x.eventos : []).map((e) => e.id));
         x._clk = liveClk(x);
         liveRows[x.partido_id] = x;
@@ -8252,8 +8257,10 @@
               : B("reopen", "Reabrir partido"),
       adj =
         st === "1T" || st === "2T"
-          ? `<div class="lv-adj"><span class="muted">Ajustar minuto</span>${B("m-", "−1'")}${B("m+", "+1'")}</div>`
-          : "",
+          ? `<div class="lv-adj"><span class="muted">Ajustar minuto</span>${B("m-", "−1'")}${B("m+", "+1'")}${B("reset", "↺ Reiniciar reloj")}</div>`
+          : st === "DES" || st === "FIN"
+            ? `<div class="lv-adj">${B("reset", "↺ Reiniciar reloj")}</div>`
+            : "",
       pick = state.livePick
         ? `<div class="lv-pick"><h3>¿Quién ha marcado?</h3><div class="slotmenu">${entries(
             m,
@@ -8635,6 +8642,8 @@
       return null;
     }
     x = liveRows[id] = (r.data && r.data[0]) || row;
+    x._seen = new Set((Array.isArray(x.eventos) ? x.eventos : []).map((e) => e.id));
+    x._clk = liveClk(x);
     liveSync(x);
     liveJor(x, m);
     return x;
@@ -8706,7 +8715,8 @@
             eventos: x.eventos,
           }),
           r,
-          ch = [];
+          ch = [],
+          env = null;
         if (x.anotador) {
           /* Con anotador, otra persona también apunta goles: antes de guardar se juntan
              sus goles con los de aquí, y solo se guarda si nadie ha tocado nada entretanto */
@@ -8715,18 +8725,24 @@
               s = q.data && q.data[0];
             if (!s) break;
             ch = ch.concat(liveMerge(x, s));
+            env = liveClk(x);
             let u = db.from("directos").update(datos()).eq("id", x.id);
             if (i < 2) u = u.eq("actualizado", s.actualizado);
             let w = await u.select();
             if (w.error || (w.data && w.data.length)) r = w;
           }
         }
-        if (!r) r = await db.from("directos").update(datos()).eq("id", x.id).select();
+        if (!r) {
+          env = liveClk(x);
+          r = await db.from("directos").update(datos()).eq("id", x.id).select();
+        }
         if (r.error) return note(liveErr(r.error.message));
         let s = r.data && r.data[0];
         if (s) {
           liveSync(s);
-          x.desde = s.desde;
+          /* La hora de arranque buena es la del servidor, pero solo si el reloj no se ha tocado
+             mientras se guardaba (si no, se perdía ese toque: «Reanudar» que no arrancaba) */
+          if (liveClk(x) === env) x.desde = s.desde;
           x.actualizado = s.actualizado;
           x._seen = new Set((Array.isArray(s.eventos) ? s.eventos : []).map((e) => e.id));
           x._clk = liveClk(s);
@@ -8736,6 +8752,10 @@
         if (x._fin) {
           x._fin = false;
           await liveMatch(x, null, 0, true);
+        }
+        if (x._clkSrv) {
+          x._clkSrv = false;
+          if (state.live === x.partido_id) render();
         }
         if (after) await after();
       })
@@ -8780,8 +8800,9 @@
     x._seen = ids;
     /* Reloj: si el anotador lo ha movido (empezar, pausar, descanso, 2ª parte, terminar) y aquí
        no se ha tocado, manda el del servidor. Si los dos lo han tocado, gana este móvil. */
-    if (x._clk === undefined) x._clk = liveClk(x);
     let sc = liveClk(s);
+    /* Sin huella guardada no se sabe quién lo ha tocado: manda este móvil */
+    if (x._clk === undefined) x._clk = sc;
     if (sc !== x._clk && liveClk(x) === x._clk) {
       if (s.estado === "FIN" && x.estado !== "FIN") x._fin = true;
       x.estado = s.estado;
@@ -8789,7 +8810,7 @@
       x.desde = s.desde || null;
       if (Number(s.parte_min)) x.parte_min = Number(s.parte_min);
       x._clk = sc;
-      x._cambio = true;
+      x._cambio = x._clkSrv = true;
     }
     return ch;
   }
@@ -9310,8 +9331,15 @@
       else liveGoal(x, "f", "");
     }
     if (k === "gc") liveGoal(x, "c");
-    if (["start", "pause", "resume", "half", "start2", "end", "reopen", "m-", "m+"].includes(k)) {
+    if (["start", "pause", "resume", "half", "start2", "end", "reopen", "m-", "m+", "reset"].includes(k)) {
       if (k === "end" && !confirm("¿Terminar el partido?")) return;
+      /* Vuelve el reloj a «Sin empezar» (0'), por ejemplo tras un partido de prueba. Lo apuntado se queda. */
+      if (k === "reset") {
+        if (!confirm("¿Poner el reloj a 0 y volver a «Sin empezar»? Los goles y lo que hayas apuntado se quedan (si quieres, los quitas con la ✕ de cada uno).")) return;
+        x.estado = "pre";
+        x.acum_ms = 0;
+        x.desde = null;
+      }
       if (k === "start") {
         let d = parseInt(($("lvDur") || {}).value);
         if (d >= 5 && d <= 60) x.parte_min = d;

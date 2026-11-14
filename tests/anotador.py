@@ -42,7 +42,7 @@ window.supabase={createClient:()=>{let cb=null,session=null;
       ms.forEach(r=>{let q2=CP(p);if(t==='directos'){q2.actualizado=NOW();if(q2.desde&&q2.desde!==r.desde)q2.desde=NOW()}Object.assign(r,q2)});
       window.__calls.push(['update',t,f.length]);out={data:sel?ms.map(CP):null,error:null}}
     else{window.__db[t]=rows.filter(r=>!ok(r));window.__calls.push(['delete',t]);out={error:null}}}
-   return Promise.resolve(out).then(res)}};return o};
+   return (window.__lat?new Promise(ok=>setTimeout(()=>ok(out),window.__lat)):Promise.resolve(out)).then(res)}};return o};
  return{from:q,
   rpc:async(n,a)=>{window.__calls.push(['rpc',n,a]);
    if(n==='ver_directo'){let r=(window.__db.directos||[]).find(x=>x.id===a.codigo);return{data:r?{...CP(r),ahora:new Date().toISOString()}:null,error:null}}
@@ -212,6 +212,22 @@ with sync_playwright() as p:
     nc=page(b,SEED,'window.__noCol=true;');login(nc);nc.click('[data-mode="fs"]') if nc.locator('[data-mode="fs"]').count() else None;nc.click('[data-tab=partidos]');nc.click('[data-action=live][data-id=m1]');nc.wait_for_selector('.lv-board')
     nc.click('[data-live=anon]');nc.wait_for_selector('.message')
     check('sin el SQL del anotador, explica qué falta','supabase-anotador.sql' in nc.locator('.message').inner_text())
+    # v11.34: con anotador creado antes de empezar y la red lenta, los toques del reloj no se pierden
+    rl=page(b,json.loads(json.dumps(SEED)));login(rl);rl.click('[data-mode="fs"]') if rl.locator('[data-mode="fs"]').count() else None
+    rl.click('[data-tab=partidos]');rl.click('[data-action=live][data-id=m1]');rl.wait_for_selector('.lv-board')
+    rl.click('[data-live=anon]');wait(rl,"!!d.anotador");rl.keyboard.press('Escape');rl.evaluate('window.__lat=350')
+    T=lambda k,w=40:(rl.evaluate("k=>document.querySelector('[data-live=\"'+k+'\"]').click()",k),rl.wait_for_timeout(w))
+    T('start',2500)
+    check('red lenta: «Empezar partido» con anotador ya creado no vuelve a «Sin empezar»',D(rl,"d.estado==='1T'&&!!d.desde"),D(rl,'[d.estado,d.desde]'))
+    T('pause');T('resume');T('pause');T('resume',3000)
+    check('toques seguidos del reloj: si lo último es «Reanudar», el reloj corre',D(rl,'!!d.desde') and rl.locator('[data-live=pause]').count()==1,D(rl,'[d.estado,d.acum_ms,d.desde]'))
+    T('resume') if rl.locator('[data-live=resume]').count() else None
+    T('pause');T('resume');T('pause',3000)
+    check('y si lo último es «Pausar», se queda parado en los dos sitios',D(rl,'!d.desde&&d.acum_ms>0') and rl.locator('[data-live=resume]').count()==1,D(rl,'[d.acum_ms,d.desde]'))
+    check('el Directo tiene «Reiniciar reloj»',rl.locator('[data-live=reset]').count()==1)
+    T('reset',2000)
+    check('«Reiniciar reloj» lo deja en «Sin empezar» (0) y se puede volver a empezar',D(rl,"d.estado==='pre'&&d.acum_ms===0&&!d.desde") and rl.locator('[data-live=start]').count()==1)
+    T('start',2000);check('y vuelve a empezar desde 0',D(rl,"d.estado==='1T'&&!!d.desde"))
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 if errs:print('\n'.join('FALLA consola: '+e for e in errs))

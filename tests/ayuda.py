@@ -68,6 +68,7 @@ with sync_playwright() as p:
     pg.screenshot(path=OUT+'/ayuda_club.png')
     pg.locator('#info .ayuda summary',has_text='Directo').click();pg.wait_for_timeout(150)
     t=pg.locator('#info .ayuda details',has_text='Compartir enlace').inner_text()
+    check('Directo: la guía explica «Reiniciar reloj»','Reiniciar reloj' in t and 'Sin empezar' in t)
     check('directo: explica cámara y emitir','Cámara' in t and 'Emitir' in t,t[:120])
     check('directo: explica el máximo de 25 personas viendo el vídeo','25 personas' in t)
     pg.locator('#info .ayuda summary',has_text='Plan gratuito y plan Pro').click();pg.wait_for_timeout(150)

@@ -2090,6 +2090,7 @@ img.avatar.zoomable {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   margin: 4px 0 12px;
 }
 .lv-adj span {
