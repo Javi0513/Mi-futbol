@@ -872,7 +872,7 @@
             .map((m) => {
               let e = entries(m),
                 a = m.alineacion || {};
-              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong><small>${liveChip(m.id)}${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small>${a.conv && (a.conv.cita || a.conv.lugar) ? `<small class="cl">${esc([a.conv.cita ? "Citación " + a.conv.cita : "", a.conv.hora ? "partido " + a.conv.hora : "", a.conv.lugar].filter(Boolean).join(" · "))}</small>` : ""}<small class="cl">Inicial: ${
+              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong>${jorTxt(a) ? `<small class="jor">${esc(jorTxt(a))}</small>` : ""}<small>${liveChip(m.id)}${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small>${a.conv && (a.conv.cita || a.conv.lugar) ? `<small class="cl">${esc([a.conv.cita ? "Citación " + a.conv.cita : "", a.conv.hora ? "partido " + a.conv.hora : "", a.conv.lugar].filter(Boolean).join(" · "))}</small>` : ""}<small class="cl">Inicial: ${
                 e
                   .filter((x) => x.starter)
                   .map((x) => esc(name(x.id)))
@@ -947,7 +947,7 @@
           .map((m) => {
             let r = m.alineacion && m.alineacion.resultado,
               c = r ? (r.gf > r.gc ? "w" : r.gf < r.gc ? "l" : "d") : "";
-            return `<button type="button" class="row rs-row" data-rs="${m.id}" aria-label="Ver resumen del partido contra ${esc(m.rival)}"><div class="avatar res ${c}">${r ? (c === "w" ? "V" : c === "l" ? "D" : "E") : "·"}</div><div class="info"><strong>${esc(m.rival)}</strong><small>${esc(fmtDate(m.fecha))} · ${r ? `${r.gf > r.gc ? "Victoria" : r.gf < r.gc ? "Derrota" : "Empate"} ${r.gf}-${r.gc}` : "Sin resultado"}</small></div><span class="rs-go" aria-hidden="true">${ic("right", 18)}</span></button>`;
+            return `<button type="button" class="row rs-row" data-rs="${m.id}" aria-label="Ver resumen del partido contra ${esc(m.rival)}"><div class="avatar res ${c}">${r ? (c === "w" ? "V" : c === "l" ? "D" : "E") : "·"}</div><div class="info"><strong>${esc(m.rival)}</strong><small>${esc(fmtDate(m.fecha))}${jorTxt(m.alineacion) ? " · " + esc(jorTxt(m.alineacion)) : ""} · ${r ? `${r.gf > r.gc ? "Victoria" : r.gf < r.gc ? "Derrota" : "Empate"} ${r.gf}-${r.gc}` : "Sin resultado"}</small></div><span class="rs-go" aria-hidden="true">${ic("right", 18)}</span></button>`;
           })
           .join("")}</section>`
       : "";
@@ -1094,7 +1094,7 @@
           .map((z) => {
             let k = res(z.r),
               d = ESTP.filter((s) => stv(z.e, s[0]) > 0).map((s) => `${stv(z.e, s[0])} ${s[3]}`);
-            return `<div class="row fi-p"><div class="avatar res ${k[0]}">${k[1]}</div><div class="info"><strong>${esc(z.m.rival || "Rival")}${z.r ? ` <small>${z.r.gf}-${z.r.gc}</small>` : ""}</strong><small>${esc(fmtDate(z.m.fecha))} · ${z.tit ? "★ Titular" : "Suplente"} · ${z.min}'${z.cap ? " · (C)" : ""}${z.gk ? " · POR" : ""}</small><small>${z.gol ? `⚽ ${z.gol}${z.gm.length ? " (" + z.gm.map((n) => n + "'").join(", ") + ")" : ""}` : ""}${z.am ? ' <i class="tj a"></i>' + (z.am > 1 ? z.am : "") : ""}${z.ro ? ' <i class="tj r"></i>' : ""}${d.length ? (z.gol || z.am || z.ro ? " · " : "") + d.join(" · ") : ""}</small></div></div>`;
+            return `<div class="row fi-p"><div class="avatar res ${k[0]}">${k[1]}</div><div class="info"><strong>${esc(z.m.rival || "Rival")}${z.r ? ` <small>${z.r.gf}-${z.r.gc}</small>` : ""}</strong><small>${esc(fmtDate(z.m.fecha))}${jorTxt(z.m.alineacion) ? " · " + esc(jorTxt(z.m.alineacion)) : ""} · ${z.tit ? "★ Titular" : "Suplente"} · ${z.min}'${z.cap ? " · (C)" : ""}${z.gk ? " · POR" : ""}</small><small>${z.gol ? `⚽ ${z.gol}${z.gm.length ? " (" + z.gm.map((n) => n + "'").join(", ") + ")" : ""}` : ""}${z.am ? ' <i class="tj a"></i>' + (z.am > 1 ? z.am : "") : ""}${z.ro ? ' <i class="tj r"></i>' : ""}${d.length ? (z.gol || z.am || z.ro ? " · " : "") + d.join(" · ") : ""}</small></div></div>`;
           })
           .join("")}${
           ver.length < P.length
@@ -1553,12 +1553,12 @@
       }),
     );
     /* Hoja 2: una fila por jugador y partido */
-    let S2 = [["Fecha", "Rival", "Goles a favor", "Goles en contra", "Resultado", "Dorsal", "Jugador", "Posición", "Titular", "Minutos", "Goles", "Minuto de los goles", "Asistencias", "Robos", "Pérdidas", "Tiros a puerta", "Tiros fuera", "Paradas", "Faltas", "Amarillas", "Rojas", "Capitán", "Portero"]];
+    let S2 = [["Fecha", "Rival", "Jornada", "Goles a favor", "Goles en contra", "Resultado", "Dorsal", "Jugador", "Posición", "Titular", "Minutos", "Goles", "Minuto de los goles", "Asistencias", "Robos", "Pérdidas", "Tiros a puerta", "Tiros fuera", "Paradas", "Faltas", "Amarillas", "Rojas", "Capitán", "Portero"]];
     /* Hoja 3: cada acción con su minuto */
-    let S3 = [["Fecha", "Rival", "Minuto", "Parte", "Acción", "Dorsal", "Jugador", "Posición"]];
+    let S3 = [["Fecha", "Rival", "Jornada", "Minuto", "Parte", "Acción", "Dorsal", "Jugador", "Posición"]];
     /* Hoja 5 (v11.27): dónde fue cada acción marcada en el campo, para Power BI o similares */
-    let S5 = [["Fecha", "Rival", "Minuto", "Parte", "Acción", "Dorsal", "Jugador", "Posición", "X (0-100)", "Y (0-100)", "X (metros)", "Y (metros)", "Tercio", "Carril"]];
-    let S4 = [["Fecha", "Rival", "Goles a favor", "Goles en contra", "Resultado", "Convocados", "Robos", "Pérdidas", "Tiros", "Tiros del rival", "Faltas", "Faltas del rival"]];
+    let S5 = [["Fecha", "Rival", "Jornada", "Minuto", "Parte", "Acción", "Dorsal", "Jugador", "Posición", "X (0-100)", "Y (0-100)", "X (metros)", "Y (metros)", "Tercio", "Carril"]];
+    let S4 = [["Fecha", "Rival", "Jornada", "Goles a favor", "Goles en contra", "Resultado", "Convocados", "Robos", "Pérdidas", "Tiros", "Tiros del rival", "Faltas", "Faltas del rival"]];
     G.forEach((m) => {
       let al = m.alineacion || {},
         r = al.resultado,
@@ -1571,16 +1571,17 @@
         tj = mdList(al, "tarjetas"),
         fe = xfecha(m.fecha),
         riv = m.rival || "Rival",
+        jo = jorTxt(al),
         A = [],
         parte = (mi, p) => (p === 1 || p === 2 ? p : mi === "" || !pm ? "" : mi <= pm ? 1 : 2),
-        acc = (mi, p, que, id, nom) => A.push([fe, riv, mi, parte(mi, p), que, id ? dor(id) : "", id ? name(id) : nom || "", id ? pos(id) : ""]),
+        acc = (mi, p, que, id, nom) => A.push([fe, riv, jo, mi, parte(mi, p), que, id ? dor(id) : "", id ? name(id) : nom || "", id ? pos(id) : ""]),
         tot = (k) => E.reduce((a, e) => a + stv(e, k), 0),
         F = al.faltas || {},
         gol = ev.filter((z) => z.t === "f" || z.t === "c");
       E.forEach((e) => {
         let gm = ev.filter((z) => z.t === "f" && z.pid === e.id).map((z) => Number(z.m) || 0),
           t = tj.filter((z) => z.pid === e.id);
-        S2.push([fe, riv, r ? r.gf : "", r ? r.gc : "", resTxt(r), dor(e.id), name(e.id), pos(e.id), e.starter ? "Sí" : "No", Number(e.minutes) || 0, Number(e.goals) || 0, gm.map((n) => n + "'").join(", "), stv(e, "asi"), stv(e, "rob"), stv(e, "per"), stv(e, "tp"), stv(e, "tf"), stv(e, "par"), stv(e, "fal"), t.filter((z) => z.c !== "r").length, t.filter((z) => z.c === "r").length, al.capitan === e.id ? "Sí" : "", gk === e.id ? "Sí" : ""]);
+        S2.push([fe, riv, jo, r ? r.gf : "", r ? r.gc : "", resTxt(r), dor(e.id), name(e.id), pos(e.id), e.starter ? "Sí" : "No", Number(e.minutes) || 0, Number(e.goals) || 0, gm.map((n) => n + "'").join(", "), stv(e, "asi"), stv(e, "rob"), stv(e, "per"), stv(e, "tp"), stv(e, "tf"), stv(e, "par"), stv(e, "fal"), t.filter((z) => z.c !== "r").length, t.filter((z) => z.c === "r").length, al.capitan === e.id ? "Sí" : "", gk === e.id ? "Sí" : ""]);
         /* Datos del Directo: los apuntados con la app llevan su minuto (stm); los puestos a mano, sin minuto */
         ESTP.forEach((s) => {
           let n = stv(e, s[0]),
@@ -1592,7 +1593,7 @@
         locDe(e).forEach((z) => {
           let mi = Number(z[3]) || 0,
             ge = z[4] && ev.find((g) => g.id === z[4]);
-          S5.push([fe, riv, mi, parte(mi, ge ? ge.p : 0), z[0] === "gol" ? "Gol" : (ESTP.find((s) => s[0] === z[0]) || [])[1] || z[0], dor(e.id), name(e.id), pos(e.id), z[1], z[2], Math.round(z[1] * cm.w) / 100, Math.round(z[2] * cm.h) / 100, z[1] < 100 / 3 ? "Defensivo" : z[1] < 200 / 3 ? "Medio" : "Ofensivo", z[2] < 100 / 3 ? "Izquierdo" : z[2] < 200 / 3 ? "Central" : "Derecho"]);
+          S5.push([fe, riv, jo, mi, parte(mi, ge ? ge.p : 0), z[0] === "gol" ? "Gol" : (ESTP.find((s) => s[0] === z[0]) || [])[1] || z[0], dor(e.id), name(e.id), pos(e.id), z[1], z[2], Math.round(z[1] * cm.w) / 100, Math.round(z[2] * cm.h) / 100, z[1] < 100 / 3 ? "Defensivo" : z[1] < 200 / 3 ? "Medio" : "Ofensivo", z[2] < 100 / 3 ? "Izquierdo" : z[2] < 200 / 3 ? "Central" : "Derecho"]);
         });
       });
       gol.forEach((z) => (z.t === "f" ? acc(Number(z.m) || 0, z.p, "Gol", z.pid && ids.includes(z.pid) ? z.pid : "", z.n || "") : acc(Number(z.m) || 0, z.p, "Gol del rival", "", z.n ? (z.d ? z.d + " · " : "") + z.n : riv)));
@@ -1605,14 +1606,14 @@
       tj.forEach((z) => acc(z.m === "" || z.m == null ? "" : Number(z.m) || 0, 0, z.c === "r" ? "Roja" : "Amarilla", z.pid));
       A.sort((a, b) => (a[2] === "" ? 999 : a[2]) - (b[2] === "" ? 999 : b[2]));
       S3.push(...A);
-      S4.push([fe, riv, r ? r.gf : "", r ? r.gc : "", resTxt(r), E.length, tot("rob"), tot("per"), tot("tp") + tot("tf"), Number((al.estR || {}).tir) || 0, (Number(F.n1) || 0) + (Number(F.n2) || 0), (Number(F.r1) || 0) + (Number(F.r2) || 0)]);
+      S4.push([fe, riv, jo, r ? r.gf : "", r ? r.gc : "", resTxt(r), E.length, tot("rob"), tot("per"), tot("tp") + tot("tf"), Number((al.estR || {}).tir) || 0, (Number(F.n1) || 0) + (Number(F.n2) || 0), (Number(F.r1) || 0) + (Number(F.r2) || 0)]);
     });
     return [
       { n: "Jugadores", rows: S1, w: [8, 22, 20, 20, 12] },
-      { n: "Partidos", rows: S2, w: [12, 20, 8, 8, 10, 8, 22, 20, 8, 9, 7, 18] },
-      { n: "Acciones", rows: S3, w: [12, 20, 9, 7, 16, 8, 22, 20] },
-      { n: "Equipo", rows: S4, w: [12, 20] },
-      { n: "Mapa", rows: S5, w: [12, 20, 9, 7, 16, 8, 22, 20, 10, 10, 11, 11, 11, 10] },
+      { n: "Partidos", rows: S2, w: [12, 20, 14, 8, 8, 10, 8, 22, 20, 8, 9, 7, 18] },
+      { n: "Acciones", rows: S3, w: [12, 20, 14, 9, 7, 16, 8, 22, 20] },
+      { n: "Equipo", rows: S4, w: [12, 20, 14] },
+      { n: "Mapa", rows: S5, w: [12, 20, 14, 9, 7, 16, 8, 22, 20, 10, 10, 11, 11, 11, 10] },
     ];
   }
   async function bajaArchivo(blob, fname, titulo) {
@@ -2459,6 +2460,7 @@
       res: r ? (r.gf > r.gc ? ["w", "Victoria"] : r.gf < r.gc ? ["l", "Derrota"] : ["d", "Empate"]) : null,
       eq: teamName(m.modalidad, teamOf(m)),
       riv: m.rival || "Rival",
+      jor: jorTxt(al),
       cap: al.capitan && ids.includes(al.capitan) ? al.capitan : "",
       gk: E.length ? gkOf(al, ids) : "",
       goles,
@@ -2480,7 +2482,7 @@
       L = [],
       tag = (j) => (j.id === d.cap ? " (C)" : "") + (j.id === d.gk ? " (POR)" : "");
     L.push(`⚽ *${d.eq} ${d.r ? d.r.gf + " - " + d.r.gc : "vs"} ${d.riv}*`);
-    L.push(`${MN(m.modalidad)} · ${fmtDate(m.fecha)}${d.res ? " · " + d.res[1] : ""}`);
+    L.push(`${MN(m.modalidad)}${d.jor ? " · " + d.jor : ""} · ${fmtDate(m.fecha)}${d.res ? " · " + d.res[1] : ""}`);
     if (d.goles.length) {
       L.push("", "*Goles*");
       d.goles.forEach((g) => L.push(`${g.m}' ${g.riv && g.n !== d.riv ? "(" + d.riv + ") " : ""}${g.n}`));
@@ -2528,7 +2530,7 @@
       cards = (j) => `${j.am ? '<i class="tj a" aria-label="Amarilla"></i>'.repeat(Math.min(j.am, 2)) : ""}${j.ro ? '<i class="tj r" aria-label="Roja"></i>' : ""}`,
       sec = (t, h) => (h ? `<h3 class="ci-h3">${t}</h3>${h}` : ""),
       li = (L) => (L.length ? `<ul class="rs-l">${L.map((z) => `<li>${z}</li>`).join("")}</ul>` : "");
-    let head = `<div class="rs-sc ${d.res ? d.res[0] : ""}"><div class="rs-eq"><b>${esc(d.eq)}</b><span>${esc(d.riv)}</span></div><div class="rs-n">${d.r ? `${d.r.gf}<i>-</i>${d.r.gc}` : "–"}</div></div><p class="muted rs-m">${esc(MN(m.modalidad))} · ${esc(fmtDate(m.fecha))}${d.res ? ` · <span class="res ${d.res[0]}">${d.res[1]}</span>` : " · sin resultado"}</p>`;
+    let head = `<div class="rs-sc ${d.res ? d.res[0] : ""}"><div class="rs-eq"><b>${esc(d.eq)}</b><span>${esc(d.riv)}</span></div><div class="rs-n">${d.r ? `${d.r.gf}<i>-</i>${d.r.gc}` : "–"}</div></div><p class="muted rs-m">${esc(MN(m.modalidad))}${d.jor ? ` · <b>${esc(d.jor)}</b>` : ""} · ${esc(fmtDate(m.fecha))}${d.res ? ` · <span class="res ${d.res[0]}">${d.res[1]}</span>` : " · sin resultado"}</p>`;
     let goles = d.goles.length
       ? li(d.goles.map((g) => `<b>${g.m}'</b> ⚽ ${esc(g.n)}${g.riv && g.n !== d.riv ? ` <small class="muted">${esc(d.riv)}</small>` : ""}`))
       : li(d.js.filter((j) => j.gol).map((j) => `⚽ ${esc(j.n)}${j.gol > 1 ? ` <b>x${j.gol}</b>` : ""}`));
@@ -2576,7 +2578,8 @@
       gs.forEach((m) => {
         let r = m.alineacion && m.alineacion.resultado,
           k = r ? (r.gf > r.gc ? "✅" : r.gf < r.gc ? "❌" : "➖") : "·";
-        L.push(`${k} ${fmtDate(m.fecha)} · ${m.rival || "Rival"}${r ? " " + r.gf + "-" + r.gc : ""}`);
+        let jt = jorTxt(m.alineacion);
+        L.push(`${k} ${fmtDate(m.fecha)}${jt ? " · " + jt : ""} · ${m.rival || "Rival"}${r ? " " + r.gf + "-" + r.gc : ""}`);
       });
     }
     let J = roster()
@@ -2653,7 +2656,7 @@
     g.fillStyle = MUT;
     g.font = `600 34px ${ff}`;
     g.textAlign = "right";
-    g.fillText(`RESUMEN · ${MN(m.modalidad).toUpperCase()} · ${fmtDate(m.fecha)}`, W - 70, 96);
+    g.fillText(`RESUMEN · ${(jorTxt(m.alineacion) || MN(m.modalidad)).toUpperCase()} · ${fmtDate(m.fecha)}`, W - 70, 96);
     /* Marcador */
     g.textAlign = "center";
     g.fillStyle = INK;
@@ -3455,6 +3458,11 @@
     let J = cvJug(c),
       L = [`⚽ *CONVOCATORIA* · ${teamName()}`];
     if (c.rival) L.push(`🆚 Rival: ${c.rival}`);
+    {
+      let pm = cvPartido(c),
+        jt = c.deDraft && state.draft ? jorTxt(state.draft.alineacion) : pm ? jorTxt(pm.alineacion) : "";
+      if (jt) L.push(`🏆 ${jt}`);
+    }
     if (c.fecha) L.push(`📅 ${trDayLabel(c.fecha).replace(/^./, (x) => x.toUpperCase())}`);
     if (c.hora || c.cita)
       L.push(`⏰ ${[c.hora ? "Partido: " + c.hora : "", c.cita ? "Citación: " + c.cita : ""].filter(Boolean).join(" · ")}`);
@@ -4878,6 +4886,36 @@
     let f = Object.keys(formations[state.mode])[0];
     return { formation: f, slots: {} };
   }
+  /* Jornada / competición de cada partido (v11.32). Va dentro de la alineación (sin SQL):
+     alineacion.jornada = { t: "liga" | "copa" | "torneo" | "amistoso" | "", n: "7" | "Octavos" } */
+  const JOR_T = [["liga", "Liga"], ["copa", "Copa"], ["torneo", "Torneo"], ["amistoso", "Amistoso"]];
+  function jorTxt(al) {
+    let j = al && al.jornada;
+    if (!j || typeof j !== "object") return "";
+    let t = JOR_T.find((z) => z[0] === j.t),
+      n = String(j.n || "").trim(),
+      num = /^\d+$/.test(n);
+    if (!t || t[0] === "liga") return n ? (num ? "Jornada " + n : n) : t ? "Liga" : "";
+    return n ? t[1] + " · " + (num && t[0] !== "amistoso" ? "Ronda " + n : n) : t[1];
+  }
+  /* Para un partido nuevo: si el último de liga tenía número, propone el siguiente */
+  function jorSiguiente() {
+    let L = games()
+      .filter((m) => m.alineacion && m.alineacion.jornada && m.alineacion.jornada.t === "liga" && /^\d+$/.test(String(m.alineacion.jornada.n || "").trim()))
+      .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+    return L.length ? { t: "liga", n: String(Math.min(99, Number(L[0].alineacion.jornada.n) + 1)) } : null;
+  }
+  function jorCampos(d) {
+    let j = (d.alineacion && d.alineacion.jornada) || {};
+    return `<div class="formgrid jor-g"><label>Competición<select id="jorT">${[["", "Sin indicar"], ...JOR_T].map((z) => `<option value="${z[0]}" ${(j.t || "") === z[0] ? "selected" : ""}>${z[1]}</option>`).join("")}</select></label><label>Jornada o ronda<input id="jorN" value="${esc(j.n || "")}" maxlength="20" autocomplete="off" placeholder="Ej.: 7 u Octavos"></label></div>`;
+  }
+  function jorLee(al) {
+    let t = (($("jorT") || {}).value || "").trim(),
+      n = (($("jorN") || {}).value || "").trim().slice(0, 20);
+    if (!$("jorT")) return;
+    if (t || n) al.jornada = { t, n };
+    else delete al.jornada;
+  }
   function editor() {
     let d = state.draft,
       f =
@@ -4894,7 +4932,7 @@
         return `<div class="checkline"><span>${esc(p.nombre)}${x && p.id === cap ? ' <em class="tg c" title="Capitán">C</em>' : ""}${x && p.id === gk ? ' <em class="tg g" title="Portero">POR</em>' : ""}</span><input type="checkbox" data-field="called" data-id="${p.id}" aria-label="Convocado: ${esc(p.nombre)}" ${x ? "checked" : ""}><input type="checkbox" data-field="starter" data-id="${p.id}" aria-label="Titular: ${esc(p.nombre)}" ${x?.starter ? "checked" : ""}><input type="number" data-field="minutes" data-id="${p.id}" aria-label="Minutos de ${esc(p.nombre)}" min="0" value="${x?.minutes || 0}" ${x ? "" : "disabled"}><input type="number" data-field="goals" data-id="${p.id}" aria-label="Goles de ${esc(p.nombre)}" min="0" value="${x?.goals || 0}" ${x ? "" : "disabled"}></div>`;
       })
       .join("");
-    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><span class="mbtns">${viendo ? "" : `<button class="secondary small" data-cv="desde">${ic("share", 18)}Convocatoria</button>`}${state.editing && pePuede(peFind(state.editing)) ? `<button class="secondary small" data-peo="${state.editing}">${ic("live", 18)}Enlaces del directo</button>` : ""}<button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></span></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div><div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
+    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><span class="mbtns">${viendo ? "" : `<button class="secondary small" data-cv="desde">${ic("share", 18)}Convocatoria</button>`}${state.editing && pePuede(peFind(state.editing)) ? `<button class="secondary small" data-peo="${state.editing}">${ic("live", 18)}Enlaces del directo</button>` : ""}<button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></span></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div>${jorCampos(d)}<div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
 <div class="lineup-layout"><div><div class="position-help"><h3>Campo y posiciones</h3><select id="formation" aria-label="Formación">${Object.keys(
       formations[state.mode],
     )
@@ -5361,7 +5399,7 @@
     g.fillText(
       clipTxt(
         g,
-        `${o.rival ? "vs " + o.rival : ""}${o.fecha ? (o.rival ? "  ·  " : "") + fmtDate(o.fecha) : ""}`,
+        `${o.rival ? "vs " + o.rival : ""}${o.fecha ? (o.rival ? "  ·  " : "") + fmtDate(o.fecha) : ""}${jorTxt(al) ? "  ·  " + jorTxt(al) : ""}`,
         W - 180,
       ),
       90,
@@ -5700,6 +5738,10 @@
           ? JSON.parse(JSON.stringify(m.alineacion))
           : blankAlign(),
     };
+    if (!m) {
+      let js = jorSiguiente();
+      if (js) state.draft.alineacion.jornada = js;
+    }
     state.selectedSlot = null;
     let al = state.draft.alineacion;
     if (!formations[state.mode][al.formation])
@@ -5799,6 +5841,7 @@
     d.fecha = $("date").value;
     d.rival = $("rival").value.trim();
     if (!d.fecha || !d.rival) return note("Indica fecha y rival.");
+    jorLee(d.alineacion);
     {
       let gfv = $("gf").value.trim(),
         gcv = $("gc").value.trim();
@@ -6451,6 +6494,7 @@
     state.matches.forEach((m) => {
       if (
         fold(m.rival).includes(q) ||
+        fold(jorTxt(m.alineacion)).includes(q) ||
         fold(m.fecha).includes(q) ||
         fold(fmtDate(m.fecha)).includes(q)
       )
@@ -6462,7 +6506,8 @@
           s:
             MODES[m.modalidad].name +
             (teamsOf(m.modalidad).length > 1 ? " · " + teamName(m.modalidad, teamOf(m)) : "") +
-            " · " + fmtDate(m.fecha),
+            " · " + fmtDate(m.fecha) +
+            (jorTxt(m.alineacion) ? " · " + jorTxt(m.alineacion) : ""),
         });
     });
     return out.slice(0, 40);
@@ -6702,7 +6747,7 @@
     {
       el: '[data-tab="partidos"]',
       t: "Partidos",
-      p: "Pulsa «+ Partido»: pon fecha y rival, marca convocados y titulares, elige la formación y arrastra a cada jugador a su sitio en el campo. Elige capitán y portero, y después apunta minutos, goles, cambios, tarjetas (también las del rival) y el resultado.",
+      p: "Pulsa «+ Partido»: pon fecha, rival y, si quieres, la jornada, marca convocados y titulares, elige la formación y arrastra a cada jugador a su sitio en el campo. Elige capitán y portero, y después apunta minutos, goles, cambios, tarjetas (también las del rival) y el resultado.",
     },
     {
       el: '[data-tab="partidos"]',
@@ -6912,6 +6957,7 @@
       t: "Partidos y alineaciones",
       p: [
         "Pulsa «+ Partido»: pon la fecha y el rival, marca convocados y titulares y elige la formación.",
+        "<b>Jornada</b>: debajo del rival elige la <b>competición</b> (Liga, Copa, Torneo o Amistoso) y escribe la <b>jornada o la ronda</b> (por ejemplo «7» u «Octavos»). Es opcional. En un partido nuevo te propone sola la siguiente jornada de liga. La jornada sale en la lista de partidos, en el resumen, en la convocatoria, en el Directo, en el enlace de la familia, en la imagen de la alineación y en el Excel, y puedes buscar «jornada 7» con la lupa.",
         "Arrastra a cada jugador a su sitio en el campo.",
         "<b>Color de las fichas</b>: toca a un jugador del campo y, debajo, elige su color con las muestras o moviendo la barra de color (y la de claro u oscuro). «Poner este color a todo el equipo» pinta a todos igual y «Color normal» lo deja en verde (o en amarillo si es el portero); el portero no coge el color del equipo. El color sale también en la imagen para WhatsApp.",
         "Después del partido apunta los minutos, los goles y el resultado.",
@@ -8024,6 +8070,7 @@
       state.draft.fecha = e.target.value;
     if (e.target.id === "rival" && state.draft)
       state.draft.rival = e.target.value;
+    if ((e.target.id === "jorT" || e.target.id === "jorN") && state.draft) jorLee(state.draft.alineacion);
     if (e.target.id === "gf" && state.draft) state.draft.gf = e.target.value;
     if (e.target.id === "gc" && state.draft) state.draft.gc = e.target.value;
   });
@@ -8234,7 +8281,7 @@
       capgk = ids.length
         ? `<div class="formgrid lv-cg"><label>Capitán<select id="lvCap">${so(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="lvGk">${so(gk, "—")}</select></label></div>`
         : "";
-    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? ventPanel(m, x) : ""}${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${jorTxt(m.alineacion) ? esc(jorTxt(m.alineacion)) + " · " : ""}${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? ventPanel(m, x) : ""}${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
   }
   /* Estadísticas en directo: eliges qué apuntar (robo, pérdida, tiro…) y tocas al jugador */
   function liveStats(m, x) {
@@ -8589,7 +8636,26 @@
     }
     x = liveRows[id] = (r.data && r.data[0]) || row;
     liveSync(x);
+    liveJor(x, m);
     return x;
+  }
+  /* La jornada del partido también sale en el enlace de la familia (columna directos.jornada,
+     supabase-jornada.sql). Si aún no existe la columna, no pasa nada: se deja de intentar. */
+  let liveJorNo = false;
+  async function liveJor(x, m) {
+    let jt = jorTxt(m && m.alineacion).slice(0, 40);
+    if (liveJorNo || !x || !x.id || (x.jornada || "") === jt) return;
+    let r;
+    try {
+      r = await db.from("directos").update({ jornada: jt || null }).eq("id", x.id).select("id");
+    } catch (e) {
+      r = { error: e };
+    }
+    if (r.error) {
+      if (/jornada|schema cache|column/i.test(String(r.error.message || r.error))) liveJorNo = true;
+      return;
+    }
+    x.jornada = jt;
   }
   /* Pone al día el directo con lo que hay ahora en el partido (rival, duración, convocados del anotador) */
   function liveAlDia(x, m) {
@@ -8605,6 +8671,7 @@
       ch = true;
     }
     if (ch) liveSave(x);
+    liveJor(x, m);
     /* El anotador ve siempre los convocados de ahora */
     if (x.anotador && JSON.stringify(anotJug(m)) !== JSON.stringify(x.anot_jug || [])) anotGuarda(x, { anot_jug: anotJug(m) });
   }
@@ -9806,7 +9873,7 @@
       liveSkew = Date.parse(pubRow.ahora) - Date.now();
     pubVideo((pubRow && pubRow.video_desde) || null);
     $("pubData").innerHTML = pubRow
-        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}</div>${liveBoard(pubRow, serverNow(), false)}${pubRow.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Deja esta página abierta o vuelve a entrar con el mismo enlace cuando empiece: el marcador se pone en marcha solo.</p>' : ""}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
+        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}${pubRow.jornada ? " · " + esc(pubRow.jornada) : ""}</div>${liveBoard(pubRow, serverNow(), false)}${pubRow.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Deja esta página abierta o vuelve a entrar con el mismo enlace cuando empiece: el marcador se pone en marcha solo.</p>' : ""}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
         : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>';
   }
   function startPub() {

@@ -6210,3 +6210,21 @@ html.bio-on body {
 .mapa-w .campo.cg {
   max-width: 420px;
 }
+/* v11.32 · Jornada / competición del partido */
+.mrow .info small.jor {
+  display: inline-block;
+  width: auto;
+  margin: 2px 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  color: var(--lime);
+  font-family: var(--fd);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.jor-g {
+  margin-top: 10px;
+}
