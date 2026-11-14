@@ -574,7 +574,7 @@
           r.games++;
           r.starts += e.starter ? 1 : 0;
           r.minutes += Number(e.minutes) || 0;
-          r.goals += Number(e.goals) || 0;
+          r.goals += Math.max(0, Number(e.goals) || 0);
           ESTP.forEach((s) => (r[s[0]] += stv(e, s[0])));
           mdList(m.alineacion, "tarjetas").forEach((t) => {
             if (t.pid === pid) r[t.c === "r" ? "rojas" : "amarillas"]++;
@@ -613,7 +613,7 @@
       ["Jugadores", roster().length],
       ["Partidos", games().length],
       ["Minutos", all.reduce((a, x) => a + (Number(x.minutes) || 0), 0)],
-      ["Goles", all.reduce((a, x) => a + (Number(x.goals) || 0), 0)],
+      ["Goles", all.reduce((a, x) => a + Math.max(0, Number(x.goals) || 0), 0)],
     ]
       .map(
         (x) => `<div class="stat"><small>${x[0]}</small><b>${x[1]}</b></div>`,
@@ -872,7 +872,7 @@
             .map((m) => {
               let e = entries(m),
                 a = m.alineacion || {};
-              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong>${jorTxt(a) ? `<small class="jor">${esc(jorTxt(a))}</small>` : ""}<small>${liveChip(m.id)}${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + (Number(x.goals) || 0), 0)} goles</small>${a.conv && (a.conv.cita || a.conv.lugar) ? `<small class="cl">${esc([a.conv.cita ? "Citación " + a.conv.cita : "", a.conv.hora ? "partido " + a.conv.hora : "", a.conv.lugar].filter(Boolean).join(" · "))}</small>` : ""}<small class="cl">Inicial: ${
+              return `<div class="row mrow" data-mid="${m.id}">${dtile(m.fecha)}<div class="info"><strong>${esc(m.rival)}</strong>${jorTxt(a) ? `<small class="jor">${esc(jorTxt(a))}</small>` : ""}<small>${liveChip(m.id)}${resChip(a)}${esc(a.formation || "Sin formación")} · ${e.length} convocados · ${e.reduce((s, x) => s + (Number(x.minutes) || 0), 0)} min · ${e.reduce((s, x) => s + Math.max(0, Number(x.goals) || 0), 0)} goles</small>${a.conv && (a.conv.cita || a.conv.lugar) ? `<small class="cl">${esc([a.conv.cita ? "Citación " + a.conv.cita : "", a.conv.hora ? "partido " + a.conv.hora : "", a.conv.lugar].filter(Boolean).join(" · "))}</small>` : ""}<small class="cl">Inicial: ${
                 e
                   .filter((x) => x.starter)
                   .map((x) => esc(name(x.id)))
@@ -1037,7 +1037,7 @@
         r: al.resultado,
         tit: !!e.starter,
         min: Number(e.minutes) || 0,
-        gol: Number(e.goals) || 0,
+        gol: Math.max(0, Number(e.goals) || 0),
         gm: ev
           .filter((z) => z.t === "f" && z.pid === pid)
           .map((z) => Number(z.m) || 0)
@@ -1094,7 +1094,7 @@
           .map((z) => {
             let k = res(z.r),
               d = ESTP.filter((s) => stv(z.e, s[0]) > 0).map((s) => `${stv(z.e, s[0])} ${s[3]}`);
-            return `<div class="row fi-p"><div class="avatar res ${k[0]}">${k[1]}</div><div class="info"><strong>${esc(z.m.rival || "Rival")}${z.r ? ` <small>${z.r.gf}-${z.r.gc}</small>` : ""}</strong><small>${esc(fmtDate(z.m.fecha))}${jorTxt(z.m.alineacion) ? " · " + esc(jorTxt(z.m.alineacion)) : ""} · ${z.tit ? "★ Titular" : "Suplente"} · ${z.min}'${z.cap ? " · (C)" : ""}${z.gk ? " · POR" : ""}</small><small>${z.gol ? `⚽ ${z.gol}${z.gm.length ? " (" + z.gm.map((n) => n + "'").join(", ") + ")" : ""}` : ""}${z.am ? ' <i class="tj a"></i>' + (z.am > 1 ? z.am : "") : ""}${z.ro ? ' <i class="tj r"></i>' : ""}${d.length ? (z.gol || z.am || z.ro ? " · " : "") + d.join(" · ") : ""}</small></div></div>`;
+            return `<div class="row fi-p"><div class="avatar res ${k[0]}">${k[1]}</div><div class="info"><strong>${esc(z.m.rival || "Rival")}${z.r ? ` <small>${z.r.gf}-${z.r.gc}</small>` : ""}</strong><small>${esc(fmtDate(z.m.fecha))}${jorTxt(z.m.alineacion) ? " · " + esc(jorTxt(z.m.alineacion)) : ""} · ${z.tit ? "★ Titular" : "Suplente"} · ${z.min}'${z.cap ? " · (C)" : ""}${z.gk ? " · POR" : ""}</small><small>${z.gol ? `⚽ ${z.gol}${z.gm.length ? " (" + z.gm.map((n) => n + "'").join(", ") + ")" : ""}` : ""}${z.am ? ' <i class="tj a"></i>' + (z.am > 1 ? z.am : "") : ""}${z.ro ? ' <i class="tj r"></i>' : ""}${d.length ? (z.gol || z.am || z.ro ? " · " : "") + d.join(" · ") : ""}</small><button type="button" class="linkb rj-fi" data-rj="${z.m.id}|${pid}">${ic("share", 16)}Resumen de este partido</button></div></div>`;
           })
           .join("")}${
           ver.length < P.length
@@ -1102,7 +1102,7 @@
             : ""
         }`
       : `<p class="muted">Aún no ha jugado ningún partido. Cuando lo convoques, aquí saldrá todo lo que haga.</p>`;
-    let bt = `<div class="stack">${viendo ? "" : `<button type="button" class="secondary" data-ficha-ed="${p.id}">${ic("pencil", 18)}Editar posición, pie y datos</button>`}<button type="button" class="primary" data-xl="go">${ic("download", 18)}Exportar el equipo a Excel</button></div>${xlQuedan()}`;
+    let bt = `<div class="stack">${viendo ? "" : `<button type="button" class="secondary" data-ficha-ed="${p.id}">${ic("pencil", 18)}Editar posición, pie y datos</button>`}<button type="button" class="primary" data-xlj="${p.id}">${ic("download", 18)}Informe de ${esc(p.nombre)} en Excel</button><button type="button" class="secondary" data-xl="go">${ic("download", 18)}Exportar el equipo a Excel</button></div><p class="hint">El informe del jugador trae una fila por partido con todo lo que hizo, el total y la media por partido, y una hoja «Resumen» con los porcentajes (a puerta, acierto, titularidades…), con fórmulas.</p>${xlQuedan()}`;
     let mp = mapasHtml(p.modalidad || state.mode, ver.flatMap((z) => locDe(z.e)), p.nombre);
     if (ver.length < P.length && P.slice(FICHA_GRATIS).some((z) => locDe(z.e).length))
       mp += `<p class="muted lim-q">Plan gratuito: los mapas salen con los ${FICHA_GRATIS} últimos partidos. Con Pro, con toda la temporada.</p>`;
@@ -1222,38 +1222,103 @@
     let m = Math.max(1.5, 3 * s),
       x0 = o.medio ? W / 2 - m / 2 : -m,
       vw = o.medio ? W / 2 + m * 1.5 : W + 2 * m;
+    /* Rayas del césped (mapa de calor), una franja más clara cada dos */
+    let ry = "";
+    if (o.rayas) {
+      let n = c.sala ? 10 : 20,
+        fw = W / n;
+      for (let i = 0; i < n; i += 2) ry += `<rect x="${(i * fw).toFixed(2)}" y="0" width="${fw.toFixed(2)}" height="${H}" class="cp-ray"/>`;
+    }
     /* Campograma: la mitad del rival en vertical, con su portería arriba */
     if (o.vert)
       return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${-m} ${-m} ${H + 2 * m} ${W / 2 + m * 1.5}" data-w="${W}" data-h="${H}" style="--lw:${lw}" role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${-m}" y="${-m}" width="${H + 2 * m}" height="${W / 2 + m * 1.5}" class="cp-bg"/><g transform="translate(0 ${W}) rotate(-90)">${L}${inner || ""}</g></svg>`;
-    return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${x0} ${-m} ${vw} ${H + 2 * m}" data-w="${W}" data-h="${H}" style="--lw:${lw}" ${o.attr || ""} role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${x0}" y="${-m}" width="${vw}" height="${H + 2 * m}" class="cp-bg"/>${L}${inner || ""}${o.flecha ? `<text x="${W / 2}" y="${-m * 0.25}" class="cp-tx" font-size="${Math.max(1.4, 2.6 * s)}" text-anchor="middle">Atacamos hacia aquí →</text>` : ""}</svg>`;
+    return `<svg class="campo${c.sala ? " sala" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${x0} ${-m} ${vw} ${H + 2 * m}" data-w="${W}" data-h="${H}" style="--lw:${lw}" ${o.attr || ""} role="img" aria-label="${esc(o.label || "Campo")}"><rect x="${x0}" y="${-m}" width="${vw}" height="${H + 2 * m}" class="cp-bg"/>${o.rayas ? `<rect x="0" y="0" width="${W}" height="${H}" class="cp-cesped"/>${ry}${inner || ""}${L}` : L + (inner || "")}${o.flecha ? `<text x="${W / 2}" y="${-m * 0.25}" class="cp-tx" font-size="${Math.max(1.4, 2.6 * s)}" text-anchor="middle">Atacamos hacia aquí →</text>` : ""}</svg>`;
   }
   const locXY = (mod, z) => {
     let c = campoDe(mod);
     return [(z[1] / 100) * c.w, (z[2] / 100) * c.h];
   };
-  let mapaN = 0;
-  /* Mapa de calor: manchas difuminadas (amarillo → rojo donde más se repite) y un punto por acción */
+  /* Mapa de calor (v11.35, como en Power BI): campo verde a rayas y manchas suaves de densidad
+     (azul donde hay pocas acciones → turquesa → verde claro donde más se repiten).
+     Se calcula una densidad (suma de campanas de Gauss) en una rejilla pequeña, se pinta en un
+     canvas y va dentro del SVG como imagen; el navegador la suaviza al estirarla. Solo canvas 2D,
+     sirve en iPad antiguos. */
+  const MC_COL = [
+    [0, 20, 60, 190, 0],
+    [0.12, 25, 80, 210, 0.45],
+    [0.35, 30, 120, 230, 0.7],
+    [0.6, 40, 190, 215, 0.82],
+    [0.82, 70, 225, 170, 0.9],
+    [1, 150, 255, 160, 0.95],
+  ];
+  function mcColor(v) {
+    for (let i = 1; i < MC_COL.length; i++) {
+      let b = MC_COL[i];
+      if (v <= b[0]) {
+        let a = MC_COL[i - 1],
+          t = (v - a[0]) / (b[0] - a[0]);
+        return [1, 2, 3, 4].map((j) => a[j] + (b[j] - a[j]) * t);
+      }
+    }
+    return MC_COL[MC_COL.length - 1].slice(1);
+  }
+  function mcDensidad(mod, L) {
+    let c = campoDe(mod),
+      px = c.sala ? 6 : 105 / c.w > 1.4 ? 3 : 2,
+      gw = Math.round(c.w * px),
+      gh = Math.round(c.h * px),
+      sg = Math.max(1, 0.024 * c.w) * px,
+      R = Math.ceil(sg * 3),
+      d = new Float32Array(gw * gh),
+      ker = [],
+      mx = 0;
+    for (let k = -R; k <= R; k++) ker.push(Math.exp(-(k * k) / (2 * sg * sg)));
+    L.forEach((z) => {
+      let p = locXY(mod, z),
+        cx = Math.round(p[0] * px),
+        cy = Math.round(p[1] * px);
+      for (let y = Math.max(0, cy - R); y <= Math.min(gh - 1, cy + R); y++) {
+        let ky = ker[y - cy + R],
+          o = y * gw;
+        for (let x = Math.max(0, cx - R); x <= Math.min(gw - 1, cx + R); x++) d[o + x] += ky * ker[x - cx + R];
+      }
+    });
+    for (let i = 0; i < d.length; i++) if (d[i] > mx) mx = d[i];
+    let cv = document.createElement("canvas");
+    cv.width = gw;
+    cv.height = gh;
+    let ctx = cv.getContext && cv.getContext("2d");
+    if (!ctx || !mx) return null;
+    let im = ctx.createImageData(gw, gh),
+      q = im.data,
+      top = Math.max(mx, 2.4);
+    for (let i = 0; i < d.length; i++) {
+      let v = d[i] / top;
+      if (v < 0.03) continue;
+      let col = mcColor(Math.min(1, v));
+      q[i * 4] = col[0];
+      q[i * 4 + 1] = col[1];
+      q[i * 4 + 2] = col[2];
+      q[i * 4 + 3] = Math.round(col[3] * 255 * Math.min(1, v / 0.12));
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv;
+  }
+  function mcUrl(mod, L) {
+    let cv = L.length ? mcDensidad(mod, L) : null;
+    try {
+      return cv ? cv.toDataURL("image/png") : "";
+    } catch (e) {
+      return "";
+    }
+  }
   function mapaCalor(mod, L, label) {
     let c = campoDe(mod),
-      s = c.w / 105,
-      id = "mc" + ++mapaN,
-      big = L.map((z) => {
-        let p = locXY(mod, z);
-        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(10 * s + 1).toFixed(1)}"/>`;
-      }).join(""),
-      sm = L.map((z) => {
-        let p = locXY(mod, z);
-        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(5 * s + 0.6).toFixed(1)}"/>`;
-      }).join(""),
-      dots = L.map((z) => {
-        let p = locXY(mod, z);
-        return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(0.7 * s + 0.2).toFixed(2)}" class="mc-dot"/>`;
-      }).join(""),
-      op = L.length > 40 ? 0.2 : L.length > 15 ? 0.3 : 0.45;
+      url = mcUrl(mod, L);
     return campoSvg(
       mod,
-      `<defs><filter id="${id}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${(4 * s + 0.4).toFixed(2)}"/></filter></defs><g filter="url(#${id})"><g fill="#ffd60a" fill-opacity="${op}">${big}</g><g fill="#ff3b14" fill-opacity="${Math.min(0.75, op + 0.15)}">${sm}</g></g>${dots}`,
-      { flecha: 1, label, cls: "mc" },
+      url ? `<image class="mc-img" x="0" y="0" width="${c.w}" height="${c.h}" preserveAspectRatio="none" href="${url}" xlink:href="${url}"/>` : "",
+      { flecha: 1, label, cls: "mc", rayas: 1, attr: `data-n="${L.length}"` },
     );
   }
   /* Campograma de tiro: mitad del rival; gol verde, a puerta amarillo, fuera rojo hueco */
@@ -1286,7 +1351,7 @@
     let cg = T.length
       ? `<h3 class="ci-h3">Campograma de tiro</h3><div class="mapa-w">${campograma(mod, T, "Campograma de tiro de " + quien)}</div><p class="cg-ley"><span><i class="cg-i gol"></i>Gol <b>${g}</b></span><span><i class="cg-i tp"></i>A puerta <b>${tp}</b></span><span><i class="cg-i tf"></i>Fuera <b>${tf}</b></span></p><p class="muted">${T.length} tiros marcados${g ? ` · ${Math.round((g / T.length) * 100)} % acaban en gol` : ""}${tp + g ? ` · ${Math.round(((tp + g) / T.length) * 100)} % entre los palos` : ""}. La portería del rival, arriba.</p>`
       : "";
-    return `<h3 class="ci-h3">Mapa de calor</h3><div class="mapa-f" role="group" aria-label="Qué acciones ver"><button type="button" data-mapk="" class="on" aria-pressed="true">Todas <b>${L.length}</b></button>${ks.map((k) => `<button type="button" data-mapk="${k[0]}" aria-pressed="false">${k[1]} <b>${L.filter((z) => z[0] === k[0]).length}</b></button>`).join("")}</div><div class="mapa-w" id="mapaHeat">${mapaCalor(mod, L, "Mapa de calor de " + quien)}</div><p class="hint">Más rojo = más acciones en esa zona. Siempre atacando hacia la derecha (la portería del rival).</p>${cg}`;
+    return `<h3 class="ci-h3">Mapa de calor</h3><div class="mapa-f" role="group" aria-label="Qué acciones ver"><button type="button" data-mapk="" class="on" aria-pressed="true">Todas <b>${L.length}</b></button>${ks.map((k) => `<button type="button" data-mapk="${k[0]}" aria-pressed="false">${k[1]} <b>${L.filter((z) => z[0] === k[0]).length}</b></button>`).join("")}</div><div class="mapa-w" id="mapaHeat">${mapaCalor(mod, L, "Mapa de calor de " + quien)}</div><p class="mc-ley"><span>Pocas</span><i class="mc-grad"></i><span>Muchas acciones</span></p><p class="hint">Azul = pocas acciones en esa zona; turquesa y verde claro = donde más se repiten. Siempre atacando hacia la derecha (la portería del rival).</p>${cg}`;
   }
   document.addEventListener("click", (e) => {
     let b = e.target.closest("[data-mapk]");
@@ -1473,7 +1538,7 @@
       hd +
         `<workbook ${ns} xmlns:r="${rel}"><sheets>${sheets.map((s, i) => `<sheet name="${xe(s.n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets><definedNames>${sheets
           .map((s, i) =>
-            s.rows.length > 1
+            s.rows.length > 1 && !s.nf
               ? `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${xe(s.n)}'!$A$1:$${xcol(s.rows[0].length - 1)}$${s.rows.length}</definedName>`
               : "",
           )
@@ -1489,7 +1554,7 @@
     F.push([
       "xl/styles.xml",
       hd +
-        `<styleSheet ${ns}><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0B6B3A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
+        `<styleSheet ${ns}><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0B6B3A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="2" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/><xf numFmtId="9" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/><xf numFmtId="9" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
     ]);
     sheets.forEach((s, i) => {
       let filas = s.rows
@@ -1500,6 +1565,12 @@
                 if (v === "" || v == null) return "";
                 let ref = xcol(x) + (y + 1);
                 if (v && typeof v === "object" && typeof v.d === "number") return `<c r="${ref}" s="2"><v>${v.d}</v></c>`;
+                /* Fórmula (v11.34): {f, v (resultado ya calculado), s (estilo: 3 negrita, 4 negrita 0,00, 5 negrita %, 6 %)} */
+                if (v && typeof v === "object" && v.f) {
+                  let st = v.s ? ` s="${v.s}"` : "";
+                  return typeof v.v === "number" && isFinite(v.v) ? `<c r="${ref}"${st}><f>${xe(v.f)}</f><v>${v.v}</v></c>` : `<c r="${ref}"${st} t="str"><f>${xe(v.f)}</f><v>${xe(v.v == null ? "" : v.v)}</v></c>`;
+                }
+                if (v && typeof v === "object" && "b" in v) return typeof v.b === "number" ? `<c r="${ref}" s="3"><v>${v.b}</v></c>` : `<c r="${ref}" t="inlineStr" s="3"><is><t xml:space="preserve">${xe(v.b)}</t></is></c>`;
                 if (typeof v === "number" && isFinite(v)) return `<c r="${ref}"><v>${v}</v></c>`;
                 return `<c r="${ref}" t="inlineStr"${y ? "" : ' s="1"'}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;
               })
@@ -1511,10 +1582,134 @@
         hd +
           `<worksheet ${ns}><sheetViews><sheetView workbookViewId="0"${i ? "" : ' tabSelected="1"'}><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${s.rows[0]
             .map((h, x) => `<col min="${x + 1}" max="${x + 1}" width="${(s.w && s.w[x]) || Math.max(9, String(h).length + 3)}" customWidth="1"/>`)
-            .join("")}</cols><sheetData>${filas}</sheetData>${s.rows.length > 1 ? `<autoFilter ref="A1:${xcol(s.rows[0].length - 1)}${s.rows.length}"/>` : ""}</worksheet>`,
+            .join("")}</cols><sheetData>${filas}</sheetData>${s.rows.length > 1 && !s.nf ? `<autoFilter ref="A1:${xcol(s.rows[0].length - 1)}${s.rows.length}"/>` : ""}</worksheet>`,
       ]);
     });
     return zipStore(F);
+  }
+  /* Informe de UN jugador en Excel (v11.34): una fila por partido con todo lo que hizo, una fila
+     de TOTAL y otra de MEDIA POR PARTIDO con fórmulas, y una hoja «Resumen» con los porcentajes
+     (a puerta, acierto, titularidades…) también con fórmulas. Gasta una de las exportaciones
+     a Excel del mes (LIM.xl) en el plan gratuito; ilimitado con Pro. */
+  function xlJugadorHojas(pid) {
+    let p = state.players.find((x) => x.id === pid),
+      P = fichaPartidos(pid)
+        .slice()
+        .sort((a, b) => String(a.m.fecha).localeCompare(String(b.m.fecha))),
+      resTxt = (r) => (r ? (r.gf > r.gc ? "Victoria" : r.gf < r.gc ? "Derrota" : "Empate") : ""),
+      H = ["Fecha", "Rival", "Jornada", "Resultado", "Marcador", "Titular", "Minutos", "Goles", "Minuto de los goles", "Asistencias", "Tiros a puerta", "Tiros fuera", "Tiros", "% a puerta", "Robos", "Pérdidas", "Balance robos-pérdidas", "Paradas", "Faltas", "Amarillas", "Rojas", "Capitán", "Portero"],
+      n = P.length,
+      a = 2,
+      z = n + 1,
+      R = [H];
+    P.forEach((x, i) => {
+      let y = i + 2,
+        tp = stv(x.e, "tp"),
+        tf = stv(x.e, "tf"),
+        rob = stv(x.e, "rob"),
+        per = stv(x.e, "per");
+      R.push([
+        xfecha(x.m.fecha),
+        x.m.rival || "Rival",
+        jorTxt(x.m.alineacion),
+        resTxt(x.r),
+        x.r ? `${x.r.gf}-${x.r.gc}` : "",
+        x.tit ? "Sí" : "No",
+        x.min,
+        x.gol,
+        x.gm.map((v) => v + "'").join(", "),
+        stv(x.e, "asi"),
+        tp,
+        tf,
+        { f: `K${y}+L${y}`, v: tp + tf },
+        { f: `IF(M${y}>0,K${y}/M${y},"")`, v: tp + tf ? tp / (tp + tf) : "", s: 6 },
+        rob,
+        per,
+        { f: `O${y}-P${y}`, v: rob - per },
+        stv(x.e, "par"),
+        stv(x.e, "fal"),
+        x.am,
+        x.ro,
+        x.cap ? "Sí" : "",
+        x.gk ? "Sí" : "",
+      ]);
+    });
+    let t = totals(pid),
+      tir = t.tp + t.tf,
+      SUM = (c, v) => ({ f: `SUM(${c}${a}:${c}${z})`, v, s: 3 }),
+      AVG = (c, v) => ({ f: `IF(COUNT(${c}${a}:${c}${z})>0,AVERAGE(${c}${a}:${c}${z}),"")`, v: n ? v / n : "", s: 4 }),
+      yT = n + 3,
+      yM = n + 4;
+    if (n) {
+      R.push([]);
+      R.push([{ b: "TOTAL" }, { b: n + (n === 1 ? " partido" : " partidos") }, "", "", "", { f: `COUNTIF(F${a}:F${z},"Sí")`, v: t.starts, s: 3 }, SUM("G", t.minutes), SUM("H", t.goals), "", SUM("J", t.asi), SUM("K", t.tp), SUM("L", t.tf), SUM("M", tir), { f: `IF(M${yT}>0,K${yT}/M${yT},"")`, v: tir ? t.tp / tir : "", s: 5 }, SUM("O", t.rob), SUM("P", t.per), SUM("Q", t.rob - t.per), SUM("R", t.par), SUM("S", t.fal), SUM("T", t.amarillas), SUM("U", t.rojas), { f: `COUNTIF(V${a}:V${z},"Sí")`, v: t.cap, s: 3 }, ""]);
+      R.push([{ b: "MEDIA POR PARTIDO" }, "", "", "", "", { f: `IF(${n}>0,F${yT}/${n},"")`, v: n ? t.starts / n : "", s: 5 }, AVG("G", t.minutes), AVG("H", t.goals), "", AVG("J", t.asi), AVG("K", t.tp), AVG("L", t.tf), AVG("M", tir), "", AVG("O", t.rob), AVG("P", t.per), AVG("Q", t.rob - t.per), AVG("R", t.par), AVG("S", t.fal), AVG("T", t.amarillas), AVG("U", t.rojas), "", ""]);
+    }
+    /* Hoja Resumen: cada dato con su fórmula sobre la fila TOTAL de «Partido a partido» */
+    let S = "'Partido a partido'!",
+      T = (c) => `${S}${c}${yT}`,
+      pct = (f, v) => ({ f: `IF(${f.split("/")[1]}>0,${f},"")`, v, s: 6 }),
+      num = (f, v) => ({ f, v }),
+      dec = (f, v) => ({ f: `IF(${f.split("/")[1]}>0,ROUND(${f},2),"")`, v: v === "" ? "" : Math.round(v * 100) / 100 }),
+      RS = [["Dato", "Valor", "Cómo se calcula"]];
+    RS.push(["Jugador", (dorsal(p) ? dorsal(p) + " · " : "") + (p ? p.nombre : ""), ""], ["Equipo", teamName(p && p.modalidad), ""], ["Posición", p ? posNom(p.modalidad, p.posicion) : "", ""], ["Exportado el", xfecha(ymd(new Date())), ""]);
+    if (n)
+      RS.push(
+        ["Partidos", num(`COUNTA(${S}A${a}:A${z})`, n), "Partidos en los que estuvo convocado"],
+        ["Titular", num(T("F"), t.starts), ""],
+        ["% de partidos de titular", pct(`${T("F")}/${n}`, t.starts / n), "Titular / partidos"],
+        ["Minutos", num(T("G"), t.minutes), ""],
+        ["Minutos por partido", dec(`${T("G")}/${n}`, t.minutes / n), "Minutos / partidos"],
+        ["Goles", num(T("H"), t.goals), ""],
+        ["Goles por partido", dec(`${T("H")}/${n}`, t.goals / n), "Goles / partidos"],
+        ["Minutos por gol", dec(`${T("G")}/${T("H")}`, t.goals ? t.minutes / t.goals : ""), "Minutos / goles"],
+        ["Asistencias", num(T("J"), t.asi), ""],
+        ["Goles + asistencias", num(`${T("H")}+${T("J")}`, t.goals + t.asi), ""],
+        ["Goles + asist. por partido", dec(`(${T("H")}+${T("J")})/${n}`, (t.goals + t.asi) / n), "(Goles + asistencias) / partidos"],
+        ["Tiros", num(T("M"), tir), "A puerta + fuera"],
+        ["Tiros por partido", dec(`${T("M")}/${n}`, tir / n), "Tiros / partidos"],
+        ["% de tiros a puerta", pct(`${T("K")}/${T("M")}`, tir ? t.tp / tir : ""), "Tiros a puerta / tiros"],
+        ["% de acierto (goles / tiros)", pct(`${T("H")}/${T("M")}`, tir ? t.goals / tir : ""), "Goles / tiros"],
+        ["Robos", num(T("O"), t.rob), ""],
+        ["Robos por partido", dec(`${T("O")}/${n}`, t.rob / n), "Robos / partidos"],
+        ["Pérdidas", num(T("P"), t.per), ""],
+        ["Pérdidas por partido", dec(`${T("P")}/${n}`, t.per / n), "Pérdidas / partidos"],
+        ["Balance robos − pérdidas", num(T("Q"), t.rob - t.per), "Robos − pérdidas"],
+        ["% de balones ganados", pct(`${T("O")}/(${T("O")}+${T("P")})`, t.rob + t.per ? t.rob / (t.rob + t.per) : ""), "Robos / (robos + pérdidas)"],
+        ["Paradas", num(T("R"), t.par), ""],
+        ["Faltas", num(T("S"), t.fal), ""],
+        ["Amarillas", num(T("T"), t.amarillas), ""],
+        ["Rojas", num(T("U"), t.rojas), ""],
+        ["Capitán", num(T("V"), t.cap), "Partidos de capitán"],
+      );
+    else RS.push(["Partidos", 0, "Aún no ha jugado ningún partido"]);
+    return [
+      { n: "Resumen", rows: RS, w: [30, 22, 36], nf: 1 },
+      { n: "Partido a partido", rows: R, w: [12, 22, 14, 10, 9, 8, 9, 7, 18, 11, 13, 11, 7, 10, 7, 9, 13, 9, 7, 10, 7, 9, 9], nf: 1 },
+    ];
+  }
+  async function xlJugador(pid) {
+    let p = state.players.find((x) => x.id === pid);
+    if (!p) return;
+    if (!esPro() && xlUsados() >= LIM.xl)
+      return proLimite(`En el plan gratuito puedes exportar a Excel <b>${LIM.xl} veces al mes</b> (del equipo o de un jugador) y este mes ya lo has hecho. Ver la ficha de cada jugador en la app es gratis. El mes que viene vuelves a tener ${LIM.xl}.`);
+    let sl = (t) =>
+        String(t || "")
+          .normalize("NFD")
+          .replace(/[̀-ͯ]/g, "")
+          .replace(/[^a-z0-9]+/gi, "-")
+          .replace(/^-|-$/g, "")
+          .toLowerCase(),
+      fname = `jugador-${sl(p.nombre) || "jugador"}-${MFN(p.modalidad || state.mode)}-${ymd(new Date())}.xlsx`,
+      ok = await bajaArchivo(xlsxBlob(xlJugadorHojas(pid)), fname, "Informe de " + p.nombre);
+    if (!ok) return;
+    if (!esPro())
+      try {
+        localStorage.setItem(xlKey(), String(xlUsados() + 1));
+      } catch (e) {}
+    note("Excel listo: " + fname, true);
+    let q = !$("info").classList.contains("hidden") && $("infoBody").querySelector(".lim-q:last-child");
+    if (q) q.outerHTML = xlQuedan() || "<span></span>";
   }
   /* Los datos del equipo elegido, en 4 hojas */
   function xlHojas() {
@@ -1581,7 +1776,7 @@
       E.forEach((e) => {
         let gm = ev.filter((z) => z.t === "f" && z.pid === e.id).map((z) => Number(z.m) || 0),
           t = tj.filter((z) => z.pid === e.id);
-        S2.push([fe, riv, jo, r ? r.gf : "", r ? r.gc : "", resTxt(r), dor(e.id), name(e.id), pos(e.id), e.starter ? "Sí" : "No", Number(e.minutes) || 0, Number(e.goals) || 0, gm.map((n) => n + "'").join(", "), stv(e, "asi"), stv(e, "rob"), stv(e, "per"), stv(e, "tp"), stv(e, "tf"), stv(e, "par"), stv(e, "fal"), t.filter((z) => z.c !== "r").length, t.filter((z) => z.c === "r").length, al.capitan === e.id ? "Sí" : "", gk === e.id ? "Sí" : ""]);
+        S2.push([fe, riv, jo, r ? r.gf : "", r ? r.gc : "", resTxt(r), dor(e.id), name(e.id), pos(e.id), e.starter ? "Sí" : "No", Number(e.minutes) || 0, Math.max(0, Number(e.goals) || 0), gm.map((n) => n + "'").join(", "), stv(e, "asi"), stv(e, "rob"), stv(e, "per"), stv(e, "tp"), stv(e, "tf"), stv(e, "par"), stv(e, "fal"), t.filter((z) => z.c !== "r").length, t.filter((z) => z.c === "r").length, al.capitan === e.id ? "Sí" : "", gk === e.id ? "Sí" : ""]);
         /* Datos del Directo: los apuntados con la app llevan su minuto (stm); los puestos a mano, sin minuto */
         ESTP.forEach((s) => {
           let n = stv(e, s[0]),
@@ -1673,6 +1868,8 @@
       playerEdit(ed.dataset.fichaEd);
       return;
     }
+    let xj = e.target.closest("[data-xlj]");
+    if (xj) return xlJugador(xj.dataset.xlj).catch((x) => note("No se pudo crear el Excel: " + (x.message || x)));
     if (e.target.closest("[data-xl]")) xlExporta().catch((x) => note("No se pudo crear el Excel: " + (x.message || x)));
   });
   document.addEventListener("keydown", (e) => {
@@ -2368,14 +2565,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -2403,6 +2600,8 @@
           ? `En el plan gratuito puedes preparar los <b>enlaces del directo antes del partido en ${LIM.pe} partidos al mes</b> y este mes ya los has usado. Puedes sacarlos igual en el Directo, cuando vayas a empezar. El mes que viene vuelves a tener ${LIM.pe}.`
           : tipo === "an"
           ? `En el plan gratuito puedes usar el <b>anotador en ${LIM.an} partidos al mes</b> y este mes ya lo has usado. El mes que viene vuelves a tener ${LIM.an}.`
+          : tipo === "rj"
+          ? `En el plan gratuito puedes compartir <b>${LIM.rj} resúmenes de jugador al mes</b> (cada jugador de cada partido cuenta una vez) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rj}.`
           : tipo === "rs"
           ? `En el plan gratuito puedes compartir <b>${LIM.rs} resúmenes de partido al mes</b> (o de la temporada) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rs}.`
           : tipo === "cv"
@@ -2441,7 +2640,7 @@
         id: e.id,
         n: dname(e.id),
         min: Number(e.minutes) || 0,
-        gol: Number(e.goals) || 0,
+        gol: Math.max(0, Number(e.goals) || 0),
         tit: !!e.starter,
         am: tarj(e.id).filter((z) => z.c !== "r").length,
         ro: tarj(e.id).filter((z) => z.c === "r").length,
@@ -2494,7 +2693,7 @@
       L.push("", "*Minutos jugados*");
       d.js.forEach((j) =>
         L.push(
-          `${j.tit ? "⭐ " : ""}${j.n}${tag(j)}: ${j.min}'${j.gol ? " " + "⚽".repeat(Math.min(j.gol, 5)) : ""}${j.am ? " " + "🟨".repeat(Math.min(j.am, 2)) : ""}${j.ro ? " 🟥" : ""}`,
+          `${j.tit ? "⭐ " : ""}${j.n}${tag(j)}: ${j.min}'${j.gol ? " " + "⚽".repeat(Math.max(0, Math.min(j.gol, 5))) : ""}${j.am ? " " + "🟨".repeat(Math.min(j.am, 2)) : ""}${j.ro ? " 🟥" : ""}`,
         ),
       );
       L.push("⭐ = titular");
@@ -2552,7 +2751,7 @@
     return `${head}${sec("Goles", goles)}${sec("Minutos jugados", mins)}${sec("Estadísticas de cada jugador", est)}${(() => {
       let L = entries(m).flatMap(locDe);
       return L.length ? mapasHtml(m.modalidad, L, "el equipo") : "";
-    })()}${sec("Cambios", cb)}${sec("Tarjetas", tj)}${sec("Faltas acumuladas", fal)}${sec(esc(d.riv) + " (rival)", li(riv))}<h3 class="ci-h3">Compartir</h3><p class="muted">Mándalo a quien quieras aunque no tenga la app: le llega como mensaje o como imagen y le queda guardado en el chat.</p>${envQuedan("rs")}<div class="stack"><a class="primary" data-rsx="wa" href="https://wa.me/?text=${encodeURIComponent(rsTexto(m))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-rsx="img">${ic("image", 20)}Imagen del resumen</button>${navigator.share ? '<button type="button" class="secondary" data-rsx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-rsx="copiar">Copiar el texto</button>${viendo ? "" : `<button type="button" class="secondary" data-rsx="edit">${ic("pencil", 20)}Editar el partido</button>`}</div>`;
+    })()}${sec("Cambios", cb)}${sec("Tarjetas", tj)}${sec("Faltas acumuladas", fal)}${sec(esc(d.riv) + " (rival)", li(riv))}${rjLista(m)}<h3 class="ci-h3">Compartir</h3><p class="muted">Mándalo a quien quieras aunque no tenga la app: le llega como mensaje o como imagen y le queda guardado en el chat.</p>${envQuedan("rs")}<div class="stack"><a class="primary" data-rsx="wa" href="https://wa.me/?text=${encodeURIComponent(rsTexto(m))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-rsx="img">${ic("image", 20)}Imagen del resumen</button>${navigator.share ? '<button type="button" class="secondary" data-rsx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-rsx="copiar">Copiar el texto</button>${viendo ? "" : `<button type="button" class="secondary" data-rsx="edit">${ic("pencil", 20)}Editar el partido</button>`}</div>`;
   }
   function rsAbre(id) {
     let m = rsFind(id);
@@ -2773,6 +2972,457 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     note("Imagen descargada.", true);
   }
+  /* ===== Resumen de cada jugador en un partido (v11.34) =====
+     Desde el resumen del partido o desde la ficha del jugador (partido a partido): una tarjeta solo
+     con lo de ese jugador (minutos, goles con su minuto, asistencias, tiros, robos, pérdidas,
+     paradas, faltas, tarjetas, titular/capitán/portero, cuándo entró o salió y su mapa de calor)
+     para mandarla a su familia por WhatsApp o como imagen. Verla es gratis; compartir: LIM.rj
+     al mes en gratis (cada jugador de cada partido cuenta una vez), ilimitado con Pro. */
+  let rjId = "",
+    rjTxt = "";
+  function rjDatos(m, pid) {
+    let d = rsDatos(m),
+      j = d.js.find((z) => z.id === pid);
+    if (!j) return null;
+    let x = liveRows[m.id],
+      ev = x && Array.isArray(x.eventos) ? x.eventos : [],
+      p = state.players.find((z) => z.id === pid),
+      e = j.e,
+      entra = d.cb.filter((z) => z.entra === pid).map(rsMin).filter(Boolean),
+      sale = d.cb.filter((z) => z.sale === pid).map(rsMin).filter(Boolean);
+    return {
+      d,
+      j,
+      p,
+      n: name(pid),
+      dor: dorsal(p),
+      gm: ev
+        .filter((z) => z.t === "f" && z.pid === pid)
+        .map((z) => Number(z.m) || 0)
+        .sort((a, b) => a - b),
+      tj: d.tj.filter((z) => z.pid === pid),
+      cap: d.cap === pid,
+      gk: d.gk === pid,
+      entra,
+      sale,
+      asi: stv(e, "asi"),
+      tp: stv(e, "tp"),
+      tf: stv(e, "tf"),
+      rob: stv(e, "rob"),
+      per: stv(e, "per"),
+      par: stv(e, "par"),
+      fal: stv(e, "fal"),
+      loc: locDe(e),
+    };
+  }
+  const rjRol = (r) => [r.j.tit ? "Titular" : "Suplente", r.cap ? "Capitán" : "", r.gk ? "Portero" : ""].filter(Boolean),
+    rjEntSal = (r) => [r.entra.length ? "entró " + r.entra.join(", ") : "", r.sale.length ? "salió " + r.sale.join(", ") : ""].filter(Boolean).join(" · ");
+  function rjTexto(m, pid) {
+    let r = rjDatos(m, pid);
+    if (!r) return "";
+    let d = r.d,
+      tir = r.tp + r.tf,
+      L = [`⚽ *Resumen de ${r.n}*${r.dor ? " (" + r.dor + ")" : ""}`, `${d.eq} ${d.r ? d.r.gf + " - " + d.r.gc : "vs"} ${d.riv}${d.res ? " · " + d.res[1] : ""}`, `${MN(m.modalidad)}${d.jor ? " · " + d.jor : ""} · ${fmtDate(m.fecha)}`, ""];
+    L.push(`${r.j.tit ? "⭐ " : ""}${rjRol(r).join(" · ")}`);
+    L.push(`⏱️ ${r.j.min} minutos${rjEntSal(r) ? " (" + rjEntSal(r) + ")" : ""}`);
+    if (r.j.gol) L.push(`⚽ Goles: ${r.j.gol}${r.gm.length ? " (" + r.gm.map((n) => n + "'").join(", ") + ")" : ""}`);
+    if (r.asi) L.push(`🅰️ Asistencias: ${r.asi}`);
+    if (tir) L.push(`🎯 Tiros: ${tir}${r.tp ? " (" + r.tp + " a puerta)" : ""}`);
+    if (r.rob) L.push(`🛡️ Robos: ${r.rob}`);
+    if (r.per) L.push(`↩️ Pérdidas: ${r.per}`);
+    if (r.par) L.push(`🧤 Paradas: ${r.par}`);
+    if (r.fal) L.push(`✋ Faltas: ${r.fal}`);
+    r.tj.forEach((z) => L.push(`${z.c === "r" ? "🟥 Roja" : "🟨 Amarilla"}${rsMin(z) ? " " + rsMin(z) : ""}`));
+    L.push("", "Hecho con Mi Fútbol JV32 · app.monetizaplus.com");
+    return L.join("\n");
+  }
+  function rjHtml(m, pid) {
+    let r = rjDatos(m, pid);
+    if (!r) return '<p class="muted">Este jugador no está convocado en este partido.</p>';
+    let d = r.d,
+      tir = r.tp + r.tf,
+      tile = (a, b, s) => `<div class="stat"><small>${a}</small><b>${b}</b>${s ? `<small class="rj-s">${s}</small>` : ""}</div>`,
+      T = [
+        ["Minutos", r.j.min + "'", rjEntSal(r)],
+        ["Goles", r.j.gol, r.gm.map((n) => n + "'").join(" · ")],
+        ["Asistencias", r.asi],
+        ["Tiros", tir, tir ? r.tp + " a puerta" : ""],
+        ["Robos", r.rob],
+        ["Pérdidas", r.per],
+      ];
+    if (r.par || r.gk) T.push(["Paradas", r.par]);
+    if (r.fal) T.push(["Faltas", r.fal]);
+    if (r.tj.length) T.push(["Tarjetas", r.tj.map((z) => `<i class="tj ${z.c === "r" ? "r" : "a"}"></i>`).join(" "), r.tj.map(rsMin).filter(Boolean).join(" · ")]);
+    let cab = `<div class="fi-cab">${r.p ? avatar(r.p) : ""}<div><b class="fi-nom">${r.dor ? `<span class="dor">${r.dor}</span>` : ""}${esc(r.n)}</b><p class="muted">${rjRol(r)
+      .map((t) => `<b>${t}</b>`)
+      .join(" · ")}</p></div></div><div class="rs-sc rj-sc ${d.res ? d.res[0] : ""}"><div class="rs-eq"><b>${esc(d.eq)}</b><span>${esc(d.riv)}</span></div><div class="rs-n">${d.r ? `${d.r.gf}<i>-</i>${d.r.gc}` : "–"}</div></div><p class="muted rs-m">${esc(MN(m.modalidad))}${d.jor ? ` · <b>${esc(d.jor)}</b>` : ""} · ${esc(fmtDate(m.fecha))}${d.res ? ` · <span class="res ${d.res[0]}">${d.res[1]}</span>` : ""}</p>`;
+    let st = `<div class="tstats fi-st rj-st">${T.map((x) => tile(x[0], x[1], x[2])).join("")}</div>`;
+    let mp = r.loc.length ? mapasHtml(m.modalidad, r.loc, r.n) : "";
+    return `${cab}${st}${mp}<h3 class="ci-h3">Compartir con su familia</h3><p class="muted">Solo sale lo de <b>${esc(r.n)}</b> en este partido. Mándalo por WhatsApp o como imagen aunque no tengan la app.</p><div id="rjPrev" class="rj-prev" aria-hidden="true"></div>${rjQuedan()}<div class="stack"><a class="primary" data-rjx="wa" href="https://wa.me/?text=${encodeURIComponent(rjTexto(m, pid))}" target="_blank" rel="noopener">${ic("share", 20)}Enviar por WhatsApp</a><button type="button" class="secondary" data-rjx="img">${ic("image", 20)}Imagen del jugador</button>${navigator.share ? '<button type="button" class="secondary" data-rjx="share">Compartir…</button>' : ""}<button type="button" class="secondary" data-rjx="copiar">Copiar el texto</button><button type="button" class="secondary" data-rs="${m.id}">${ic("chart", 20)}Resumen de todo el partido</button>${r.p ? `<button type="button" class="secondary" data-ficha="${pid}">Ficha de ${esc(r.n)}</button>` : ""}</div>`;
+  }
+  const rjQuedan = () => (esPro() ? "" : `<p class="muted lim-q">Plan gratuito: te quedan ${Math.max(0, LIM.rj - envUsados("rj"))} de ${LIM.rj} resúmenes de jugador para compartir este mes. Con Pro, ilimitados.</p>`);
+  /* Lista de convocados dentro del resumen del partido para abrir el de cada uno */
+  function rjLista(m) {
+    let d = rsDatos(m);
+    if (!d.js.length) return "";
+    return `<h3 class="ci-h3">Resumen de cada jugador</h3><p class="muted">Toca un jugador para ver y mandar solo lo suyo (por ejemplo, a su familia).</p><div class="rj-l">${d.js
+      .map((j) => {
+        let dr = dorsal(state.players.find((p) => p.id === j.id));
+        return `<button type="button" class="rj-b" data-rj="${m.id}|${j.id}">${dr ? `<span class="dor">${dr}</span>` : ""}${esc(name(j.id))}<small>${j.min}'${j.gol ? " · ⚽" + (j.gol > 1 ? j.gol : "") : ""}</small></button>`;
+      })
+      .join("")}</div>`;
+  }
+  function rjAbre(mid, pid) {
+    let m = rsFind(mid);
+    if (!m || !entries(m).some((e) => e.id === pid)) return;
+    rjId = mid + "|" + pid;
+    rjTxt = rjTexto(m, pid);
+    ciOpen("Resumen de " + name(pid), rjHtml(m, pid));
+    $("infoBody").scrollTop = 0;
+    /* Vista previa de la imagen (la misma que se descarga) */
+    let id = rjId;
+    rjImagen(m, pid)
+      .then((cv) => {
+        let w = $("rjPrev");
+        if (!w || rjId !== id) return;
+        let im = new Image();
+        im.alt = "";
+        im.src = cv.toDataURL("image/jpeg", 0.8);
+        w.appendChild(im);
+      })
+      .catch(() => {});
+  }
+  /* Campo dibujado en el canvas (mismas medidas que campoSvg), con el mapa de calor y los tiros */
+  function rjCampo(g, mod, L, x0, y0, fw) {
+    let c = campoDe(mod),
+      k = fw / c.w,
+      fh = c.h * k,
+      X = (v) => x0 + v * k,
+      Y = (v) => y0 + v * k,
+      cy = c.h / 2,
+      pt = c.pt / 2,
+      s = c.w / 105;
+    g.save();
+    /* Mismo aspecto que el mapa de calor de la app: césped a rayas y manchas azul → verde */
+    let nr = c.sala ? 10 : 20;
+    g.fillStyle = "#3f8f2c";
+    g.fillRect(x0, y0, fw, fh);
+    g.fillStyle = "rgba(0,0,0,.1)";
+    for (let i = 0; i < nr; i += 2) g.fillRect(x0 + (fw / nr) * i, y0, fw / nr, fh);
+    let hc = L.length ? mcDensidad(mod, L) : null;
+    if (hc) {
+      g.imageSmoothingEnabled = true;
+      g.drawImage(hc, x0, y0, fw, fh);
+    }
+    g.strokeStyle = "rgba(255,255,255,.75)";
+    g.lineWidth = Math.max(2, 0.3 * k);
+    g.strokeRect(x0, y0, fw, fh);
+    g.beginPath();
+    g.moveTo(X(c.w / 2), y0);
+    g.lineTo(X(c.w / 2), y0 + fh);
+    g.stroke();
+    g.beginPath();
+    g.arc(X(c.w / 2), Y(cy), c.cc * k, 0, Math.PI * 2);
+    g.stroke();
+    [0, 1].forEach((lado) => {
+      let XX = (v) => X(lado ? c.w - v : v);
+      if (c.sala) {
+        g.beginPath();
+        if (!lado) {
+          g.arc(XX(0), Y(cy - pt), 6 * k, -Math.PI / 2, 0);
+          g.lineTo(XX(6), Y(cy + pt));
+          g.arc(XX(0), Y(cy + pt), 6 * k, 0, Math.PI / 2);
+        } else {
+          g.arc(XX(0), Y(cy - pt), 6 * k, -Math.PI / 2, -Math.PI, true);
+          g.lineTo(XX(6), Y(cy + pt));
+          g.arc(XX(0), Y(cy + pt), 6 * k, Math.PI, Math.PI / 2, true);
+        }
+        g.stroke();
+      } else {
+        [c.ar, c.ap].forEach((a) => g.strokeRect(lado ? X(c.w - a[0]) : X(0), Y(cy - a[1] / 2), a[0] * k, a[1] * k));
+      }
+      g.fillStyle = "rgba(255,255,255,.85)";
+      let gd = Math.max(6, 1.6 * s * k);
+      g.fillRect(lado ? X(c.w) : X(0) - gd, Y(cy - pt), gd, c.pt * k);
+    });
+    let P = (z) => [X((z[1] / 100) * c.w), Y((z[2] / 100) * c.h)];
+    let rr2 = Math.max(9, 1.3 * s * k);
+    L.forEach((z) => {
+      let p = P(z);
+      if (TIRO_K.includes(z[0])) {
+        g.beginPath();
+        g.arc(p[0], p[1], rr2, 0, Math.PI * 2);
+        if (z[0] === "tf") {
+          g.lineWidth = 4;
+          g.strokeStyle = "#fb7185";
+          g.stroke();
+        } else {
+          g.fillStyle = z[0] === "gol" ? "#2be36a" : "#fbbf24";
+          g.fill();
+          g.lineWidth = 3;
+          g.strokeStyle = "#04140b";
+          g.stroke();
+        }
+      }
+    });
+    g.restore();
+    return fh;
+  }
+  /* Imagen del jugador (1080 de ancho) */
+  async function rjImagen(m, pid) {
+    let r = rjDatos(m, pid);
+    if (!r) throw new Error("Este jugador no está en el partido.");
+    let d = r.d;
+    try {
+      await Promise.all([document.fonts.load('800 40px "Barlow Condensed"'), document.fonts.load('700 30px "Barlow Condensed"'), document.fonts.load('600 30px "Barlow Condensed"')]);
+    } catch (e) {}
+    const W = 1080,
+      ff = '"Barlow Condensed","Arial Narrow",Impact,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+      INK = "#f1f7ea",
+      LIME = "#2be36a",
+      MUT = "#a3bdad",
+      RC = { w: "#4ade80", d: "#fbbf24", l: "#fb7185" },
+      tir = r.tp + r.tf,
+      T = [
+        ["MINUTOS", r.j.min + "'", rjEntSal(r)],
+        ["GOLES", r.j.gol, r.gm.map((n) => n + "'").join(" · ")],
+        ["ASISTENCIAS", r.asi, ""],
+        ["TIROS", tir, tir ? r.tp + " a puerta" : ""],
+        ["ROBOS", r.rob, ""],
+        ["PÉRDIDAS", r.per, ""],
+      ];
+    if (r.par || r.gk) T.push(["PARADAS", r.par, ""]);
+    if (r.fal) T.push(["FALTAS", r.fal, ""]);
+    if (r.tj.length) T.push(["TARJETAS", "", r.tj.map(rsMin).filter(Boolean).join(" · "), r.tj]);
+    const c = campoDe(m.modalidad),
+      FW = 940,
+      FH = r.loc.length ? (c.h / c.w) * FW : 0,
+      TH = 190,
+      filas = Math.ceil(T.length / 3),
+      H = 640 + filas * (TH + 24) + (r.loc.length ? 110 + FH + 70 : 0) + 120;
+    const cv = document.createElement("canvas");
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext("2d");
+    g.fillStyle = "#050f0a";
+    g.fillRect(0, 0, W, H);
+    let gr = g.createRadialGradient(W * 0.9, 0, 0, W * 0.9, 0, 1100);
+    gr.addColorStop(0, "#173b2a");
+    gr.addColorStop(1, "#050f0a");
+    g.fillStyle = gr;
+    g.fillRect(0, 0, W, H);
+    let logo = await new Promise((res) => {
+      let u = getComputedStyle(document.documentElement).getPropertyValue("--logo").trim().replace(/^url\(["']?/, "").replace(/["']?\)$/, "");
+      if (!u) return res(null);
+      let im = new Image();
+      im.onload = () => res(im);
+      im.onerror = () => res(null);
+      im.src = u;
+    });
+    if (logo) g.drawImage(logo, 70, 40, 80, 80);
+    g.textAlign = "left";
+    g.fillStyle = INK;
+    g.font = `800 46px ${ff}`;
+    g.fillText("MI FÚTBOL", 170, 98);
+    let mw = g.measureText("MI FÚTBOL ").width;
+    g.fillStyle = LIME;
+    g.fillText("JV32", 170 + mw, 98);
+    g.fillStyle = MUT;
+    g.font = `600 34px ${ff}`;
+    g.textAlign = "right";
+    g.fillText("RESUMEN DEL JUGADOR", W - 70, 96);
+    /* Jugador */
+    let y = 250;
+    g.fillStyle = LIME;
+    g.beginPath();
+    g.arc(160, y - 20, 90, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#04140b";
+    g.textAlign = "center";
+    g.font = `800 ${r.dor ? 104 : 90}px ${ff}`;
+    g.fillText(r.dor || (r.n.trim()[0] || "?").toUpperCase(), 160, y + 16);
+    g.textAlign = "left";
+    g.fillStyle = INK;
+    g.font = `800 86px ${ff}`;
+    g.fillText(clipTxt(g, r.n.toUpperCase(), W - 70 - 290), 290, y - 4);
+    let bx = 290;
+    g.font = `700 30px ${ff}`;
+    rjRol(r).forEach((t, i) => {
+      let tw = g.measureText(t.toUpperCase()).width + 36;
+      rr(g, bx, y + 22, tw, 48, 24);
+      g.fillStyle = i === 0 && r.j.tit ? LIME : "rgba(255,255,255,.12)";
+      g.fill();
+      g.fillStyle = i === 0 && r.j.tit ? "#04140b" : INK;
+      g.fillText(t.toUpperCase(), bx + 18, y + 57);
+      bx += tw + 14;
+    });
+    /* Partido */
+    y = 400;
+    rr(g, 56, y, W - 112, 150, 28);
+    g.fillStyle = "rgba(255,255,255,.05)";
+    g.fill();
+    g.textAlign = "center";
+    g.font = `800 50px ${ff}`;
+    g.fillStyle = INK;
+    g.fillText(clipTxt(g, d.eq.toUpperCase(), 330), 260, y + 76);
+    g.fillText(clipTxt(g, d.riv.toUpperCase(), 330), W - 260, y + 76);
+    g.font = `800 92px ${ff}`;
+    g.fillStyle = d.res ? RC[d.res[0]] : INK;
+    g.fillText(d.r ? `${d.r.gf}-${d.r.gc}` : "–", W / 2, y + 96);
+    g.font = `600 30px ${ff}`;
+    g.fillStyle = MUT;
+    g.fillText(`${d.res ? d.res[1].toUpperCase() + " · " : ""}${(d.jor || MN(m.modalidad)).toUpperCase()} · ${fmtDate(m.fecha)}`, W / 2, y + 135);
+    /* Datos */
+    y = 600;
+    const TW = (W - 140 - 2 * 30) / 3;
+    T.forEach((t, i) => {
+      let tx = 70 + (i % 3) * (TW + 30),
+        ty = y + Math.floor(i / 3) * (TH + 24),
+        on = t[3] ? 1 : Number(String(t[1]).replace("'", "")) > 0;
+      rr(g, tx, ty, TW, TH, 24);
+      g.fillStyle = on ? "rgba(43,227,106,.10)" : "rgba(255,255,255,.04)";
+      g.fill();
+      g.textAlign = "center";
+      g.fillStyle = MUT;
+      g.font = `700 28px ${ff}`;
+      g.fillText(t[0], tx + TW / 2, ty + 46);
+      if (t[3]) {
+        let n = t[3].length,
+          cw = 46,
+          sx = tx + TW / 2 - (n * cw + (n - 1) * 16) / 2;
+        t[3].forEach((z, k) => {
+          g.fillStyle = z.c === "r" ? "#ef4444" : "#fbbf24";
+          rr(g, sx + k * (cw + 16), ty + 66, cw, 66, 8);
+          g.fill();
+        });
+      } else {
+        g.fillStyle = t[0] === "GOLES" && r.j.gol ? LIME : on ? INK : "rgba(241,247,234,.45)";
+        g.font = `800 84px ${ff}`;
+        g.fillText(String(t[1] || 0), tx + TW / 2, ty + 128);
+      }
+      if (t[2]) {
+        g.fillStyle = MUT;
+        g.font = `600 26px ${ff}`;
+        g.fillText(clipTxt(g, t[2], TW - 24), tx + TW / 2, ty + 170);
+      }
+    });
+    y += filas * (TH + 24);
+    /* Mapa de calor */
+    if (r.loc.length) {
+      y += 70;
+      g.textAlign = "left";
+      g.fillStyle = LIME;
+      g.font = `800 40px ${ff}`;
+      g.fillText("MAPA DE CALOR", 70, y);
+      g.textAlign = "right";
+      g.fillStyle = MUT;
+      g.font = `600 28px ${ff}`;
+      g.fillText("ATACANDO HACIA →", W - 70, y);
+      y += 30;
+      rjCampo(g, m.modalidad, r.loc, 70, y, FW);
+      y += FH + 50;
+      let Tn = r.loc.filter((z) => TIRO_K.includes(z[0])),
+        ley = [
+          ["", `${r.loc.length} ${r.loc.length === 1 ? "acción" : "acciones"}`, 3],
+          ["#2be36a", `Gol ${Tn.filter((z) => z[0] === "gol").length}`, 1],
+          ["#fbbf24", `A puerta ${Tn.filter((z) => z[0] === "tp").length}`, 1],
+          ["#fb7185", `Fuera ${Tn.filter((z) => z[0] === "tf").length}`, 2],
+        ];
+      let lx = 70;
+      g.textAlign = "left";
+      g.font = `600 28px ${ff}`;
+      ley.forEach((l) => {
+        if (l[2] === 3) {
+          /* Escala del mapa de calor: azul (pocas) → verde claro (muchas) */
+          let gg = g.createLinearGradient(lx, 0, lx + 56, 0);
+          gg.addColorStop(0, "#1950d2");
+          gg.addColorStop(0.4, "#1e78e6");
+          gg.addColorStop(0.7, "#28bed7");
+          gg.addColorStop(1, "#96ffa0");
+          g.fillStyle = gg;
+          g.fillRect(lx, y - 17, 56, 16);
+          g.fillStyle = INK;
+          g.fillText(l[1], lx + 68, y);
+          lx += g.measureText(l[1]).width + 112;
+          return;
+        }
+        g.beginPath();
+        g.arc(lx + 12, y - 9, l[2] ? 12 : 6, 0, Math.PI * 2);
+        if (l[2] === 2) {
+          g.lineWidth = 4;
+          g.strokeStyle = l[0];
+          g.stroke();
+        } else {
+          g.fillStyle = l[0];
+          g.fill();
+        }
+        g.fillStyle = INK;
+        g.fillText(l[1], lx + 34, y);
+        lx += g.measureText(l[1]).width + 80;
+      });
+    }
+    g.textAlign = "left";
+    g.fillStyle = MUT;
+    g.font = `600 26px ${ff}`;
+    g.fillText(d.eq.toUpperCase(), 70, H - 50);
+    g.textAlign = "right";
+    g.fillText("app.monetizaplus.com", W - 70, H - 50);
+    return cv;
+  }
+  async function rjImgExport(m, pid) {
+    note("Preparando imagen…", true);
+    let cv = await rjImagen(m, pid),
+      blob = await new Promise((r) => cv.toBlob(r, "image/png")),
+      sl = (t) =>
+        String(t || "")
+          .normalize("NFD")
+          .replace(/[̀-ͯ]/g, "")
+          .replace(/[^a-z0-9]+/gi, "-")
+          .replace(/^-|-$/g, "")
+          .toLowerCase(),
+      fname = `resumen-${sl(name(pid)) || "jugador"}-${sl(m.rival) || "partido"}-${m.fecha || ""}.png`,
+      file = new File([blob], fname, { type: "image/png" });
+    note("");
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && window.matchMedia("(pointer:coarse)").matches) {
+      try {
+        await navigator.share({ files: [file], title: "Resumen de " + name(pid) });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    note("Imagen descargada.", true);
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest && e.target.closest("[data-rj]");
+    if (!b) return;
+    e.preventDefault();
+    let k = b.dataset.rj.split("|");
+    rjAbre(k[0], k[1]);
+  });
+  $("info").addEventListener("click", async (e) => {
+    let b = e.target.closest("[data-rjx]");
+    if (!b || !rjId) return;
+    let k = b.dataset.rjx,
+      q = rjId.split("|"),
+      m = rsFind(q[0]);
+    if (!m) return;
+    if (!envPuede("rj", rjId)) return e.preventDefault();
+    if (k === "wa") return;
+    if (k === "img") return rjImgExport(m, q[1]).catch((x) => note(x.message || String(x)));
+    if (k === "share") {
+      try {
+        await navigator.share({ text: rjTxt });
+      } catch (x) {}
+    } else if (k === "copiar") copiaTexto(rjTxt, "Resumen copiado. Pégalo en WhatsApp.");
+  });
   document.addEventListener("click", (e) => {
     let b = e.target.closest && e.target.closest("[data-rs]");
     if (!b) return;
@@ -5898,7 +6548,7 @@
         d.players.map((x) => ({
           ...x,
           minutes: Number(x.minutes) || 0,
-          goals: Number(x.goals) || 0,
+          goals: Math.max(0, Number(x.goals) || 0),
           nombre: name(x.id),
         })),
       ),
@@ -6908,6 +7558,8 @@
         "Toca el <b>nombre</b> de un jugador en «Plantilla» («Ver ficha ›») o el jugador en «Estadísticas» para abrir su <b>ficha</b>: partidos, titularidades, minutos, goles, asistencias, goles + asistencias, minutos por partido y por gol, y lo que apuntaste en el Directo (robos, pérdidas, tiros y % a puerta, paradas, faltas, tarjetas y veces de capitán).",
         "Debajo está <b>partido a partido</b>: resultado, si fue titular, sus minutos, sus goles con el minuto (si usaste el Directo) y sus estadísticas de ese partido.",
         "Con el plan gratuito, en la ficha ves sus <b>3 últimos partidos</b>; con Pro, todos.",
+        "<b>Informe del jugador en Excel</b>: en su ficha, «Informe de … en Excel». Trae una hoja «Partido a partido» con una fila por partido (minutos, goles y su minuto, asistencias, tiros a puerta y fuera, % a puerta, robos, pérdidas, balance, paradas, faltas, tarjetas, capitán, portero), la fila <b>TOTAL</b> y la <b>MEDIA POR PARTIDO</b>, y una hoja «Resumen» con los porcentajes y medias (titularidades, minutos por gol, % a puerta, % de acierto, % de balones ganados…). Todo con fórmulas: si cambias un número en Excel, los totales se recalculan. Cuenta como una de las exportaciones a Excel del mes.",
+        "<b>Resumen del jugador en un partido</b>: en «Partido a partido» de su ficha pulsa «Resumen de este partido» (o, en el resumen del partido, toca su nombre en «Resumen de cada jugador»). Sale solo lo suyo: minutos (y cuándo entró o salió), goles con su minuto, asistencias, tiros, robos, pérdidas, paradas, faltas, tarjetas, si fue titular, capitán o portero, y su mapa de calor si marcaste en el campo. Mándalo a su familia con «Enviar por WhatsApp» o «Imagen del jugador».",
       ],
     },
     {
@@ -6916,7 +7568,7 @@
         "En el <b>Directo</b>, cuando apuntas un robo, una pérdida, un tiro, una parada, una asistencia, una falta o un gol de un jugador, abajo sale un campo: <b>toca dónde ha sido</b>. Es opcional: si no quieres marcarlo, pulsa «Sin marcar» o sigue apuntando y se quita solo.",
         "El campo se ve siempre <b>atacando hacia la derecha</b> (hacia la portería del rival), también en la segunda parte. Así todos los partidos se comparan igual.",
         "Con el botón <b>«📍 Marcar en el campo dónde fue»</b> lo activas o lo quitas. Si te equivocas, «↶ Deshacer» quita el dato y su marca; si quitas un gol, también se quita su marca.",
-        "En la <b>ficha del jugador</b> y en el <b>resumen del partido</b> salen el <b>mapa de calor</b> (más rojo donde más acciones hace; puedes ver todas o solo robos, pérdidas, tiros…) y el <b>campograma de tiro</b>: en verde los goles, en amarillo los tiros a puerta y en rojo los tiros fuera, con el porcentaje de acierto.",
+        "En la <b>ficha del jugador</b> y en el <b>resumen del partido</b> salen el <b>mapa de calor</b>, como en Power BI: el campo verde a rayas y manchas suaves, <b>azul</b> donde hay pocas acciones y <b>turquesa o verde claro</b> donde más se repiten (puedes ver todas o solo robos, pérdidas, tiros…) y el <b>campograma de tiro</b>: en verde los goles, en amarillo los tiros a puerta y en rojo los tiros fuera, con el porcentaje de acierto.",
         "En el <b>Excel</b> hay una hoja <b>«Mapa»</b> con cada acción marcada: minuto, parte, jugador, las coordenadas X e Y (de 0 a 100 y en metros), el tercio del campo y el carril. Sirve para llevarlo a <b>Power BI</b> u otra herramienta de análisis.",
         "Con el plan gratuito puedes marcar en el campo en <b>2 partidos al mes</b> (apuntar los datos sigue siendo gratis). Con Pro, sin límite.",
       ],
@@ -6971,13 +7623,15 @@
         "<b>Ver un partido terminado sin editarlo</b>: en «Partidos», debajo de cada partido, pulsa «Ver resumen y estadísticas». Ves el resultado, los goles (con su minuto si usaste el Directo), los <b>minutos que ha jugado cada uno</b> (★ = titular), las tarjetas, los cambios, las estadísticas de cada jugador y lo del rival. Para cambiar algo, «Editar el partido» o el lápiz.",
         "<b>Compartir el resumen con quien no tiene la app</b> (un segundo entrenador, el coordinador, la familia): dentro del resumen pulsa «Enviar por WhatsApp» (le llega como mensaje), «Imagen del resumen» (una imagen con el marcador y los minutos) o «Copiar el texto». Así se queda guardado en el chat y lleváis el registro de todos los partidos.",
         "<b>Resumen de la temporada</b>: en «Partidos» (arriba de la lista) o en «Estadísticas › Resultados». Es un mensaje con todos los partidos y sus resultados y los partidos, minutos, goles y tarjetas de cada jugador, listo para mandar por WhatsApp.",
-        "Ver los resúmenes es gratis siempre. Con el plan gratuito puedes <b>compartir 3 resúmenes al mes</b> (cada partido cuenta una vez aunque lo mandes varias veces); con Pro, ilimitados.",
+        "<b>Resumen de cada jugador</b>: dentro del resumen del partido, en «Resumen de cada jugador», toca un nombre y verás solo lo suyo en ese partido (minutos, goles, asistencias, tiros, robos, pérdidas, tarjetas y su mapa de calor). Con «Enviar por WhatsApp» o «Imagen del jugador» se lo mandas a su familia.",
+        "Ver los resúmenes es gratis siempre. Con el plan gratuito puedes <b>compartir 3 resúmenes al mes</b> (cada partido cuenta una vez aunque lo mandes varias veces) y <b>3 resúmenes de jugador</b> (cada jugador de cada partido cuenta una vez); con Pro, ilimitados.",
       ],
     },
     {
       t: "Directo",
       p: [
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
+        "<b>El reloj</b>: «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». Con «−1'» y «+1'» corriges el minuto. <b>«↺ Reiniciar reloj»</b> lo deja otra vez en «Sin empezar» (0'), por ejemplo después de un partido de prueba; los goles y lo apuntado se quedan (los quitas con la ✕ si quieres).",
         "<b>Cambios</b>: pulsa «🔄 Cambio» y marca a <b>todos los que salen</b> y a <b>todos los que entran</b> a la vez (salen con su dorsal). Van por parejas en el orden en que los toques: el 1º que sale por el 1º que entra, el 2º por el 2º… Abajo ves las parejas y pulsas «Hacer 2 cambios» (o los que sean). Si sale uno y no entra nadie (por una lesión sin cambios), márcalo solo a él. Toca otra vez a un jugador para desmarcarlo. <b>Tarjetas</b>: pulsa «Amarilla» o «Roja» y elige al jugador. La segunda amarilla cuenta como expulsión. Con la ✕ quitas un gol, cambio o tarjeta apuntado por error.",
         "<b>Ventanas de cambios</b>: desde <b>juvenil en fútbol 11</b> (categoría Juvenil o Senior) se juega con <b>3 ventanas de cambios por parte</b> y en cada ventana cambias a los jugadores que quieras. En el Directo te salen las ventanas de la 1ª y la 2ª parte: toca la que toca («Ventana 1», «Ventana 2»…) o «🔄 Cambio», marca a los que salen y a los que entran y listo, esa ventana queda hecha con sus cambios. En la <b>penúltima</b> te avisa de que después solo te queda una, y en la <b>última</b> te avisa de que metas en ella todos los cambios que quieras hacer. Si ya no te quedan y apuntas otro, te pregunta antes.",
         "<b>Cambios del descanso</b>: no gastan ventana. Entre la 1ª y la 2ª parte tienes la fila «Descanso»: durante el descanso pulsa «🔄 Cambio» o «+ Cambio del descanso», y si se te olvidó apuntarlos, también puedes hacerlo ya en la 2ª parte con «+ Cambio del descanso». Se guardan con el minuto del descanso y en la lista salen como «Desc.».",
@@ -7111,8 +7765,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -8101,8 +8755,12 @@
       let r = await db.from("directos").select("*");
       /* Si falla (sin cobertura) se queda lo que ya había, para no perder el directo abierto */
       if (r.error || !Array.isArray(r.data)) return;
+      let viejo = liveRows;
       liveRows = {};
       r.data.forEach((x) => {
+        /* El Directo que está abierto se queda como está en este móvil (puede tener un toque del
+           reloj o un gol aún guardándose): si se cambiara por lo del servidor, se perdería */
+        if (state.live === x.partido_id && viejo[x.partido_id]) return (liveRows[x.partido_id] = viejo[x.partido_id]);
         x._seen = new Set((Array.isArray(x.eventos) ? x.eventos : []).map((e) => e.id));
         x._clk = liveClk(x);
         liveRows[x.partido_id] = x;
@@ -8252,8 +8910,10 @@
               : B("reopen", "Reabrir partido"),
       adj =
         st === "1T" || st === "2T"
-          ? `<div class="lv-adj"><span class="muted">Ajustar minuto</span>${B("m-", "−1'")}${B("m+", "+1'")}</div>`
-          : "",
+          ? `<div class="lv-adj"><span class="muted">Ajustar minuto</span>${B("m-", "−1'")}${B("m+", "+1'")}${B("reset", "↺ Reiniciar reloj")}</div>`
+          : st === "DES" || st === "FIN"
+            ? `<div class="lv-adj">${B("reset", "↺ Reiniciar reloj")}</div>`
+            : "",
       pick = state.livePick
         ? `<div class="lv-pick"><h3>¿Quién ha marcado?</h3><div class="slotmenu">${entries(
             m,
@@ -8635,6 +9295,8 @@
       return null;
     }
     x = liveRows[id] = (r.data && r.data[0]) || row;
+    x._seen = new Set((Array.isArray(x.eventos) ? x.eventos : []).map((e) => e.id));
+    x._clk = liveClk(x);
     liveSync(x);
     liveJor(x, m);
     return x;
@@ -8706,7 +9368,8 @@
             eventos: x.eventos,
           }),
           r,
-          ch = [];
+          ch = [],
+          env = null;
         if (x.anotador) {
           /* Con anotador, otra persona también apunta goles: antes de guardar se juntan
              sus goles con los de aquí, y solo se guarda si nadie ha tocado nada entretanto */
@@ -8715,18 +9378,24 @@
               s = q.data && q.data[0];
             if (!s) break;
             ch = ch.concat(liveMerge(x, s));
+            env = liveClk(x);
             let u = db.from("directos").update(datos()).eq("id", x.id);
             if (i < 2) u = u.eq("actualizado", s.actualizado);
             let w = await u.select();
             if (w.error || (w.data && w.data.length)) r = w;
           }
         }
-        if (!r) r = await db.from("directos").update(datos()).eq("id", x.id).select();
+        if (!r) {
+          env = liveClk(x);
+          r = await db.from("directos").update(datos()).eq("id", x.id).select();
+        }
         if (r.error) return note(liveErr(r.error.message));
         let s = r.data && r.data[0];
         if (s) {
           liveSync(s);
-          x.desde = s.desde;
+          /* La hora de arranque buena es la del servidor, pero solo si el reloj no se ha tocado
+             mientras se guardaba (si no, se perdía ese toque: «Reanudar» que no arrancaba) */
+          if (liveClk(x) === env) x.desde = s.desde;
           x.actualizado = s.actualizado;
           x._seen = new Set((Array.isArray(s.eventos) ? s.eventos : []).map((e) => e.id));
           x._clk = liveClk(s);
@@ -8736,6 +9405,10 @@
         if (x._fin) {
           x._fin = false;
           await liveMatch(x, null, 0, true);
+        }
+        if (x._clkSrv) {
+          x._clkSrv = false;
+          if (state.live === x.partido_id) render();
         }
         if (after) await after();
       })
@@ -8780,8 +9453,9 @@
     x._seen = ids;
     /* Reloj: si el anotador lo ha movido (empezar, pausar, descanso, 2ª parte, terminar) y aquí
        no se ha tocado, manda el del servidor. Si los dos lo han tocado, gana este móvil. */
-    if (x._clk === undefined) x._clk = liveClk(x);
     let sc = liveClk(s);
+    /* Sin huella guardada no se sabe quién lo ha tocado: manda este móvil */
+    if (x._clk === undefined) x._clk = sc;
     if (sc !== x._clk && liveClk(x) === x._clk) {
       if (s.estado === "FIN" && x.estado !== "FIN") x._fin = true;
       x.estado = s.estado;
@@ -8789,7 +9463,7 @@
       x.desde = s.desde || null;
       if (Number(s.parte_min)) x.parte_min = Number(s.parte_min);
       x._clk = sc;
-      x._cambio = true;
+      x._cambio = x._clkSrv = true;
     }
     return ch;
   }
@@ -9310,8 +9984,15 @@
       else liveGoal(x, "f", "");
     }
     if (k === "gc") liveGoal(x, "c");
-    if (["start", "pause", "resume", "half", "start2", "end", "reopen", "m-", "m+"].includes(k)) {
+    if (["start", "pause", "resume", "half", "start2", "end", "reopen", "m-", "m+", "reset"].includes(k)) {
       if (k === "end" && !confirm("¿Terminar el partido?")) return;
+      /* Vuelve el reloj a «Sin empezar» (0'), por ejemplo tras un partido de prueba. Lo apuntado se queda. */
+      if (k === "reset") {
+        if (!confirm("¿Poner el reloj a 0 y volver a «Sin empezar»? Los goles y lo que hayas apuntado se quedan (si quieres, los quitas con la ✕ de cada uno).")) return;
+        x.estado = "pre";
+        x.acum_ms = 0;
+        x.desde = null;
+      }
       if (k === "start") {
         let d = parseInt(($("lvDur") || {}).value);
         if (d >= 5 && d <= 60) x.parte_min = d;
