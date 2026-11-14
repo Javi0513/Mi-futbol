@@ -6229,3 +6229,58 @@ html.bio-on body {
 .jor-g {
   margin-top: 10px;
 }
+/* Resumen de cada jugador en un partido (v11.34) */
+.rj-l {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rj-b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line2);
+  background: var(--s2);
+  color: var(--ink, inherit);
+  font: 700 15px/1.2 var(--fb);
+  cursor: pointer;
+}
+.rj-b small {
+  color: var(--lime);
+  font-weight: 700;
+}
+.rj-b:active {
+  background: var(--s3);
+}
+.rj-fi {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  min-height: 32px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.rj-sc {
+  margin-top: 12px;
+}
+.rj-st .stat small.rj-s {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.rj-prev:not(:empty) {
+  margin: 4px 0 12px;
+}
+.rj-prev img {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  border-radius: 14px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+}
