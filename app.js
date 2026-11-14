@@ -128,7 +128,7 @@
   })();
   const state = {
     mode: "7",
-    tab: "plantilla",
+    tab: c.noInicio ? "plantilla" : "inicio",
     players: [],
     matches: [],
     draft: null,
@@ -606,7 +606,14 @@
       else b.removeAttribute("aria-current");
     });
     $("trTab").classList.toggle("hidden", !eo);
-    document.querySelector(".dock").classList.toggle("d5", eo);
+    let io = iniOn();
+    if (!io && state.tab === "inicio") state.tab = "plantilla";
+    $("iniTab").classList.toggle("hidden", !io);
+    let nd = 4 + (eo ? 1 : 0) + (io ? 1 : 0),
+      dk = document.querySelector(".dock");
+    dk.classList.toggle("d5", nd === 5);
+    dk.classList.toggle("d6", nd === 6);
+    $("stats").classList.toggle("hidden", state.tab === "inicio" && !state.draft && !state.live);
     $("teams").innerHTML = teamBar();
     let all = games().flatMap(entries);
     $("stats").innerHTML = [
@@ -634,11 +641,14 @@
       state.tab === "pizarra" && !state.draft,
     );
     document.body.style.overflow = state.present ? "hidden" : "";
+    iniAnim = key !== lastKey;
     v.innerHTML = state.live
       ? liveView()
       : state.draft
       ? editor()
-      : state.tab === "plantilla"
+      : state.tab === "inicio"
+        ? inicio()
+        : state.tab === "plantilla"
         ? players()
         : state.tab === "partidos"
           ? matches()
@@ -898,6 +908,209 @@
           : ["d", "Empate"];
     return `<span class="res ${c[0]}">${c[1]} ${r.gf}-${r.gc}</span> `;
   }
+  /* ===== Inicio (v11.35): lo primero que se ve al abrir la app =====
+     Próximo partido con cuenta atrás y botón de Directo, cómo va la temporada, accesos rápidos,
+     los mejores del equipo, el próximo entreno, la carga de la semana y los primeros pasos.
+     Solo lee lo que ya hay (no usa la base de datos ni tiene límites). APP_CONFIG.noInicio lo quita. */
+  const iniOn = () => !c.noInicio;
+  const DSEM = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+  function iniSaludo() {
+    let h = new Date().getHours();
+    return h >= 6 && h < 14 ? "Buenos días" : h >= 14 && h < 21 ? "Buenas tardes" : "Buenas noches";
+  }
+  function iniDias(f) {
+    let a = new Date(ymd(new Date()) + "T12:00:00"),
+      b = new Date(f + "T12:00:00");
+    return Math.round((b - a) / 864e5);
+  }
+  const iniCuando = (n) => (n <= 0 ? "Hoy" : n === 1 ? "Mañana" : "En " + n + " días");
+  function iniFecha(f) {
+    let d = new Date(f + "T12:00:00");
+    return isNaN(d) ? fmtDate(f) : DSEM[d.getDay()] + " " + d.getDate() + " " + MES[d.getMonth()];
+  }
+  /* Partido en directo ahora, o el próximo (con fecha de hoy en adelante y sin resultado) */
+  function iniProx() {
+    let hoy = ymd(new Date()),
+      G = games(),
+      vivo = G.find((m) => liveOn(liveRows[m.id]));
+    if (vivo) return { m: vivo, vivo: true };
+    let f = G.filter((m) => m.fecha >= hoy && !(m.alineacion && m.alineacion.resultado)).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
+    if (f) return { m: f };
+    let cvx = cvLee();
+    if (cvx && cvx.fecha && cvx.fecha >= hoy && String(cvx.rival || "").trim()) return { cv: cvx };
+    return null;
+  }
+  function iniHero() {
+    let eq = teamName(),
+      cat = catOf(state.mode, curTeam()),
+      nom = perfil && perfil.nombre ? String(perfil.nombre).trim().split(/\s+/)[0] : "",
+      esc0 = club && club.escudo ? `<img class="ini-esc" src="${esc(club.escudo)}" alt="Escudo de ${esc(club.nombre)}">` : `<span class="mark ini-esc" role="img" aria-label="Logo JV32"></span>`,
+      top = `<div class="ini-top">${esc0}<div><small class="ini-hola">${iniSaludo()}${nom ? ", " + esc(nom) : ""} 👋</small><h2 class="ini-eq">${esc(eq)}</h2><p class="ini-sub">${esc(MN())}${cat ? " · " + esc(cat[1]) : ""} · ${roster().length} ${roster().length === 1 ? "jugador" : "jugadores"}</p></div></div>`,
+      x = iniProx(),
+      body = "";
+    if (x && x.m) {
+      let m = x.m,
+        a = m.alineacion || {},
+        cv = a.conv || {},
+        n = iniDias(m.fecha),
+        jt = jorTxt(a),
+        det = [iniFecha(m.fecha), cv.hora ? cv.hora + " h" : "", jt, cv.lugar].filter(Boolean).map(esc).join(" · "),
+        L = x.vivo ? liveRows[m.id] : null;
+      body = `<div class="ini-match${x.vivo ? " vivo" : ""}"><div class="ini-k">${x.vivo ? `<span class="ini-dot" aria-hidden="true"></span>En directo · ${esc(LIVE_EST[L.estado] || "")}` : `Próximo partido · <b>${iniCuando(n)}</b>`}</div><div class="ini-vs"><b>${esc(eq)}</b><span>${x.vivo && L ? `${Number(L.gf) || 0}<i>-</i>${Number(L.gc) || 0}` : "VS"}</span><b>${esc(m.rival || "Rival")}</b></div><p class="ini-det">${det}</p><div class="ini-cta">${viendo ? "" : `<button type="button" class="primary" data-action="live" data-id="${m.id}">${ic("live", 20)}${x.vivo ? "Volver al directo" : "Empezar el Directo"}</button>`}<button type="button" class="secondary" data-action="edit-match" data-id="${m.id}">${ic("users", 18)}${viendo ? "Ver alineación" : "Alineación"}</button>${viendo || x.vivo ? "" : `<button type="button" class="secondary" data-ini="conv">${ic("share", 18)}Convocatoria</button>`}</div></div>`;
+    } else if (x && x.cv) {
+      let n = iniDias(x.cv.fecha);
+      body = `<div class="ini-match"><div class="ini-k">Próximo partido · <b>${iniCuando(n)}</b></div><div class="ini-vs"><b>${esc(eq)}</b><span>VS</span><b>${esc(x.cv.rival)}</b></div><p class="ini-det">${[iniFecha(x.cv.fecha), x.cv.hora ? x.cv.hora + " h" : "", x.cv.lugar].filter(Boolean).map(esc).join(" · ")} · ${x.cv.ids.length} convocados</p><div class="ini-cta">${viendo ? "" : `<button type="button" class="primary" data-action="add-match">${ic("plus", 20)}Crear el partido</button><button type="button" class="secondary" data-ini="conv">${ic("share", 18)}Convocatoria</button>`}</div></div>`;
+    } else {
+      let u = games().find((m) => m.alineacion && m.alineacion.resultado),
+        r = u && u.alineacion.resultado,
+        k = r ? (r.gf > r.gc ? ["w", "Victoria"] : r.gf < r.gc ? ["l", "Derrota"] : ["d", "Empate"]) : null;
+      body = `<div class="ini-match">${u ? `<div class="ini-k">Último partido · ${esc(iniFecha(u.fecha))} · <span class="res ${k[0]}">${k[1]}</span></div><div class="ini-vs"><b>${esc(eq)}</b><span>${r.gf}<i>-</i>${r.gc}</span><b>${esc(u.rival || "Rival")}</b></div>` : `<div class="ini-k">Sin partidos a la vista</div><p class="ini-det">Crea el próximo partido: convocatoria, alineación y marcador en directo para las familias.</p>`}<div class="ini-cta">${viendo ? "" : `<button type="button" class="primary" data-action="add-match">${ic("plus", 20)}Nuevo partido</button>`}${u ? `<button type="button" class="secondary" data-rs="${u.id}">${ic("chart", 18)}Ver resumen</button>` : ""}</div></div>`;
+    }
+    return `<section class="ini-hero" aria-label="Inicio">${top}${body}</section>`;
+  }
+  /* Cómo va la temporada: V-E-D, goles y racha */
+  function iniTemporada() {
+    let rs = games().filter((m) => m.alineacion && m.alineacion.resultado);
+    if (!rs.length) return "";
+    let R = (m) => m.alineacion.resultado,
+      W = rs.filter((m) => R(m).gf > R(m).gc).length,
+      L = rs.filter((m) => R(m).gf < R(m).gc).length,
+      D = rs.length - W - L,
+      GF = rs.reduce((s, m) => s + R(m).gf, 0),
+      GC = rs.reduce((s, m) => s + R(m).gc, 0),
+      pts = W * 3 + D,
+      last = [...rs]
+        .sort((a, b) => a.fecha.localeCompare(b.fecha))
+        .slice(-5)
+        .map((m) => {
+          let r = R(m),
+            k = r.gf > r.gc ? ["w", "V", "Victoria"] : r.gf < r.gc ? ["l", "D", "Derrota"] : ["d", "E", "Empate"];
+          return `<span class="fchip ${k[0]}" aria-label="${k[2]} ${r.gf}-${r.gc} contra ${esc(m.rival)}">${k[1]}</span>`;
+        })
+        .join(""),
+      pc = Math.round((W * 100) / rs.length);
+    return `<section class="panel ini-temp"><div class="bar"><div><div class="kicker">Temporada</div><h2 class="h2s">Así va tu equipo</h2></div><button type="button" class="secondary small" data-ini="tab" data-t="resumen">${ic("chart", 18)}Estadísticas</button></div><div class="ini-nums">${[
+      ["Victorias", W, "w"],
+      ["Empates", D, "d"],
+      ["Derrotas", L, "l"],
+      ["Goles", GF + "<i>-</i>" + GC, "g"],
+    ]
+      .map((x) => `<div class="ini-n ${x[2]}"><b>${x[1]}</b><small>${x[0]}</small></div>`)
+      .join("")}</div><div class="ini-ring-row"><div class="ini-ring" style="--p:${pc}" role="img" aria-label="${pc}% de victorias"><b>${pc}%</b><small>victorias</small></div><div class="ini-forma"><small class="muted">Últimos resultados</small><div class="formline">${last}</div><small class="muted">${pts} puntos en ${rs.length} ${rs.length === 1 ? "partido" : "partidos"} · diferencia ${GF - GC > 0 ? "+" : ""}${GF - GC}</small></div></div></section>`;
+  }
+  /* Accesos rápidos a lo más usado */
+  function iniAccesos() {
+    let hoy = ymd(new Date()),
+      eo = entrenosOn(),
+      tw = eo ? trainings().filter((t) => cgLunes(t.fecha) === cgLunes(hoy)).length : 0,
+      T = [
+        ["users", "Plantilla", roster().length + (roster().length === 1 ? " jugador" : " jugadores"), 'data-ini="tab" data-t="plantilla"'],
+        ["calendar", "Partidos", games().length + (games().length === 1 ? " partido" : " partidos"), 'data-ini="tab" data-t="partidos"'],
+        ["pencil", "Pizarra", "Jugadas y ABP", 'data-ini="tab" data-t="pizarra"'],
+        ["check", "Entrenos", eo ? tw + " esta semana" : "Actívalos aquí", 'data-ini="entrenos"'],
+        ["chart", "Estadísticas", "Mapa de calor y Excel", 'data-ini="tab" data-t="resumen"'],
+      ];
+    if (!viendo) {
+      T.push(["share", "Convocatoria", "Por WhatsApp", 'data-ini="conv"']);
+      T.push(["link", "Enlace del equipo", "Para tus jugadores", 'data-ini="enlace"']);
+      T.push(["plus", "Nuevo partido", "Alineación y Directo", 'data-action="add-match"']);
+    }
+    return `<section class="panel ini-acc"><div class="kicker">Accesos rápidos</div><div class="ini-grid">${T.map(
+      (x) => `<button type="button" class="ini-t" ${x[3]}><span class="ini-ti">${ic(x[0], 22)}</span><b>${x[1]}</b><small>${x[2]}</small></button>`,
+    ).join("")}</div></section>`;
+  }
+  /* Los mejores de la temporada: goles, asistencias y minutos */
+  function iniTop() {
+    let r = roster().map((p) => ({ p, t: totals(p.id) }));
+    if (!r.some((x) => x.t.games)) return "";
+    let best = (k) => r.filter((x) => x.t[k] > 0).sort((a, b) => b.t[k] - a.t[k] || a.p.nombre.localeCompare(b.p.nombre, "es"))[0],
+      L = [
+        ["⚽", "Máximo goleador", best("goals"), "goals", "goles"],
+        ["🎯", "Más asistencias", best("asi"), "asi", "asist."],
+        ["⏱", "Más minutos", best("minutes"), "minutes", "min"],
+      ].filter((x) => x[2]);
+    if (!L.length) return "";
+    return `<section class="panel ini-best"><div class="kicker">Los mejores</div><h2 class="h2s">Tus jugadores</h2><div class="ini-tops">${L.map(
+      (x) => `<div class="row fi-tap ini-tp" data-ficha="${x[2].p.id}" role="button" tabindex="0" aria-label="Ver la ficha de ${esc(x[2].p.nombre)}">${avatar(x[2].p)}<div class="info"><small>${x[0]} ${x[1]}</small><strong>${esc(x[2].p.nombre)}</strong></div><div class="big"><b>${x[2].t[x[3]]}</b><small>${x[4]}</small></div></div>`,
+    ).join("")}</div></section>`;
+  }
+  /* Próximo entreno y carga de la semana (si tiene el control de entrenamientos) */
+  function iniEntreno() {
+    if (!entrenosOn()) return "";
+    let hoy = ymd(new Date()),
+      T = trainings(),
+      t = T.find((x) => x.fecha >= hoy),
+      R = roster().map((p) => p.id),
+      ult = T.filter((x) => x.fecha <= hoy).reverse().find((x) => R.some((id) => x.asistencia && x.asistencia[id])),
+      pa = ult ? Math.round((R.filter((id) => ["si", "tarde"].includes(ult.asistencia[id])).length * 100) / Math.max(1, R.filter((id) => ult.asistencia[id]).length)) : null,
+      cg = "";
+    if (state.cgOk) {
+      let { eq, por } = cgSemanas(),
+        al = 0;
+      if (plan === "pro") {
+        let W = cgSemanas().W,
+          ax = cxAvisoX(cxOf(), catOf(state.mode, curTeam()), W);
+        al = roster().filter((p) => {
+          let a = cgAviso(por[p.id] || W.map(() => 0), ax);
+          return a && a.k === "l";
+        }).length;
+      }
+      if (eq.some((v) => v > 0))
+        cg = `<div class="ini-cg"><div><small>Carga física de esta semana</small><b>${eq[5]}</b></div>${cgBarras(eq, cgSemanas().W, 40)}${al ? `<p class="ini-al">⚠ ${al} ${al === 1 ? "jugador lleva" : "jugadores llevan"} mucha más carga que su media</p>` : ""}</div>`;
+    }
+    return `<section class="panel ini-tr"><div class="bar"><div><div class="kicker">Entrenamientos</div><h2 class="h2s">${t ? "Próximo entreno · " + iniCuando(iniDias(t.fecha)) : "Sin entrenos a la vista"}</h2><p class="muted">${t ? esc(iniFecha(t.fecha)) + (t.hora ? " · " + esc(t.hora) + " h" : "") : "Crea el próximo y pasa lista en un momento."}${pa !== null ? ` · último: <b>${pa}%</b> de asistencia` : ""}</p></div><button type="button" class="${t ? "primary" : "secondary"} small" data-ini="tr" data-f="${t ? t.fecha : hoy}">${ic("check", 18)}${t ? "Pasar lista" : "Crear entreno"}</button></div>${cg}</section>`;
+  }
+  /* Primeros pasos para quien empieza (desaparece al completarlos) */
+  function iniPasos() {
+    if (viendo) return "";
+    let hayDir = games().some((m) => liveRows[m.id]),
+      P = [
+        [teamName() !== "Mi equipo", "Pon nombre a tu equipo", 'data-teamact="rename"'],
+        [roster().length >= 5, "Añade al menos 5 jugadores", 'data-action="add-player"', roster().length + "/5"],
+        [games().length > 0, "Crea tu primer partido", 'data-action="add-match"'],
+        [hayDir, "Lleva tu primer partido en Directo", 'data-ini="tab" data-t="partidos"'],
+      ],
+      n = P.filter((x) => x[0]).length;
+    if (n === P.length) return "";
+    return `<section class="panel ini-pasos"><div class="bar"><div><div class="kicker">Primeros pasos</div><h2 class="h2s">Prepara tu equipo en 2 minutos</h2></div><b class="ini-pc">${n}/${P.length}</b></div><div class="ini-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${P.length}" aria-valuenow="${n}"><i style="width:${Math.round((n * 100) / P.length)}%"></i></div>${P.map(
+      (x) => `<button type="button" class="ini-paso${x[0] ? " ok" : ""}" ${x[0] ? "disabled" : x[2]}><span class="ini-ck">${x[0] ? ic("check", 16) : ""}</span><span>${x[1]}${x[3] && !x[0] ? ` <small>(${x[3]})</small>` : ""}</span>${x[0] ? "" : ic("right", 18)}</button>`,
+    ).join("")}</section>`;
+  }
+  function iniPro() {
+    if (plan === "pro" || viendo) return "";
+    return `<section class="panel ini-pro"><div><div class="kicker">Plan Pro</div><h2 class="h2s">Sin límites para tu equipo</h2><p class="muted">Jugadores, partidos y entrenos ilimitados, vídeo en directo para las familias, avisos de sobrecarga y todos los informes.</p></div>${enAndroid ? `<p class="hint">Puedes hacerte Pro desde app.monetizaplus.com.</p>` : `<button type="button" class="primary" data-ini="pro">Ver el plan Pro</button>`}</section>`;
+  }
+  let iniAnim = false;
+  function inicio() {
+    return `<div class="ini${iniAnim ? " anim" : ""}">${iniHero()}${iniPasos()}${iniTemporada()}${iniAccesos()}${iniEntreno()}${iniTop()}${iniPro()}</div>`;
+  }
+  $("view").addEventListener("click", (e) => {
+    let b = e.target.closest("[data-ini]");
+    if (!b || b.disabled) return;
+    let k = b.dataset.ini;
+    if (k === "tab") {
+      state.tab = b.dataset.t;
+      state.draft = state.live = null;
+      render();
+      window.scrollTo(0, 0);
+    } else if (k === "entrenos") {
+      if (!entrenosOn()) {
+        setEntrenos(true);
+        note("Control de entrenamientos activado. Lo puedes quitar en «Mi cuenta».", true);
+      }
+      state.tab = "entrenos";
+      render();
+      window.scrollTo(0, 0);
+    } else if (k === "tr") {
+      state.trDay = b.dataset.f;
+      state.trMonth = b.dataset.f.slice(0, 7);
+      state.tab = "entrenos";
+      render();
+      window.scrollTo(0, 0);
+    } else if (k === "conv") cvAbre();
+    else if (k === "enlace") Promise.resolve(espAbre()).catch((x) => note(x.message || String(x)));
+    else if (k === "pro") showInfo("pro");
+  });
   function summary() {
     let gs = games(),
       rs = gs.filter((m) => m.alineacion && m.alineacion.resultado),
@@ -7375,6 +7588,11 @@
       p: "Aquí llevas tu equipo: plantilla, partidos, alineaciones, minutos, goles, pizarra táctica y marcador en directo. Te lo enseño en un minuto.",
     },
     {
+      el: '[data-tab="inicio"]',
+      t: "Inicio",
+      p: "Es lo primero que ves al abrir la app: tu próximo partido con el botón para empezar el Directo, cómo va la temporada, accesos rápidos, tus mejores jugadores y el próximo entreno. Mientras empiezas, te marca los primeros pasos.",
+    },
+    {
       el: ".switch",
       t: "Elige la modalidad",
       p: "Fútbol 7, Fútbol 11 o Fútbol sala. Cada modalidad tiene sus jugadores y sus partidos por separado.",
@@ -7531,6 +7749,7 @@
       p: [
         "Arriba eliges la modalidad: <b>Fútbol 7</b>, <b>Fútbol 11</b> o <b>Fútbol sala</b>. Cada una tiene sus jugadores y partidos por separado.",
         "Añade a tus jugadores en <b>Plantilla</b> y luego crea tu primer partido en <b>Partidos</b>.",
+        "Al abrir la app sale el <b>Inicio</b>: tu próximo partido con el botón «Empezar el Directo» (o «Volver al directo» si ya está en marcha), cómo va la temporada, accesos rápidos a todo, tus mejores jugadores, el próximo entreno con «Pasar lista» y la carga de la semana. Mientras empiezas, te marca los <b>primeros pasos</b>. Vuelves a él con el botón «Inicio».",
         "Puedes volver a ver el tutorial de bienvenida en «Mi cuenta › Ver el tutorial».",
       ],
     },
@@ -7835,9 +8054,15 @@
     tutShow();
   }
   function tutClose() {
+    let ab = tutI >= 0;
     tutI = -1;
     let b = $("tut");
     if (b) b.remove();
+    /* Al terminar el tutorial, de vuelta al Inicio */
+    if (ab && iniOn() && state.tab === "plantilla" && !state.draft && !state.live) {
+      state.tab = "inicio";
+      render();
+    }
     try {
       localStorage.setItem(tutKey(), "1");
     } catch (e) {}
@@ -8217,7 +8442,7 @@
     state.trainings = (d.entrenamientos || []).map((x) => ({ ...x, asistencia: parseJson(x.asistencia, {}) }));
     state.trOk = true;
     state.team = {};
-    state.tab = "plantilla";
+    state.tab = iniOn() ? "inicio" : "plantilla";
     state.draft = state.live = null;
     state.editing = null;
     document.body.classList.add("solo-ver");
@@ -8579,7 +8804,7 @@
     if (mode) {
       if (!leaveDraft()) return;
       state.mode = mode.dataset.mode;
-      state.tab = "plantilla";
+      state.tab = state.tab === "inicio" ? "inicio" : "plantilla";
       state.draft = null;
       state.live = null;
       render();
@@ -12775,7 +13000,7 @@
       draft: null,
       editing: null,
       live: null,
-      tab: "plantilla",
+      tab: iniOn() ? "inicio" : "plantilla",
     });
     $("info").classList.add("hidden");
     $("login").classList.remove("hidden");

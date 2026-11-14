@@ -7,7 +7,7 @@ from fake2 import FAKE2
 srv=http.server.ThreadingHTTPServer(('127.0.0.1',8814),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
-CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,")
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,noInicio:true,")
 def abrir(b,perfil,rpc):
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block')
     ctx.add_init_script('window.__seed='+json.dumps({'futbol_personal_jugadores':[],'futbol_personal_partidos':[],'perfiles':[perfil]}))

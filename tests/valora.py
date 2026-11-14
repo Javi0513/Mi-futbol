@@ -7,7 +7,7 @@ from fake2 import FAKE2
 srv=http.server.ThreadingHTTPServer(('127.0.0.1',8814),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
-CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,")
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,noInicio:true,")
 real=open(os.path.join(REPO,'config.js'),encoding='utf-8').read()
 check('config.js real: pago oculto en Android (norma de Google Play)','ocultarPagoAndroid:true' in real.replace(' ',''))
 AND='Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36'

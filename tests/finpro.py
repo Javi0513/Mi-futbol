@@ -7,7 +7,7 @@ from fake2 import FAKE2
 srv=http.server.ThreadingHTTPServer(('127.0.0.1',8846),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
 res=[];errs=[]
 def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
-CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,portalUrl:'https://billing.stripe.com/p/login/test_xyz',")
+CFG=open(os.path.join(APP,'config.js')).read().replace("window.APP_CONFIG = {","window.APP_CONFIG = {noTutorial:true,noInicio:true,portalUrl:'https://billing.stripe.com/p/login/test_xyz',")
 def iso(**k):return (datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(**k)).strftime('%Y-%m-%dT%H:%M:%SZ')
 SHOT=os.environ.get('FINPRO_SHOT')
 def abrir(b,perfil,club=None,ctx=None,android=False):
