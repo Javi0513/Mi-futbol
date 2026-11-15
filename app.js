@@ -2778,14 +2778,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo, ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -7874,6 +7874,7 @@
         "Con el plan gratuito puedes preparar los enlaces antes del partido en <b>3 partidos al mes</b> (cada partido cuenta una vez); con Pro, ilimitado. El enlace del directo lo tienes siempre gratis dentro del Directo.",
         "<b>Anotador</b>: si tú grabas o estás dirigiendo, otra persona (el delegado, un padre…) puede apuntarlo todo desde su móvil. En el Directo pulsa «Crear enlace de anotador» y mándaselo con «Enviar al anotador». No necesita cuenta.",
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
+        "<b>Tiros desde el anotador</b>: también tiene <b>«🎯 Tiro a puerta»</b> y <b>«Tiro fuera»</b> (elige quién ha tirado; primero salen los que están en el campo) y <b>«Tiro del rival»</b>. En tu Directo se suman solos a las estadísticas de cada jugador y a los tiros del rival, y salen en el resumen, en su ficha y en el Excel. Si el anotador quita un tiro con la ✕, se resta. Plan gratuito: tiros desde el anotador en <b>2 partidos al mes</b> (el resto del anotador sigue igual y tú los puedes apuntar en tu Directo siempre). Con Pro, ilimitado.",
         "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
         "En el <b>descanso</b>, el anotador apunta los cambios con «🔄 Cambio del descanso» y no gastan ventana. Si se le olvidó, en la 2ª parte tiene el botón «🔄 Cambio del descanso (no gasta ventana)».",
         "En tu móvil el marcador, los goleadores y el marcador del vídeo se actualizan solos en unos segundos, y todo se guarda en el partido y en las estadísticas. El anotador puede quitar con la ✕ lo que haya apuntado él. Con «Quitar el anotador» su enlace deja de funcionar. Con el plan gratuito, el anotador se puede usar en 3 partidos al mes; con Pro, sin límite.",
@@ -7986,8 +7987,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b>, el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo, enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -9061,9 +9062,97 @@
     return `<div class="lv-fal" aria-label="Faltas acumuladas en la ${h}ª parte: ${esc(x.equipo)} ${fn}, ${esc(x.rival || "rival")} ${fr}"><b class="${fs && fn >= 5 ? "w" : ""}">${fn}</b><span>Faltas ${h}ª parte</span><b class="${fs && fr >= 5 ? "w" : ""}">${fr}</b></div>${dp.length ? `<p class="lv-dp">⚠️ ${esc(dp.join(" y "))}: ${dp.length > 1 ? "las próximas faltas son" : "la próxima falta es"} doble penalti</p>` : ""}`;
   }
   const lvN = (n, d) => (n ? (d ? d + " " : "") + n : d ? "Dorsal " + d : "—");
+  /* ===== Tiros desde el anotador (v11.39) =====
+     El anotador apunta tiros (t "tp" a puerta y "tf" fuera, de un jugador; "tr" del rival) como
+     eventos del directo. Este móvil los pasa a las estadísticas del jugador (st) y a los tiros del
+     rival (estR.tir). alineacion.anTir [[id, t, pid]] recuerda los ya sumados: así no se suman dos
+     veces y, si el anotador quita uno, se resta. No salen en la lista de jugadas ni en el enlace público. */
+  const TIR_T = ["tp", "tf", "tr"];
+  function anTirSync(x, m) {
+    if (!x || !m || !Array.isArray(x.eventos)) return false;
+    if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
+    let al = m.alineacion,
+      hecho = Array.isArray(al.anTir) ? al.anTir : [],
+      ev = x.eventos.filter((e) => e && e.an && e.id && TIR_T.includes(e.t)),
+      ids = new Set(ev.map((e) => e.id)),
+      ya = new Set(hecho.map((z) => z[0])),
+      E = entries(m),
+      ch = false,
+      suma = (k, pid, d, mi) => {
+        if (k === "tr") {
+          let R = { ...(al.estR || {}) };
+          R.tir = Math.min(999, Math.max(0, (Number(R.tir) || 0) + d));
+          if (R.tir) al.estR = R;
+          else delete al.estR;
+          return;
+        }
+        let e = E.find((z) => z.id === pid);
+        if (!e) return;
+        stSet(e, k, d);
+        if (d > 0) {
+          let tm = { ...(e.stm && typeof e.stm === "object" ? e.stm : {}) },
+            ml = Array.isArray(tm[k]) ? tm[k].slice() : [];
+          if (ml.length < stv(e, k)) ml.push(mi);
+          tm[k] = ml;
+          e.stm = tm;
+        }
+      };
+    hecho = hecho.filter((z) => {
+      if (ids.has(z[0])) return true;
+      suma(z[1], z[2], -1);
+      ch = true;
+      return false;
+    });
+    ev.forEach((e) => {
+      if (ya.has(e.id)) return;
+      suma(e.t, e.pid, 1, Number(e.m) || 0);
+      hecho.push([e.id, e.t, e.pid || ""]);
+      ch = true;
+    });
+    if (ch) {
+      if (hecho.length) al.anTir = hecho.slice(-200);
+      else delete al.anTir;
+    }
+    return ch;
+  }
+  /* ¿Puede el anotador de este partido apuntar tiros? Pro: siempre. Gratis: LIM.at partidos al mes
+     (sin avisos: si no quedan, el anotador sigue igual, sin los botones de tiros).
+     Se guarda en directos.an_tiros (supabase-anotador-tiros.sql); sin esa columna no se insiste. */
+  let anTirNo = false;
+  function anTirPuede(mid, gasta) {
+    if (esPro()) return true;
+    let q = envLee(),
+      L = q.at || [];
+    if (L.includes(mid)) return true;
+    if (L.length >= LIM.at) return false;
+    if (gasta) {
+      L.push(mid);
+      q.at = L;
+      try {
+        localStorage.setItem(envKey(), JSON.stringify(q));
+      } catch (e) {}
+    }
+    return true;
+  }
+  async function anotTiros(x) {
+    if (anTirNo || !x || !x.anotador || x.an_tiros || !anTirPuede(x.partido_id, false)) return;
+    let r;
+    try {
+      r = await db.from("directos").update({ an_tiros: true }).eq("id", x.id).select("id");
+    } catch (e) {
+      r = { error: e };
+    }
+    if (r.error) {
+      if (/an_tiros|schema cache|column/i.test(String(r.error.message || r.error))) anTirNo = true;
+      return;
+    }
+    anTirPuede(x.partido_id, true);
+    x.an_tiros = true;
+    if (state.live === x.partido_id) render();
+  }
   function liveEvents(x, own) {
     let am = {},
-      all = (Array.isArray(x.eventos) ? x.eventos : []).filter((e) => e.t !== "fa").map((e) => {
+      all = (Array.isArray(x.eventos) ? x.eventos : []).filter((e) => e.t !== "fa" && !TIR_T.includes(e.t)).map((e) => {
         let q = e.r ? "r:" + (e.d || e.n) : e.pid || e.n;
         if (e.t === "a") am[q] = (am[q] || 0) + 1;
         return { e, a2: e.t === "a" && am[q] === 2 };
@@ -9565,6 +9654,9 @@
     liveJor(x, m);
     /* El anotador ve siempre los convocados de ahora */
     if (x.anotador && JSON.stringify(anotJug(m)) !== JSON.stringify(x.anot_jug || [])) anotGuarda(x, { anot_jug: anotJug(m) });
+    /* Tiros del anotador: activarlos si se puede y sumar los que haya apuntado con la app cerrada */
+    anotTiros(x);
+    if (anTirSync(x, m)) liveStatSave(m);
   }
   async function openLive(id) {
     let m = state.matches.find((z) => z.id === id);
@@ -9634,6 +9726,13 @@
         if (x._fin) {
           x._fin = false;
           await liveMatch(x, null, 0, true);
+        }
+        {
+          let mt = state.matches.find((z) => z.id === x.partido_id);
+          if (mt && anTirSync(x, mt)) {
+            liveStatSave(mt);
+            if (state.live === x.partido_id) x._clkSrv = true;
+          }
         }
         if (x._clkSrv) {
           x._clkSrv = false;
@@ -9705,6 +9804,7 @@
     if (x.estado !== "pre" || x.gf || x.gc) m.alineacion.resultado = { gf: x.gf, gc: x.gc };
     let e = pid && entries(m).find((z) => z.id === pid);
     if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + d);
+    anTirSync(x, m);
     if (Number(x.parte_min)) m.alineacion.parte = Number(x.parte_min);
     /* Cambios y tarjetas del Directo al partido (lo apuntado a mano después se respeta) */
     let al = m.alineacion,
@@ -9753,7 +9853,7 @@
     liveStart = (x) => {
       x.desde = new Date(serverNow()).toISOString();
     };
-  const lvCount = (x) => x.eventos.filter((z) => z.t !== "fa").length;
+  const lvCount = (x) => x.eventos.filter((z) => z.t !== "fa" && !TIR_T.includes(z.t)).length;
   function liveGoal(x, t, pid) {
     if (!Array.isArray(x.eventos)) x.eventos = [];
     if (lvCount(x) >= 80) return note("Demasiadas jugadas apuntadas en este partido.");
@@ -9817,11 +9917,17 @@
   /* ===== Enlace del anotador (v11.8): otra persona apunta los goles desde su móvil ===== */
   function anotHtml(x) {
     let q = esPro() ? "" : `<p class="muted lim-q">Plan gratuito: anotador en ${LIM.an} partidos al mes (te quedan ${Math.max(0, LIM.an - envUsados("an"))}). Con Pro, ilimitado.</p>`;
-    return `<div class="lv-share lv-anot"><h3>Anotador</h3><p class="muted">Mientras tú grabas, otra persona (el delegado, un padre…) apunta desde su móvil los goles (con quién ha marcado), las faltas, los cambios y las tarjetas de los dos equipos. El minuto se pone solo, el marcador del vídeo cambia en unos segundos y todo se guarda en el partido. No necesita cuenta.</p>${
+    return `<div class="lv-share lv-anot"><h3>Anotador</h3><p class="muted">Mientras tú grabas, otra persona (el delegado, un padre…) apunta desde su móvil los goles (con quién ha marcado), los tiros a puerta y fuera de cada jugador, las faltas, los cambios y las tarjetas de los dos equipos. El minuto se pone solo, el marcador del vídeo cambia en unos segundos y todo se guarda en el partido. No necesita cuenta.</p>${
       x.anotador
-        ? `<input id="anUrl" readonly value="${esc(anotUrl(x))}" aria-label="Enlace del anotador"><div class="lv-ctl"><button class="primary" data-live="anshare">${ic("share", 18)}Enviar al anotador</button><button class="danger" data-live="anoff">Quitar el anotador</button></div><p class="hint">Con este enlace se apunta el partido: mándalo solo a quien vaya a anotar. También puede empezar, pausar, pasar al descanso y terminar el partido: el reloj es el mismo para los dos. Para la familia, usa el enlace de abajo.</p>`
+        ? `<input id="anUrl" readonly value="${esc(anotUrl(x))}" aria-label="Enlace del anotador"><div class="lv-ctl"><button class="primary" data-live="anshare">${ic("share", 18)}Enviar al anotador</button><button class="danger" data-live="anoff">Quitar el anotador</button></div><p class="hint">Con este enlace se apunta el partido: mándalo solo a quien vaya a anotar. También puede empezar, pausar, pasar al descanso y terminar el partido: el reloj es el mismo para los dos. Para la familia, usa el enlace de abajo.</p>${anTirQ(x)}`
         : `<div class="lv-ctl"><button class="secondary" data-live="anon">${ic("plus", 18)}Crear enlace de anotador</button></div>${q}`
     }</div>`;
+  }
+  /* Aviso del plan gratuito para los tiros desde el anotador (v11.39) */
+  function anTirQ(x) {
+    if (!x.anotador || anTirNo) return "";
+    if (x.an_tiros) return esPro() ? "" : `<p class="muted lim-q">Plan gratuito: tiros desde el anotador en ${LIM.at} partidos al mes (este partido ya cuenta). Con Pro, ilimitado.</p>`;
+    return `<p class="muted lim-q">Plan gratuito: este mes ya has usado los tiros desde el anotador en ${LIM.at} partidos. El anotador puede apuntar todo lo demás; los tiros los apuntas tú aquí. Con Pro, ilimitado. <button type="button" class="linkb" data-antir-pro>Ver el plan Pro</button></p>`;
   }
   /* Lista de convocados que verá el anotador (solo nombre y dorsal) */
   function anotJug(m) {
@@ -9853,6 +9959,7 @@
   async function anotOn(x, m) {
     if (!envPuede("an", x.partido_id)) return;
     if (await anotGuarda(x, { anotador: crypto.randomUUID(), anot_jug: anotJug(m) })) {
+      await anotTiros(x);
       render();
       anotShare(x);
     }
@@ -9976,6 +10083,7 @@
     if (k === "an-on") {
       if (!envPuede("an", x.partido_id)) return;
       if (await anotGuarda(x, { anotador: crypto.randomUUID(), anot_jug: anotJug(m) })) {
+        await anotTiros(x);
         pePinta();
         render();
         note("Enlace del anotador creado. Mándaselo con el botón verde.", true);
@@ -10067,6 +10175,8 @@
       lst = e.target.closest("[data-lvst]"),
       lsp = e.target.closest("[data-lvsp]"),
       lso = e.target.closest("[data-lvso],[data-lvsi]");
+    if (e.target.closest("[data-antir-pro]"))
+      return proLimite(`En el plan gratuito, el anotador puede apuntar los <b>tiros a puerta y fuera de cada jugador</b> en <b>${LIM.at} partidos al mes</b>. Todo lo demás del anotador (goles, faltas, cambios, tarjetas y el reloj) sigue igual, y tú puedes apuntar los tiros en tu Directo siempre gratis.`);
     if (e.target.closest("[data-lvloc-pro]"))
       return proLimite(`En el plan gratuito puedes marcar en el campo dónde fue cada acción (para el <b>mapa de calor</b> y el <b>campograma de tiro</b>) en <b>${LIM.mp} partidos al mes</b>. Apuntar los datos sigue siendo gratis.`);
     if (e.target.closest("[data-lvloc-tg]")) {
@@ -11137,7 +11247,9 @@
       ? "Falta un paso en el servidor para llevar el reloj desde aquí. Avisa al entrenador."
       : /NO_EXISTE/.test(t)
       ? "Este enlace de anotador ya no funciona: el entrenador lo ha quitado."
-      : /DEMASIADOS/.test(t)
+      : /PRO_TIROS/.test(t)
+      ? "Los tiros no están activados en este partido. Avisa al entrenador."
+      : /DEMASIADOS|violates check/i.test(t)
         ? "Ya hay demasiadas jugadas apuntadas en este partido."
         : /JUGADOR/.test(t)
           ? "Ese jugador ya no está en la convocatoria. Elige otro."
@@ -11178,7 +11290,8 @@
     start2: "2ª parte empezada.",
     end: "Partido terminado.",
   };
-  const AN_Q = { f: "el gol", c: "el gol", s: "el cambio", a: "la tarjeta", r: "la tarjeta", fa: "la falta" };
+  const AN_Q = { f: "el gol", c: "el gol", s: "el cambio", a: "la tarjeta", r: "la tarjeta", fa: "la falta", tp: "el tiro", tf: "el tiro", tr: "el tiro" };
+  const AN_TT = { tp: "🎯 Tiro a puerta", tf: "Tiro fuera" };
   function anPickHtml() {
     let k = anPick;
     if (!k) return "";
@@ -11194,6 +11307,13 @@
           : "",
       num = (id, l) => `<label>${l}<input id="${id}" type="number" min="0" max="99" inputmode="numeric" placeholder="Nº"></label>`,
       tj = (t) => `<i class="tj ${t}"></i>Tarjeta ${t === "r" ? "roja" : "amarilla"}`;
+    if (k === "tp" || k === "tf") {
+      /* Primero los que están en el campo; los expulsados no salen */
+      let ids = jug.map((j) => j.id).filter((id) => !c.fuera.has(id)),
+        en = ids.filter((id) => c.on.has(id)),
+        resto = ids.filter((id) => !c.on.has(id));
+      return `<div class="lv-pick"><h3>${AN_TT[k]} · ¿Quién ha tirado?</h3><div class="slotmenu">${L(en, "anx")}${resto.length && en.length ? '<p class="lv-bn">Banquillo</p>' : ""}${L(resto, "anx")}${no}</div></div>`;
+    }
     if (k === "f")
       return `<div class="lv-pick"><h3>¿Quién ha marcado?</h3><div class="slotmenu">${L(jug.map((j) => j.id), "anp")}<button data-anp="">Sin asignar</button>${no}</div></div>`;
     if (side && (anSide === "r" || !jug.length))
@@ -11232,7 +11352,11 @@
       B = (k, t, cl = "secondary") => `<button class="${cl}" data-an="${k}" ${d}>${t}</button>`,
       mios = (Array.isArray(x.eventos) ? x.eventos : []).filter((e) => e.an).reverse(),
       txt = (e) =>
-        e.t === "fa"
+        e.t === "tp" || e.t === "tf"
+          ? `${AN_TT[e.t]} · ${esc(anJn(e.pid))}`
+          : e.t === "tr"
+          ? "Tiro de " + esc(x.rival || "rival")
+          : e.t === "fa"
           ? `Falta ${e.r ? "de " + esc(x.rival || "rival") : "de " + esc(x.equipo)} <small>(${e.p === 2 ? 2 : 1}ª parte)</small>`
           : e.t === "c"
             ? "⚽ " + esc(x.rival || "Rival")
@@ -11256,7 +11380,11 @@
       reloj ? `<div class="lv-ctl an-reloj" role="group" aria-label="Reloj del partido">${reloj}</div>` : ""
     }${
       st === "pre" ? '<p class="hint">El partido aún no ha empezado. Puedes empezarlo tú o el entrenador: el reloj es el mismo para los dos.</p>' : ""
-    }${st === "FIN" ? '<p class="hint">El partido ha terminado. Si falta algo, aún puedes apuntarlo.</p>' : ""}<div class="lv-goals an-goals">${B("f", "⚽ Gol nuestro", "primary")}${B("c", "⚽ Gol rival")}</div><div class="lv-ctl an-fal">${B("fan", `Falta nuestra <b>${f["n" + h]}</b>`)}${B("far", `Falta del rival <b>${f["r" + h]}</b>`)}</div><div class="lv-ctl lv-more">${B("sub", x.estado === "DES" ? "🔄 Cambio del descanso" : "🔄 Cambio")}${B("a", '<i class="tj a"></i>Amarilla')}${B("r", '<i class="tj r"></i>Roja')}</div>${
+    }${st === "FIN" ? '<p class="hint">El partido ha terminado. Si falta algo, aún puedes apuntarlo.</p>' : ""}<div class="lv-goals an-goals">${B("f", "⚽ Gol nuestro", "primary")}${B("c", "⚽ Gol rival")}</div>${
+      x.tiros && anJug().length
+        ? `<div class="lv-ctl an-tir" role="group" aria-label="Tiros">${B("tp", AN_TT.tp)}${B("tf", AN_TT.tf)}${B("tr", "Tiro del rival")}</div>`
+        : ""
+    }<div class="lv-ctl an-fal">${B("fan", `Falta nuestra <b>${f["n" + h]}</b>`)}${B("far", `Falta del rival <b>${f["r" + h]}</b>`)}</div><div class="lv-ctl lv-more">${B("sub", x.estado === "DES" ? "🔄 Cambio del descanso" : "🔄 Cambio")}${B("a", '<i class="tj a"></i>Amarilla')}${B("r", '<i class="tj r"></i>Roja')}</div>${
       x.estado === "DES"
         ? '<p class="hint">Descanso: los cambios que apuntes ahora no gastan ventana.</p>'
         : x.estado === "2T" || x.estado === "FIN"
@@ -11382,6 +11510,7 @@
           return anView();
         }
         if (k.out) return anDs ? anApuntaDs({ t: "s", pid: k.out, pin: id, ds: 1 }) : anApunta({ t: "s", pid: k.out, pin: id }, "Cambio apuntado");
+        if (k === "tp" || k === "tf") return anApunta({ t: k, pid: id }, (k === "tp" ? "Tiro a puerta" : "Tiro fuera") + " de " + anJn(id) + " apuntado");
         return anApunta({ t: k, pid: id }, k === "r" ? "Roja apuntada" : "Amarilla apuntada");
       }
       if (q) {
@@ -11402,6 +11531,8 @@
       }
       if (k === "rok") return anRival();
       if (k === "c") return anApunta({ t: "c" }, "Gol del rival apuntado");
+      if (k === "tr") return anApunta({ t: "tr" }, "Tiro del rival apuntado");
+      if (k === "tp" || k === "tf") anPick = k;
       if (k === "fan") return anApunta({ t: "fa" }, "Falta nuestra apuntada");
       if (k === "far") return anApunta({ t: "fa", r: 1 }, "Falta del rival apuntada");
       if (k === "f") {
