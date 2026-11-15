@@ -228,6 +228,61 @@ with sync_playwright() as p:
     T('reset',2000)
     check('«Reiniciar reloj» lo deja en «Sin empezar» (0) y se puede volver a empezar',D(rl,"d.estado==='pre'&&d.acum_ms===0&&!d.desde") and rl.locator('[data-live=start]').count()==1)
     T('start',2000);check('y vuelve a empezar desde 0',D(rl,"d.estado==='1T'&&!!d.desde"))
+    # v11.40: el anotador empieza, apunta y termina con la app del entrenador CERRADA -> al abrirla, el partido está al día
+    COD='11111111-2222-4333-8444-555555555555'
+    DIR={'id':'d-cerrada','owner_id':'u1','partido_id':'m1','modalidad':'fs','equipo':'Mi equipo','rival':'Los Pinos','gf':0,'gc':0,'estado':'pre','parte_min':20,'acum_ms':0,'desde':None,'eventos':[],'anotador':COD,
+         'anot_jug':[{'id':f'p{i}','n':f'J{i}','d':str(i+1),**({'s':1} if i<5 else {})} for i in range(8)],'actualizado':'2026-11-15T10:00:00.000Z'}
+    S2=json.loads(json.dumps(SEED));S2['directos']=[DIR]
+    cz=page(b,S2);cz.goto(URL);cz.wait_for_selector('input[name=email]')
+    cz.evaluate("""c=>{window.__reloj(c,'start');window.__anotar(c,{t:'f',pid:'p3'});window.__anotar(c,{t:'f',pid:'p1'});window.__anotar(c,{t:'c'});
+      window.__anotar(c,{t:'s',pid:'p0',pin:'p6'});window.__anotar(c,{t:'a',pid:'p2'});window.__reloj(c,'half');window.__reloj(c,'start2');
+      window.__anotar(c,{t:'f',pid:'p3'});window.__reloj(c,'end')}""",COD)
+    cz.fill('input[name=email]','ana@x.es');cz.fill('input[name=password]','secreto12');cz.click('[data-auth=login]');cz.wait_for_selector('#app:not(.hidden)')
+    cz.wait_for_function("()=>JSON.parse(window.__db.futbol_personal_partidos[0].alineacion).lvFin===1",timeout=6000)
+    x=PJ(cz);al=x['al']
+    check('app cerrada: al abrirla, el resultado del anotador pasa al partido',al.get('resultado')=={'gf':3,'gc':1},al.get('resultado'))
+    check('app cerrada: los goles de cada jugador',x['g']['p3']==2 and x['g']['p1']==1 and sum(x['g'].values())==3,x['g'])
+    check('app cerrada: el cambio y la tarjeta del anotador',al.get('cambios',[{}])[0].get('sale')=='p0' and al.get('tarjetas',[{}])[0].get('pid')=='p2',[al.get('cambios'),al.get('tarjetas')])
+    mins=cz.evaluate("Object.fromEntries(JSON.parse(window.__db.futbol_personal_partidos[0].participaciones).map(x=>[x.id,x.minutes]))")
+    check('app cerrada: el anotador terminó el partido -> minutos calculados',mins['p1']==40 and mins['p0']>0 and mins['p6']>0 and mins['p7']==0,mins)
+    cz.click('[data-mode="fs"]') if cz.locator('[data-mode="fs"]').count() else None
+    cz.click('[data-tab=partidos]');cz.wait_for_timeout(300)
+    txt=cz.locator('#view').inner_text()
+    check('en Partidos ya no sale como «sin jugar»: se ve el 3-1','3-1' in txt.replace(' ','') or '3 - 1' in txt,txt[:300])
+    cz.screenshot(path=OUT+'/anot_app_cerrada.png',full_page=True)
+    # Volver a abrir la app no suma nada dos veces
+    db2=cz.evaluate('window.__db')
+    cz2=page(b,db2);login(cz2);cz2.wait_for_timeout(1200)
+    x2=PJ(cz2)
+    check('volver a abrir la app no cuenta nada dos veces',x2['g']==x['g'] and x2['al'].get('resultado')=={'gf':3,'gc':1} and not cz2.evaluate("window.__calls.some(c=>c[0]==='update'&&c[1]==='futbol_personal_partidos')"),x2['g'])
+    # Minutos cambiados a mano después: no se vuelven a pisar
+    m=db2['futbol_personal_partidos'][0];pp=json.loads(m['participaciones']);pp[1]['minutes']=33;m['participaciones']=json.dumps(pp)
+    cz3=page(b,db2);login(cz3);cz3.wait_for_timeout(1200)
+    check('los minutos cambiados a mano luego se respetan',cz3.evaluate("JSON.parse(window.__db.futbol_personal_partidos[0].participaciones)[1].minutes")==33)
+    # Con la app abierta en otra pantalla (no en el Directo): se pone al día sola
+    S3=json.loads(json.dumps(SEED));S3['directos']=[dict(DIR,id='d-abierta')]
+    ab=page(b,S3);login(ab);ab.click('[data-mode="fs"]') if ab.locator('[data-mode="fs"]').count() else None
+    ab.click('[data-tab=partidos]')
+    ab.evaluate("c=>{window.__reloj(c,'start');window.__anotar(c,{t:'f',pid:'p4'});window.__reloj(c,'half');window.__reloj(c,'start2');window.__reloj(c,'end')}",COD)
+    ab.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+    ab.wait_for_function("()=>JSON.parse(window.__db.futbol_personal_partidos[0].alineacion).lvFin===1",timeout=6000)
+    x=PJ(ab)
+    check('app abierta en Partidos: el partido del anotador se pone al día solo',x['al'].get('resultado')=={'gf':1,'gc':0} and x['g']['p4']==1,[x['al'].get('resultado'),x['g']])
+    ab.wait_for_timeout(300)
+    check('y la lista de Partidos lo enseña','1-0' in ab.locator('#view').inner_text().replace(' ',''))
+    # App cerrada en mitad del partido y, al abrirla, vuelve sola al Directo: lo del anotador también pasa al partido
+    S5=json.loads(json.dumps(SEED));S5['directos']=[dict(DIR,id='d-vuelve',estado='1T',desde='2026-11-15T09:59:00.000Z',gf=1,eventos=[{'id':'anx1','m':3,'t':'f','pid':'p5','n':'J5','an':1}])]
+    vu=page(b,S5,"localStorage.setItem('mf_directo_abierto','m1');");login(vu)
+    vu.wait_for_function("()=>(JSON.parse(window.__db.futbol_personal_partidos[0].alineacion).lvGol||[]).length===1",timeout=6000)
+    x=PJ(vu)
+    check('al volver solo al Directo, el gol del anotador también pasa al partido',x['g']['p5']==1 and x['al'].get('resultado')=={'gf':1,'gc':0},[x['g'],x['al'].get('resultado'),vu.locator('.lv-board').count()])
+    # Partido antiguo (antes de v11.40) con resultado ya pasado: no se suman otra vez sus goles
+    S4=json.loads(json.dumps(SEED));pp=json.loads(S4['futbol_personal_partidos'][0]['participaciones']);pp[3]['goals']=1;S4['futbol_personal_partidos'][0]['participaciones']=json.dumps(pp)
+    S4['futbol_personal_partidos'][0]['alineacion']=json.dumps({'resultado':{'gf':1,'gc':0}})
+    S4['directos']=[dict(DIR,id='d-vieja',estado='FIN',gf=1,eventos=[{'id':'g1','m':5,'t':'f','pid':'p3'}])]
+    ov=page(b,S4);login(ov);ov.wait_for_timeout(1200)
+    x=PJ(ov)
+    check('partido de antes: no se cuentan dos veces los goles ni se recalculan minutos',x['g']['p3']==1 and x['al'].get('lvGol')==[['g1','p3']] and x['al'].get('lvFin')==1,x)
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 if errs:print('\n'.join('FALLA consola: '+e for e in errs))
