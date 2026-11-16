@@ -41,6 +41,8 @@ with sync_playwright() as p:
     check('v11.37: las novedades explican el plan para clubes más claro',all(w in body for w in ('Plan para clubes más claro','todavía no ha pagado','pack más grande')),body[:300])
     check('v11.38: la animación sale también con la sesión iniciada','también si ya tienes la sesión iniciada' in body,body[:300])
     check('v11.39: las novedades explican los tiros desde el anotador',all(w in body for w in ('El anotador ya apunta los tiros','Tiro a puerta','Tiro fuera','2 partidos al mes')),body[:300])
+    check('v11.42: las novedades explican ver todas las jornadas',all(w in body for w in ('Todas las jornadas de tu liga','Ver jornada','actas')),body[:300])
+    check('v11.42: las novedades explican el arreglo de la clasificación pegada',all(w in body for w in ('Arreglada la clasificación pegada','5 G, 3 E y 2 P','vuelve a pegarla')),body[:300])
     check('v11.41: las novedades explican la clasificación de la liga',all(w in body for w in ('Nueva clasificación de la liga','Federación Andaluza','web de tu federación','a mano','4 días al mes')),body[:300])
     check('v11.40: las novedades explican el arreglo del partido llevado por el anotador',all(w in body for w in ('Arreglado el partido llevado por el anotador','sin empezar','sin contar nada dos veces')),body[:300])
     pg.click('#info [data-acct=novedades-ok]');pg.wait_for_timeout(200)

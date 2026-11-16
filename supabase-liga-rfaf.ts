@@ -1,11 +1,12 @@
 // Mi Fútbol JV32 · Clasificación automática de la Federación Andaluza (v11.41)
 // Edge function «liga-rfaf» de Supabase. Lee la clasificación y los resultados de
 // stars.rfaf.es (su robots.txt permite leerla) para el entrenador que la pide.
-// Solo usuarios con sesión (verify_jwt). Guarda en memoria 15 minutos lo leído para
+// Solo entrenadores con sesión en la app. Guarda en memoria 15 minutos lo leído para
 // no cargar la web de la federación.
 //   POST {op:"comps", d}            → competiciones de una delegación
 //   POST {op:"grupos", d, c}        → grupos de una competición
-//   POST {op:"liga", d, c, g, j?}   → clasificación + resultados de la jornada j (o la última)
+//   POST {op:"liga", d, c, g, j?}   → clasificación + resultados de la jornada j (o la última) + jornadas
+//   POST {op:"jornada", d, c, g, j} → resultados de una jornada (fecha, hora, campo y estado) (v11.42)
 const BASE = "https://stars.rfaf.es/";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -73,15 +74,16 @@ function resultados(html: string) {
     const sc = art.match(/>\s*(\d{1,2})\s*-\s*(\d{1,2})\s*</);
     const est = (art.match(/Estado:<\/span>\s*([^<]+)/) || [])[1] || "";
     const fecha = (art.match(/Fecha:<\/span>\s*([^<]+)/) || [])[1] || "";
+    const hora = (art.match(/Hora:<\/span>\s*([^<]+)/) || [])[1] || "";
+    const lugar = (art.match(/Lugar:<\/span>\s*([^<]+)/) || [])[1] || "";
     if (al.length < 2) continue;
-    out.push({ l: al[0], v: al[1], gl: sc ? +sc[1] : null, gv: sc ? +sc[2] : null, est: txt(est), f: txt(fecha) });
+    out.push({ l: al[0], v: al[1], gl: sc ? +sc[1] : null, gv: sc ? +sc[2] : null, est: txt(est), f: txt(fecha), h: txt(hora), lu: txt(lugar).slice(0, 120) });
   }
   return { j: jm ? +jm[1] : 0, partidos: out };
 }
 function jornadas(html: string) {
-  return [...html.matchAll(/name="jornada"[\s\S]*?<\/select>/g)].length
-    ? opciones(html, "jornada").map((o) => o.id)
-    : [...new Set([...html.matchAll(/data-jornada="(\d+)"|[?&]jornada=(\d+)/g)].map((m) => m[1] || m[2]))];
+  /* [{id: "12", n: "12 · 13-12-2026"}] del desplegable «Jornadas» de la clasificación */
+  return opciones(html, "jornada");
 }
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -114,6 +116,10 @@ Deno.serve(async (req) => {
         lee({ widget_view: "results", ...p, ...(j ? { jornada: j } : {}) }),
       ]);
       return resp({ tabla: tabla(ht), res: resultados(hr), jornadas: jornadas(ht) });
+    }
+    if (b.op === "jornada") {
+      if (!g || !j) return resp({ error: "Falta el grupo o la jornada." }, 400);
+      return resp({ res: resultados(await lee({ widget_view: "results", delegacion: d, competicion: c, grupo: g, jornada: j })) });
     }
     return resp({ error: "Operación no válida." }, 400);
   } catch (e) {
