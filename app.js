@@ -876,7 +876,7 @@
   }
   function matches() {
     let g = games();
-    return `<section class="panel"><div class="bar"><div><div class="kicker">Partidos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : games().length + " / " + MODES[state.mode].maxM + " partidos · "}Convocatoria, titulares, posiciones y goles.</p></div><div class="mbtns">${viendo ? "" : `<button class="secondary" data-cv="abrir">${ic("users")}Convocatoria</button>`}<button class="primary" data-action="add-match">${ic("plus")}Partido</button></div></div>${cvCard()}${g.length ? `<div class="btools rs-tb"><button type="button" class="secondary small" data-rs="tmp">${ic("share", 18)}Resumen de la temporada</button></div>` : ""}${
+    return `<section class="panel"><div class="bar"><div><div class="kicker">Partidos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : games().length + " / " + MODES[state.mode].maxM + " partidos · "}Convocatoria, titulares, posiciones y goles.</p></div><div class="mbtns">${viendo ? "" : `<button class="secondary" data-cv="abrir">${ic("users")}Convocatoria</button>`}<button class="primary" data-action="add-match">${ic("plus")}Partido</button></div></div>${cvCard()}<div class="btools rs-tb">${g.length ? `<button type="button" class="secondary small" data-rs="tmp">${ic("share", 18)}Resumen de la temporada</button>` : ""}<button type="button" class="secondary small" data-lg="abrir">🏆 Clasificación de la liga</button></div>${
       g.length
         ? g
             .map((m) => {
@@ -1082,7 +1082,7 @@
   }
   let iniAnim = false;
   function inicio() {
-    return `<div class="ini${iniAnim ? " anim" : ""}">${iniHero()}${iniPasos()}${iniTemporada()}${iniAccesos()}${iniEntreno()}${iniTop()}${iniPro()}</div>`;
+    return `<div class="ini${iniAnim ? " anim" : ""}">${iniHero()}${iniPasos()}${iniTemporada()}${iniLiga()}${iniAccesos()}${iniEntreno()}${iniTop()}${iniPro()}</div>`;
   }
   $("view").addEventListener("click", (e) => {
     let b = e.target.closest("[data-ini]");
@@ -2778,14 +2778,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, pegar la clasificación de la liga, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -2813,6 +2813,8 @@
           ? `En el plan gratuito puedes preparar los <b>enlaces del directo antes del partido en ${LIM.pe} partidos al mes</b> y este mes ya los has usado. Puedes sacarlos igual en el Directo, cuando vayas a empezar. El mes que viene vuelves a tener ${LIM.pe}.`
           : tipo === "an"
           ? `En el plan gratuito puedes usar el <b>anotador en ${LIM.an} partidos al mes</b> y este mes ya lo has usado. El mes que viene vuelves a tener ${LIM.an}.`
+          : tipo === "lg"
+          ? `En el plan gratuito puedes pegar la clasificación o los resultados de tu liga <b>${LIM.lg} días al mes</b> y este mes ya los has usado. Verla y apuntar los resultados a mano es siempre gratis. El mes que viene vuelves a tener ${LIM.lg}.`
           : tipo === "rj"
           ? `En el plan gratuito puedes compartir <b>${LIM.rj} resúmenes de jugador al mes</b> (cada jugador de cada partido cuenta una vez) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rj}.`
           : tipo === "rs"
@@ -5779,6 +5781,652 @@
     if (t || n) al.jornada = { t, n };
     else delete al.jornada;
   }
+  /* ===== Clasificación de la liga (v11.41) =====
+     Cada equipo ve cómo van los demás equipos de su liga. Las webs de las federaciones (iSquad,
+     fcf.cat…) no dejan que un programa las lea solo, así que el entrenador abre la web de su
+     federación desde la app, copia la tabla (o los resultados de la jornada) y la pega: la app la
+     reconoce. También puede apuntar resultados a mano y la app calcula la clasificación, y sus
+     partidos de liga con resultado se suman solos. Va en la columna equipos.liga
+     (supabase-liga.sql); sin ella se guarda en el dispositivo.
+     liga = { url, nom, yo, act, tabla: [{n, pts, pj, g, e, p, gf, gc}], res: [{j, l, v, gl, gv}] }
+     Ver es gratis siempre. Plan gratuito: pegar la tabla o resultados LIM.lg días al mes. */
+  const LG_EQ = 40,
+    LG_RES = 600;
+  const lgKey = (id) => "mf_liga:" + (id || state.mode);
+  const lgInt = (v, mn, mx) => Math.max(mn, Math.min(mx, Math.round(Number(v) || 0)));
+  const lgTxt = (v, n) => String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n);
+  function lgLimpio(x) {
+    x = x && typeof x === "object" ? x : {};
+    let url = lgTxt(x.url, 400);
+    return {
+      url: /^https?:\/\/[^\s"'<>]+$/i.test(url) ? url : "",
+      nom: lgTxt(x.nom, 60),
+      yo: lgTxt(x.yo, 60),
+      act: /^\d{4}-\d{2}-\d{2}$/.test(x.act || "") ? x.act : "",
+      fed:
+        x.fed && typeof x.fed === "object" && /^\d+$/.test(x.fed.d) && /^\d+$/.test(x.fed.c) && /^\d+$/.test(x.fed.g)
+          ? { d: x.fed.d, c: x.fed.c, g: x.fed.g, cn: lgTxt(x.fed.cn, 90), gn: lgTxt(x.fed.gn, 60), t: lgTxt(x.fed.t, 30) }
+          : null,
+      tabla: (Array.isArray(x.tabla) ? x.tabla : [])
+        .slice(0, LG_EQ)
+        .map((r) => ({
+          n: lgTxt(r && r.n, 60),
+          pts: lgInt(r.pts, -99, 999),
+          pj: lgInt(r.pj, 0, 99),
+          g: lgInt(r.g, 0, 99),
+          e: lgInt(r.e, 0, 99),
+          p: lgInt(r.p, 0, 99),
+          gf: lgInt(r.gf, 0, 999),
+          gc: lgInt(r.gc, 0, 999),
+        }))
+        .filter((r) => r.n),
+      res: (Array.isArray(x.res) ? x.res : [])
+        .slice(0, LG_RES)
+        .map((r) => ({ j: lgInt(r && r.j, 0, 99), l: lgTxt(r.l, 60), v: lgTxt(r.v, 60), gl: lgInt(r.gl, 0, 99), gv: lgInt(r.gv, 0, 99) }))
+        .filter((r) => r.l && r.v),
+    };
+  }
+  function lgOf(id) {
+    id = id === undefined ? curTeam() : id;
+    let t = state.teams.find((z) => z.id === id),
+      x = t && t.liga ? parseJson(t.liga, null) : null;
+    if (!x)
+      try {
+        x = JSON.parse(localStorage.getItem(lgKey(id)) || "null");
+      } catch (e) {}
+    return lgLimpio(x);
+  }
+  async function lgGuarda(L) {
+    let id = curTeam(),
+      local = false;
+    L = lgLimpio(L);
+    try {
+      if (!id && state.teamsOk) id = await firstTeam(teamName());
+      if (!id) throw Error("liga");
+      let r = await db.from("equipos").update({ liga: L }).eq("id", id);
+      if (r.error) throw r.error;
+      let t = state.teams.find((z) => z.id === id);
+      if (t) t.liga = L;
+      try {
+        localStorage.removeItem(lgKey(id));
+      } catch (e) {}
+    } catch (e) {
+      if (!/liga/i.test((e && e.message) || "")) return note(friendly(e.message || String(e))), false;
+      /* Sin la columna en el servidor: se guarda en este dispositivo */
+      local = true;
+      let t = state.teams.find((z) => z.id === id);
+      if (t) delete t.liga;
+      try {
+        localStorage.setItem(lgKey(id), JSON.stringify(L));
+      } catch (z) {}
+    }
+    return local ? "local" : true;
+  }
+  /* Nombres de equipo: sin tildes, mayúsculas, puntos ni siglas (C.D., C.F., U.D., Club…) */
+  function lgNorm(s) {
+    return String(s || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[.,;:'"´`()\[\]]/g, " ")
+      .replace(/\b(c ?d|c ?f|u ?d|a ?d|s ?d|c ?d ?e|e ?f|a ?c ?d|club|deportivo|futbol|f ?c|f ?b ?c|c ?p|cp|sad)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function lgParecido(a, b) {
+    a = lgNorm(a);
+    b = lgNorm(b);
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    if (a.indexOf(b) >= 0 || b.indexOf(a) >= 0) return 0.85;
+    let A = a.split(" "),
+      B = b.split(" "),
+      com = A.filter((w) => w.length > 1 && B.indexOf(w) >= 0).length;
+    return com / Math.max(A.length, B.length);
+  }
+  /* El equipo de la tabla que más se parece a un nombre (o "" si ninguno se parece) */
+  function lgBusca(nombres, n, min) {
+    let best = "",
+      bv = min || 0.5;
+    nombres.forEach((x) => {
+      let v = lgParecido(x, n);
+      if (v > bv || (v === bv && !best)) (best = x), (bv = v);
+    });
+    return best;
+  }
+  const lgNombres = (L) => {
+    let S = [];
+    L.tabla.forEach((r) => S.indexOf(r.n) < 0 && S.push(r.n));
+    L.res.forEach((r) => [r.l, r.v].forEach((n) => S.indexOf(n) < 0 && S.push(n)));
+    return S;
+  };
+  /* Mi equipo en la liga: el que eligió el entrenador o el que más se parece al nombre del equipo */
+  function lgYo(L) {
+    let N = lgNombres(L);
+    if (L.yo && N.indexOf(L.yo) >= 0) return L.yo;
+    return lgBusca(N, teamName(), 0.5) || teamName();
+  }
+  /* Mis partidos de liga con resultado y número de jornada que no estén ya entre los resultados */
+  function lgMios(L) {
+    let yo = lgYo(L) || teamName(),
+      N = lgNombres(L),
+      out = [];
+    games().forEach((m) => {
+      let a = m.alineacion || {},
+        j = a.jornada,
+        r = a.resultado;
+      if (!r || !j || j.t !== "liga" || !/^\d+$/.test(String(j.n || "").trim())) return;
+      let n = lgInt(j.n, 0, 99),
+        riv = lgBusca(N, m.rival, 0.5) || lgTxt(m.rival, 60) || "Rival";
+      if (L.res.some((x) => x.j === n && (x.l === yo || x.v === yo))) return;
+      out.push({ j: n, l: yo, v: riv, gl: lgInt(r.gf, 0, 99), gv: lgInt(r.gc, 0, 99), mio: true });
+    });
+    return out;
+  }
+  const lgTodos = (L) => L.res.concat(lgMios(L));
+  /* Clasificación: la pegada de la federación, o calculada con los resultados (3 puntos por victoria) */
+  function lgTabla(L) {
+    if (L.tabla.length) return { T: L.tabla.map((r) => ({ ...r })), de: "tabla" };
+    let M = {},
+      eq = (n) => (M[n] = M[n] || { n, pts: 0, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0 }),
+      R = lgTodos(L);
+    R.forEach((r) => {
+      let a = eq(r.l),
+        b = eq(r.v);
+      a.pj++, b.pj++;
+      a.gf += r.gl, a.gc += r.gv, b.gf += r.gv, b.gc += r.gl;
+      if (r.gl > r.gv) a.g++, b.p++, (a.pts += 3);
+      else if (r.gl < r.gv) b.g++, a.p++, (b.pts += 3);
+      else a.e++, b.e++, a.pts++, b.pts++;
+    });
+    let T = Object.keys(M).map((k) => M[k]);
+    T.sort((a, b) => b.pts - a.pts || b.gf - b.gc - (a.gf - a.gc) || b.gf - a.gf || a.n.localeCompare(b.n));
+    return { T, de: R.length ? "res" : "" };
+  }
+  /* --- Leer lo que se pega de la web de la federación --- */
+  const lgEsNum = (s) => /^[+-]?\d{1,3}$/.test(s);
+  /* Letras de «últimos resultados» (G E P / V E D) que algunas webs ponen en la tabla */
+  const lgLetras = (s) => /^[GEPVDN]$/.test(s);
+  function lgLimpiaNombre(W) {
+    while (W.length && (lgLetras(W[0]) || /^(º|ª|-|–|\|)$/.test(W[0]))) W.shift();
+    while (W.length && (lgLetras(W[W.length - 1]) || /^(-|–|\|)$/.test(W[W.length - 1]))) W.pop();
+    return lgTxt(W.join(" ").replace(/^\d+\s*[º.ª-]\s*/, ""), 60);
+  }
+  /* Números de una fila → pts, pj, g, e, p, gf, gc. Busca PJ = G + E + P */
+  function lgFila(N) {
+    for (let i = 0; i + 5 < N.length; i++) {
+      let pj = N[i],
+        g = N[i + 1],
+        e = N[i + 2],
+        p = N[i + 3];
+      if (pj < 0 || g < 0 || e < 0 || p < 0 || pj !== g + e + p || pj > 60) continue;
+      let gf = N[i + 4],
+        gc = N[i + 5];
+      if (gf < 0 || gc < 0) continue;
+      let pts = i > 0 ? N[i - 1] : N.length > i + 6 && N[i + 6] !== gf - gc ? N[i + 6] : 3 * g + e;
+      return { pts, pj, g, e, p, gf, gc };
+    }
+    return null;
+  }
+  const LG_CAB = /^(pos|posici[oó]n|equipo|equipos|pts|puntos|ptos|pt|j|pj|jug|jugados|g|pg|gan|ganados|e|pe|emp|empatados|p|pp|per|perdidos|gf|gc|f|c|ga|dg|dif|df|\+\/-|goles|favor|contra|a favor|en contra|sanc|sanci[oó]n|[uú]ltimos|forma|racha|clasificaci[oó]n|#)$/i;
+  function lgLeeTabla(txt) {
+    let toks = String(txt || "")
+        .replace(/ /g, " ")
+        .split(/\s+/)
+        .map((s) => s.trim())
+        .filter((s) => s && !LG_CAB.test(s)),
+      grupos = [];
+    /* Grupos alternos de palabras y de números */
+    toks.forEach((s) => {
+      let num = lgEsNum(s),
+        u = grupos[grupos.length - 1];
+      if (u && u.num === num) u.t.push(num ? Number(s) : s);
+      else grupos.push({ num, t: [num ? Number(s) : s] });
+    });
+    let filas = [],
+      nombre = [],
+      conPos = false;
+    for (let k = 0; k < grupos.length; k++) {
+      let G = grupos[k];
+      if (!G.num) {
+        nombre = nombre.concat(G.t);
+        continue;
+      }
+      let N = G.t.slice();
+      if (!filas.length && !nombre.length) {
+        /* Números antes del primer nombre: la posición (1) */
+        conPos = N[N.length - 1] === 1;
+        continue;
+      }
+      let f = N.length >= 6 ? lgFila(N) : null;
+      if (!f) {
+        /* Pocos números: la posición del siguiente o parte del nombre (p. ej. «Atlético 2000») */
+        if (N.length <= 2 && N[N.length - 1] === filas.length + 2 && nombre.length && lgEsNum(String(N[0])) && k + 1 < grupos.length && conPos) {
+          nombre = [];
+          continue;
+        }
+        nombre = nombre.concat(N.map(String));
+        continue;
+      }
+      let n = lgLimpiaNombre(nombre);
+      if (n) filas.push({ n, ...f });
+      nombre = [];
+      if (N[N.length - 1] === filas.length + 1 && N.length > 7) conPos = true;
+    }
+    return filas.slice(0, LG_EQ);
+  }
+  /* Resultados: «Local 2 - 1 Visitante» en una línea, o cada cosa en su línea */
+  function lgLeeRes(txt) {
+    let L = String(txt || "")
+        .replace(/ /g, " ")
+        .split(/\n/)
+        .map((s) => s.replace(/\s+/g, " ").trim())
+        .filter(Boolean),
+      basura = (s) => /^\d{1,2}[\/.]\d{1,2}([\/.]\d{2,4})?$|^\d{1,2}:\d{2}( h)?$|^(jornada|j)\s*\d+$|^(campo|estadio|pabell[oó]n|polideportivo|municipal)\b|^(ver|acta|detalle|aplazado|suspendido|vs|-)$/i.test(s),
+      out = [],
+      R1 = /^(.+?)\s+(\d{1,2})\s*[-–]\s*(\d{1,2})\s+(.+)$/,
+      SC = /^(\d{1,2})\s*[-–]\s*(\d{1,2})$/;
+    L.forEach((s) => {
+      let m = s.match(R1);
+      if (m && !/^\d+$/.test(m[1]) && !/^\d+$/.test(m[4])) out.push({ l: m[1], gl: +m[2], gv: +m[3], v: m[4] });
+    });
+    if (!out.length) {
+      let C = L.filter((s) => !basura(s));
+      for (let i = 0; i < C.length; i++) {
+        let m = C[i].match(SC),
+          dos = !m && /^\d{1,2}$/.test(C[i]) && /^\d{1,2}$/.test(C[i + 1] || "");
+        if (!m && !dos) continue;
+        let l = C[i - 1],
+          v = C[i + (dos ? 2 : 1)];
+        if (l && v && !/^\d/.test(l) && !/^\d/.test(v)) out.push({ l, gl: +(m ? m[1] : C[i]), gv: +(m ? m[2] : C[i + 1]), v });
+        if (dos) i++;
+      }
+    }
+    return out
+      .map((r) => ({ l: lgTxt(r.l.replace(/\s+\d{1,2}:\d{2}$/, ""), 60), v: lgTxt(r.v.replace(/\s+\d{1,2}:\d{2}$/, ""), 60), gl: lgInt(r.gl, 0, 99), gv: lgInt(r.gv, 0, 99) }))
+      .filter((r) => r.l && r.v && r.l !== r.v)
+      .slice(0, 40);
+  }
+  /* --- Federación Andaluza: automático (v11.41) ---
+     stars.rfaf.es deja que se lea su clasificación. La función «liga-rfaf» de Supabase la lee
+     (con la sesión del entrenador) y la app guarda la tabla y los resultados de la última jornada.
+     Se actualiza sola al abrir la clasificación si han pasado 3 horas. Cuenta como un día de
+     «pegar» en el plan gratuito (LIM.lg al mes); con Pro, ilimitado. */
+  const LG_DELEG = [["5", "Granada"], ["2", "Almería"], ["3", "Cádiz"], ["4", "Córdoba"], ["6", "Huelva"], ["7", "Jaén"], ["8", "Málaga"], ["1", "Sevilla"], ["9", "Andaluza (regional)"]];
+  async function lgFn(body) {
+    let h = { "Content-Type": "application/json", apikey: c.supabaseAnonKey },
+      s = await db.auth.getSession(),
+      t = s && s.data && s.data.session && s.data.session.access_token;
+    if (t) h.Authorization = "Bearer " + t;
+    let r = await fetch(c.supabaseUrl + "/functions/v1/liga-rfaf", { method: "POST", headers: h, body: JSON.stringify(body) }),
+      d = await r.json().catch(() => ({}));
+    if (!r.ok || d.error) throw new Error(d.error || "No se ha podido leer la web de la federación (" + r.status + ").");
+    return d;
+  }
+  /* ¿Puede actualizar hoy sin preguntar? (Pro, o un día ya contado, o le quedan días) */
+  const lgDia = () => "d" + ymd(new Date());
+  const lgPuedeYa = () => esPro() || (envLee().lg || []).includes(lgDia()) || envUsados("lg") < LIM.lg;
+  /* Mete en la liga lo leído de la federación */
+  function lgMete(L, d) {
+    if (Array.isArray(d.tabla) && d.tabla.length) L.tabla = d.tabla;
+    let R = d.res || {},
+      j = lgInt(R.j, 0, 99),
+      P = (R.partidos || []).filter((x) => x && x.gl != null && x.gv != null);
+    if (j && P.length) {
+      L.res = L.res.filter((x) => x.j !== j);
+      P.forEach((x) => L.res.push({ j, l: lgTxt(x.l, 60), v: lgTxt(x.v, 60), gl: lgInt(x.gl, 0, 99), gv: lgInt(x.gv, 0, 99) }));
+    }
+    L.act = ymd(new Date());
+    if (L.fed) L.fed.t = new Date().toISOString();
+    return L;
+  }
+  let lgCargando = false;
+  async function lgActualizaFed(manual) {
+    let L = lgOf();
+    if (!L.fed || lgCargando || viendo) return;
+    if (manual ? !envPuede("lg", lgDia()) : !lgPuedeYa()) return;
+    if (!manual && !envPuede("lg", lgDia())) return;
+    lgCargando = true;
+    if (lgEd && lgEd.v === "ver" && !$("info").classList.contains("hidden")) lgPinta();
+    try {
+      let d = await lgFn({ op: "liga", d: L.fed.d, c: L.fed.c, g: L.fed.g });
+      L = lgOf();
+      if (!L.fed) return;
+      lgMete(L, d);
+      if (!(await lgGuarda(L))) return;
+      if (manual) note("Clasificación actualizada desde la Federación Andaluza.", true);
+    } catch (e) {
+      if (manual) note(e.message || String(e));
+    } finally {
+      lgCargando = false;
+      if (lgEd && lgEd.v === "ver" && !$("info").classList.contains("hidden") && $("infoTitle").textContent === "Clasificación de la liga") lgPinta();
+      render();
+    }
+  }
+  const lgFedViejo = (L) => L.fed && (!L.fed.t || Date.now() - Date.parse(L.fed.t) > 3 * 36e5);
+  function lgFedHtml(L) {
+    if (L.fed)
+      return `<div class="lg-fed on"><b>🔄 Federación Andaluza</b><span>${esc(L.fed.cn)}${L.fed.gn ? " · " + esc(L.fed.gn) : ""}</span><small class="muted">${lgCargando ? "Actualizando…" : L.fed.t ? "Se actualiza sola. Última vez: " + esc(fmtDate(L.fed.t.slice(0, 10))) + " " + esc(L.fed.t.slice(11, 16)) + " (UTC)" : "Se actualiza sola"}</small>${viendo ? "" : `<div class="btools"><button type="button" class="secondary small" data-lg="fedAct"${lgCargando ? " disabled" : ""}>Actualizar ahora</button><button type="button" class="secondary small" data-lg="fedQuita">Desconectar</button></div>`}</div>`;
+    return viendo ? "" : `<div class="lg-fed"><b>¿Tu equipo juega en Andalucía?</b><span>Conecta tu liga de la Federación Andaluza y la clasificación y los resultados se ponen solos.</span><div class="btools"><button type="button" class="primary small" data-lg="fed">Conectar con la Federación Andaluza</button></div></div>`;
+  }
+  function lgFedForm() {
+    let e = lgEd;
+    return `<p>Elige tu delegación, la competición y el grupo, como en la web de la Federación Andaluza. La app leerá la clasificación y los resultados cada vez que la abras.</p><label>Delegación<select id="lgFd"><option value="">Elegir…</option>${LG_DELEG.map((x) => `<option value="${x[0]}" ${e.d === x[0] ? "selected" : ""}>${x[1]}</option>`).join("")}</select></label>${
+      e.d
+        ? `<label>Competición<select id="lgFc"${e.comps ? "" : " disabled"}><option value="">${e.comps ? "Elegir…" : "Cargando…"}</option>${(e.comps || []).map((x) => `<option value="${esc(x.id)}" ${e.c === x.id ? "selected" : ""}>${esc(x.n)}</option>`).join("")}</select></label>`
+        : ""
+    }${e.c ? `<label>Grupo<select id="lgFg"${e.grupos ? "" : " disabled"}><option value="">${e.grupos ? "Elegir…" : "Cargando…"}</option>${(e.grupos || []).map((x) => `<option value="${esc(x.id)}" ${e.g === x.id ? "selected" : ""}>${esc(x.n)}</option>`).join("")}</select></label>` : ""}${e.err ? `<p class="lg-mal">${esc(e.err)}</p>` : ""}<div class="stack"><button type="button" class="primary" data-lg="fedOk"${e.g && !e.cargando ? "" : " disabled"}>${e.cargando ? "Leyendo la federación…" : "Conectar"}</button><button type="button" class="secondary" data-lg="ver">Volver</button></div><p class="muted">Los datos son los que publica la Real Federación Andaluza de Fútbol en su web. Si cambian algo, lo verás la próxima vez que se actualice.</p>`;
+  }
+  async function lgFedCambia(id, v) {
+    let e = lgEd;
+    if (!e || e.v !== "fed") return;
+    e.err = "";
+    try {
+      if (id === "lgFd") {
+        Object.assign(e, { d: v, c: "", g: "", comps: null, grupos: null });
+        lgPinta();
+        if (!v) return;
+        let r = await lgFn({ op: "comps", d: v });
+        if (lgEd !== e || e.d !== v) return;
+        e.comps = r.comps || [];
+        if (!e.comps.length) e.err = "No hay competiciones en esa delegación ahora mismo.";
+      } else if (id === "lgFc") {
+        Object.assign(e, { c: v, g: "", grupos: null });
+        lgPinta();
+        if (!v) return;
+        let r = await lgFn({ op: "grupos", d: e.d, c: v });
+        if (lgEd !== e || e.c !== v) return;
+        e.grupos = r.grupos || [];
+        if (e.grupos.length === 1) e.g = e.grupos[0].id;
+        if (!e.grupos.length) e.err = "Esa competición todavía no tiene grupos.";
+      } else if (id === "lgFg") e.g = v;
+    } catch (x) {
+      e.err = x.message || String(x);
+    }
+    lgPinta();
+  }
+  $("info").addEventListener("change", (e) => {
+    if (/^lgF[dcg]$/.test(e.target.id)) lgFedCambia(e.target.id, e.target.value);
+  });
+  /* --- Pantallas --- */
+  let lgEd = null;
+  const lgSigJ = (L) => {
+    let mx = 0;
+    lgTodos(L).forEach((r) => (mx = Math.max(mx, r.j)));
+    return Math.min(99, mx + 1) || 1;
+  };
+  function lgTablaHtml(L, max) {
+    let t = lgTabla(L),
+      yo = lgYo(L),
+      T = t.T;
+    if (!T.length) return "";
+    let i0 = 0;
+    if (max && T.length > max) {
+      let iy = T.findIndex((r) => r.n === yo);
+      i0 = Math.max(0, Math.min(T.length - max, iy - Math.floor(max / 2)));
+      T = T.slice(i0, i0 + max);
+    }
+    return `<div class="lg-wrap"><table class="lg-t"><thead><tr><th>#</th><th class="lg-n">Equipo</th><th>Pts</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th></tr></thead><tbody>${T.map(
+      (r, i) =>
+        `<tr${r.n === yo ? ' class="yo"' : ""}><td>${i0 + i + 1}</td><td class="lg-n">${esc(r.n)}</td><td><b>${r.pts}</b></td><td>${r.pj}</td><td>${r.g}</td><td>${r.e}</td><td>${r.p}</td><td>${r.gf}</td><td>${r.gc}</td><td>${r.gf - r.gc > 0 ? "+" : ""}${r.gf - r.gc}</td></tr>`,
+    ).join("")}</tbody></table></div>`;
+  }
+  function lgResHtml(L) {
+    let R = lgTodos(L),
+      yo = lgYo(L);
+    if (!R.length) return "";
+    let J = [];
+    R.forEach((r) => J.indexOf(r.j) < 0 && J.push(r.j));
+    J.sort((a, b) => b - a);
+    return `<details class="lg-res"${L.tabla.length ? "" : " open"}><summary>Resultados (${R.length})</summary>${J.map(
+      (j) =>
+        `<div class="lg-jor"><b>${j ? "Jornada " + j : "Sin jornada"}</b>${R.filter((r) => r.j === j)
+          .map((r) => {
+            return `<div class="lg-r${r.l === yo || r.v === yo ? " yo" : ""}"><span>${esc(r.l)}</span><b>${r.gl} - ${r.gv}</b><span>${esc(r.v)}</span>${r.mio ? `<small class="muted" title="Sale de tu partido">tuyo</small>` : viendo ? "" : `<button type="button" class="ib" data-lg="quita" data-i="${L.res.indexOf(r)}" aria-label="Quitar este resultado">${ic("x", 16)}</button>`}</div>`;
+          })
+          .join("")}</div>`,
+    ).join("")}</details>`;
+  }
+  function lgCuandoTxt(L) {
+    return L.act ? "Actualizada el " + fmtDate(L.act) : "";
+  }
+  function lgVerHtml() {
+    let L = lgOf(),
+      t = lgTabla(L),
+      yo = lgYo(L),
+      N = lgNombres(L),
+      ed = !viendo,
+      h = `<p class="muted">${esc(teamName())} · ${esc(MN())}${L.nom ? " · <b>" + esc(L.nom) + "</b>" : ""}</p>`;
+    if (t.T.length) {
+      let iy = t.T.findIndex((r) => r.n === yo);
+      h += `${iy >= 0 ? `<div class="lg-pos"><b>${iy + 1}º</b><span>de ${t.T.length} · ${t.T[iy].pts} puntos</span></div>` : ""}${lgTablaHtml(L)}<p class="muted lg-de">${
+        t.de === "tabla" ? (L.fed ? "Clasificación de la Federación Andaluza. " : "Clasificación pegada de la web de la federación. ") + esc(lgCuandoTxt(L)) : "Calculada con los resultados que tienes (3 puntos por victoria y 1 por empate)."
+      }</p>`;
+      if (ed && N.length)
+        h += `<label class="lg-yo">Mi equipo en la tabla<select id="lgYo"><option value="">Elegir…</option>${N.map((n) => `<option ${n === yo ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>`;
+    } else
+      h += `<div class="lg-vacia"><p><b>Ve cómo van todos los equipos de tu liga.</b></p><ol><li>Guarda el enlace de tu liga en la web de tu federación.</li><li>Ábrela desde aquí, copia la clasificación (o los resultados de la jornada) y pégala.</li><li>La app la reconoce y te dice en qué puesto vais.</li></ol><p class="muted">También puedes apuntar los resultados a mano y la app calcula la tabla. Tus partidos de liga con resultado se suman solos.</p></div>`;
+    h += lgResHtml(L) + lgFedHtml(L);
+    if (ed)
+      h += `<div class="stack">${L.url ? `<a class="primary" href="${esc(L.url)}" target="_blank" rel="noopener">${ic("link", 18)}Abrir la web de mi liga</a>` : `<button type="button" class="primary" data-lg="enlace">${ic("link", 18)}Guardar el enlace de mi liga</button>`}<button type="button" class="${L.url ? "primary" : "secondary"}" data-lg="pegaT">Pegar la clasificación</button><button type="button" class="secondary" data-lg="pegaR">Pegar los resultados de una jornada</button><button type="button" class="secondary" data-lg="mano">${ic("plus", 18)}Apuntar un resultado a mano</button>${t.T.length ? `<button type="button" class="secondary" data-lg="wa">${ic("share", 18)}Enviar la clasificación por WhatsApp</button>` : ""}${L.url ? `<button type="button" class="secondary small" data-lg="enlace">Cambiar el enlace de la liga</button>` : ""}${L.tabla.length ? `<button type="button" class="secondary small" data-lg="borraT">Quitar la tabla pegada (calcularla con los resultados)</button>` : ""}</div>${esPro() ? "" : `<p class="muted lim-q">Ver la clasificación y apuntar resultados a mano es gratis. Plan gratuito: pegar la tabla o los resultados (o actualizar desde la federación) ${LIM.lg} días al mes (te quedan ${Math.max(0, LIM.lg - envUsados("lg"))}). Con Pro, ilimitado.</p>`}`;
+    return h;
+  }
+  const LG_COMO = `<details class="lg-como"><summary>¿Cómo copio la tabla?</summary><ol><li>Pulsa «Abrir la web de mi liga» y busca la clasificación (o los resultados de la jornada).</li><li><b>En el móvil</b>: mantén el dedo sobre el primer equipo, arrastra hasta el último y pulsa «Copiar». <b>En el ordenador</b>: selecciona la tabla con el ratón y pulsa Ctrl + C.</li><li>Vuelve aquí, mantén el dedo en el recuadro y pulsa «Pegar».</li></ol><p class="muted">Funciona con las webs de las federaciones (también las de iSquad) y con cualquier tabla con equipo, puntos, partidos jugados, ganados, empatados, perdidos y goles.</p></details>`;
+  function lgPinta() {
+    let L = lgOf(),
+      e = lgEd || { v: "ver" },
+      h = "";
+    if (e.v === "ver") h = lgVerHtml();
+    else if (e.v === "fed") h = lgFedForm();
+    else if (e.v === "enlace")
+      h = `<p>Busca tu liga en la web de tu federación (la clasificación de tu grupo), copia la dirección de la página y pégala aquí. Así la abres con un toque cada jornada.</p><label>Enlace de la liga<input id="lgUrl" type="url" inputmode="url" value="${esc(L.url)}" placeholder="https://…" autocomplete="off"></label><label>Nombre de la liga (opcional)<input id="lgNom" maxlength="60" value="${esc(L.nom)}" placeholder="Ej.: Alevín 2ª Grupo 3"></label><div class="stack"><button type="button" class="primary" data-lg="enlaceOk">Guardar</button><button type="button" class="secondary" data-lg="ver">Volver</button></div>`;
+    else if (e.v === "pegaT" || e.v === "pegaR") {
+      let tab = e.v === "pegaT",
+        P = e.prev;
+      h = `<p>${tab ? "Pega aquí la <b>clasificación</b> copiada de la web de tu federación." : "Pega aquí los <b>resultados de la jornada</b> copiados de la web de tu federación (por ejemplo «CD Norte 2 - 1 UD Sur»)."}</p>${L.url ? `<div class="btools"><a class="secondary small" href="${esc(L.url)}" target="_blank" rel="noopener">${ic("link", 16)}Abrir la web de mi liga</a></div>` : ""}<textarea id="lgTxt" rows="7" placeholder="${tab ? "1  CD Norte  25  10  8  1  1  30  8…" : "CD Norte  2 - 1  UD Sur…"}">${esc(e.txt || "")}</textarea>${tab ? "" : `<label class="lg-jn">Jornada<input id="lgJ" type="number" inputmode="numeric" min="1" max="99" value="${e.j || lgSigJ(L)}"></label>`}${LG_COMO}<div class="stack"><button type="button" class="primary" data-lg="lee">Leer</button><button type="button" class="secondary" data-lg="ver">Volver</button></div>`;
+      if (P)
+        h += P.length
+          ? `<div class="lg-prev"><p><b>${tab ? "He encontrado " + P.length + " equipos" : "He encontrado " + P.length + " resultados"}</b>. Revisa que esté bien y guarda.</p>${
+              tab
+                ? lgTablaHtml({ tabla: P, res: [], yo: L.yo })
+                : P.map((r) => `<div class="lg-r"><span>${esc(r.l)}</span><b>${r.gl} - ${r.gv}</b><span>${esc(r.v)}</span></div>`).join("")
+            }<div class="stack"><button type="button" class="primary" data-lg="guardaP">Guardar ${tab ? "la clasificación" : "los resultados"}</button></div></div>`
+          : `<p class="lg-mal">No he encontrado ${tab ? "ninguna fila de la clasificación" : "ningún resultado"}. Copia desde el primer equipo hasta el último, con los números, y vuelve a probar. Si no sale, apunta los resultados a mano.</p>`;
+    } else if (e.v === "mano") {
+      let N = lgNombres(L);
+      h = `<p>Apunta un resultado de tu liga. Con los resultados, la app calcula la clasificación.</p><datalist id="lgEqs">${N.map((n) => `<option value="${esc(n)}">`).join("")}</datalist><label class="lg-jn">Jornada<input id="lgJ" type="number" inputmode="numeric" min="1" max="99" value="${e.j || lgSigJ(L)}"></label><div class="lg-mano"><label>Local<input id="lgL" list="lgEqs" maxlength="60" autocomplete="off"></label><label>Goles<input id="lgGL" type="number" inputmode="numeric" min="0" max="99" value="0"></label><label>Visitante<input id="lgV" list="lgEqs" maxlength="60" autocomplete="off"></label><label>Goles<input id="lgGV" type="number" inputmode="numeric" min="0" max="99" value="0"></label></div><div class="stack"><button type="button" class="primary" data-lg="manoOk">Guardar resultado</button><button type="button" class="secondary" data-lg="ver">Volver</button></div>`;
+    }
+    let y = $("infoBody").scrollTop;
+    ciOpen("Clasificación de la liga", h);
+    if (e.v === "ver") $("infoBody").scrollTop = y;
+  }
+  function lgAbre() {
+    lgEd = { v: "ver" };
+    lgPinta();
+    $("infoBody").scrollTop = 0;
+    if (lgFedViejo(lgOf())) lgActualizaFed(false);
+  }
+  function lgWaTxt() {
+    let L = lgOf(),
+      t = lgTabla(L),
+      yo = lgYo(L);
+    return (
+      `🏆 Clasificación${L.nom ? " · " + L.nom : ""}\n` +
+      t.T.map((r, i) => `${i + 1}. ${r.n === yo ? "*" + r.n + "*" : r.n} · ${r.pts} pts (${r.pj} PJ, ${r.gf}-${r.gc})`).join("\n") +
+      `\n\nHecho con Mi Fútbol JV32 · app.monetizaplus.com`
+    );
+  }
+  async function lgAct(b) {
+    let k = b.dataset.lg;
+    if (k === "abrir") return lgAbre();
+    if (k === "ver") return (lgEd = { v: "ver" }), lgPinta();
+    if (k === "wa") {
+      let t = lgWaTxt();
+      try {
+        window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank", "noopener");
+      } catch (x) {
+        copiaTexto(t, "Clasificación copiada. Pégala en WhatsApp.");
+      }
+      return;
+    }
+    if (viendo) return note(SOLO_VER);
+    let L = lgOf();
+    if (k === "enlace" || k === "pegaT" || k === "pegaR" || k === "mano") {
+      lgEd = { v: k };
+      lgPinta();
+      $("infoBody").scrollTop = 0;
+      let f = $(k === "enlace" ? "lgUrl" : k === "mano" ? "lgL" : "lgTxt");
+      if (f && k !== "mano") try { f.focus(); } catch (x) {}
+      return;
+    }
+    if (k === "fed") {
+      lgEd = { v: "fed", d: "", c: "", g: "" };
+      lgPinta();
+      $("infoBody").scrollTop = 0;
+      return;
+    }
+    if (k === "fedOk") {
+      let e = lgEd;
+      if (!e || e.v !== "fed" || !e.g || e.cargando) return;
+      if (!envPuede("lg", lgDia())) return;
+      e.cargando = true;
+      e.err = "";
+      lgPinta();
+      try {
+        let d = await lgFn({ op: "liga", d: e.d, c: e.c, g: e.g });
+        if (!(d.tabla || []).length && !((d.res || {}).partidos || []).length) throw new Error("La federación todavía no tiene clasificación ni resultados de ese grupo.");
+        let cn = ((e.comps || []).find((x) => x.id === e.c) || {}).n || "",
+          gn = ((e.grupos || []).find((x) => x.id === e.g) || {}).n || "";
+        L = lgOf();
+        L.fed = { d: e.d, c: e.c, g: e.g, cn, gn, t: "" };
+        if (!L.nom) L.nom = lgTxt(cn + (gn && gn !== "Grupo Único" ? " · " + gn : ""), 60);
+        L.url = "https://stars.rfaf.es/?widget_view=classification&delegacion=" + e.d + "&competicion=" + e.c + "&grupo=" + e.g;
+        lgMete(L, d);
+        let r = await lgGuarda(L);
+        if (!r) return (e.cargando = false), lgPinta();
+        note("Liga conectada con la Federación Andaluza." + (r === "local" ? " De momento solo en este dispositivo (falta un paso en el servidor)." : ""), r !== "local");
+        lgEd = { v: "ver" };
+        lgPinta();
+        $("infoBody").scrollTop = 0;
+        return render();
+      } catch (x) {
+        e.cargando = false;
+        e.err = x.message || String(x);
+        return lgPinta();
+      }
+    }
+    if (k === "fedAct") return lgActualizaFed(true);
+    if (k === "fedQuita") {
+      L.fed = null;
+      if (!(await lgGuarda(L))) return;
+      note("Desconectada de la federación. La tabla y los resultados se quedan guardados.", true);
+      return lgPinta();
+    }
+    if (k === "enlaceOk") {
+      let u = ($("lgUrl").value || "").trim();
+      if (u && !/^https?:\/\//i.test(u)) u = "https://" + u;
+      if (u && !/^https?:\/\/[^\s"'<>]+\.[^\s"'<>]+$/i.test(u)) return note("Ese enlace no parece válido. Cópialo de la barra de direcciones de la web de tu federación.");
+      L.url = u;
+      L.nom = $("lgNom").value;
+      let r = await lgGuarda(L);
+      if (!r) return;
+      note(r === "local" ? "Enlace guardado en este dispositivo (falta un paso en el servidor)." : "Enlace de la liga guardado.", true);
+      return (lgEd = { v: "ver" }), lgPinta();
+    }
+    if (k === "lee") {
+      lgEd.txt = $("lgTxt").value;
+      if ($("lgJ")) lgEd.j = lgInt($("lgJ").value, 1, 99);
+      lgEd.prev = lgEd.v === "pegaT" ? lgLeeTabla(lgEd.txt) : lgLeeRes(lgEd.txt);
+      lgPinta();
+      let p = $("infoBody").querySelector(".lg-prev, .lg-mal");
+      if (p) try { p.scrollIntoView({ block: "start" }); } catch (x) {}
+      return;
+    }
+    if (k === "guardaP") {
+      let P = lgEd && lgEd.prev;
+      if (!P || !P.length) return;
+      if (!envPuede("lg", "d" + ymd(new Date()))) return;
+      if (lgEd.v === "pegaT") L.tabla = P;
+      else {
+        let j = lgEd.j || lgSigJ(L),
+          N = lgNombres(L);
+        P.forEach((r) => {
+          let l = lgBusca(N, r.l, 0.85) || r.l,
+            v = lgBusca(N, r.v, 0.85) || r.v;
+          L.res = L.res.filter((x) => !(x.j === j && x.l === l && x.v === v));
+          L.res.push({ j, l, v, gl: r.gl, gv: r.gv });
+        });
+      }
+      L.act = ymd(new Date());
+      let r = await lgGuarda(L);
+      if (!r) return;
+      note((lgEd.v === "pegaT" ? "Clasificación guardada." : "Resultados guardados.") + (r === "local" ? " De momento solo en este dispositivo (falta un paso en el servidor)." : ""), r !== "local");
+      lgEd = { v: "ver" };
+      lgPinta();
+      $("infoBody").scrollTop = 0;
+      return render();
+    }
+    if (k === "manoOk") {
+      let l = lgTxt($("lgL").value, 60),
+        v = lgTxt($("lgV").value, 60),
+        j = lgInt($("lgJ").value, 1, 99);
+      if (!l || !v) return note("Escribe el equipo local y el visitante.");
+      if (lgNorm(l) === lgNorm(v)) return note("El local y el visitante no pueden ser el mismo equipo.");
+      let N = lgNombres(L);
+      l = lgBusca(N, l, 0.85) || l;
+      v = lgBusca(N, v, 0.85) || v;
+      L.res = L.res.filter((x) => !(x.j === j && x.l === l && x.v === v));
+      L.res.push({ j, l, v, gl: lgInt($("lgGL").value, 0, 99), gv: lgInt($("lgGV").value, 0, 99) });
+      L.act = ymd(new Date());
+      let r = await lgGuarda(L);
+      if (!r) return;
+      note("Resultado guardado." + (L.tabla.length ? " Ojo: se ve la tabla que pegaste; quítala para calcularla con los resultados." : ""), true);
+      lgEd = { v: "mano", j };
+      lgPinta();
+      return render();
+    }
+    if (k === "quita") {
+      let i = +b.dataset.i;
+      if (!(i >= 0 && i < L.res.length)) return;
+      L.res.splice(i, 1);
+      if (!(await lgGuarda(L))) return;
+      lgPinta();
+      return render();
+    }
+    if (k === "borraT") {
+      L.tabla = [];
+      if (!(await lgGuarda(L))) return;
+      note("Tabla quitada: ahora se calcula con los resultados.", true);
+      lgPinta();
+      return render();
+    }
+  }
+  async function lgSetYo(v) {
+    if (viendo) return;
+    let L = lgOf();
+    L.yo = v;
+    if (await lgGuarda(L)) lgPinta(), render();
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest && e.target.closest("[data-lg]");
+    if (!b || b.disabled) return;
+    if (b.tagName === "A") return;
+    e.preventDefault();
+    lgAct(b).catch((x) => note(x.message || String(x)));
+  });
+  $("info").addEventListener("change", (e) => {
+    if (e.target.id === "lgYo") lgSetYo(e.target.value);
+  });
+  /* Tarjeta de Inicio: en qué puesto va mi equipo */
+  function iniLiga() {
+    let L = lgOf(),
+      t = lgTabla(L),
+      yo = lgYo(L),
+      iy = t.T.findIndex((r) => r.n === yo);
+    if (!L.tabla.length && !L.res.length)
+      return viendo ? "" : `<section class="panel ini-liga"><div class="bar"><div><div class="kicker">Liga</div><h2 class="h2s">¿Cómo va tu liga?</h2><p class="muted">Pega la clasificación de la web de tu federación y mira en qué puesto vais.</p></div><button type="button" class="secondary small" data-lg="abrir">🏆 Clasificación</button></div></section>`;
+    return `<section class="panel ini-liga"><div class="bar"><div><div class="kicker">Liga${L.nom ? " · " + esc(L.nom) : ""}</div><h2 class="h2s">${iy >= 0 ? `${iy + 1}º de ${t.T.length} · ${t.T[iy].pts} puntos` : "Clasificación"}</h2></div><button type="button" class="secondary small" data-lg="abrir">🏆 Ver toda</button></div>${lgTablaHtml(L, 5)}</section>`;
+  }
   function editor() {
     let d = state.draft,
       f =
@@ -7849,6 +8497,19 @@
       ],
     },
     {
+      t: "Clasificación de la liga",
+      p: [
+        "En <b>Partidos</b> (o en la tarjeta «Liga» del Inicio) toca <b>«🏆 Clasificación de la liga»</b> para ver cómo van todos los equipos de tu liga y en qué puesto vais. Tu equipo sale marcado en verde.",
+        "Primero pulsa <b>«Guardar el enlace de mi liga»</b> y pega la dirección de la clasificación de tu grupo en la web de tu federación. Después, cada jornada, pulsa <b>«Abrir la web de mi liga»</b>.",
+        "<b>Pegar la clasificación</b>: en la web de la federación mantén el dedo sobre el primer equipo, arrastra hasta el último y pulsa «Copiar» (en el ordenador, selecciona la tabla y Ctrl + C). Vuelve a la app, pégala en el recuadro y pulsa «Leer»: te enseña los equipos con sus puntos, partidos y goles para que lo revises, y pulsas «Guardar».",
+        "<b>Pegar los resultados de una jornada</b>: igual, pero con los resultados (por ejemplo «CD Norte 2 - 1 UD Sur») y el número de jornada. Si no hay tabla pegada, la app calcula la clasificación con los resultados (3 puntos por victoria y 1 por empate).",
+        "<b>Apuntar un resultado a mano</b>: elige la jornada, el local, el visitante y los goles. Tus partidos de liga con resultado y número de jornada se suman solos.",
+        "<b>Si juegas en Andalucía</b>, pulsa <b>«Conectar con la Federación Andaluza»</b>, elige tu delegación (por ejemplo Granada), la competición y el grupo, y pulsa «Conectar». La clasificación y los resultados de la última jornada se ponen solos y se actualizan cada vez que abres la clasificación (si han pasado 3 horas) o con «Actualizar ahora». Con «Desconectar» dejas de leerla.",
+        "Si la app no reconoce tu equipo, elígelo en «Mi equipo en la tabla». Con «Enviar la clasificación por WhatsApp» la mandas al grupo de las familias.",
+        "Ver la clasificación y apuntar resultados a mano es gratis siempre. Plan gratuito: pegar la tabla o los resultados, o actualizar desde la Federación Andaluza, <b>4 días al mes</b>. Con Pro, ilimitado.",
+      ],
+    },
+    {
       t: "Directo",
       p: [
         "En «Partidos», pulsa el botón de directo de un partido: llevas el marcador, el minuto y los goleadores en vivo.",
@@ -7988,7 +8649,7 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
         "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",

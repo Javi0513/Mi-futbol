@@ -6961,3 +6961,43 @@ body.intro-on {
   animation-duration: 0.01s !important;
   animation-delay: 0s !important;
 }
+/* Clasificación de la liga (v11.41) */
+.rs-tb { display: flex; flex-wrap: wrap; gap: 8px; }
+.lg-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0; border: 1px solid var(--line); border-radius: 12px; }
+.lg-t { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.lg-t th, .lg-t td { padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.lg-t th { color: var(--mut); font-weight: 600; font-size: 12px; background: var(--s2); }
+.lg-t tr:last-child td { border-bottom: 0; }
+.lg-t .lg-n { text-align: left; white-space: normal; min-width: 120px; }
+.lg-t tr.yo td { background: rgba(43, 227, 106, 0.14); color: var(--ink); font-weight: 700; }
+.lg-t tr.yo td:first-child { box-shadow: inset 3px 0 0 var(--lime); }
+.lg-pos { display: flex; align-items: baseline; gap: 10px; margin: 6px 0; }
+.lg-pos b { font-family: var(--fd); font-size: 44px; line-height: 1; color: var(--lime); }
+.lg-pos span { color: var(--mut); }
+.lg-de { font-size: 13px; }
+.lg-yo { display: block; margin: 6px 0 10px; }
+.lg-yo select { width: 100%; margin-top: 4px; }
+.lg-vacia { background: var(--s2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: 8px 0; }
+.lg-vacia ol, .lg-como ol { padding-left: 20px; margin: 6px 0; }
+.lg-res { margin: 10px 0; }
+.lg-res summary, .lg-como summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.lg-jor { margin: 6px 0 10px; }
+.lg-jor > b { display: block; color: var(--mut); font-size: 13px; margin-bottom: 4px; }
+.lg-r { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.lg-r > span:nth-child(3) { text-align: right; }
+.lg-r > b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lg-r.yo { background: rgba(43, 227, 106, 0.1); border-radius: 8px; }
+.lg-r .ib { width: 30px; height: 30px; min-width: 30px; }
+.lg-prev .lg-r { grid-template-columns: 1fr auto 1fr; }
+#infoBody #lgTxt { width: 100%; font: inherit; font-size: 14px; margin: 8px 0; }
+.lg-jn { display: block; margin: 6px 0; }
+.lg-jn input { width: 90px; margin-left: 8px; }
+.lg-mano { display: grid; grid-template-columns: 1fr 70px; gap: 8px; margin: 8px 0; }
+.lg-mano input { width: 100%; }
+.lg-mal { color: var(--loss); }
+.lg-prev { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.ini-liga .lg-wrap { margin-top: 10px; }
+.lg-fed { display: flex; flex-direction: column; gap: 4px; background: var(--s2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
+.lg-fed.on { border-color: var(--lime); }
+.lg-fed .btools { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
+#infoBody #lgFd, #infoBody #lgFc, #infoBody #lgFg { width: 100%; margin: 4px 0 10px; }
