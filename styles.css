@@ -7014,3 +7014,14 @@ body.intro-on {
 .lg-pf.yo { background: rgba(43, 227, 106, 0.1); border-radius: 8px; }
 .lg-actas { font-size: 13px; }
 .lg-actas a { color: var(--lime); }
+/* Vídeo mudo y diminuto que mantiene la pantalla encendida en iPhone/iPad antiguos (v11.43) */
+.luz-vid {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 2px;
+  height: 2px;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
+}

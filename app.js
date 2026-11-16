@@ -5106,9 +5106,7 @@
     let r = ciRun;
     if (!r) return;
     clearInterval(r.tm);
-    try {
-      if (r.lock) r.lock.release().catch(() => {});
-    } catch (e) {}
+    luzQuita("ci");
     try {
       if (r.ac && r.ac.close) r.ac.close();
     } catch (e) {}
@@ -5116,23 +5114,88 @@
     if (!document.querySelector(".cam")) document.body.classList.remove("cam-on");
     ciRun = null;
   }
-  /* Que no se apague la pantalla mientras corre el circuito */
-  function ciLuz() {
-    if (!ciRun || ciRun.lock || !navigator.wakeLock) return;
+  /* ===== Pantalla siempre encendida (v11.43) =====
+     Mientras está abierta la cámara (grabar el partido o el entreno, emitir) o corre un circuito.
+     Usa el Wake Lock del navegador y, si no existe (iPhone/iPad con iOS antiguo) o falla (ahorro de
+     batería en Android), un vídeo mudo y diminuto en bucle, que también evita que se bloquee.
+     En iPhone/iPad se usan los dos, porque en la app de la pantalla de inicio el Wake Lock no siempre funciona.
+     Al volver a la app (el sistema suelta el bloqueo al salir) se pide otra vez. */
+  /* Vídeo negro de 64×64, 2 s, con audio en silencio (3 KB). Va dentro del código y se abre como blob:
+     así funciona sin cobertura y lo permite la política de seguridad (media-src blob:). */
+  const LUZ_MP4 = "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";
+  const luz = { quien: new Set(), lock: null, vid: null, pide: null, video: false };
+  const luzIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function luzVideo(on) {
+    luz.video = !!on;
+    if (!on) {
+      if (luz.vid) luz.vid.pause();
+      return;
+    }
+    let v = luz.vid;
+    if (!v) {
+      v = luz.vid = document.createElement("video");
+      v.muted = true;
+      v.loop = true;
+      v.playsInline = true;
+      ["muted", "playsinline", "webkit-playsinline", "loop"].forEach((a) => v.setAttribute(a, ""));
+      v.setAttribute("aria-hidden", "true");
+      v.className = "luz-vid";
+      try {
+        let b = atob(LUZ_MP4),
+          u = new Uint8Array(b.length);
+        for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+        v.src = URL.createObjectURL(new Blob([u], { type: "video/mp4" }));
+      } catch (e) {}
+      document.body.appendChild(v);
+    }
     try {
-      navigator.wakeLock
-        .request("screen")
-        .then((l) => {
-          if (!ciRun) return l.release().catch(() => {});
-          ciRun.lock = l;
-          l.addEventListener("release", () => ciRun && ciRun.lock === l && (ciRun.lock = null));
-        })
-        .catch(() => {});
+      let r = v.play();
+      if (r && r.catch) r.catch(() => {});
     } catch (e) {}
   }
+  function luzPon(k) {
+    if (k) luz.quien.add(k);
+    if (!luz.quien.size || document.hidden) return Promise.resolve();
+    /* El vídeo se pone ya (dentro del toque del usuario, para que el móvil lo deje reproducir) */
+    if (luzIOS || !navigator.wakeLock || !(luz.lock && !luz.lock.released)) luzVideo(true);
+    if (luz.pide) return luz.pide;
+    luz.pide = (async () => {
+      let ok = !!(luz.lock && !luz.lock.released);
+      if (!ok && navigator.wakeLock)
+        try {
+          let l = await navigator.wakeLock.request("screen");
+          if (!luz.quien.size) {
+            l.release().catch(() => {});
+          } else {
+            luz.lock = l;
+            ok = true;
+            l.addEventListener("release", () => {
+              if (luz.lock !== l) return;
+              luz.lock = null;
+              /* Si lo suelta el sistema con la app delante, se vuelve a pedir (o se usa el vídeo) */
+              if (luz.quien.size && !document.hidden) setTimeout(() => luzPon(), 300);
+            });
+          }
+        } catch (e) {}
+      luzVideo(luz.quien.size && (!ok || luzIOS));
+    })().finally(() => (luz.pide = null));
+    return luz.pide;
+  }
+  function luzQuita(k) {
+    luz.quien.delete(k);
+    if (luz.quien.size) return;
+    luzVideo(false);
+    let l = luz.lock;
+    luz.lock = null;
+    if (l) l.release().catch(() => {});
+  }
   document.addEventListener("visibilitychange", () => {
-    if (ciRun && !document.hidden) ciLuz();
+    if (!document.hidden && luz.quien.size) luzPon();
   });
+  /* Que no se apague la pantalla mientras corre el circuito */
+  function ciLuz() {
+    if (ciRun) luzPon("ci");
+  }
   /* ===== Carga física por jugador (v10.5) =====
      Esfuerzo percibido de 1 a 10 (RPE) × minutos = carga. Entrenos: entrenamientos.carga
      {dur: minutos, rpe: {id: 1-10}}. Partidos: rpe dentro de cada participación (sus minutos ya están).
@@ -8607,6 +8670,8 @@
         "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
+        "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la grabación se para sola y lo grabado hasta ese momento queda listo para guardar.",
+        "Grabar vídeo gasta mucha batería y calienta el móvil. Para un partido entero, conéctalo a una <b>batería externa</b> o al cargador, quita el <b>ahorro de batería</b>, baja el brillo y no lo dejes al sol: si se calienta demasiado o se queda sin batería, el móvil se puede apagar solo.",
         "<b>Enlaces antes del partido</b>: no hace falta esperar a estar en el campo. En «Partidos», debajo de un partido que aún no se ha jugado, pulsa <b>«Preparar enlaces del directo»</b> (o, al editar el partido, «Enlaces del directo»). Ahí mandas por WhatsApp el <b>enlace para la familia</b> y creas y mandas el <b>enlace del anotador</b>. Son los mismos enlaces del Directo: cuando pulses «Empezar partido» se ponen en marcha solos, sin mandar nada más. Si cambias el rival o los convocados, el anotador los ve al momento.",
         "Si prefieres mandarlo todo junto, en la <b>Convocatoria</b> (la tarjeta «Ver y enviar» de «Partidos» o «Editar partido › Convocatoria») marca <b>«Añadir el enlace del directo»</b> y el enlace va al final del mensaje. Sale cuando el partido ya está guardado con el mismo día (y rival) que la convocatoria.",
         "Con el plan gratuito puedes preparar los enlaces antes del partido en <b>3 partidos al mes</b> (cada partido cuenta una vez); con Pro, ilimitado. El enlace del directo lo tienes siempre gratis dentro del Directo.",
@@ -8629,7 +8694,7 @@
         "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
         "Puedes apuntar la hora y <b>qué vais a trabajar</b> (por ejemplo, «juego de 4, defensa con cambio, activación»). Cada día del calendario sale de un color según la asistencia.",
         "<b>Enviar el entreno a los jugadores</b>: prepara el entreno antes (qué vais a trabajar, los ejercicios con su explicación y el circuito) y pulsa «Enviar el entreno a los jugadores». Te sale el mensaje escrito para mandarlo por WhatsApp al grupo, así llegan sabiendo lo que se va a hacer y pierdes menos tiempo explicando. Gratis: 3 envíos al mes; con Pro, ilimitados.",
-        "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis.",
+        "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis. Mientras la cámara está abierta la pantalla no se apaga; si grabas mucho rato, conecta el móvil al cargador.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido (y cuántas llegó tarde), faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
         "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
@@ -11408,12 +11473,12 @@
     if (c.tr) {
       c.box.querySelector(".cam-ui").innerHTML = c.listo
         ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button><button class="danger" data-cam="close">Cerrar</button></div>`
-        : `<div class="cam-row">${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. Pon el móvil en horizontal. Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor.</p>'}`;
+        : `<div class="cam-row">${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. Pon el móvil en horizontal. Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta; si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
       return;
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
       ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-      : `${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal. El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor.</p>'}`;
+      : `${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal. El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta; para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
   }
   /* tr: grabar un entrenamiento ({ fecha, equipo }); sin marcador ni emisión */
   async function camAbre(id, frente, tr) {
@@ -11443,11 +11508,13 @@
     document.body.classList.add("cam-on");
     cam = { id, tr: tr || null, s, v, video: v, box, canvas: box.querySelector("canvas"), frente: !!frente, rec: null, listo: null, pick: false };
     cam.ctx = cam.canvas.getContext("2d");
+    s.getVideoTracks().forEach(camVigila);
     cam.out = cam.canvas.captureStream(30);
     s.getAudioTracks().forEach((t) => cam.out.addTrack(t));
     try {
       await v.play();
     } catch (e) {}
+    camLuz();
     camPinta();
     camBotones();
   }
@@ -11467,7 +11534,7 @@
       t.stop();
       c.s.removeTrack(t);
     });
-    n.getVideoTracks().forEach((t) => c.s.addTrack(t));
+    n.getVideoTracks().forEach((t) => (c.s.addTrack(t), camVigila(t)));
     c.v.srcObject = new MediaStream(n.getVideoTracks());
     c.v.play().catch(() => {});
     c.frente = !c.frente;
@@ -11477,7 +11544,7 @@
     camCorta();
     clearTimeout(cam.raf);
     cam.s.getTracks().forEach((t) => t.stop());
-    if (cam.lock) cam.lock.release().catch(() => {});
+    luzQuita("cam");
   }
   function camCierra() {
     if (!cam) return;
@@ -11517,6 +11584,10 @@
       c.guardado = false;
       camLuz();
       camBotones();
+      if (c.cortada) {
+        c.cortada = false;
+        note("La cámara se ha cortado (se apagó la pantalla o se abrió otra app). Lo grabado hasta ese momento está listo: guárdalo y pulsa «Grabar otro trozo».");
+      }
     };
     r.start(2000);
     c.rec = r;
@@ -11524,17 +11595,20 @@
     camLuz();
     camBotones();
   }
-  /* Que no se apague la pantalla mientras graba o emite */
-  async function camLuz() {
-    let c = cam;
-    if (!c) return;
-    let on = !!(c.rec || c.emite);
-    if (on && !c.lock)
+  /* Que no se apague la pantalla mientras la cámara está abierta (en el trípode, antes de grabar, grabando o emitiendo) */
+  function camLuz() {
+    if (cam) luzPon("cam");
+  }
+  /* Si la cámara se corta (pantalla apagada, otra app que la usa…), se para la grabación para no perder lo grabado */
+  function camVigila(t) {
+    t.addEventListener("ended", () => {
+      let c = cam;
+      if (!c || !c.s.getVideoTracks().includes(t) || !c.rec) return;
+      c.cortada = true;
       try {
-        c.lock = await navigator.wakeLock.request("screen");
-        c.lock.addEventListener("release", () => cam && (cam.lock = null));
+        c.rec.stop();
       } catch (e) {}
-    if (!on && c.lock) c.lock.release().catch(() => {});
+    });
   }
   async function camEmite() {
     let c = cam;
@@ -11668,6 +11742,19 @@
     }
     if (k === "gc" && x) liveGoal(x, "c");
     camBotones();
+  });
+  /* Al volver a la app con la cámara abierta: el vídeo de la cámara se vuelve a poner en marcha (el iPhone lo pausa) */
+  document.addEventListener("visibilitychange", () => {
+    let c = cam;
+    if (!c) return;
+    if (document.hidden) {
+      if (c.rec) c.fuera = true;
+      return;
+    }
+    c.v.play().catch(() => {});
+    if (c.fuera && c.rec)
+      note("Mientras grababas se ha apagado la pantalla o has salido de la app, y ese rato puede no haberse grabado. Deja la app delante mientras grabas; si el móvil se calienta o tiene poca batería, conéctalo al cargador.");
+    c.fuera = false;
   });
   window.addEventListener("beforeunload", (e) => {
     if (cam && (cam.rec || cam.emite || (cam.listo && !cam.guardado))) {
