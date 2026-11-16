@@ -7001,3 +7001,16 @@ body.intro-on {
 .lg-fed.on { border-color: var(--lime); }
 .lg-fed .btools { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
 #infoBody #lgFd, #infoBody #lgFc, #infoBody #lgFg { width: 100%; margin: 4px 0 10px; }
+/* v11.42: la mini tabla de la liga en Inicio cabe en el móvil (sin DG) */
+.ini-liga .lg-t { font-size: 13px; }
+.ini-liga .lg-t th, .ini-liga .lg-t td { padding: 6px 4px; }
+.ini-liga .lg-t th:last-child, .ini-liga .lg-t td:last-child { display: none; }
+.ini-liga .lg-t .lg-n { min-width: 90px; }
+.lg-jfed { margin: 10px 0; }
+.lg-jfed select { width: 100%; margin-top: 4px; }
+.lg-pf { border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.lg-pf .lg-r { border-bottom: 0; grid-template-columns: 1fr auto 1fr; }
+.lg-pf small { display: block; padding: 0 8px 4px; font-size: 12px; }
+.lg-pf.yo { background: rgba(43, 227, 106, 0.1); border-radius: 8px; }
+.lg-actas { font-size: 13px; }
+.lg-actas a { color: var(--lime); }

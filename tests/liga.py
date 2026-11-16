@@ -113,6 +113,11 @@ with sync_playwright() as p:
     pg.locator('#infoBody .lg-res summary').click() if not pg.locator('#infoBody .lg-res[open]').count() else None
     pg.locator('#infoBody [data-lg=quita]').first.click();pg.wait_for_timeout(300)
     check('se puede quitar un resultado',len(pg.evaluate("window.__db.equipos[0].liga.res"))==n-1)
+    # v11.42: G = E + P hace que PJ = G+E+P también se cumpla empezando en los puntos (18 = 10+5+3)
+    pega(pg,'pegaT',"1 CD Norte 18 10 5 3 2 21 14\n2 UD Sur 15 10 4 3 3 17 15\n3 Racing Vega 9 9 2 3 4 10 16\n")
+    F=filas(pg)
+    check('v11.42: G = E + P no lía los puntos (18 pts, 10 PJ, 5-3-2, 21-14)',F[0][1:9]==['CD Norte','18','10','5','3','2','21','14'] and F[2][1:4]==['Racing Vega','9','9'],F)
+    pg.click('#infoBody [data-lg=ver]');pg.wait_for_timeout(150)
     # Tabla con tabuladores y «Mi equipo en la tabla»
     pega(pg,'pegaT',T2)
     F=filas(pg)
@@ -131,6 +136,8 @@ with sync_playwright() as p:
     ini=pg.locator('.ini-liga').text_content()
     check('Inicio: «3º de 3 · 12 puntos» y la mini tabla','3º de 3 · 12 puntos' in ini and pg.locator('.ini-liga .lg-t tr.yo').count()==1,ini[:120])
     pg.screenshot(path=os.path.join(OUT,'liga-4-inicio.png'),full_page=True)
+    sw=pg.evaluate("(()=>{let w=document.querySelector('.ini-liga .lg-wrap');return [w.scrollWidth,w.clientWidth]})()")
+    check('v11.42: la mini tabla del Inicio cabe en el móvil (390 px) sin cortar',sw[0]<=sw[1],sw)
     # Límite: 4 días al mes en gratis
     pg.evaluate("(()=>{let k=Object.keys(localStorage).find(k=>k.indexOf('mf_envios:')===0);let x=JSON.parse(localStorage.getItem(k));x.lg=['d1','d2','d3','d4'];localStorage.setItem(k,JSON.stringify(x))})()")
     pg.click('.ini-liga [data-lg=abrir]');pg.wait_for_timeout(200)
@@ -145,7 +152,8 @@ with sync_playwright() as p:
         q=json.loads(route.request.post_data or '{}');pedidos.append(q)
         if q.get('op')=='comps': d={'comps':[{'id':'48466184','n':'2ª Andaluza Alevín (Granada)'},{'id':'48466297','n':'3ª Andaluza Alevín (Granada)'}]}
         elif q.get('op')=='grupos': d={'grupos':[{'id':'48466185','n':'Grupo Único'}]}
-        else: d={'tabla':[{'n':'ATLÉTICO VEGA','pts':25,'pj':9,'g':8,'e':1,'p':0,'gf':43,'gc':10},{'n':'C.D. NORTE','pts':23,'pj':9,'g':7,'e':2,'p':0,'gf':38,'gc':9},{'n':'U.D. SUR','pts':19,'pj':9,'g':6,'e':1,'p':2,'gf':44,'gc':26}],'res':{'j':9,'partidos':[{'l':'C.D. NORTE','v':'U.D. SUR','gl':5,'gv':7},{'l':'ATLÉTICO VEGA','v':'C.D. X','gl':None,'gv':None}]},'jornadas':[]}
+        else: d={'tabla':[{'n':'ATLÉTICO VEGA','pts':25,'pj':9,'g':8,'e':1,'p':0,'gf':43,'gc':10},{'n':'C.D. NORTE','pts':23,'pj':9,'g':7,'e':2,'p':0,'gf':38,'gc':9},{'n':'U.D. SUR','pts':19,'pj':9,'g':6,'e':1,'p':2,'gf':44,'gc':26}],'res':{'j':9,'partidos':[{'l':'C.D. NORTE','v':'U.D. SUR','gl':5,'gv':7},{'l':'ATLÉTICO VEGA','v':'C.D. X','gl':None,'gv':None}]},'jornadas':[{'id':'9','n':'9 · 15-11-2026'},{'id':'12','n':'12 · 13-12-2026'}]}
+        if q.get('op')=='jornada': d={'res':{'j':12,'partidos':[{'l':'U.D. SUR','v':'C.D. NORTE','gl':None,'gv':None,'f':'13/12/2026','h':'Pendiente','lu':'Campo Municipal Sur','est':'Sin jugar'}]}}
         route.fulfill(status=200,content_type='application/json',body=json.dumps(d))
     pg.route('**/functions/v1/liga-rfaf',fn)
     pg.click('[data-tab=partidos]');pg.click('[data-lg=abrir]');pg.wait_for_timeout(200)
@@ -164,6 +172,11 @@ with sync_playwright() as p:
     check('muestra que está conectada','Federación Andaluza' in pg.locator('#infoBody .lg-fed.on').inner_text())
     pg.screenshot(path=os.path.join(OUT,'liga-6-conectada.png'),full_page=True)
     pg.locator('#info .dialog').screenshot(path=os.path.join(OUT,'liga-dossier.png'))
+    pg.select_option('#lgFj','12');pg.wait_for_timeout(500)
+    t=pg.locator('#infoBody .lg-jfed').inner_text()
+    check('v11.42: «Ver jornada» enseña los partidos con fecha, campo y estado',pedidos[-1]=={'op':'jornada','d':'5','c':'48466184','g':'48466185','j':'12'} and 'Jornada 12' in t and '13/12/2026' in t and 'Campo Municipal Sur' in t and 'Sin jugar' in t and 'hora pendiente' in t,t[:200])
+    check('v11.42: mi partido sale marcado y hay enlace a las actas',pg.locator('#infoBody .lg-pf.yo').count()==1 and pg.locator('#infoBody .lg-actas a').count()==1)
+    pg.locator('#infoBody .lg-jfed').screenshot(path=os.path.join(OUT,'liga-7-jornada.png'))
     n=len(pedidos)
     pg.click('#closeInfo');pg.click('[data-lg=abrir] >> nth=0');pg.wait_for_timeout(400)
     check('al volver a abrirla enseguida no vuelve a leer la federación',len(pedidos)==n)

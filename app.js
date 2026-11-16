@@ -5805,7 +5805,19 @@
       act: /^\d{4}-\d{2}-\d{2}$/.test(x.act || "") ? x.act : "",
       fed:
         x.fed && typeof x.fed === "object" && /^\d+$/.test(x.fed.d) && /^\d+$/.test(x.fed.c) && /^\d+$/.test(x.fed.g)
-          ? { d: x.fed.d, c: x.fed.c, g: x.fed.g, cn: lgTxt(x.fed.cn, 90), gn: lgTxt(x.fed.gn, 60), t: lgTxt(x.fed.t, 30) }
+          ? {
+              d: x.fed.d,
+              c: x.fed.c,
+              g: x.fed.g,
+              cn: lgTxt(x.fed.cn, 90),
+              gn: lgTxt(x.fed.gn, 60),
+              t: lgTxt(x.fed.t, 30),
+              /* Jornadas de la competición (v11.42): [[número, "12 · 13-12-2026"]] */
+              jl: (Array.isArray(x.fed.jl) ? x.fed.jl : [])
+                .filter((z) => Array.isArray(z) && /^\d{1,2}$/.test(z[0]))
+                .slice(0, 60)
+                .map((z) => [z[0], lgTxt(z[1], 30)]),
+            }
           : null,
       tabla: (Array.isArray(x.tabla) ? x.tabla : [])
         .slice(0, LG_EQ)
@@ -5952,21 +5964,25 @@
     while (W.length && (lgLetras(W[W.length - 1]) || /^(-|–|\|)$/.test(W[W.length - 1]))) W.pop();
     return lgTxt(W.join(" ").replace(/^\d+\s*[º.ª-]\s*/, ""), 60);
   }
-  /* Números de una fila → pts, pj, g, e, p, gf, gc. Busca PJ = G + E + P */
+  /* Números de una fila → pts, pj, g, e, p, gf, gc. Busca PJ = G + E + P.
+     Puede cumplirse en varios sitios (p. ej. 18 10 5 3 2: 18 = 10 + 5 + 3), así que se prueban
+     todos y gana el que tiene los puntos delante y cuadra con 3·G + E (v11.42). */
   function lgFila(N) {
+    let best = null,
+      bs = -1;
     for (let i = 0; i + 5 < N.length; i++) {
       let pj = N[i],
         g = N[i + 1],
         e = N[i + 2],
-        p = N[i + 3];
-      if (pj < 0 || g < 0 || e < 0 || p < 0 || pj !== g + e + p || pj > 60) continue;
-      let gf = N[i + 4],
+        p = N[i + 3],
+        gf = N[i + 4],
         gc = N[i + 5];
-      if (gf < 0 || gc < 0) continue;
-      let pts = i > 0 ? N[i - 1] : N.length > i + 6 && N[i + 6] !== gf - gc ? N[i + 6] : 3 * g + e;
-      return { pts, pj, g, e, p, gf, gc };
+      if (pj < 0 || g < 0 || e < 0 || p < 0 || pj !== g + e + p || pj > 60 || gf < 0 || gc < 0) continue;
+      let pts = i > 0 ? N[i - 1] : N.length > i + 6 && N[i + 6] !== gf - gc ? N[i + 6] : 3 * g + e,
+        sc = (pts === 3 * g + e ? 2 : 0) + (i > 0 ? 1 : 0);
+      if (sc > bs) (bs = sc), (best = { pts, pj, g, e, p, gf, gc });
     }
-    return null;
+    return best;
   }
   const LG_CAB = /^(pos|posici[oó]n|equipo|equipos|pts|puntos|ptos|pt|j|pj|jug|jugados|g|pg|gan|ganados|e|pe|emp|empatados|p|pp|per|perdidos|gf|gc|f|c|ga|dg|dif|df|\+\/-|goles|favor|contra|a favor|en contra|sanc|sanci[oó]n|[uú]ltimos|forma|racha|clasificaci[oó]n|#)$/i;
   function lgLeeTabla(txt) {
@@ -6077,7 +6093,10 @@
       P.forEach((x) => L.res.push({ j, l: lgTxt(x.l, 60), v: lgTxt(x.v, 60), gl: lgInt(x.gl, 0, 99), gv: lgInt(x.gv, 0, 99) }));
     }
     L.act = ymd(new Date());
-    if (L.fed) L.fed.t = new Date().toISOString();
+    if (L.fed) {
+      L.fed.t = new Date().toISOString();
+      if (Array.isArray(d.jornadas) && d.jornadas.length) L.fed.jl = d.jornadas.slice(0, 60).map((x) => [String(x.id), lgTxt(x.n, 30)]);
+    }
     return L;
   }
   let lgCargando = false;
@@ -6106,9 +6125,66 @@
   const lgFedViejo = (L) => L.fed && (!L.fed.t || Date.now() - Date.parse(L.fed.t) > 3 * 36e5);
   function lgFedHtml(L) {
     if (L.fed)
-      return `<div class="lg-fed on"><b>🔄 Federación Andaluza</b><span>${esc(L.fed.cn)}${L.fed.gn ? " · " + esc(L.fed.gn) : ""}</span><small class="muted">${lgCargando ? "Actualizando…" : L.fed.t ? "Se actualiza sola. Última vez: " + esc(fmtDate(L.fed.t.slice(0, 10))) + " " + esc(L.fed.t.slice(11, 16)) + " (UTC)" : "Se actualiza sola"}</small>${viendo ? "" : `<div class="btools"><button type="button" class="secondary small" data-lg="fedAct"${lgCargando ? " disabled" : ""}>Actualizar ahora</button><button type="button" class="secondary small" data-lg="fedQuita">Desconectar</button></div>`}</div>`;
+      return `<div class="lg-fed on"><b>🔄 Federación Andaluza</b><span>${esc(L.fed.cn)}${L.fed.gn ? " · " + esc(L.fed.gn) : ""}</span><small class="muted">${lgCargando ? "Actualizando…" : L.fed.t ? "Se actualiza sola. Última vez: " + esc(fmtDate(L.fed.t.slice(0, 10))) + " " + esc(L.fed.t.slice(11, 16)) + " (UTC)" : "Se actualiza sola"}</small>${viendo ? "" : `<div class="btools"><button type="button" class="secondary small" data-lg="fedAct"${lgCargando ? " disabled" : ""}>Actualizar ahora</button><button type="button" class="secondary small" data-lg="fedQuita">Desconectar</button></div>`}</div>${lgJorHtml(L)}`;
     return viendo ? "" : `<div class="lg-fed"><b>¿Tu equipo juega en Andalucía?</b><span>Conecta tu liga de la Federación Andaluza y la clasificación y los resultados se ponen solos.</span><div class="btools"><button type="button" class="primary small" data-lg="fed">Conectar con la Federación Andaluza</button></div></div>`;
   }
+  /* Jornadas de la Federación Andaluza (v11.42): resultados de cualquier jornada, con fecha, hora,
+     campo y estado. Ver otra jornada cuenta como un día de federación en el plan gratuito. */
+  function lgJorHtml(L) {
+    let jl = L.fed && L.fed.jl;
+    if (!jl || !jl.length) return "";
+    let e = lgEd || {},
+      J = e.jor,
+      yo = lgYo(L),
+      N = lgNombres(L),
+      esYo = (n) => n === yo || lgBusca([yo], n, 0.85) === yo;
+    return `<div class="lg-jfed"><label>Ver jornada<select id="lgFj"><option value="">Elegir…</option>${jl.map((z) => `<option value="${esc(z[0])}" ${J && String(J.j) === z[0] ? "selected" : ""}>${esc(z[1])}</option>`).join("")}</select></label>${
+      e.jorCargando
+        ? `<p class="muted">Leyendo la jornada…</p>`
+        : J
+          ? J.partidos.length
+            ? `<div class="lg-jor"><b>Jornada ${J.j}</b>${J.partidos
+                .map(
+                  (x) =>
+                    `<div class="lg-pf${esYo(x.l) || esYo(x.v) ? " yo" : ""}"><div class="lg-r"><span>${esc(x.l)}</span><b>${x.gl == null ? "-" : x.gl + " - " + x.gv}</b><span>${esc(x.v)}</span></div><small class="muted">${[x.f, x.h && x.h !== "Pendiente" ? x.h + " h" : x.h ? "hora pendiente" : "", x.lu, x.est].filter(Boolean).map(esc).join(" · ")}</small></div>`,
+                )
+                .join("")}</div>`
+            : `<p class="muted">La federación todavía no tiene partidos en esa jornada.</p>`
+          : ""
+    }${e.jorErr ? `<p class="lg-mal">${esc(e.jorErr)}</p>` : ""}<p class="muted lg-actas">Las actas de los partidos solo están en la web de la federación. <a href="https://www.rfaf.es/" target="_blank" rel="noopener">Abrir la web de la Federación Andaluza</a></p></div>`;
+  }
+  async function lgVerJornada(j) {
+    let L = lgOf();
+    if (!L.fed || !lgEd) return;
+    lgEd.jorErr = "";
+    if (!j) return (lgEd.jor = null), lgPinta();
+    if (!envPuede("lg", lgDia())) return;
+    let e = lgEd;
+    e.jorCargando = true;
+    lgPinta();
+    try {
+      let d = await lgFn({ op: "jornada", d: L.fed.d, c: L.fed.c, g: L.fed.g, j });
+      if (lgEd !== e) return;
+      let R = d.res || {};
+      e.jor = {
+        j: lgInt(R.j || j, 0, 99),
+        partidos: (R.partidos || []).slice(0, 40).map((x) => ({ l: lgTxt(x.l, 60), v: lgTxt(x.v, 60), gl: x.gl == null ? null : lgInt(x.gl, 0, 99), gv: x.gv == null ? null : lgInt(x.gv, 0, 99), f: lgTxt(x.f, 20), h: lgTxt(x.h, 20), lu: lgTxt(x.lu, 120), est: lgTxt(x.est, 30) })),
+      };
+    } catch (x) {
+      e.jorErr = x.message || String(x);
+    }
+    e.jorCargando = false;
+    if (lgEd === e) {
+      let y = $("infoBody").scrollTop;
+      lgPinta();
+      $("infoBody").scrollTop = y;
+      let q = $("infoBody").querySelector(".lg-jfed");
+      if (q && q.getBoundingClientRect().top > window.innerHeight) try { q.scrollIntoView({ block: "start" }); } catch (z) {}
+    }
+  }
+  $("info").addEventListener("change", (e) => {
+    if (e.target.id === "lgFj") lgVerJornada(e.target.value);
+  });
   function lgFedForm() {
     let e = lgEd;
     return `<p>Elige tu delegación, la competición y el grupo, como en la web de la Federación Andaluza. La app leerá la clasificación y los resultados cada vez que la abras.</p><label>Delegación<select id="lgFd"><option value="">Elegir…</option>${LG_DELEG.map((x) => `<option value="${x[0]}" ${e.d === x[0] ? "selected" : ""}>${x[1]}</option>`).join("")}</select></label>${
@@ -8505,6 +8581,7 @@
         "<b>Pegar los resultados de una jornada</b>: igual, pero con los resultados (por ejemplo «CD Norte 2 - 1 UD Sur») y el número de jornada. Si no hay tabla pegada, la app calcula la clasificación con los resultados (3 puntos por victoria y 1 por empate).",
         "<b>Apuntar un resultado a mano</b>: elige la jornada, el local, el visitante y los goles. Tus partidos de liga con resultado y número de jornada se suman solos.",
         "<b>Si juegas en Andalucía</b>, pulsa <b>«Conectar con la Federación Andaluza»</b>, elige tu delegación (por ejemplo Granada), la competición y el grupo, y pulsa «Conectar». La clasificación y los resultados de la última jornada se ponen solos y se actualizan cada vez que abres la clasificación (si han pasado 3 horas) o con «Actualizar ahora». Con «Desconectar» dejas de leerla.",
+        "Con la liga de Andalucía conectada, en <b>«Ver jornada»</b> eliges cualquier jornada, pasada o futura, y ves sus partidos con el resultado, la fecha, la hora, el campo y si se ha jugado. Las actas solo están en la web de la Federación Andaluza (hay un enlace). Ver otra jornada cuenta como un día de federación en el plan gratuito.",
         "Si la app no reconoce tu equipo, elígelo en «Mi equipo en la tabla». Con «Enviar la clasificación por WhatsApp» la mandas al grupo de las familias.",
         "Ver la clasificación y apuntar resultados a mano es gratis siempre. Plan gratuito: pegar la tabla o los resultados, o actualizar desde la Federación Andaluza, <b>4 días al mes</b>. Con Pro, ilimitado.",
       ],
