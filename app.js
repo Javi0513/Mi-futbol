@@ -7876,6 +7876,7 @@
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
         "<b>Tiros desde el anotador</b>: también tiene <b>«🎯 Tiro a puerta»</b> y <b>«Tiro fuera»</b> (elige quién ha tirado; primero salen los que están en el campo) y <b>«Tiro del rival»</b>. En tu Directo se suman solos a las estadísticas de cada jugador y a los tiros del rival, y salen en el resumen, en su ficha y en el Excel. Si el anotador quita un tiro con la ✕, se resta. Plan gratuito: tiros desde el anotador en <b>2 partidos al mes</b> (el resto del anotador sigue igual y tú los puedes apuntar en tu Directo siempre). Con Pro, ilimitado.",
         "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
+        "<b>No hace falta que tengas la app abierta</b>: si el anotador empieza, apunta y termina el partido él solo, al abrir la app el partido ya sale con el resultado, los goleadores, los cambios, las tarjetas y los minutos de cada jugador. Si la tienes abierta en otra pantalla (Inicio, Partidos…), se pone al día sola en unos segundos.",
         "En el <b>descanso</b>, el anotador apunta los cambios con «🔄 Cambio del descanso» y no gastan ventana. Si se le olvidó, en la 2ª parte tiene el botón «🔄 Cambio del descanso (no gasta ventana)».",
         "En tu móvil el marcador, los goleadores y el marcador del vídeo se actualizan solos en unos segundos, y todo se guarda en el partido y en las estadísticas. El anotador puede quitar con la ✕ lo que haya apuntado él. Con «Quitar el anotador» su enlace deja de funcionar. Con el plan gratuito, el anotador se puede usar en 3 partidos al mes; con Pro, sin límite.",
         "<b>Sin cobertura en el campo</b>: la sesión ya no se cierra sola. Si se pierde la conexión, arriba sale «Sin conexión con tu cuenta»; sigue apuntando con normalidad y, en cuanto vuelva la cobertura, se guarda todo solo. Si el móvil cierra la app (por ejemplo al usar la cámara), al abrirla otra vez vuelves directamente al directo del partido.",
@@ -8995,7 +8996,11 @@
         x._clk = liveClk(x);
         liveRows[x.partido_id] = x;
       });
-    } catch (e) {}
+    } catch (e) {
+      return;
+    }
+    /* Lo que haya apuntado el anotador con esta app cerrada pasa ahora al partido */
+    liveAlTodos();
   }
   function liveChip(id) {
     let x = liveRows[id];
@@ -9665,7 +9670,11 @@
     if (!x) {
       x = await liveCrea(m);
       if (!x) return;
-    } else liveAlDia(x, m);
+    } else {
+      liveAlDia(x, m);
+      /* Al abrir el Directo, primero se pasa al partido lo que el anotador apuntó mientras tanto */
+      liveQ = liveQ.then(() => liveAlPartido(x, true)).catch(() => {});
+    }
     state.live = id;
     state.livePick = false;
     state.lvPick = null;
@@ -9795,15 +9804,88 @@
     }
     return ch;
   }
+  /* Goles de cada jugador que vienen del directo. En el partido se apunta cuáles ya están sumados
+     (alineacion.lvGol = [[id del gol, jugador]]): así no se pierden ni se cuentan dos veces,
+     aunque los apunte el anotador con la app del entrenador cerrada. */
+  const liveGoles = (x) => (Array.isArray(x.eventos) ? x.eventos : []).filter((e) => e && e.id && (e.t === "f" || !e.t) && e.pid);
+  function liveGolSync(x, m, pid, d, r0) {
+    let al = m.alineacion,
+      E = entries(m),
+      suma = (p, n) => {
+        let e = E.find((z) => z.id === p);
+        if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + n);
+      };
+    if (!Array.isArray(al.lvGol)) {
+      /* Partidos de antes de v11.40: si ya tenían resultado, los goles del directo ya estaban sumados */
+      al.lvGol = r0 ? liveGoles(x).map((e) => [e.id, e.pid]) : [];
+      if (r0 && pid && d) suma(pid, d);
+    }
+    let ahora = new Map(liveGoles(x).map((e) => [e.id, e.pid])),
+      ya = new Set();
+    al.lvGol = al.lvGol.filter((z) => {
+      if (Array.isArray(z) && ahora.get(z[0]) === z[1] && !ya.has(z[0])) {
+        ya.add(z[0]);
+        return true;
+      }
+      if (Array.isArray(z)) suma(z[1], -1);
+      return false;
+    });
+    ahora.forEach((p, id) => {
+      if (ya.has(id)) return;
+      suma(p, 1);
+      al.lvGol.push([id, p]);
+    });
+  }
+  /* Huella corta del directo (parte, marcador y lo apuntado) para saber si el partido está al día */
+  const liveHuella = (x) => {
+    let t = [x.estado, x.gf, x.gc, (Array.isArray(x.eventos) ? x.eventos : []).map((e) => (e && e.id) + "" + ((e && e.pid) || "")).join(",")].join("|"),
+      h = 5381;
+    for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36) + "." + t.length;
+  };
+  /* Pone el partido al día con su directo cuando este móvil no lo tenía abierto (el anotador
+     ha empezado, apuntado y terminado el partido con la app del entrenador cerrada o en otra pantalla).
+     Devuelve true si ha cambiado algo. */
+  async function liveAlPartido(x, abrir) {
+    let m = x && state.matches.find((z) => z.id === x.partido_id);
+    if (!m || (!abrir && state.live === x.partido_id)) return false;
+    if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
+    let al = m.alineacion;
+    if (!Array.isArray(al.lvGol) && al.resultado) {
+      /* Partido de antes de v11.40 que ya tenía resultado: se da por pasado tal cual (una sola vez) */
+      al.lvGol = liveGoles(x).map((e) => [e.id, e.pid]);
+      if (x.estado === "FIN") al.lvFin = 1;
+      al.lvH = liveHuella(x);
+      await db.from("futbol_personal_partidos").update({ alineacion: JSON.stringify(al) }).eq("id", m.id);
+      return false;
+    }
+    if (al.lvH === liveHuella(x)) return false;
+    /* Sin empezar y sin nada apuntado: no hay nada que pasar */
+    if (x.estado === "pre" && !x.gf && !x.gc && !(x.eventos || []).length && !al.lvH) return false;
+    await liveMatch(x, null, 0);
+    return true;
+  }
+  /* Repasa todos los directos (al abrir la app y cada poco mientras hay alguno con anotador sin terminar) */
+  function liveAlTodos() {
+    liveQ = liveQ
+      .then(async () => {
+        let ch = false;
+        for (let x of Object.values(liveRows)) if (await liveAlPartido(x)) ch = true;
+        let a = document.activeElement;
+        if (ch && !state.live && !(a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && !a.readOnly)) render();
+      })
+      .catch(() => {});
+    return liveQ;
+  }
   /* Pasa el resultado y los goles al partido (estadísticas) */
   async function liveMatch(x, pid, d, fin) {
     let m = state.matches.find((z) => z.id === x.partido_id);
     if (!m) return;
     if (!m.alineacion || typeof m.alineacion !== "object") m.alineacion = {};
+    let r0 = m.alineacion.resultado;
     /* Sin empezar (estado «pre») no hay resultado todavía: no se marca el partido como jugado */
     if (x.estado !== "pre" || x.gf || x.gc) m.alineacion.resultado = { gf: x.gf, gc: x.gc };
-    let e = pid && entries(m).find((z) => z.id === pid);
-    if (e) e.goals = Math.max(0, (Number(e.goals) || 0) + d);
+    liveGolSync(x, m, pid, d, r0);
     anTirSync(x, m);
     if (Number(x.parte_min)) m.alineacion.parte = Number(x.parte_min);
     /* Cambios y tarjetas del Directo al partido (lo apuntado a mano después se respeta) */
@@ -9832,6 +9914,14 @@
     /* Faltas acumuladas del equipo y del rival por parte (lv:1 = vienen del Directo) */
     if (ev.some((z) => z.t === "fa")) al.faltas = { ...liveFal(x), lv: 1 };
     else if (al.faltas && al.faltas.lv) delete al.faltas;
+    /* Terminado (lo termine el entrenador o el anotador, aunque la app estuviera cerrada):
+       los minutos se calculan una vez; si luego los cambias a mano, no se vuelven a pisar */
+    if (x.estado === "FIN") {
+      if (!al.lvFin) fin = true;
+      al.lvFin = 1;
+    } else delete al.lvFin;
+    /* Huella de lo que ya se ha pasado del directo al partido */
+    al.lvH = liveHuella(x);
     /* Al terminar, los minutos de cada jugador salen solos de los cambios */
     if (fin && (ev.some((z) => ["s", "a", "r"].includes(z.t) && !z.r) || entries(m).every((z) => !Number(z.minutes)))) {
       let mins = calcMin(entries(m), mdList(al, "cambios"), mdList(al, "tarjetas"), (Number(x.parte_min) || 30) * 2);
@@ -10149,6 +10239,31 @@
       })
       .catch(() => {});
   }, 4000);
+  /* Fuera del Directo: si hay algún partido con anotador sin terminar, se mira cada 20 s (y al volver
+     a la app) para que el partido se vea al día aunque lo empiece, lo apunte y lo termine el anotador */
+  async function liveRefresca() {
+    if (!curUser || document.visibilityState !== "visible") return;
+    if (!Object.values(liveRows).some((x) => x && x.anotador && x.estado !== "FIN" && x.partido_id !== state.live)) return;
+    let r;
+    try {
+      r = await db.from("directos").select("*");
+    } catch (e) {
+      return;
+    }
+    if (r.error || !Array.isArray(r.data)) return;
+    r.data.forEach((s) => {
+      let x = liveRows[s.partido_id];
+      if (x && (state.live === s.partido_id || x.actualizado === s.actualizado)) return;
+      s._seen = new Set((Array.isArray(s.eventos) ? s.eventos : []).map((e) => e.id));
+      s._clk = liveClk(s);
+      liveRows[s.partido_id] = s;
+    });
+    await liveAlTodos();
+  }
+  setInterval(liveRefresca, 20000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") setTimeout(liveRefresca, 500);
+  });
   async function liveOff(x) {
     if (
       !confirm(
