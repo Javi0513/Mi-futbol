@@ -25,6 +25,7 @@ def vk(v):return [int(x) for x in v.split('.')]
 check('todas las novedades de version.json llevan su versión',all(x.get('v') for x in NOV))
 check('las novedades están de la más nueva a la más antigua',[vk(x['v']) for x in NOV]==sorted([vk(x['v']) for x in NOV],reverse=True))
 check('las de esta versión van arriba',NOV[0]['v']==ACT)
+ANT=[x['v'] for x in NOV if x['v']!=ACT][0]  # la versión anterior que tiene novedades
 def de(v):return [x['texto'] for x in NOV if x['v']==v]
 def txt(pg):return pg.locator('#infoBody').inner_text() if pg.locator('#info').is_visible() else ''
 def tit(pg):return pg.locator('#infoTitle').inner_text() if pg.locator('#info').is_visible() else ''
@@ -32,11 +33,11 @@ def tiene(body,t):return t[:60].replace('✅ ','') in body
 with sync_playwright() as p:
     b=p.chromium.launch()
     # 1) Venía de la versión anterior: solo lo de esta versión
-    ctx,pg=abre(b,ls={'mf_novedades_visto':'11.44'})
+    ctx,pg=abre(b,ls={'mf_novedades_visto':ANT})
     t=tit(pg);body=txt(pg)
     check('al entrar tras actualizar salen las novedades',('novedades' in t.lower()) and ACT in t,t)
     check('salen las de esta versión',all(tiene(body,x) for x in de(ACT)),body[:200])
-    check('y no las de la versión que ya tenía (11.44)',not any(tiene(body,x) for x in de('11.44')))
+    check('y no las de la versión que ya tenía (%s)'%ANT,not any(tiene(body,x) for x in de(ANT)))
     check('ni las más antiguas (11.26)',not any(tiene(body,x) for x in de('11.26')))
     check('sin títulos de versión si solo hay una',pg.locator('#infoBody h3.nov-v').count()==0)
     check('dice que es lo nuevo de esta versión','Esto es lo nuevo' in body)
@@ -47,13 +48,14 @@ with sync_playwright() as p:
     check('no vuelven a salir en la misma versión',pg.locator('#info').is_hidden())
     pg.click('#acct');pg.click('#info [data-acct=novedades]');pg.wait_for_timeout(500)
     body=txt(pg)
-    check('se pueden ver otra vez desde Mi cuenta','novedades' in tit(pg).lower() and all(tiene(body,x) for x in de(ACT)) and not any(tiene(body,x) for x in de('11.44')))
+    check('se pueden ver otra vez desde Mi cuenta','novedades' in tit(pg).lower() and all(tiene(body,x) for x in de(ACT)) and not any(tiene(body,x) for x in de(ANT)))
     pg.click('#info [data-acct=novedades-todas]');pg.wait_for_timeout(500)
     body=txt(pg)
     check('«Ver novedades anteriores» enseña todo el historial',tit(pg).lower()=='todas las novedades' and all(tiene(body,x['texto']) for x in NOV),tit(pg))
-    check('agrupado por versión, de la más nueva a la más antigua',pg.locator('#infoBody h3.nov-v').all_inner_texts()[:2]==['VERSIÓN '+ACT,'VERSIÓN 11.44'] or pg.locator('#infoBody h3.nov-v').all_inner_texts()[:2]==['Versión '+ACT,'Versión 11.44'],pg.locator('#infoBody h3.nov-v').all_inner_texts()[:3])
+    check('agrupado por versión, de la más nueva a la más antigua',pg.locator('#infoBody h3.nov-v').all_inner_texts()[:2]==['VERSIÓN '+ACT,'VERSIÓN '+ANT] or pg.locator('#infoBody h3.nov-v').all_inner_texts()[:2]==['Versión '+ACT,'Versión '+ANT],pg.locator('#infoBody h3.nov-v').all_inner_texts()[:3])
     check('en el historial siguen las de la v11.26 (horizontal, Portero, discontinua)',all(w in body for w in ('horizontal','Portero','discontinua','fichas más pequeñas')))
     check('y las de la v11.44 (campo en el mapa)',all(w in body for w in ('el campo en el mapa','Buscar en el mapa','Cómo llegar','Mis campos','OpenStreetMap')))
+    check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.41 (clasificación de la liga)',all(w in body for w in ('Nueva clasificación de la liga','Federación Andaluza','4 días al mes')))
     check('la novedad del campo en el mapa trae su tutorial',pg.locator('#infoBody [data-ftut=campo]').count()==1)
     check('y la de la liga también',pg.locator('#infoBody [data-ftut=liga]').count()==1)
