@@ -27,10 +27,16 @@ async function lee(params: Record<string, string>): Promise<string> {
   });
   if (!r.ok) throw new Error("La web de la federación no responde (" + r.status + ").");
   const v = await r.text();
+  /* A veces la web de la federación no consigue entrar en su propio sistema (Novanet)
+     y enseña la página vacía («No hay partidos publicados») aunque la jornada exista. No se
+     guarda en memoria y se avisa claro, para que no parezca que la jornada no está. */
+  if (caida(v)) return v;
   if (cache.size > 300) cache.clear();
   cache.set(u, { t: Date.now(), v });
   return v;
 }
+const caida = (v: string) => /No se pudo validar la sesi(ó|o|&oacute;)n de Novanet/i.test(v);
+const CAIDA = "La web de la Federación Andaluza está fallando ahora mismo y no da los grupos ni los partidos. Vuelve a probar en un rato.";
 const txt = (s: string) =>
   s
     .replace(/<[^>]+>/g, " ")
@@ -107,7 +113,11 @@ Deno.serve(async (req) => {
     if (!d) return resp({ error: "Falta la delegación." }, 400);
     if (b.op === "comps") return resp({ comps: opciones(await lee({ widget_view: "classification", delegacion: d }), "competicion") });
     if (!c) return resp({ error: "Falta la competición." }, 400);
-    if (b.op === "grupos") return resp({ grupos: opciones(await lee({ widget_view: "classification", delegacion: d, competicion: c }), "grupo") });
+    if (b.op === "grupos") {
+      const h = await lee({ widget_view: "classification", delegacion: d, competicion: c });
+      if (caida(h)) return resp({ error: CAIDA }, 503);
+      return resp({ grupos: opciones(h, "grupo") });
+    }
     if (b.op === "liga") {
       if (!g) return resp({ error: "Falta el grupo." }, 400);
       const p = { delegacion: d, competicion: c, grupo: g };
@@ -115,11 +125,14 @@ Deno.serve(async (req) => {
         lee({ widget_view: "classification", ...p }),
         lee({ widget_view: "results", ...p, ...(j ? { jornada: j } : {}) }),
       ]);
+      if (caida(ht) || caida(hr)) return resp({ error: CAIDA }, 503);
       return resp({ tabla: tabla(ht), res: resultados(hr), jornadas: jornadas(ht) });
     }
     if (b.op === "jornada") {
       if (!g || !j) return resp({ error: "Falta el grupo o la jornada." }, 400);
-      return resp({ res: resultados(await lee({ widget_view: "results", delegacion: d, competicion: c, grupo: g, jornada: j })) });
+      const h = await lee({ widget_view: "results", delegacion: d, competicion: c, grupo: g, jornada: j });
+      if (caida(h)) return resp({ error: CAIDA }, 503);
+      return resp({ res: resultados(h) });
     }
     return resp({ error: "Operación no válida." }, 400);
   } catch (e) {
