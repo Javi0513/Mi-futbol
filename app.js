@@ -8954,19 +8954,59 @@
     } catch (e) {
       return;
     }
-    if (visto === appVer()) return;
     /* Las pruebas automáticas no lo muestran salvo que lo pidan */
     if (navigator.webdriver && !window.__probarNovedades) return;
-    /* Quien estrena la app ve el tutorial, no las novedades */
+    /* Quien estrena la app ve el tutorial de bienvenida, no las novedades */
     if ($("tut")) return novedadesMarca();
+    if (visto === appVer()) return ftAvisoRevisa();
     let n = await novedadesCarga();
     let l = novDesde(n, visto || verAntes);
-    if (!l.length) return novedadesMarca();
+    if (!l.length) {
+      novedadesMarca();
+      return ftAvisoRevisa();
+    }
     if ($("tut") || !$("info").classList.contains("hidden")) return;
-    novVer = { lista: l, desde: visto || verAntes };
+    novVer = { lista: l, desde: visto || verAntes, aviso: ftPend() };
     showInfo("novedades");
     novedadesMarca();
   }
+  /* v11.47: aviso grande para hacer los tutoriales nuevos. Sale arriba en las novedades o,
+     si no hay novedades, solo, al abrir la app. Cada tutorial se ofrece como mucho
+     FTA_MAX veces (mf_ftut_av:<id>) y deja de salir en cuanto se hace (mf_ftut:<id>). */
+  const FTA_MAX = 2;
+  function ftAvVeces(id) {
+    try {
+      return parseInt(localStorage.getItem("mf_ftut_av:" + id), 10) || 0;
+    } catch (e) {
+      return FTA_MAX;
+    }
+  }
+  function ftPend() {
+    if (viendo) return [];
+    return Object.keys(FTUT)
+      .filter((id) => !ftutVisto(id) && ftAvVeces(id) < FTA_MAX)
+      .sort((a, b) => vcmp(FTUT[b].v, FTUT[a].v));
+  }
+  function ftAvCuenta(ids) {
+    ids.forEach((id) => {
+      try {
+        localStorage.setItem("mf_ftut_av:" + id, String(ftAvVeces(id) + 1));
+      } catch (e) {}
+    });
+  }
+  function ftAvisoHtml(ids) {
+    if (!ids || !ids.length) return "";
+    return `<div class="ft-aviso" role="note"><div class="ft-av-ic" aria-hidden="true">🎓</div><b>${ids.length > 1 ? "Aprende lo nuevo en 1 minuto" : "Aprende a usarlo en 1 minuto"}</b><p>Un tutorial te va señalando en la pantalla dónde tocar, paso a paso. No se cambia nada mientras miras.</p><div class="ft-av-b">${ids
+      .map((id) => `<button type="button" class="primary" data-ftut="${id}">▶ Tutorial: ${esc(FTUT[id].t)}</button>`)
+      .join("")}</div></div>`;
+  }
+  function ftAvisoRevisa() {
+    let ids = ftPend();
+    if (!ids.length || $("tut") || !$("info").classList.contains("hidden")) return;
+    ftAvAhora = ids;
+    showInfo("ftaviso");
+  }
+  let ftAvAhora = [];
   /* Novedades agrupadas por versión (la más nueva arriba), con su botón de tutorial */
   function novHtml(l) {
     let vs = [...new Set(l.map((x) => x.v))].sort((a, b) => vcmp(b, a));
@@ -9050,6 +9090,7 @@
         "Las vuelves a ver en <b>«Mi cuenta › Novedades de esta versión»</b>, y con <b>«Ver novedades anteriores»</b> tienes todo lo que ha ido llegando.",
         "Las funciones nuevas traen un <b>tutorial paso a paso</b>: la pantalla se oscurece y se ilumina dónde tienes que tocar, con lo que hace cada cosa. Pulsa «Siguiente» para avanzar, «Atrás» para volver o «Salir» para cerrarlo. Mientras miras no se guarda ni se cambia nada.",
         "Ábrelo desde la novedad («▶ Ver cómo se usa, paso a paso»), desde <b>«Mi cuenta › Tutoriales paso a paso»</b> o desde los botones del principio de esta guía. Los primeros: «Campo en el mapa» y «Clasificación de la liga».",
+        "Cuando hay un tutorial nuevo que no has hecho, al abrir la app sale un <b>aviso grande</b> («🎓 Aprende lo nuevo en 1 minuto») con el botón para hacerlo; si hay novedades, va arriba del todo. Si pulsas «Ahora no», te lo recuerda <b>una vez más</b> otro día y ya no insiste. Cuando lo haces, deja de salir.",
       ],
     },
     {
@@ -9715,8 +9756,15 @@
         t = "Novedades · versión " + n.version;
         h = `<p>Esto es lo nuevo en Mi Fútbol JV32:</p>`;
       }
+      if (V.aviso && V.aviso.length) ftAvCuenta(V.aviso);
+      h = (V.aviso && V.aviso.length ? ftAvisoHtml(V.aviso) : "") + h;
       h += `${novHtml(V.lista)}<div class="stack"><button type="button" class="primary" data-acct="novedades-ok">Entendido</button>${V.todas || n.todas.length <= V.lista.length ? "" : '<button type="button" class="secondary" data-acct="novedades-todas">Ver novedades anteriores</button>'}</div>`;
       novVer = null;
+    } else if (k === "ftaviso") {
+      t = ftAvAhora.length > 1 ? "Tutoriales nuevos" : "Tutorial nuevo";
+      h = `${ftAvisoHtml(ftAvAhora)}<div class="stack"><button type="button" class="secondary" data-acct="novedades-ok">Ahora no</button></div><p class="muted">Los tienes siempre en «Mi cuenta › Tutoriales paso a paso».</p>`;
+      ftAvCuenta(ftAvAhora);
+      ftAvAhora = [];
     } else if (k === "tutoriales") {
       t = "Tutoriales paso a paso";
       h = ftutListaHtml();

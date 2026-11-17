@@ -12,15 +12,17 @@ def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 VER=json.load(open(os.path.join(APP,'version.json'),encoding='utf-8'))['version']
 SHOT=os.environ.get('FTUT_SHOTS')
 SEED="window.__seed={futbol_personal_jugadores:[{id:'j1',user_id:'u1',nombre:'Leo',dorsal:10,modalidad:'f7'}],futbol_personal_partidos:[],perfiles:[{id:'u1',plan:'gratis'}]};"
-def abre(b,visto):
+def abre(b,visto,extra=''):
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block',device_scale_factor=2 if SHOT else 1)
     pg=ctx.new_page();pg.on('pageerror',lambda e:errs.append(str(e)))
-    pg.add_init_script("window.__probarNovedades=true;"+SEED+"try{if(!sessionStorage.getItem('__ls')){sessionStorage.setItem('__ls','1');localStorage.setItem('mf_novedades_visto','%s')}}catch(e){}"%visto)
+    pg.add_init_script("window.__probarNovedades=true;"+SEED+"try{if(!sessionStorage.getItem('__ls')){sessionStorage.setItem('__ls','1');localStorage.setItem('mf_novedades_visto','%s');"%visto+extra+"}}catch(e){}")
     pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
+    entra(pg)
+    return ctx,pg
+def entra(pg):
     pg.goto('http://127.0.0.1:8817/index.html')
     pg.fill('input[name=email]','ana@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')
     pg.wait_for_timeout(1200)
-    return ctx,pg
 def card(pg):return pg.locator('#tut .tut-card').inner_text() if pg.locator('#tut').count() else ''
 def sig(pg):pg.click('#tut [data-tut=next]');pg.wait_for_timeout(350)
 def foto(pg,n):
@@ -35,9 +37,11 @@ with sync_playwright() as p:
     b=p.chromium.launch()
     # Desde la novedad: «▶ Ver cómo se usa»
     ctx,pg=abre(b,'11.43')
-    check('la novedad del campo en el mapa trae «Ver cómo se usa»',pg.locator('#infoBody [data-ftut=campo]').count()==1)
+    check('la novedad del campo en el mapa trae «Ver cómo se usa»',pg.locator('#infoBody .novedades [data-ftut=campo]').count()==1)
+    check('v11.47: arriba de las novedades sale el aviso grande de los tutoriales',pg.locator('#infoBody > .ft-aviso').count()==1 and pg.evaluate("document.querySelector('#infoBody').firstElementChild.classList.contains('ft-aviso')"))
+    check('el aviso trae un botón grande por cada tutorial sin hacer',pg.locator('#infoBody .ft-aviso [data-ftut]').count()==2)
     foto(pg,'1-novedades-con-tutorial.png')
-    pg.click('#infoBody [data-ftut=campo]');pg.wait_for_timeout(400)
+    pg.click('#infoBody .ft-aviso [data-ftut=campo]');pg.wait_for_timeout(400)
     check('al pulsarlo se cierran las novedades y empieza el tutorial',pg.locator('#info').is_hidden() and pg.locator('#tut').count()==1)
     c=card(pg)
     check('paso 1 dice de qué tutorial es y cuántos pasos tiene','campo en el mapa' in c.lower() and 'paso 1 de 8' in c.lower(),c[:80])
@@ -104,6 +108,30 @@ with sync_playwright() as p:
     check('el tutorial de bienvenida sigue funcionando','paso 1 de' in c.lower() and 'tutorial ·' not in c.lower() and pg.locator('#tut [data-tut=skip]').inner_text().lower()=='saltar',c[:60])
     pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     check('y se cierra con Escape',pg.locator('#tut').count()==0)
+    ctx.close()
+    # v11.47: aviso grande al abrir la app (sin novedades nuevas)
+    ctx,pg=abre(b,VER)
+    t=pg.locator('#infoTitle').inner_text().lower() if pg.locator('#info').is_visible() else ''
+    check('al abrir la app sale el aviso de los tutoriales sin hacer',t=='tutoriales nuevos' and pg.locator('#infoBody .ft-aviso [data-ftut]').count()==2,t)
+    foto(pg,'7-aviso-tutoriales-al-abrir.png')
+    check('con «Ahora no»',pg.locator('#infoBody [data-acct=novedades-ok]').inner_text().lower()=='ahora no')
+    pg.click('#infoBody [data-acct=novedades-ok]');pg.wait_for_timeout(200)
+    check('«Ahora no» lo cierra',pg.locator('#info').is_hidden())
+    check('y cuenta que se ha ofrecido una vez',pg.evaluate("localStorage.getItem('mf_ftut_av:campo')")=='1')
+    entra(pg)
+    check('lo recuerda una vez más',pg.locator('#info').is_visible() and pg.locator('#infoBody .ft-aviso').count()==1)
+    pg.click('#infoBody [data-acct=novedades-ok]');pg.wait_for_timeout(200)
+    entra(pg)
+    check('y luego ya no insiste',pg.locator('#info').is_hidden())
+    ctx.close()
+    ctx,pg=abre(b,VER,"localStorage.setItem('mf_ftut:campo','1');")
+    t=pg.locator('#infoTitle').inner_text().lower() if pg.locator('#info').is_visible() else ''
+    check('solo ofrece los que no has hecho',t=='tutorial nuevo' and pg.locator('#infoBody .ft-aviso [data-ftut]').count()==1 and pg.locator('#infoBody .ft-aviso [data-ftut=liga]').count()==1,t)
+    pg.click('#infoBody .ft-aviso [data-ftut=liga]');pg.wait_for_timeout(400)
+    check('el botón del aviso empieza el tutorial',pg.locator('#tut').count()==1 and 'clasificación de la liga' in card(pg).lower())
+    for i in range(6):sig(pg)
+    entra(pg)
+    check('hecho el tutorial, el aviso ya no sale',pg.locator('#info').is_hidden())
     ctx.close()
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)

@@ -7227,3 +7227,47 @@ body.intro-on {
 .tut.ftut .tut-card .kicker {
   color: var(--lime);
 }
+/* v11.47: aviso grande de los tutoriales */
+.ft-aviso {
+  position: relative;
+  margin: 2px 0 14px;
+  padding: 16px 16px 14px;
+  border: 2px solid var(--lime);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(43, 227, 106, 0.18), rgba(43, 227, 106, 0.04));
+  box-shadow: 0 0 0 4px rgba(43, 227, 106, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+.ft-av-ic {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.ft-aviso > b {
+  display: block;
+  font: 800 24px/1.05 var(--fd);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.ft-aviso p {
+  margin: 6px 0 12px;
+  color: var(--mut);
+}
+.ft-av-b {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ft-av-b button {
+  width: 100%;
+  min-height: 52px;
+  font-size: 17px;
+  animation: ftLate 1.6s ease-in-out infinite;
+}
+@keyframes ftLate {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(43, 227, 106, 0.45); }
+  50% { box-shadow: 0 0 0 8px rgba(43, 227, 106, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ft-av-b button { animation: none; }
+}
