@@ -1,0 +1,110 @@
+# Tutoriales paso a paso de las funciones nuevas (v11.46): FTUT en app.js.
+# Se abren desde la novedad («▶ Ver cómo se usa»), desde Mi cuenta y desde la Guía de uso;
+# señalan cada paso sin guardar nada y dejan la app como estaba.
+import sys,os;sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from paths import *
+import http.server,threading,functools,json
+from playwright.sync_api import sync_playwright
+from fake2 import FAKE2
+srv=http.server.ThreadingHTTPServer(('127.0.0.1',8817),functools.partial(type('Q',(http.server.SimpleHTTPRequestHandler,),{'log_message':lambda *a:None}),directory=APP));threading.Thread(target=srv.serve_forever,daemon=True).start()
+res=[];errs=[]
+def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
+VER=json.load(open(os.path.join(APP,'version.json'),encoding='utf-8'))['version']
+SHOT=os.environ.get('FTUT_SHOTS')
+SEED="window.__seed={futbol_personal_jugadores:[{id:'j1',user_id:'u1',nombre:'Leo',dorsal:10,modalidad:'f7'}],futbol_personal_partidos:[],perfiles:[{id:'u1',plan:'gratis'}]};"
+def abre(b,visto):
+    ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block',device_scale_factor=2 if SHOT else 1)
+    pg=ctx.new_page();pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg.add_init_script("window.__probarNovedades=true;"+SEED+"try{if(!sessionStorage.getItem('__ls')){sessionStorage.setItem('__ls','1');localStorage.setItem('mf_novedades_visto','%s')}}catch(e){}"%visto)
+    pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
+    pg.goto('http://127.0.0.1:8817/index.html')
+    pg.fill('input[name=email]','ana@x.es');pg.fill('input[name=password]','secreto1');pg.click('[data-auth=login]');pg.wait_for_selector('#app:not(.hidden)')
+    pg.wait_for_timeout(1200)
+    return ctx,pg
+def card(pg):return pg.locator('#tut .tut-card').inner_text() if pg.locator('#tut').count() else ''
+def sig(pg):pg.click('#tut [data-tut=next]');pg.wait_for_timeout(350)
+def foto(pg,n):
+    if SHOT:pg.screenshot(path=os.path.join(SHOT,n))
+def hueco(pg):
+    return pg.evaluate("(()=>{let t=document.getElementById('tut');if(!t||!t.classList.contains('on-el'))return null;let h=t.querySelector('.tut-hole').getBoundingClientRect();return {x:h.left+h.width/2,y:h.top+h.height/2}})()")
+def señala(pg,sel):
+    h=hueco(pg)
+    if not h:return False
+    return pg.evaluate("([s,x,y])=>{let e=document.querySelector(s);if(!e)return false;let r=e.getBoundingClientRect();return x>=r.left-8&&x<=r.right+8&&y>=r.top-8&&y<=r.bottom+8}",[sel,h['x'],h['y']])
+with sync_playwright() as p:
+    b=p.chromium.launch()
+    # Desde la novedad: «▶ Ver cómo se usa»
+    ctx,pg=abre(b,'11.43')
+    check('la novedad del campo en el mapa trae «Ver cómo se usa»',pg.locator('#infoBody [data-ftut=campo]').count()==1)
+    foto(pg,'1-novedades-con-tutorial.png')
+    pg.click('#infoBody [data-ftut=campo]');pg.wait_for_timeout(400)
+    check('al pulsarlo se cierran las novedades y empieza el tutorial',pg.locator('#info').is_hidden() and pg.locator('#tut').count()==1)
+    c=card(pg)
+    check('paso 1 dice de qué tutorial es y cuántos pasos tiene','campo en el mapa' in c.lower() and 'paso 1 de 8' in c.lower(),c[:80])
+    check('tiene «Salir»',pg.locator('#tut [data-tut=skip]').inner_text().lower()=='salir')
+    sig(pg)
+    check('paso 2: abre Partidos y señala «+ Partido»',señala(pg,'#view [data-action="add-match"]'),card(pg)[:60])
+    foto(pg,'2-tutorial-abre-partido.png')
+    sig(pg)
+    check('paso 3: abre un partido nuevo sin guardarlo',pg.locator('#rival').count()==1)
+    check('y señala dónde se escribe el campo',señala(pg,'.ub[data-ubk="pd"] [data-ubn]'),card(pg)[:60])
+    foto(pg,'3-tutorial-escribe-el-campo.png')
+    sig(pg)
+    check('paso 4: señala «Buscar en el mapa»',señala(pg,'.ub[data-ubk="pd"] [data-ub="buscar"]'))
+    foto(pg,'4-tutorial-buscar-en-el-mapa.png')
+    sig(pg);sig(pg)
+    check('paso 6 explica «Cómo llegar» y «Mis campos»','cómo llegar' in card(pg).lower() and 'mis campos' in card(pg).lower())
+    sig(pg)
+    check('paso 7: vuelve a Partidos (quita el partido de mentira) y señala la convocatoria',pg.locator('#rival').count()==0 and señala(pg,'#view [data-cv="abrir"]'),card(pg)[:60])
+    sig(pg)
+    check('el último paso tiene «Entendido»',pg.locator('#tut [data-tut=next]').inner_text().lower()=='entendido')
+    sig(pg)
+    check('al terminar se cierra',pg.locator('#tut').count()==0)
+    check('no se ha creado ningún partido',pg.evaluate("(window.__db&&window.__db.futbol_personal_partidos||[]).length")==0 and pg.locator('#rival').count()==0)
+    check('se apunta que ya lo ha visto',pg.evaluate("localStorage.getItem('mf_ftut:campo')")=='1')
+    # Salir a mitad deja la app como estaba
+    pg.click('#acct');pg.click('#info [data-info=tutoriales]');pg.wait_for_timeout(300)
+    lt=pg.locator('#infoBody').inner_text().lower()
+    check('Mi cuenta › Tutoriales paso a paso lista los tutoriales','campo en el mapa' in lt and 'clasificación de la liga' in lt and 'tutorial de bienvenida' in lt,lt[:200])
+    check('marca los que ya has visto','ya lo has visto' in pg.locator('#infoBody [data-ftut=campo]').inner_text().lower())
+    foto(pg,'5-mi-cuenta-tutoriales.png')
+    pg.click('#infoBody [data-ftut=campo]');pg.wait_for_timeout(300);sig(pg);sig(pg)
+    check('a mitad del tutorial está el partido de muestra',pg.locator('#rival').count()==1)
+    pg.click('#tut [data-tut=skip]');pg.wait_for_timeout(300)
+    check('«Salir» lo cierra y quita el partido de muestra',pg.locator('#tut').count()==0 and pg.locator('#rival').count()==0)
+    # Si ya estabas creando un partido, no se pierde
+    pg.click('[data-tab=partidos]');pg.click('#view [data-action=add-match]');pg.fill('#rival','Los Pinos')
+    pg.evaluate("document.querySelector('#rival').dispatchEvent(new Event('input',{bubbles:true}))")
+    pg.click('#acct');pg.click('#info [data-info=tutoriales]');pg.wait_for_timeout(300)
+    pg.click('#infoBody [data-ftut=campo]');pg.wait_for_timeout(300)
+    for i in range(7):sig(pg)
+    sig(pg)
+    check('si ya estabas creando un partido, sigue ahí con lo que escribiste',pg.locator('#rival').count()==1 and pg.input_value('#rival')=='Los Pinos')
+    pg.click('#view [data-action=cancel]');pg.wait_for_timeout(200)
+    # Tutorial de la liga
+    pg.click('#acct');pg.click('#info [data-info=ayuda]');pg.wait_for_timeout(300)
+    check('la Guía de uso empieza con los tutoriales',pg.locator('#infoBody .ayuda-tut [data-ftut]').count()==2)
+    check('y tiene el apartado «Novedades y tutoriales paso a paso»','Novedades y tutoriales paso a paso' in pg.locator('#infoBody .ayuda summary').all_inner_texts())
+    pg.click('#infoBody .ayuda-tut [data-ftut=liga]');pg.wait_for_timeout(300)
+    check('el tutorial de la liga empieza','clasificación de la liga' in card(pg).lower() and 'paso 1 de 6' in card(pg).lower())
+    sig(pg)
+    check('señala «Clasificación de la liga» en Partidos',señala(pg,'#view [data-lg="abrir"]'))
+    sig(pg)
+    check('abre la clasificación y señala la Federación Andaluza',pg.locator('#info').is_visible() and señala(pg,'#infoBody .lg-fed'),card(pg)[:60])
+    foto(pg,'6-tutorial-liga-federacion.png')
+    sig(pg)
+    check('señala «Pegar la clasificación»',señala(pg,'#infoBody [data-lg="pegaT"]'))
+    sig(pg)
+    check('señala «Apuntar un resultado a mano»',señala(pg,'#infoBody [data-lg="mano"]'))
+    sig(pg);sig(pg)
+    check('al terminar se cierra todo',pg.locator('#tut').count()==0 and pg.locator('#info').is_hidden())
+    # El tutorial de bienvenida sigue igual
+    pg.click('#acct');pg.click('#info [data-acct=tutorial]');pg.wait_for_timeout(300)
+    c=card(pg)
+    check('el tutorial de bienvenida sigue funcionando','paso 1 de' in c.lower() and 'tutorial ·' not in c.lower() and pg.locator('#tut [data-tut=skip]').inner_text().lower()=='saltar',c[:60])
+    pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    check('y se cierra con Escape',pg.locator('#tut').count()==0)
+    ctx.close()
+    b.close()
+print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
+sys.exit(0 if all(res) and not errs else 1)
