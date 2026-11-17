@@ -483,7 +483,7 @@
     if (viendo) return render();
     /* Sin conexión con la cuenta no se carga nada: se dejaría la plantilla y el directo vacíos */
     if (sesPerdida) return render();
-    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg, ej, eg] = await Promise.all([
+    let [{ data: ps, error: pe }, { data: ms, error: me }, tr, en, ci, cg, ej, eg, lu] = await Promise.all([
       db
         .from("futbol_personal_jugadores")
         .select("*")
@@ -534,6 +534,13 @@
           return { data: null, error: e };
         }
       })(),
+      (async () => {
+        try {
+          return await db.from("entrenamientos").select("id,lugar").limit(1);
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      })(),
     ]);
     if (pe || me) throw pe || me;
     state.teamsOk = !tr.error;
@@ -547,6 +554,8 @@
     state.ejOk = state.trOk && !!ej && !ej.error;
     /* Mis ejercicios (v11.1): tabla ejercicios_guardados (supabase-mis-ejercicios.sql) */
     state.egOk = state.ejOk && !!eg && !eg.error;
+    /* Campo de los entrenos (v11.44): columna entrenamientos.lugar (supabase-ubicacion.sql) */
+    state.lugOk = state.trOk && !!lu && !lu.error;
     state.ejGuard = ((eg && eg.data) || []).map((x) => ({ id: x.id, s: ejDe([parseJson(x.datos, {})])[0] })).filter((x) => x.s);
     state.circs = ((ci && ci.data) || []).map((x) => ({ id: x.id, c: ciLimpio(parseJson(x.datos, {})) }));
     state.trainings = (en.data || []).map((x) => ({
@@ -956,10 +965,10 @@
         jt = jorTxt(a),
         det = [iniFecha(m.fecha), cv.hora ? cv.hora + " h" : "", jt, cv.lugar].filter(Boolean).map(esc).join(" · "),
         L = x.vivo ? liveRows[m.id] : null;
-      body = `<div class="ini-match${x.vivo ? " vivo" : ""}"><div class="ini-k">${x.vivo ? `<span class="ini-dot" aria-hidden="true"></span>En directo · ${esc(LIVE_EST[L.estado] || "")}` : `Próximo partido · <b>${iniCuando(n)}</b>`}</div><div class="ini-vs"><b>${esc(eq)}</b><span>${x.vivo && L ? `${Number(L.gf) || 0}<i>-</i>${Number(L.gc) || 0}` : "VS"}</span><b>${esc(m.rival || "Rival")}</b></div><p class="ini-det">${det}</p><div class="ini-cta">${viendo ? "" : `<button type="button" class="primary" data-action="live" data-id="${m.id}">${ic("live", 20)}${x.vivo ? "Volver al directo" : "Empezar el Directo"}</button>`}<button type="button" class="secondary" data-action="edit-match" data-id="${m.id}">${ic("users", 18)}${viendo ? "Ver alineación" : "Alineación"}</button>${viendo || x.vivo ? "" : `<button type="button" class="secondary" data-ini="conv">${ic("share", 18)}Convocatoria</button>`}</div></div>`;
+      body = `<div class="ini-match${x.vivo ? " vivo" : ""}"><div class="ini-k">${x.vivo ? `<span class="ini-dot" aria-hidden="true"></span>En directo · ${esc(LIVE_EST[L.estado] || "")}` : `Próximo partido · <b>${iniCuando(n)}</b>`}</div><div class="ini-vs"><b>${esc(eq)}</b><span>${x.vivo && L ? `${Number(L.gf) || 0}<i>-</i>${Number(L.gc) || 0}` : "VS"}</span><b>${esc(m.rival || "Rival")}</b></div><p class="ini-det">${det}</p><div class="ini-cta">${viendo ? "" : `<button type="button" class="primary" data-action="live" data-id="${m.id}">${ic("live", 20)}${x.vivo ? "Volver al directo" : "Empezar el Directo"}</button>`}<button type="button" class="secondary" data-action="edit-match" data-id="${m.id}">${ic("users", 18)}${viendo ? "Ver alineación" : "Alineación"}</button>${viendo || x.vivo ? "" : `<button type="button" class="secondary" data-ini="conv">${ic("share", 18)}Convocatoria</button>`}${ubGeo(cv.geo) && !x.vivo ? `<a class="secondary" href="${ubLlegar(ubGeo(cv.geo))}" target="_blank" rel="noopener">🧭 Cómo llegar</a>` : ""}</div></div>`;
     } else if (x && x.cv) {
       let n = iniDias(x.cv.fecha);
-      body = `<div class="ini-match"><div class="ini-k">Próximo partido · <b>${iniCuando(n)}</b></div><div class="ini-vs"><b>${esc(eq)}</b><span>VS</span><b>${esc(x.cv.rival)}</b></div><p class="ini-det">${[iniFecha(x.cv.fecha), x.cv.hora ? x.cv.hora + " h" : "", x.cv.lugar].filter(Boolean).map(esc).join(" · ")} · ${x.cv.ids.length} convocados</p><div class="ini-cta">${viendo ? "" : `<button type="button" class="primary" data-action="add-match">${ic("plus", 20)}Crear el partido</button><button type="button" class="secondary" data-ini="conv">${ic("share", 18)}Convocatoria</button>`}</div></div>`;
+      body = `<div class="ini-match"><div class="ini-k">Próximo partido · <b>${iniCuando(n)}</b></div><div class="ini-vs"><b>${esc(eq)}</b><span>VS</span><b>${esc(x.cv.rival)}</b></div><p class="ini-det">${[iniFecha(x.cv.fecha), x.cv.hora ? x.cv.hora + " h" : "", x.cv.lugar].filter(Boolean).map(esc).join(" · ")} · ${x.cv.ids.length} convocados</p><div class="ini-cta">${viendo ? "" : `<button type="button" class="primary" data-action="add-match">${ic("plus", 20)}Crear el partido</button><button type="button" class="secondary" data-ini="conv">${ic("share", 18)}Convocatoria</button>`}${ubGeo(x.cv.geo) ? `<a class="secondary" href="${ubLlegar(ubGeo(x.cv.geo))}" target="_blank" rel="noopener">🧭 Cómo llegar</a>` : ""}</div></div>`;
     } else {
       let u = games().find((m) => m.alineacion && m.alineacion.resultado),
         r = u && u.alineacion.resultado,
@@ -2195,7 +2204,7 @@
         ["no", "Faltó", "x"],
         ["jus", "Justificada", ""],
       ];
-    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Qué vamos a trabajar<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: juego de 4, defensa con cambio, activación" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ciBloque(t)}${ejBloque(t)}${viendo ? "" : `<div class="btools tr-env"><button type="button" class="primary small" data-tr="enviar" data-id="${t.id}">${ic("share", 18)}Enviar el entreno a los jugadores</button></div>`}${cxMDHtml(t)}${cgTrBloque(t)}${espResumen("entreno", t.id)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
+    return `<div class="trs" data-tid="${t.id}"><div class="formgrid"><label>Hora<input type="time" data-trf="hora" data-id="${t.id}" value="${esc(t.hora || "")}"></label><label>Qué vamos a trabajar<input data-trf="nota" data-id="${t.id}" maxlength="300" placeholder="Ej.: juego de 4, defensa con cambio, activación" value="${esc(t.nota || "")}" autocomplete="off"></label></div>${ubEntreno(t)}${ciBloque(t)}${ejBloque(t)}${viendo ? "" : `<div class="btools tr-env"><button type="button" class="primary small" data-tr="enviar" data-id="${t.id}">${ic("share", 18)}Enviar el entreno a los jugadores</button></div>`}${cxMDHtml(t)}${cgTrBloque(t)}${espResumen("entreno", t.id)}<p class="muted trsum"><b class="w">${c.si + c.tarde}</b> vinieron${c.tarde ? ` (<b class="t">${c.tarde}</b> tarde)` : ""} · <b class="l">${c.no}</b> faltaron · <b class="d">${c.jus}</b> justificadas${r.length - c.si - c.tarde - c.no - c.jus > 0 ? ` · ${r.length - c.si - c.tarde - c.no - c.jus} sin marcar` : ""}</p>${
       r.length
         ? `<div class="btools"><button type="button" class="secondary small" data-tr="all" data-id="${t.id}">${ic("check", 18)}Todos vinieron</button><button type="button" class="secondary small" data-action="add-player">${ic("plus", 18)}Añadir jugador</button></div>${r
             .map(
@@ -2275,6 +2284,10 @@
   const trMin = (s) => (s >= 60 ? Math.round(s / 60) + " min" : s + " s");
   function trTexto(t) {
     let L = [`🏃 *ENTRENAMIENTO* · ${teamName()}`, `📅 ${trDayLabel(t.fecha).replace(/^./, (x) => x.toUpperCase())}${t.hora ? " · " + t.hora : ""}`];
+    {
+      let u = ubDeTr(t);
+      if (u) L.push(...ubLineas(u.n, u));
+    }
     if (t.nota) L.push("", `🎯 *Vamos a trabajar:* ${t.nota}`);
     let E = ejDe(t.ejercicios),
       c = state.ciOk ? ciDe(t.circuito) : null;
@@ -2778,14 +2791,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, pegar la clasificación de la liga, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, «Mis campos» del mapa, pegar la clasificación de la liga, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -3919,7 +3932,7 @@
       jugadores: roster().map((p) => ({ id: p.id, n: p.nombre, d: dorsal(p) || "" })),
       partido:
         c && c.fecha && c.fecha >= hoy && (c.ids.length || c.rival)
-          ? { ref: c.fecha, rival: c.rival || "", fecha: c.fecha, hora: c.hora || "", cita: c.cita || "", lugar: c.lugar || "", nota: c.nota || "", conv: cvJug(c).map((p) => p.id) }
+          ? { ref: c.fecha, rival: c.rival || "", fecha: c.fecha, hora: c.hora || "", cita: c.cita || "", lugar: c.lugar || "", ...(ubGeo(c.geo) ? { geo: ubGeo(c.geo) } : {}), nota: c.nota || "", conv: cvJug(c).map((p) => p.id) }
           : null,
       entrenos: T.map((t) => {
         let ci = state.ciOk ? ciDe(t.circuito) : null;
@@ -3927,6 +3940,7 @@
           id: t.id,
           fecha: t.fecha,
           hora: t.hora || "",
+          ...(ubDeTr(t) ? { lugar: { n: ubDeTr(t).n || "", ...(ubGeo(ubDeTr(t)) || {}) } } : {}),
           nota: t.nota || "",
           ej: ejDe(t.ejercicios).map((s) => ({ n: s.n, t: s.t, d: s.d || "" })),
           circ: ci ? { n: ci.nombre, s: ci.series, est: ci.est.map((x) => x.n) } : null,
@@ -4331,7 +4345,7 @@
     if (c.fecha) L.push(`📅 ${trDayLabel(c.fecha).replace(/^./, (x) => x.toUpperCase())}`);
     if (c.hora || c.cita)
       L.push(`⏰ ${[c.hora ? "Partido: " + c.hora : "", c.cita ? "Citación: " + c.cita : ""].filter(Boolean).join(" · ")}`);
-    if (c.lugar) L.push(`📍 ${c.lugar}`);
+    L.push(...ubLineas(c.lugar, c.geo));
     L.push("", `👥 *Convocados (${J.length}):*`);
     J.forEach((p, i) => L.push(`${i + 1}. ${p.nombre}${dorsal(p) ? " (" + dorsal(p) + ")" : ""}`));
     if (c.nota) L.push("", `📝 ${c.nota}`);
@@ -4385,7 +4399,20 @@
       J = cvJug(cv),
       f = (k, lab, ty, ph, ml) =>
         `<label class="ci-l">${lab}<input data-cvf="${k}" type="${ty}"${ph ? ` placeholder="${ph}"` : ""}${ml ? ` maxlength="${ml}"` : ""} value="${esc(cv[k] || "")}" autocomplete="off"></label>`;
-    return `<p class="muted">${cv.deDraft ? "Los convocados salen del partido. Si cambias alguno aquí, cambia solo en el mensaje: en el partido se marcan en la lista «Conv.»." : "Elige a los convocados y los datos del partido. La app te escribe el mensaje para el grupo de WhatsApp."}</p><div class="cv-grid">${f("rival", "Rival", "text", "Ej.: CD Alhambra", 100)}${f("lugar", "Lugar", "text", "Ej.: Pabellón Municipal", 120)}${f("fecha", "Día", "date")}${f("hora", "Hora del partido", "time")}${f("cita", "Hora de citación", "time")}</div>${
+    return `<p class="muted">${cv.deDraft ? "Los convocados salen del partido. Si cambias alguno aquí, cambia solo en el mensaje: en el partido se marcan en la lista «Conv.»." : "Elige a los convocados y los datos del partido. La app te escribe el mensaje para el grupo de WhatsApp."}</p><div class="cv-grid">${f("rival", "Rival", "text", "Ej.: CD Alhambra", 100)}${f("fecha", "Día", "date")}${f("hora", "Hora del partido", "time")}${f("cita", "Hora de citación", "time")}</div>${ubHtml(
+      ubReg(
+        "cv",
+        () => ({ n: (cv && cv.lugar) || "", geo: cv && cv.geo }),
+        (n, g) => {
+          if (!cv) return;
+          cv.lugar = n;
+          if (g) cv.geo = g;
+          else delete cv.geo;
+          cvRefresca();
+        },
+        { lab: "📍 Lugar (campo o dirección)", inp: 'data-cvf="lugar"' },
+      ),
+    )}${
       cv.deDraft || cv.dirId
         ? cv.dirId
           ? `<label class="cv-j cv-dir"><input type="checkbox" data-cvdir${cv.dirUrl ? " checked" : ""}><span>📺 Añadir el enlace del directo, para que la familia siga el partido en vivo</span></label>`
@@ -4412,7 +4439,7 @@
     if (t) t.textContent = cvTexto(cv);
     if (n) n.textContent = cvJug(cv).length;
     if (a) a.href = cvWa();
-    if (cv.deDraft && state.draft) state.draft.alineacion.conv = { hora: cv.hora, cita: cv.cita, lugar: cv.lugar };
+    if (cv.deDraft && state.draft) state.draft.alineacion.conv = cvConvDe(cv);
     cvGuarda();
   }
   async function cvAct(b) {
@@ -4427,6 +4454,7 @@
       let c = d.alineacion.conv || {},
         x = { rival: d.rival, fecha: d.fecha, ids: d.players.map((p) => p.id), deDraft: 1 };
       ["hora", "cita", "lugar"].forEach((q) => c[q] && (x[q] = c[q]));
+      x.geo = ubGeo(c.geo);
       /* Partido ya guardado: se puede meter el enlace del directo en el mensaje (si ya está preparado, va marcado) */
       if (state.editing) {
         x.dirId = state.editing;
@@ -4482,10 +4510,17 @@
       d.fecha = cv.fecha;
       d.rival = cv.rival.trim();
       d.players = cvJug(cv).map((p) => ({ id: p.id, nombre: p.nombre, minutes: 0, goals: 0, starter: false }));
-      d.alineacion.conv = { hora: cv.hora, cita: cv.cita, lugar: cv.lugar };
+      d.alineacion.conv = cvConvDe(cv);
       render();
       note("Partido creado con los convocados. Elige los titulares y guárdalo.", true);
     }
+  }
+  /* Lo de la convocatoria que se guarda en el partido (con el punto del mapa, v11.44) */
+  function cvConvDe(c) {
+    let o = { hora: c.hora, cita: c.cita, lugar: c.lugar },
+      g = ubGeo(c.geo);
+    if (g) o.geo = g;
+    return o;
   }
   const cvClave = () => `${cv.fecha}|${String(cv.rival || "").trim().toLowerCase()}`;
   $("info").addEventListener("click", (e) => {
@@ -5810,6 +5845,336 @@
         `<p>Un partido tiene <b>fases</b> y conviene entrenarlas todas:</p><ul><li><b>Ataque</b>: ataque organizado y contraataque (la transición defensa-ataque, justo al robar).</li><li><b>Defensa</b>: defensa organizada y reorganización defensiva (la transición ataque-defensa, justo al perderla).</li><li><b>ABP</b>: acciones a balón parado (córners, faltas, saques de banda…).</li></ul><p>Marca la fase en cada ejercicio del entreno y en tus jugadas de la pizarra. Aquí ves los <b>minutos</b> de cada fase y su <b>carga</b> (minutos × esfuerzo medio del entreno).</p><p class="muted">Gratis: esta semana. Con el plan Pro: las 6 últimas semanas y el reparto en %.</p>`,
       );
   });
+  /* ===== Ubicación del campo (v11.44) =====
+     El entrenador escribe el campo o la dirección y pulsa «Buscar en el mapa»: la app la busca en
+     OpenStreetMap (Nominatim; solo al pulsar, nunca mientras se escribe, y como mucho 1 búsqueda por
+     segundo, como pide su política de uso). Sale un mapa pequeño hecho con teselas de OpenStreetMap
+     (sin librerías, vale en iPad antiguos): si el punto no está justo en el campo, se toca donde está.
+     «Cómo llegar» abre Google Maps (y Apple Maps en iPhone/iPad) con las coordenadas.
+     Se guarda:
+     - partido: alineacion.conv.lugar (texto) + alineacion.conv.geo {lat, lon} (sin SQL)
+     - convocatoria: cv.lugar + cv.geo (en el dispositivo, como el resto de la convocatoria)
+     - entreno: entrenamientos.lugar {n, lat, lon} (supabase-ubicacion.sql)
+     - enlace de la familia: directos.lugar {n, lat, lon} (supabase-ubicacion.sql)
+     - enlace del equipo: va en el resumen que ya se sube (sin SQL)
+     Plan gratuito: buscar y ver el mapa siempre; «Mis campos» guarda LIM.campos campos para
+     elegirlos con un toque. Con Pro, ilimitados. */
+  const UB_Z = 16,
+    UB_MIS_PRO = 60,
+    UB_OSM = "https://tile.openstreetmap.org/",
+    UB_NOM = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=es&q=",
+    ubIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function ubGeo(g) {
+    if (!g || typeof g !== "object") return null;
+    let la = Number(g.lat),
+      lo = Number(g.lon);
+    if (!isFinite(la) || !isFinite(lo) || Math.abs(la) > 85 || Math.abs(lo) > 180 || (!la && !lo)) return null;
+    return { lat: Math.round(la * 1e6) / 1e6, lon: Math.round(lo * 1e6) / 1e6 };
+  }
+  const ubLlegar = (g) => "https://www.google.com/maps/dir/?api=1&destination=" + g.lat + "," + g.lon;
+  const ubApple = (g) => "https://maps.apple.com/?daddr=" + g.lat + "," + g.lon;
+  /* Para los mensajes de WhatsApp: el lugar y, si está en el mapa, el enlace para llegar */
+  function ubLineas(n, geo) {
+    let g = ubGeo(geo),
+      L = [];
+    if (n || g) L.push(`📍 ${n || "Ver en el mapa"}`);
+    if (g) L.push(`🧭 Cómo llegar: ${ubLlegar(g)}`);
+    return L;
+  }
+  function ubTile(g, z) {
+    let n = Math.pow(2, z),
+      r = (g.lat * Math.PI) / 180;
+    return [((g.lon + 180) / 360) * n, ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n];
+  }
+  function ubDeTile(x, y, z) {
+    let n = Math.pow(2, z);
+    return ubGeo({ lat: (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI, lon: (x / n) * 360 - 180 });
+  }
+  /* Mapa pequeño: 3 × 3 teselas con el punto en el centro */
+  function ubMapa(geo, o = {}) {
+    let g = ubGeo(geo);
+    if (!g) return "";
+    let z = Math.max(5, Math.min(19, o.z || UB_Z)),
+      [x, y] = ubTile(g, z),
+      tx = Math.floor(x),
+      ty = Math.floor(y),
+      fx = Math.round((x - tx) * 256),
+      fy = Math.round((y - ty) * 256),
+      n = Math.pow(2, z),
+      t = "";
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) {
+        let X = (((tx + dx) % n) + n) % n,
+          Y = ty + dy;
+        if (Y >= 0 && Y < n) t += `<img src="${UB_OSM}${z}/${X}/${Y}.png" style="left:${dx * 256 - fx}px;top:${dy * 256 - fy}px" alt="" draggable="false">`;
+      }
+    return `<div class="ub-map${o.tap ? " tap" : ""}" data-z="${z}" data-lat="${g.lat}" data-lon="${g.lon}" role="img" aria-label="${esc(o.label || "Mapa del campo")}"><div class="ub-t">${t}</div><span class="ub-pin" aria-hidden="true"></span><a class="ub-osm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a></div>`;
+  }
+  /* Mapa + botones para quien solo mira (enlace del equipo, familia, Inicio) */
+  function ubVer(n, geo, o = {}) {
+    let g = ubGeo(geo);
+    if (!g) return n ? `<p class="ub-l">📍 ${esc(n)}</p>` : "";
+    return `<div class="ub-ver">${n ? `<p class="ub-l">📍 ${esc(n)}</p>` : ""}${o.sinMapa ? "" : ubMapa(g, { label: "Mapa: " + (n || "campo") })}<div class="ub-ctl"><a class="primary small" href="${ubLlegar(g)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>${ubIOS ? `<a class="secondary small" href="${ubApple(g)}" target="_blank" rel="noopener">Apple Maps</a>` : ""}</div></div>`;
+  }
+  /* «Mis campos»: los campos ya buscados, para elegirlos con un toque (en este dispositivo) */
+  const ubMisKey = () => `mf_campos:${curUser || ""}`;
+  function ubMis() {
+    try {
+      let L = JSON.parse(localStorage.getItem(ubMisKey()) || "[]");
+      return Array.isArray(L) ? L.filter((x) => x && x.n && ubGeo(x)) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function ubMisGuarda(L) {
+    try {
+      localStorage.setItem(ubMisKey(), JSON.stringify(L));
+    } catch (e) {}
+  }
+  const ubMisMax = () => (esPro() ? UB_MIS_PRO : LIM.campos);
+  /* Devuelve un aviso si no cabe (plan gratuito) */
+  function ubMisAnade(n, geo) {
+    let g = ubGeo(geo);
+    n = String(n || "").trim().slice(0, 120);
+    if (!g || !n) return "";
+    let L = ubMis(),
+      i = L.findIndex((x) => fold(x.n) === fold(n));
+    if (i >= 0) L[i] = { n, ...g };
+    else if (L.length >= ubMisMax())
+      return esPro()
+        ? ""
+        : `En el plan gratuito guardas ${LIM.campos} campos en «Mis campos» y ya los tienes. Quita uno con la ✕ o, con Pro, guárdalos todos.${enAndroid ? "" : ' <button type="button" class="linkb" data-ub="pro">Ver el plan Pro</button>'}`;
+    else L.push({ n, ...g });
+    ubMisGuarda(L);
+    return "";
+  }
+  /* Cada sitio donde se pone el campo registra cómo leerlo y guardarlo */
+  const UB = {};
+  function ubReg(k, get, set, o = {}) {
+    let v = UB[k] || {};
+    UB[k] = { ...v, get, set, ...o };
+    return k;
+  }
+  function ubHtml(k) {
+    let c = UB[k];
+    if (!c) return "";
+    let v = c.get() || {},
+      g = ubGeo(v.geo),
+      ro = !!viendo,
+      M = ro ? [] : ubMis();
+    if (ro) return `<div class="ub" data-ubk="${esc(k)}"><span class="ci-l">${c.lab || "Campo"}</span>${ubVer(v.n, g) || '<p class="muted">Sin indicar.</p>'}</div>`;
+    return `<div class="ub" data-ubk="${esc(k)}"><label class="ci-l">${c.lab || "Campo o dirección"}<span class="ub-row"><input data-ubn ${c.inp || ""} maxlength="120" placeholder="Ej.: Campo Municipal de Armilla" value="${esc(v.n || "")}" autocomplete="off" enterkeyhint="search"><button type="button" class="secondary small" data-ub="buscar"${c.busy ? " disabled" : ""}>${c.busy ? "Buscando…" : "🔎 Buscar en el mapa"}</button></span></label>${
+      M.length
+        ? `<div class="ub-mis"><span>⭐ Mis campos:</span>${M.map((x, i) => `<span class="ub-chip"><button type="button" data-ub="mis" data-i="${i}">${esc(x.n)}</button><button type="button" class="ub-x" data-ub="misdel" data-i="${i}" aria-label="Quitar ${esc(x.n)} de Mis campos">✕</button></span>`).join("")}</div>`
+        : ""
+    }${
+      c.res
+        ? c.res.length
+          ? `<div class="ub-res" role="list"><p class="hint">¿Cuál es? Toca el bueno:</p>${c.res.map((r, i) => `<button type="button" role="listitem" class="ub-r" data-ub="pick" data-i="${i}"><b>${esc(r.t)}</b><small>${esc(r.d)}</small></button>`).join("")}<button type="button" class="linkb" data-ub="nores">Ninguno es el bueno</button></div>`
+          : `<p class="hint ub-msg">No lo encuentro en el mapa. Prueba con el nombre del pueblo o la calle (por ejemplo «Calle Real 5, Armilla»).</p>`
+        : ""
+    }${c.msg ? `<p class="hint ub-msg">${c.msg}</p>` : ""}${
+      g
+        ? `${ubMapa(g, { z: c.z, tap: 1 })}<p class="hint">Si el punto rojo no está justo en el campo, toca en el mapa dónde está.</p><div class="ub-ctl"><a class="primary small" href="${ubLlegar(g)}" target="_blank" rel="noopener">🧭 Cómo llegar</a>${ubIOS ? `<a class="secondary small" href="${ubApple(g)}" target="_blank" rel="noopener">Apple Maps</a>` : ""}<button type="button" class="secondary small" data-ub="zin" aria-label="Acercar el mapa">＋</button><button type="button" class="secondary small" data-ub="zout" aria-label="Alejar el mapa">－</button><button type="button" class="secondary small" data-ub="quitar">Quitar del mapa</button></div>`
+        : ""
+    }</div>`;
+  }
+  /* Repinta solo el bloque (no se pierde lo demás que se está escribiendo) */
+  function ubPinta(k) {
+    document.querySelectorAll(".ub[data-ubk]").forEach((el) => {
+      if (el.dataset.ubk !== k) return;
+      let w = document.createElement("div");
+      w.innerHTML = ubHtml(k);
+      if (w.firstChild) el.replaceWith(w.firstChild);
+    });
+  }
+  let ubUlt = 0;
+  const ubCache = {};
+  async function ubNominatim(q, es) {
+    let w = ubUlt + 1100 - Date.now();
+    if (w > 0) await new Promise((r) => setTimeout(r, w));
+    ubUlt = Date.now();
+    let r = await Promise.race([
+      fetch(UB_NOM + encodeURIComponent(q) + (es ? "&countrycodes=es" : ""), { headers: { Accept: "application/json" } }),
+      new Promise((_, no) => setTimeout(() => no(new Error("tiempo")), 12000)),
+    ]);
+    if (!r.ok) throw new Error("http " + r.status);
+    let d = await r.json();
+    return (Array.isArray(d) ? d : [])
+      .map((x) => {
+        let g = ubGeo({ lat: x.lat, lon: x.lon }),
+          P = String(x.display_name || "").split(",").map((s) => s.trim()).filter(Boolean),
+          t = String(x.name || "").trim() || P[0] || "";
+        if (P[0] === t) P.shift();
+        return g && t ? { t: t.slice(0, 120), d: P.filter((s) => !/^\d{5}$/.test(s)).slice(0, 4).join(", "), ...g } : null;
+      })
+      .filter(Boolean);
+  }
+  async function ubBusca(q) {
+    let k = fold(q);
+    if (ubCache[k]) return ubCache[k];
+    let L = await ubNominatim(q, true);
+    if (!L.length) L = await ubNominatim(q, false);
+    return (ubCache[k] = L);
+  }
+  function ubPon(k, n, geo, guarda) {
+    let c = UB[k];
+    if (!c) return;
+    c.set(String(n || "").trim().slice(0, 120), ubGeo(geo));
+    c.msg = guarda && geo ? ubMisAnade(n, geo) : "";
+    ubPinta(k);
+  }
+  async function ubAct(b) {
+    let el = b.closest(".ub[data-ubk]"),
+      k = el && el.dataset.ubk,
+      c = k && UB[k];
+    if (!c || viendo) return;
+    let a = b.dataset.ub,
+      inp = el.querySelector("[data-ubn]"),
+      txt = inp ? inp.value.trim() : "",
+      v = c.get() || {};
+    if (a === "buscar") {
+      if (txt.length < 3) {
+        c.msg = "Escribe el nombre del campo y el pueblo, o la dirección.";
+        return ubPinta(k);
+      }
+      if (txt !== (v.n || "")) c.set(txt, ubGeo(v.geo));
+      c.busy = true;
+      c.res = null;
+      c.msg = "";
+      ubPinta(k);
+      try {
+        c.res = await ubBusca(txt);
+      } catch (e) {
+        c.res = null;
+        c.msg = "No se ha podido buscar ahora. Revisa la conexión y vuelve a probar.";
+      }
+      c.busy = false;
+      return ubPinta(k);
+    }
+    if (a === "pick") {
+      let r = c.res && c.res[+b.dataset.i];
+      if (!r) return;
+      c.res = null;
+      c.z = UB_Z;
+      return ubPon(k, txt || r.t, r, true);
+    }
+    if (a === "nores") {
+      c.res = null;
+      c.msg = "Prueba a escribir la calle y el pueblo y vuelve a buscar. También puedes buscar algo que esté al lado y tocar en el mapa dónde está el campo.";
+      return ubPinta(k);
+    }
+    if (a === "mis") {
+      let x = ubMis()[+b.dataset.i];
+      if (!x) return;
+      c.res = null;
+      c.z = UB_Z;
+      return ubPon(k, x.n, x, false);
+    }
+    if (a === "misdel") {
+      let L = ubMis();
+      L.splice(+b.dataset.i, 1);
+      ubMisGuarda(L);
+      c.msg = "";
+      return ubPinta(k);
+    }
+    if (a === "zin" || a === "zout") {
+      c.z = Math.max(5, Math.min(19, (c.z || UB_Z) + (a === "zin" ? 1 : -1)));
+      return ubPinta(k);
+    }
+    if (a === "pro") return proLimite(`En el plan gratuito guardas ${LIM.campos} campos en «Mis campos». Buscar el campo en el mapa y «Cómo llegar» siguen siendo gratis.`);
+    if (a === "quitar") {
+      c.res = null;
+      c.msg = "";
+      return ubPon(k, txt, null, false);
+    }
+  }
+  /* Tocar en el mapa mueve el punto */
+  function ubToca(e, m) {
+    let el = m.closest(".ub[data-ubk]"),
+      k = el && el.dataset.ubk,
+      c = k && UB[k];
+    if (!c || viendo) return;
+    let R = m.getBoundingClientRect(),
+      z = +m.dataset.z,
+      [x, y] = ubTile({ lat: +m.dataset.lat, lon: +m.dataset.lon }, z),
+      g = ubDeTile(x + (e.clientX - (R.left + R.width / 2)) / 256, y + (e.clientY - (R.top + R.height / 2)) / 256, z);
+    if (!g) return;
+    let inp = el.querySelector("[data-ubn]");
+    c.z = z;
+    ubPon(k, inp ? inp.value : (c.get() || {}).n, g, true);
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest(".ub [data-ub]");
+    if (b) return void ubAct(b).catch((x) => note(x.message || String(x)));
+    let m = e.target.closest(".ub .ub-map.tap");
+    if (m && !e.target.closest("a")) ubToca(e, m);
+  });
+  /* Lo escrito se guarda al momento en el partido y la convocatoria, y al salir del campo en el entreno */
+  function ubTexto(e, fin) {
+    let i = e.target.closest && e.target.closest(".ub [data-ubn]");
+    if (!i) return;
+    let k = i.closest(".ub").dataset.ubk,
+      c = UB[k];
+    if (!c || viendo || (c.lento && !fin)) return;
+    let v = c.get() || {},
+      n = i.value.trim().slice(0, 120);
+    if (n === (v.n || "").trim() && (n || !ubGeo(v.geo))) return;
+    c.set(n, n ? ubGeo(v.geo) : null);
+    if (!n && ubGeo(v.geo)) ubPinta(k);
+  }
+  document.addEventListener("input", (e) => ubTexto(e, false));
+  document.addEventListener("change", (e) => ubTexto(e, true));
+  document.addEventListener("keydown", (e) => {
+    let i = e.key === "Enter" && e.target.closest && e.target.closest(".ub [data-ubn]");
+    if (!i) return;
+    e.preventDefault();
+    ubTexto({ target: i }, true);
+    let b = i.closest(".ub").querySelector("[data-ub=buscar]");
+    if (b) b.click();
+  });
+  /* Partido (nuevo o editando): dentro de alineacion.conv, junto a la hora y la citación */
+  function ubPartido(d) {
+    if (UB.pd && UB.pd.d !== d) delete UB.pd;
+    return ubHtml(
+      ubReg(
+        "pd",
+        () => {
+          let c = (state.draft && state.draft.alineacion.conv) || {};
+          return { n: c.lugar || "", geo: c.geo };
+        },
+        (n, g) => {
+          if (!state.draft) return;
+          let a = state.draft.alineacion,
+            c = { ...(a.conv || {}), lugar: n };
+          if (g) c.geo = g;
+          else delete c.geo;
+          a.conv = c;
+        },
+        { lab: "📍 Campo del partido", d },
+      ),
+    );
+  }
+  /* Entreno: columna entrenamientos.lugar (si ya se ejecutó supabase-ubicacion.sql) */
+  function ubEntreno(t) {
+    if (!state.lugOk) return "";
+    return ubHtml(
+      ubReg(
+        "tr:" + t.id,
+        () => {
+          let l = t.lugar && typeof t.lugar === "object" ? t.lugar : {};
+          return { n: l.n || "", geo: l };
+        },
+        (n, g) => {
+          let l = n || g ? { n, ...(g || {}) } : null;
+          if (JSON.stringify(l) === JSON.stringify(t.lugar || null)) return;
+          trSave(t, { lugar: l });
+        },
+        { lab: "📍 Dónde entrenamos", lento: true },
+      ),
+    );
+  }
+  const ubDeTr = (t) => (t && t.lugar && typeof t.lugar === "object" ? t.lugar : null);
   function blankAlign() {
     let f = Object.keys(formations[state.mode])[0];
     return { formation: f, slots: {} };
@@ -6582,7 +6947,7 @@
         return `<div class="checkline"><span>${esc(p.nombre)}${x && p.id === cap ? ' <em class="tg c" title="Capitán">C</em>' : ""}${x && p.id === gk ? ' <em class="tg g" title="Portero">POR</em>' : ""}</span><input type="checkbox" data-field="called" data-id="${p.id}" aria-label="Convocado: ${esc(p.nombre)}" ${x ? "checked" : ""}><input type="checkbox" data-field="starter" data-id="${p.id}" aria-label="Titular: ${esc(p.nombre)}" ${x?.starter ? "checked" : ""}><input type="number" data-field="minutes" data-id="${p.id}" aria-label="Minutos de ${esc(p.nombre)}" min="0" value="${x?.minutes || 0}" ${x ? "" : "disabled"}><input type="number" data-field="goals" data-id="${p.id}" aria-label="Goles de ${esc(p.nombre)}" min="0" value="${x?.goals || 0}" ${x ? "" : "disabled"}></div>`;
       })
       .join("");
-    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><span class="mbtns">${viendo ? "" : `<button class="secondary small" data-cv="desde">${ic("share", 18)}Convocatoria</button>`}${state.editing && pePuede(peFind(state.editing)) ? `<button class="secondary small" data-peo="${state.editing}">${ic("live", 18)}Enlaces del directo</button>` : ""}<button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></span></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div>${jorCampos(d)}<div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
+    return `<section class="panel"><div class="bar"><div><div class="kicker">${viendo ? "Partido (solo lectura)" : state.editing ? "Editar partido" : "Nuevo partido"}</div><h2>${MN()}</h2><p class="muted">${d.players.length}${MODES[state.mode].cap ? " / " + MODES[state.mode].cap : ""} convocados · ${start.length}/${modeCount()} titulares</p></div><span class="mbtns">${viendo ? "" : `<button class="secondary small" data-cv="desde">${ic("share", 18)}Convocatoria</button>`}${state.editing && pePuede(peFind(state.editing)) ? `<button class="secondary small" data-peo="${state.editing}">${ic("live", 18)}Enlaces del directo</button>` : ""}<button class="secondary small" data-action="cancel">${ic("back", 18)}Volver</button></span></div><div class="formgrid"><label>Fecha<input id="date" type="date" value="${esc(d.fecha)}"></label><label>Rival<input id="rival" value="${esc(d.rival)}" maxlength="100" autocomplete="off"></label></div>${jorCampos(d)}${ubPartido(d)}<div class="score"><label>Goles a favor<input id="gf" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gf)}"></label><span class="dash" aria-hidden="true">–</span><label>Goles en contra<input id="gc" type="number" min="0" max="99" inputmode="numeric" placeholder="–" value="${esc(d.gc)}"></label><p class="hint">Resultado (opcional)</p></div>
 <div class="lineup-layout"><div><div class="position-help"><h3>Campo y posiciones</h3><select id="formation" aria-label="Formación">${Object.keys(
       formations[state.mode],
     )
@@ -8312,7 +8677,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: noviembre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (16 en Fútbol 11, 10 en Fútbol 7 y 10 en Fútbol sala; quien ya tuviera más antes de este cambio los conserva, pero no puede añadir otros), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual, o de 4,99 € al mes (IVA incluido), con renovación mensual y sin permanencia. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Podemos ofrecer códigos promocionales que dan el plan Pro gratis durante unos días, sin tarjeta y sin renovación: cada código se puede usar una vez por cuenta, puede tener fecha de fin o un número máximo de usos, y al terminar la cuenta vuelve al plan gratuito sin perder sus datos. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: noviembre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (16 en Fútbol 11, 10 en Fútbol 7 y 10 en Fútbol sala; quien ya tuviera más antes de este cambio los conserva, pero no puede añadir otros), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico, o los campos guardados en «Mis campos»), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual, o de 4,99 € al mes (IVA incluido), con renovación mensual y sin permanencia. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Podemos ofrecer códigos promocionales que dan el plan Pro gratis durante unos días, sin tarjeta y sin renovación: cada código se puede usar una vez por cuenta, puede tener fecha de fin o un número máximo de usos, y al terminar la cuenta vuelve al plan gratuito sin perder sus datos. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -8598,6 +8963,21 @@
         "La convocatoria se queda guardada en tu móvil y sale arriba en Partidos hasta que empieces una nueva. «Crear el partido con estos convocados» abre el partido con ellos ya marcados: solo te queda elegir titulares.",
         "Dentro de un partido también tienes el botón «Convocatoria», que coge los convocados de ese partido. La citación y el lugar se guardan en el partido y salen en la lista.",
         "En el plan gratuito puedes enviar <b>3 convocatorias al mes</b>; volver a mandar la misma no gasta otra. Con el plan Pro, ilimitadas.",
+        "Si el lugar está en el mapa (mira «Campo en el mapa y cómo llegar»), el mensaje lleva también el enlace <b>«🧭 Cómo llegar»</b>.",
+      ],
+    },
+    {
+      t: "Campo en el mapa y cómo llegar",
+      p: [
+        "Al crear o editar un partido, en <b>«📍 Campo del partido»</b>, escribe el nombre del campo y el pueblo (por ejemplo «Campo Municipal de Armilla») o la dirección y pulsa <b>«🔎 Buscar en el mapa»</b>. Te salen los sitios que coinciden: toca el bueno.",
+        "Sale un mapa pequeño con un <b>punto rojo</b>. Si no está justo en el campo, <b>toca en el mapa dónde está</b> y el punto se mueve ahí. Con ＋ y － acercas o alejas el mapa. «Quitar del mapa» deja solo el nombre.",
+        "Si no lo encuentra, prueba con la calle y el pueblo, o busca algo que esté al lado y toca en el mapa dónde está el campo.",
+        "<b>«🧭 Cómo llegar»</b> abre Google Maps con la ruta hasta el campo (en iPhone y iPad también tienes Apple Maps).",
+        "Lo mismo puedes hacer en la <b>convocatoria</b> («📍 Lugar») y en cada <b>entreno</b> («📍 Dónde entrenamos»).",
+        "Lo ven tus jugadores y las familias: en el mensaje de WhatsApp de la convocatoria y del entreno (con el enlace «Cómo llegar»), en el <b>enlace del equipo</b> (con el mapa) y en el <b>enlace del directo</b>. En el Inicio, debajo de tu próximo partido, tienes también «Cómo llegar».",
+        "Los campos que buscas se quedan en <b>«⭐ Mis campos»</b> (en este dispositivo): la próxima vez lo eliges con un toque. Quita uno con su ✕.",
+        "Buscar y ver el mapa es gratis siempre. En el plan gratuito guardas <b>3 campos</b> en «Mis campos»; con Pro, todos los que quieras.",
+        "Los mapas son de <b>OpenStreetMap</b>, un mapa libre hecho por voluntarios.",
       ],
     },
     {
@@ -8791,8 +9171,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -10425,6 +10805,7 @@
     x._clk = liveClk(x);
     liveSync(x);
     liveJor(x, m);
+    liveLug(x, m);
     return x;
   }
   /* La jornada del partido también sale en el enlace de la familia (columna directos.jornada,
@@ -10445,6 +10826,27 @@
     }
     x.jornada = jt;
   }
+  /* El campo del partido también sale en el enlace de la familia (columna directos.lugar,
+     supabase-ubicacion.sql, v11.44). Si aún no existe la columna, no pasa nada. */
+  let liveLugNo = false;
+  async function liveLug(x, m) {
+    let c = (m && m.alineacion && m.alineacion.conv) || {},
+      n = String(c.lugar || "").trim().slice(0, 120),
+      g = ubGeo(c.geo),
+      l = n || g ? { n, ...(g || {}) } : null;
+    if (liveLugNo || !x || !x.id || JSON.stringify(x.lugar || null) === JSON.stringify(l)) return;
+    let r;
+    try {
+      r = await db.from("directos").update({ lugar: l }).eq("id", x.id).select("id");
+    } catch (e) {
+      r = { error: e };
+    }
+    if (r.error) {
+      if (/lugar|schema cache|column/i.test(String(r.error.message || r.error))) liveLugNo = true;
+      return;
+    }
+    x.lugar = l;
+  }
   /* Pone al día el directo con lo que hay ahora en el partido (rival, duración, convocados del anotador) */
   function liveAlDia(x, m) {
     let pm = parteDe(m.modalidad, teamOf(m)),
@@ -10460,6 +10862,7 @@
     }
     if (ch) liveSave(x);
     liveJor(x, m);
+    liveLug(x, m);
     /* El anotador ve siempre los convocados de ahora */
     if (x.anotador && JSON.stringify(anotJug(m)) !== JSON.stringify(x.anot_jug || [])) anotGuarda(x, { anot_jug: anotJug(m) });
     /* Tiros del anotador: activarlos si se puede y sumar los que haya apuntado con la app cerrada */
@@ -10907,7 +11310,7 @@
     return [
       `📺 *${x.equipo} - ${x.rival}* · en directo`,
       w ? `📅 ${w}` : "",
-      c.lugar ? `📍 ${c.lugar}` : "",
+      ubLineas(c.lugar, c.geo).join("\n"),
       "",
       "Desde este enlace verás el marcador, el minuto, los goles, los cambios y las tarjetas mientras se juega. No hace falta descargar nada ni tener cuenta. Guárdalo: se pone en marcha solo cuando empiece el partido.",
       liveUrl(x),
@@ -11833,7 +12236,7 @@
       liveSkew = Date.parse(pubRow.ahora) - Date.now();
     pubVideo((pubRow && pubRow.video_desde) || null);
     $("pubData").innerHTML = pubRow
-        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}${pubRow.jornada ? " · " + esc(pubRow.jornada) : ""}</div>${liveBoard(pubRow, serverNow(), false)}${pubRow.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Deja esta página abierta o vuelve a entrar con el mismo enlace cuando empiece: el marcador se pone en marcha solo.</p>' : ""}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
+        ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}${pubRow.jornada ? " · " + esc(pubRow.jornada) : ""}</div>${liveBoard(pubRow, serverNow(), false)}${pubRow.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Deja esta página abierta o vuelve a entrar con el mismo enlace cuando empiece: el marcador se pone en marcha solo.</p>' : ""}${pubRow.lugar && typeof pubRow.lugar === "object" ? `<div class="pub-lug">${ubVer(pubRow.lugar.n, pubRow.lugar, { sinMapa: pubRow.estado !== "pre" })}</div>` : ""}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
         : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>';
   }
   function startPub() {
@@ -11976,14 +12379,14 @@
     if (p) {
       let conv = Array.isArray(p.conv) ? p.conv : [],
         estoy = yo && conv.includes(yo.id);
-      h += `<div class="eq-card"><b class="eq-tit">${p.rival ? "vs " + esc(p.rival) : "Partido"}</b><p>📅 ${esc(trDayLabel(p.fecha).replace(/^./, (x) => x.toUpperCase()))}</p>${p.hora || p.cita ? `<p>⏰ ${[p.hora ? "Partido: " + esc(p.hora) : "", p.cita ? "Citación: <b>" + esc(p.cita) + "</b>" : ""].filter(Boolean).join(" · ")}</p>` : ""}${p.lugar ? `<p>📍 ${esc(p.lugar)}</p>` : ""}${p.nota ? `<p>📝 ${esc(p.nota)}</p>` : ""}${yo ? `<p class="eq-conv ${estoy ? "si" : "no"}">${estoy ? "✅ Estás convocado" : "No estás en la convocatoria"}</p>` : ""}<details class="eq-det"><summary>Convocados (${conv.length})</summary><ol>${conv.map((id) => `<li${yo && id === yo.id ? ' class="yo"' : ""}>${esc(nom(id))}</li>`).join("")}</ol></details>${!yo || estoy ? eqBotones("partido", p.ref) : ""}</div>`;
+      h += `<div class="eq-card"><b class="eq-tit">${p.rival ? "vs " + esc(p.rival) : "Partido"}</b><p>📅 ${esc(trDayLabel(p.fecha).replace(/^./, (x) => x.toUpperCase()))}</p>${p.hora || p.cita ? `<p>⏰ ${[p.hora ? "Partido: " + esc(p.hora) : "", p.cita ? "Citación: <b>" + esc(p.cita) + "</b>" : ""].filter(Boolean).join(" · ")}</p>` : ""}${p.lugar || ubGeo(p.geo) ? ubVer(p.lugar, p.geo) : ""}${p.nota ? `<p>📝 ${esc(p.nota)}</p>` : ""}${yo ? `<p class="eq-conv ${estoy ? "si" : "no"}">${estoy ? "✅ Estás convocado" : "No estás en la convocatoria"}</p>` : ""}<details class="eq-det"><summary>Convocados (${conv.length})</summary><ol>${conv.map((id) => `<li${yo && id === yo.id ? ' class="yo"' : ""}>${esc(nom(id))}</li>`).join("")}</ol></details>${!yo || estoy ? eqBotones("partido", p.ref) : ""}</div>`;
     } else h += '<p class="muted">Todavía no hay convocatoria.</p>';
     h += `</section><section class="eq-sec"><h3 class="ci-h3">🏃 Próximos entrenos</h3>`;
     let T = Array.isArray(d.entrenos) ? d.entrenos : [];
     h += T.length
       ? T.map(
           (t) =>
-            `<div class="eq-card"><b class="eq-tit">${esc(trDayLabel(t.fecha).replace(/^./, (x) => x.toUpperCase()))}${t.hora ? " · " + esc(t.hora) : ""}</b>${t.nota ? `<p>🎯 <b>Vamos a trabajar:</b> ${esc(t.nota)}</p>` : ""}${
+            `<div class="eq-card"><b class="eq-tit">${esc(trDayLabel(t.fecha).replace(/^./, (x) => x.toUpperCase()))}${t.hora ? " · " + esc(t.hora) : ""}</b>${t.lugar ? ubVer(t.lugar.n, t.lugar) : ""}${t.nota ? `<p>🎯 <b>Vamos a trabajar:</b> ${esc(t.nota)}</p>` : ""}${
               (t.ej || []).length
                 ? `<ol class="eq-ej">${t.ej.map((s) => `<li><b>${esc(s.n)}</b> <small>(${trMin(s.t)})</small>${s.d ? `<br><span class="muted">${esc(s.d)}</span>` : ""}</li>`).join("")}</ol>`
                 : ""

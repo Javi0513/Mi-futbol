@@ -7025,3 +7025,152 @@ body.intro-on {
   pointer-events: none;
   z-index: -1;
 }
+
+/* ===== Ubicación del campo (v11.44): buscar en OpenStreetMap, mapa y «Cómo llegar» ===== */
+.ub {
+  margin: 4px 0 12px;
+}
+.ub .ci-l {
+  margin-bottom: 6px;
+}
+.ub-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ub-row input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.ub-row button {
+  flex: 0 0 auto;
+}
+.ub-mis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 2px 0 8px;
+  font-size: 0.9em;
+  color: var(--mut);
+}
+.ub-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--s2);
+}
+.ub-chip button {
+  background: none;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  padding: 6px 10px;
+  min-height: 34px;
+  cursor: pointer;
+}
+.ub-chip .ub-x {
+  padding: 6px 9px;
+  color: var(--mut);
+  border-left: 1px solid var(--line);
+}
+.ub-res {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.ub-r {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  background: var(--s2);
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.ub-r small {
+  color: var(--mut);
+}
+.ub-msg {
+  margin: 4px 0 8px;
+}
+.ub-map {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 190px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--line2);
+  background: #dfe8e0;
+  margin: 6px 0 4px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ub-map.tap {
+  cursor: crosshair;
+}
+.ub-t {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+.ub-t img {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  max-width: none;
+  pointer-events: none;
+}
+.ub-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -22px 0 0 -11px;
+  border-radius: 50% 50% 50% 0;
+  background: #e5383b;
+  border: 3px solid #fff;
+  -webkit-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+.ub-osm {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 1px 6px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1d3a2b;
+  border-top-left-radius: 6px;
+  text-decoration: none;
+}
+.ub-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 0;
+}
+.ub-ctl a {
+  text-decoration: none;
+}
+.ub-l {
+  margin: 4px 0;
+}
+.ub-ver {
+  margin: 6px 0 8px;
+}
+.pub-lug {
+  margin: 8px 0 4px;
+}
