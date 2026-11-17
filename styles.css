@@ -7174,3 +7174,6 @@ body.intro-on {
 .pub-lug {
   margin: 8px 0 4px;
 }
+
+/* v11.45: campo desde la federación */
+.ub-fed { margin: 0 0 10px; }
