@@ -5963,7 +5963,7 @@
       ro = !!viendo,
       M = ro ? [] : ubMis();
     if (ro) return `<div class="ub" data-ubk="${esc(k)}"><span class="ci-l">${c.lab || "Campo"}</span>${ubVer(v.n, g) || '<p class="muted">Sin indicar.</p>'}</div>`;
-    return `<div class="ub" data-ubk="${esc(k)}"><label class="ci-l">${c.lab || "Campo o dirección"}<span class="ub-row"><input data-ubn ${c.inp || ""} maxlength="120" placeholder="Ej.: Campo Municipal de Armilla" value="${esc(v.n || "")}" autocomplete="off" enterkeyhint="search"><button type="button" class="secondary small" data-ub="buscar"${c.busy ? " disabled" : ""}>${c.busy ? "Buscando…" : "🔎 Buscar en el mapa"}</button></span></label>${
+    return `<div class="ub" data-ubk="${esc(k)}">${c.fed && c.fed.puede() ? `<button type="button" class="secondary small ub-fed" data-ub="fed"${c.busy ? " disabled" : ""}>${c.busy === "fed" ? "Mirando la federación…" : "🏟️ Poner el campo de la federación"}</button>` : ""}<label class="ci-l">${c.lab || "Campo o dirección"}<span class="ub-row"><input data-ubn ${c.inp || ""} maxlength="120" placeholder="Ej.: Campo Municipal de Armilla" value="${esc(v.n || "")}" autocomplete="off" enterkeyhint="search"><button type="button" class="secondary small" data-ub="buscar"${c.busy ? " disabled" : ""}>${c.busy ? "Buscando…" : "🔎 Buscar en el mapa"}</button></span></label>${
       M.length
         ? `<div class="ub-mis"><span>⭐ Mis campos:</span>${M.map((x, i) => `<span class="ub-chip"><button type="button" data-ub="mis" data-i="${i}">${esc(x.n)}</button><button type="button" class="ub-x" data-ub="misdel" data-i="${i}" aria-label="Quitar ${esc(x.n)} de Mis campos">✕</button></span>`).join("")}</div>`
         : ""
@@ -6050,6 +6050,31 @@
         c.msg = "No se ha podido buscar ahora. Revisa la conexión y vuelve a probar.";
       }
       c.busy = false;
+      return ubPinta(k);
+    }
+    if (a === "fed") {
+      c.busy = "fed";
+      c.res = null;
+      c.msg = "";
+      ubPinta(k);
+      let r = null;
+      try {
+        r = await c.fed.trae();
+      } catch (e) {
+        c.msg = esc(e.message || String(e));
+      }
+      c.busy = false;
+      if (!r) return ubPinta(k);
+      c.set(r.n, null);
+      c.z = UB_Z;
+      try {
+        c.res = await ubBusca(r.q[0]);
+        if (!c.res.length && r.q[1]) c.res = await ubBusca(r.q[1]);
+      } catch (e) {
+        c.res = null;
+      }
+      c.msg = `Según la federación se juega en <b>${esc(r.lu)}</b>${r.txt ? " (" + esc(r.txt) + ")" : ""}. ${c.res && c.res.length ? "Toca el bueno para ponerlo en el mapa; si sale solo el pueblo, después toca en el mapa dónde está el campo." : "Ya está escrito; si quieres el mapa, busca la calle o el pueblo."}`;
+      if (c.res && !c.res.length) c.res = null;
       return ubPinta(k);
     }
     if (a === "pick") {
@@ -6151,7 +6176,7 @@
           else delete c.geo;
           a.conv = c;
         },
-        { lab: "📍 Campo del partido", d },
+        { lab: "📍 Campo del partido", d, fed: { puede: lgCampoPuede, trae: lgCampoTrae } },
       ),
     );
   }
@@ -6609,6 +6634,70 @@
       let q = $("infoBody").querySelector(".lg-jfed");
       if (q && q.getBoundingClientRect().top > window.innerHeight) try { q.scrollIntoView({ block: "start" }); } catch (z) {}
     }
+  }
+  /* ===== Campo del partido desde la federación (v11.45) =====
+     Con la liga conectada a la Federación Andaluza, en el partido «🏟️ Poner el campo de la
+     federación» busca ese partido en su jornada (por el número de jornada o por la fecha), escribe
+     el campo donde se juega y lo busca en el mapa. Cuenta como día de federación (LIM.lg). */
+  const lgCampoPuede = () => !viendo && !!lgOf().fed;
+  const lgTit = (s) => String(s || "").toLowerCase().replace(/(^|[\s(\-\/])(\S)/g, (m, a, b) => a + b.toUpperCase()).replace(/\b(De|Del|La|Las|Los|El|Y)\b/g, (w, x, i) => (i ? w.toLowerCase() : w));
+  /* «Alomartes (Íllora) - LOS FAROLES CAMPO MUNICIPAL (F11-F7)» o «GRANADA RFAF, MIGUEL PRIETO (F11-F7)» */
+  function lgCampoLee(lu) {
+    let t = lgTxt(lu, 160).replace(/\s*\((F\d+|FS|F\.?S\.?)[^)]*\)\s*$/i, ""),
+      pu = "",
+      ca = t,
+      m = t.match(/^(.+?)\s+-\s+(.+)$/) || t.match(/^([^,]+),\s*(.+)$/);
+    if (m) (pu = m[1].replace(/\bRFAF\b/i, "").trim()), (ca = m[2].trim());
+    let mu = (pu.match(/\(([^)]+)\)/) || [])[1] || "",
+      pb = pu.replace(/\s*\([^)]*\)/, "").trim(),
+      C = lgTit(ca),
+      P = lgTit(pb);
+    return {
+      n: (C + (P && fold(C).indexOf(fold(P)) < 0 ? " (" + P + ")" : "")).slice(0, 120),
+      q: [[C, P, lgTit(mu)].filter(Boolean).join(", "), [P, lgTit(mu)].filter(Boolean).join(", ")].filter(Boolean),
+    };
+  }
+  /* Número de jornada del partido: el escrito (liga) o el de la fecha más cercana del calendario */
+  function lgCampoJor(L) {
+    let t = (($("jorT") || {}).value || "").trim(),
+      n = (($("jorN") || {}).value || "").trim();
+    if ((t === "liga" || !t) && /^\d+$/.test(n)) return n;
+    let f = (($("date") || {}).value || (state.draft && state.draft.fecha) || "").slice(0, 10),
+      T = Date.parse(f),
+      best = "",
+      bd = 5 * 864e5;
+    if (!T) return "";
+    (L.fed.jl || []).forEach((x) => {
+      let m = String(x[1] || "").match(/(\d{2})-(\d{2})-(\d{4})/),
+        d = m ? Math.abs(Date.parse(m[3] + "-" + m[2] + "-" + m[1]) - T) : Infinity;
+      if (d <= bd) (bd = d), (best = String(x[0]));
+    });
+    return best;
+  }
+  async function lgCampoTrae() {
+    let L = lgOf();
+    if (!L.fed) return null;
+    let j = lgCampoJor(L);
+    if (!j) throw new Error("Pon el número de jornada (competición «Liga») o la fecha del partido y vuelve a pulsar.");
+    if (!envPuede("lg", lgDia())) return null;
+    let d = await lgFn({ op: "jornada", d: L.fed.d, c: L.fed.c, g: L.fed.g, j }),
+      P = ((d.res || {}).partidos || []).filter((x) => x && x.l && x.v),
+      riv = (($("rival") || {}).value || (state.draft && state.draft.rival) || "").trim(),
+      N = [];
+    P.forEach((x) => N.push(x.l, x.v));
+    let yo = lgBusca(N, (L.yo && N.indexOf(L.yo) >= 0 && L.yo) || lgYo(L) || teamName(), 0.5),
+      rv = riv ? lgBusca(N, riv, 0.5) : "",
+      x = P.find((p) => yo && rv && [p.l, p.v].indexOf(yo) >= 0 && [p.l, p.v].indexOf(rv) >= 0) || P.find((p) => yo && (p.l === yo || p.v === yo)) || P.find((p) => rv && (p.l === rv || p.v === rv));
+    if (!P.length) throw new Error(`La federación todavía no tiene los partidos de la jornada ${j}.`);
+    if (!x) throw new Error(`No encuentro tu partido en la jornada ${j} de la federación. Revisa el rival o la jornada.`);
+    if (!x.lu) throw new Error(`La federación todavía no dice el campo de tu partido de la jornada ${j}.`);
+    let otro = x.l === yo ? x.v : x.l;
+    if (!riv && otro && $("rival")) {
+      $("rival").value = otro;
+      if (state.draft) state.draft.rival = otro;
+    }
+    let r = lgCampoLee(x.lu);
+    return { ...r, lu: lgTit(x.lu.replace(/\s*\((F\d+|FS)[^)]*\)\s*$/i, "")), txt: ["Jornada " + j, x.l + " - " + x.v, x.f, x.h && x.h !== "Pendiente" ? x.h + " h" : ""].filter(Boolean).join(" · ") };
   }
   $("info").addEventListener("change", (e) => {
     if (e.target.id === "lgFj") lgVerJornada(e.target.value);
@@ -9028,6 +9117,7 @@
         "Al crear o editar un partido, en <b>«📍 Campo del partido»</b>, escribe el nombre del campo y el pueblo (por ejemplo «Campo Municipal de Armilla») o la dirección y pulsa <b>«🔎 Buscar en el mapa»</b>. Te salen los sitios que coinciden: toca el bueno.",
         "Sale un mapa pequeño con un <b>punto rojo</b>. Si no está justo en el campo, <b>toca en el mapa dónde está</b> y el punto se mueve ahí. Con ＋ y － acercas o alejas el mapa. «Quitar del mapa» deja solo el nombre.",
         "Si no lo encuentra, prueba con la calle y el pueblo, o busca algo que esté al lado y toca en el mapa dónde está el campo.",
+        "<b>Si tu liga está conectada con la Federación Andaluza</b>, pulsa <b>«🏟️ Poner el campo de la federación»</b>: la app busca tu partido en su jornada (por el número de jornada o por la fecha), escribe el campo donde se juega, pone el rival si no lo tenías y lo busca en el mapa. Toca el bueno; si solo sale el pueblo, toca en el mapa dónde está el campo. Cuenta como un día de federación en el plan gratuito (4 al mes); con Pro, ilimitado.",
         "<b>«🧭 Cómo llegar»</b> abre Google Maps con la ruta hasta el campo (en iPhone y iPad también tienes Apple Maps).",
         "Lo mismo puedes hacer en la <b>convocatoria</b> («📍 Lugar») y en cada <b>entreno</b> («📍 Dónde entrenamos»).",
         "Lo ven tus jugadores y las familias: en el mensaje de WhatsApp de la convocatoria y del entreno (con el enlace «Cómo llegar»), en el <b>enlace del equipo</b> (con el mapa) y en el <b>enlace del directo</b>. En el Inicio, debajo de tu próximo partido, tienes también «Cómo llegar».",
@@ -9080,6 +9170,7 @@
         "<b>Pegar los resultados de una jornada</b>: igual, pero con los resultados (por ejemplo «CD Norte 2 - 1 UD Sur») y el número de jornada. Si no hay tabla pegada, la app calcula la clasificación con los resultados (3 puntos por victoria y 1 por empate).",
         "<b>Apuntar un resultado a mano</b>: elige la jornada, el local, el visitante y los goles. Tus partidos de liga con resultado y número de jornada se suman solos.",
         "<b>Si juegas en Andalucía</b>, pulsa <b>«Conectar con la Federación Andaluza»</b>, elige tu delegación (por ejemplo Granada), la competición y el grupo, y pulsa «Conectar». La clasificación y los resultados de la última jornada se ponen solos y se actualizan cada vez que abres la clasificación (si han pasado 3 horas) o con «Actualizar ahora». Con «Desconectar» dejas de leerla.",
+        "En cada partido, <b>«🏟️ Poner el campo de la federación»</b> (en «📍 Campo del partido») escribe solo el campo donde se juega según la federación y lo pone en el mapa.",
         "Con la liga de Andalucía conectada, en <b>«Ver jornada»</b> eliges cualquier jornada, pasada o futura, y ves sus partidos con el resultado, la fecha, la hora, el campo y si se ha jugado. Las actas solo están en la web de la Federación Andaluza (hay un enlace). Ver otra jornada cuenta como un día de federación en el plan gratuito.",
         "Si la app no reconoce tu equipo, elígelo en «Mi equipo en la tabla». Con «Enviar la clasificación por WhatsApp» la mandas al grupo de las familias.",
         "Ver la clasificación y apuntar resultados a mano es gratis siempre. Plan gratuito: pegar la tabla o los resultados, o actualizar desde la Federación Andaluza, <b>4 días al mes</b>. Con Pro, ilimitado.",
