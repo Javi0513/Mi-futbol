@@ -41,6 +41,8 @@ with sync_playwright() as p:
     check('v11.37: las novedades explican el plan para clubes más claro',all(w in body for w in ('Plan para clubes más claro','todavía no ha pagado','pack más grande')),body[:300])
     check('v11.38: la animación sale también con la sesión iniciada','también si ya tienes la sesión iniciada' in body,body[:300])
     check('v11.39: las novedades explican los tiros desde el anotador',all(w in body for w in ('El anotador ya apunta los tiros','Tiro a puerta','Tiro fuera','2 partidos al mes')),body[:300])
+    check('v11.45: las novedades explican el campo desde la federación',all(w in body for w in ('Poner el campo de la federación','Federación Andaluza','Cómo llegar','4 al mes')),body[:300])
+    check('v11.45: las novedades explican el aviso si la federación falla','Aviso claro si la web de la federación falla' in body,body[:300])
     check('v11.44: las novedades explican el campo en el mapa',all(w in body for w in ('el campo en el mapa','Buscar en el mapa','Cómo llegar','Mis campos','OpenStreetMap')),body[:300])
     check('v11.43: las novedades explican que el móvil ya no se apaga al grabar',all(w in body for w in ('el móvil se apagaba al grabar','trípode','iPad antiguos','batería externa')),body[:300])
     check('v11.42: las novedades explican ver todas las jornadas',all(w in body for w in ('Todas las jornadas de tu liga','Ver jornada','actas')),body[:300])

@@ -63,7 +63,7 @@ with sync_playwright() as p:
     pg.locator('#info .ayuda summary',has_text='Empezar').first.click();pg.wait_for_timeout(150)
     pg.locator('#info .ayuda summary',has_text='Clasificación de la liga').click();pg.wait_for_timeout(150)
     t=pg.locator('#info .ayuda details[open]').inner_text()
-    check('liga: explica pegar la clasificación y apuntar a mano',all(w in t for w in ('Guardar el enlace de mi liga','Pegar la clasificación','a mano','Conectar con la Federación Andaluza','4 días al mes')),t[:160])
+    check('liga: explica pegar la clasificación y apuntar a mano',all(w in t for w in ('Guardar el enlace de mi liga','Pegar la clasificación','a mano','Conectar con la Federación Andaluza','Poner el campo de la federación','4 días al mes')),t[:160])
     pg.locator('#info .ayuda summary',has_text='Clasificación de la liga').click();pg.wait_for_timeout(150)
     for k in ['Tus equipos','Directo','Plan para clubes','Actualizaciones']:
         check('apartado: '+k,k in tits)
