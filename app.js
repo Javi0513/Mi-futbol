@@ -8801,11 +8801,33 @@
     },
   ];
   /* Novedades: tras cada actualización se muestra una vez lo que ha cambiado.
-     El texto sale de "novedades" en version.json (soloWeb: no se muestra en la app de Android). */
+     v11.46: version.json guarda el historial: cada novedad lleva "v" (la versión en que salió)
+     y, si tiene tutorial paso a paso, "tut" (id de FTUT). Solo se enseña lo que el usuario
+     no ha visto: lo de las versiones posteriores a la última que vio (mf_novedades_visto, o si
+     no, la última que abrió, mf_version_abierta). Si no se sabe cuál vio, solo lo de esta versión.
+     Cada versión nueva añade arriba sus novedades con "v". Se pueden quitar las muy antiguas
+     (más de ~40 versiones), solo las verán quien lleve todo ese tiempo sin abrir la app.
+     soloWeb: no se muestra en la app de Android. */
   const NOV_KEY = "mf_novedades_visto";
   const appVer = () =>
     (document.querySelector('meta[name="app-version"]') || {}).content || "0";
-  let novedades = null;
+  /* La versión que tenía abierta antes de esta (se lee antes de que actualizaRevisa la cambie) */
+  let verAntes = null;
+  try {
+    verAntes = localStorage.getItem("mf_version_abierta");
+  } catch (e) {}
+  /* Compara versiones «11.9» < «11.10» < «12.0» */
+  function vcmp(a, b) {
+    let x = String(a || "0").split("."),
+      y = String(b || "0").split(".");
+    for (let i = 0; i < Math.max(x.length, y.length); i++) {
+      let d = (parseInt(x[i], 10) || 0) - (parseInt(y[i], 10) || 0);
+      if (d) return d;
+    }
+    return 0;
+  }
+  let novedades = null,
+    novVer = null;
   async function novedadesCarga() {
     if (novedades && novedades.version === appVer()) return novedades;
     try {
@@ -8816,13 +8838,20 @@
       let l = (Array.isArray(j.novedades) ? j.novedades : [])
         .map((x) => (typeof x === "string" ? { texto: x } : x || {}))
         .filter((x) => x.texto && !(x.soloWeb && enAndroid))
-        .map((x) => x.texto);
-      if (!l.length && j.notas) l = [j.notas];
-      novedades = { version: j.version, lista: l };
+        .map((x) => ({ texto: x.texto, v: x.v || j.version, tut: x.tut && FTUT[x.tut] ? x.tut : "" }));
+      if (!l.length && j.notas) l = [{ texto: j.notas, v: j.version, tut: "" }];
+      novedades = { version: j.version, todas: l };
       return novedades;
     } catch (e) {
       return null;
     }
+  }
+  /* Lo que no ha visto quien venía de la versión «desde» (null: solo lo de esta versión) */
+  function novDesde(n, desde) {
+    if (!n) return [];
+    let act = n.version,
+      viejo = desde && vcmp(desde, act) < 0;
+    return n.todas.filter((x) => (viejo ? vcmp(x.v, desde) > 0 : vcmp(x.v, act) === 0));
   }
   function novedadesMarca() {
     try {
@@ -8842,10 +8871,28 @@
     /* Quien estrena la app ve el tutorial, no las novedades */
     if ($("tut")) return novedadesMarca();
     let n = await novedadesCarga();
-    if (!n || !n.lista.length) return;
+    let l = novDesde(n, visto || verAntes);
+    if (!l.length) return novedadesMarca();
     if ($("tut") || !$("info").classList.contains("hidden")) return;
+    novVer = { lista: l, desde: visto || verAntes };
     showInfo("novedades");
     novedadesMarca();
+  }
+  /* Novedades agrupadas por versión (la más nueva arriba), con su botón de tutorial */
+  function novHtml(l) {
+    let vs = [...new Set(l.map((x) => x.v))].sort((a, b) => vcmp(b, a));
+    return vs
+      .map(
+        (v) =>
+          `${vs.length > 1 ? `<h3 class="nov-v">Versión ${esc(v)}</h3>` : ""}<ul class="novedades">${l
+            .filter((x) => x.v === v)
+            .map(
+              (x) =>
+                `<li>${esc(x.texto)}${x.tut && !viendo ? `<div class="btools"><button type="button" class="secondary small" data-ftut="${esc(x.tut)}">▶ Ver cómo se usa, paso a paso</button></div>` : ""}</li>`,
+            )
+            .join("")}</ul>`,
+      )
+      .join("");
   }
   /* v11.29: pedir una valoración en Google Play (solo en Android). Sale una vez, cuando ya se
      ha usado la app 3 días distintos y hay algún partido guardado. «Ahora no» vuelve a preguntar
@@ -8905,6 +8952,15 @@
         "Al abrir la app sale el <b>Inicio</b>: tu próximo partido con el botón «Empezar el Directo» (o «Volver al directo» si ya está en marcha), cómo va la temporada, accesos rápidos a todo, tus mejores jugadores, el próximo entreno con «Pasar lista» y la carga de la semana. Mientras empiezas, te marca los <b>primeros pasos</b>. Vuelves a él con el botón «Inicio».",
         "Cada vez que abres la app sale una animación de entrada de unos segundos. Tócala o pulsa «Saltar» si tienes prisa.",
         "Puedes volver a ver el tutorial de bienvenida en «Mi cuenta › Ver el tutorial».",
+      ],
+    },
+    {
+      t: "Novedades y tutoriales paso a paso",
+      p: [
+        "Cuando la app se actualiza, al abrirla te salen las <b>novedades</b>: solo lo nuevo que no habías visto. Si estabas al día, lo de la última versión; si llevabas varias versiones sin abrirla, todo lo de esas versiones, ordenado por versión. Lo que ya habías visto no vuelve a salir.",
+        "Las vuelves a ver en <b>«Mi cuenta › Novedades de esta versión»</b>, y con <b>«Ver novedades anteriores»</b> tienes todo lo que ha ido llegando.",
+        "Las funciones nuevas traen un <b>tutorial paso a paso</b>: la pantalla se oscurece y se ilumina dónde tienes que tocar, con lo que hace cada cosa. Pulsa «Siguiente» para avanzar, «Atrás» para volver o «Salir» para cerrarlo. Mientras miras no se guarda ni se cambia nada.",
+        "Ábrelo desde la novedad («▶ Ver cómo se usa, paso a paso»), desde <b>«Mi cuenta › Tutoriales paso a paso»</b> o desde los botones del principio de esta guía. Los primeros: «Campo en el mapa» y «Clasificación de la liga».",
       ],
     },
     {
@@ -9216,7 +9272,10 @@
     },
   ];
   function ayudaHtml() {
-    return `<p>Toca un apartado para ver cómo funciona.</p><div class="ayuda">${AYUDA.map(
+    return `${viendo ? "" : `<div class="ayuda-tut"><b>▶ Tutoriales paso a paso</b><span>La app te señala en la pantalla dónde tocar.</span><div class="btools">${Object.keys(FTUT)
+      .sort((a, b) => vcmp(FTUT[b].v, FTUT[a].v))
+      .map((id) => `<button type="button" class="secondary small" data-ftut="${id}">${esc(FTUT[id].t)}</button>`)
+      .join("")}<button type="button" class="secondary small" data-info="tutoriales">Ver todos</button></div></div>`}<p>Toca un apartado para ver cómo funciona.</p><div class="ayuda">${AYUDA.map(
       (a) =>
         `<details><summary>${a.t}</summary><ul>${a.p
           .filter((x) => !(x && x.soloWeb && enAndroid))
@@ -9233,7 +9292,14 @@
       return false;
     }
   }
+  /* El tutorial que está abierto: el de bienvenida (TUT) o el de una función (FTUT) */
+  let tutSteps = TUT,
+    tutId = "",
+    tutFin = null;
   function tutOpen() {
+    tutSteps = TUT;
+    tutId = "";
+    tutFin = null;
     state.tab = "plantilla";
     state.draft = null;
     state.live = null;
@@ -9246,6 +9312,18 @@
     tutI = -1;
     let b = $("tut");
     if (b) b.remove();
+    if (tutId) {
+      let id = tutId,
+        f = tutFin;
+      tutSteps = TUT;
+      tutId = "";
+      tutFin = null;
+      try {
+        localStorage.setItem("mf_ftut:" + id, "1");
+      } catch (e) {}
+      if (f) f();
+      return;
+    }
     /* Al terminar el tutorial, de vuelta al Inicio */
     if (ab && iniOn() && state.tab === "plantilla" && !state.draft && !state.live) {
       state.tab = "inicio";
@@ -9255,8 +9333,21 @@
       localStorage.setItem(tutKey(), "1");
     } catch (e) {}
   }
+  /* Cada paso puede tener go(): lo que hay que abrir antes de señalarlo (pestaña, formulario…) */
   function tutShow() {
-    let s = TUT[tutI],
+    let s = tutSteps[tutI],
+      p = null;
+    if (s && s.go) {
+      try {
+        p = s.go();
+      } catch (e) {}
+    }
+    if (p && p.then) p.then(tutPinta, tutPinta);
+    else tutPinta();
+  }
+  function tutPinta() {
+    if (tutI < 0) return;
+    let s = tutSteps[tutI],
       box = $("tut");
     if (!box) {
       box = document.createElement("div");
@@ -9266,10 +9357,12 @@
         '<div class="tut-hole"></div><div class="tut-card" role="dialog" aria-modal="true" aria-labelledby="tutT"></div>';
       document.body.appendChild(box);
     }
+    box.classList.toggle("ftut", !!tutId);
     let hole = box.querySelector(".tut-hole"),
       card = box.querySelector(".tut-card"),
       el = s.el && document.querySelector(s.el),
-      last = tutI === TUT.length - 1;
+      last = tutI === tutSteps.length - 1;
+    if (el && !el.getClientRects().length) el = null;
     if (el) {
       el.scrollIntoView({ block: "center", inline: "nearest" });
       let r = el.getBoundingClientRect(),
@@ -9288,9 +9381,178 @@
       box.classList.remove("on-el");
       card.classList.remove("top");
     }
-    card.innerHTML = `<div class="kicker">Paso ${tutI + 1} de ${TUT.length}</div><h2 id="tutT">${esc(s.t)}</h2><p>${esc(s.p)}</p><div class="tut-dots" aria-hidden="true">${TUT.map((_, i) => `<i class="${i === tutI ? "on" : ""}"></i>`).join("")}</div><div class="tut-btns">${last ? "" : '<button type="button" class="lnk" data-tut="skip">Saltar</button>'}<span></span>${tutI ? '<button type="button" class="secondary small" data-tut="prev">Atrás</button>' : ""}<button type="button" class="primary small" data-tut="next">${last ? "Empezar" : "Siguiente"}</button></div>`;
+    let tt = tutId && FTUT[tutId] ? FTUT[tutId].t : "";
+    card.innerHTML = `<div class="kicker">${tt ? "Tutorial · " + esc(tt) + " · " : ""}Paso ${tutI + 1} de ${tutSteps.length}</div><h2 id="tutT">${esc(s.t)}</h2><p>${esc(s.p)}</p><div class="tut-dots" aria-hidden="true">${tutSteps.map((_, i) => `<i class="${i === tutI ? "on" : ""}"></i>`).join("")}</div><div class="tut-btns">${last ? "" : `<button type="button" class="lnk" data-tut="skip">${tutId ? "Salir" : "Saltar"}</button>`}<span></span>${tutI ? '<button type="button" class="secondary small" data-tut="prev">Atrás</button>' : ""}<button type="button" class="primary small" data-tut="next">${last ? (tutId ? "Entendido" : "Empezar") : "Siguiente"}</button></div>`;
     card.querySelector('[data-tut="next"]').focus();
   }
+  /* v11.46: tutoriales paso a paso de las funciones nuevas.
+     Para añadir uno: una entrada en FTUT { t, v, p (para qué sirve), pasos: [{ el, t, p, go }], fin }
+     y "tut": "<id>" en su novedad de version.json. Sale en las novedades («▶ Ver cómo se usa»),
+     en «Mi cuenta › Tutoriales paso a paso» y al principio de la Guía de uso.
+     go() abre lo que haga falta sin borrar nada del usuario; fin() lo deja como estaba. */
+  let ftBorrador = false;
+  function ftPartidos() {
+    $("info").classList.add("hidden");
+    if (state.draft) return;
+    state.live = null;
+    state.tab = "partidos";
+    render();
+  }
+  function ftSinBorrador() {
+    if (!ftBorrador) return;
+    ftBorrador = false;
+    state.draft = null;
+    state.editing = null;
+    render();
+  }
+  const FTUT = {
+    campo: {
+      t: "Campo en el mapa",
+      v: "11.44",
+      p: "Pon el campo de cada partido y entreno en el mapa y llega con «Cómo llegar».",
+      pasos: [
+        {
+          t: "Campo en el mapa",
+          p: "Te enseño, paso a paso, a poner el campo de un partido en el mapa para que tú, tus jugadores y las familias lleguéis sin perderos. No se guarda nada mientras miras.",
+          go: ftPartidos,
+        },
+        {
+          el: '#view [data-action="add-match"]',
+          t: "1. Abre un partido",
+          p: "En «Partidos», pulsa «+ Partido» para crear uno nuevo, o toca uno que ya tengas para editarlo.",
+          go: () => {
+            ftSinBorrador();
+            ftPartidos();
+          },
+        },
+        {
+          el: '.ub[data-ubk="pd"] [data-ubn]',
+          t: "2. Escribe el campo",
+          p: "En «📍 Campo del partido» escribe el nombre del campo y el pueblo (por ejemplo «Campo Municipal de Armilla») o la dirección.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (!state.draft) {
+              state.editing = null;
+              state.live = null;
+              state.tab = "partidos";
+              resetDraft();
+              ftBorrador = true;
+            }
+          },
+        },
+        {
+          el: '.ub[data-ubk="pd"] [data-ub="buscar"]',
+          t: "3. Búscalo en el mapa",
+          p: "Pulsa «🔎 Buscar en el mapa». Te salen los sitios que coinciden: toca el bueno. Si no lo encuentra, prueba con la calle y el pueblo.",
+        },
+        {
+          el: '.ub[data-ubk="pd"]',
+          t: "4. Ajusta el punto",
+          p: "Sale un mapa con un punto rojo. Si no está justo en el campo, toca en el mapa dónde está y el punto se mueve ahí. Con ＋ y － acercas o alejas.",
+        },
+        {
+          el: '.ub[data-ubk="pd"]',
+          t: "5. Cómo llegar",
+          p: "«🧭 Cómo llegar» abre Google Maps con la ruta (en iPhone y iPad también Apple Maps). Los campos que buscas se quedan en «⭐ Mis campos» para elegirlos con un toque la próxima vez (3 en el plan gratuito, ilimitados con Pro).",
+        },
+        {
+          el: '#view [data-cv="abrir"]',
+          t: "6. Convocatoria y entrenos",
+          p: "Lo mismo en la convocatoria («📍 Lugar») y en cada entreno («📍 Dónde entrenamos»). El mensaje de WhatsApp lleva el enlace «Cómo llegar».",
+          go: () => {
+            ftSinBorrador();
+            ftPartidos();
+          },
+        },
+        {
+          t: "¡Listo!",
+          p: "Tus jugadores y las familias lo ven en la convocatoria, en el enlace del equipo y en el del directo, con su botón «Cómo llegar». Buscar y ver el mapa es gratis siempre.",
+        },
+      ],
+      fin: ftSinBorrador,
+    },
+    liga: {
+      t: "Clasificación de la liga",
+      v: "11.41",
+      p: "Mira cómo va tu liga y en qué puesto vais, con la Federación Andaluza o pegando la tabla.",
+      pasos: [
+        {
+          t: "Clasificación de la liga",
+          p: "Te enseño dónde está la clasificación de tu liga y las formas de tenerla al día.",
+          go: ftPartidos,
+        },
+        {
+          el: '#view [data-lg="abrir"]',
+          t: "1. Ábrela",
+          p: "En «Partidos» (y también en el Inicio) toca «🏆 Clasificación de la liga».",
+          go: () => {
+            ftSinBorrador();
+            ftPartidos();
+          },
+        },
+        {
+          el: '#infoBody .lg-fed',
+          t: "2. Si juegas en Andalucía",
+          p: "Pulsa «Conectar con la Federación Andaluza», elige tu delegación, la competición y el grupo. La clasificación y los resultados se ponen solos y se actualizan al abrirla. En «Ver jornada» ves cualquier jornada.",
+          go: () => {
+            if (state.draft) return;
+            lgAbre();
+          },
+        },
+        {
+          el: '#infoBody [data-lg="pegaT"]',
+          t: "3. En el resto de España",
+          p: "Guarda el enlace de tu liga en la web de tu federación, ábrela desde aquí, copia la clasificación o los resultados de la jornada y pégalos: la app los reconoce sola.",
+        },
+        {
+          el: '#infoBody [data-lg="mano"]',
+          t: "4. O a mano",
+          p: "También puedes apuntar los resultados a mano y la app calcula la tabla. Tus partidos de liga con resultado se suman solos.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Tu equipo sale en verde y puedes mandar la clasificación por WhatsApp. Verla y apuntar a mano es gratis; pegar o actualizar desde la federación, 4 días al mes en el plan gratuito e ilimitado con Pro.",
+        },
+      ],
+      fin: () => $("info").classList.add("hidden"),
+    },
+  };
+  function ftutVisto(id) {
+    try {
+      return !!localStorage.getItem("mf_ftut:" + id);
+    } catch (e) {
+      return false;
+    }
+  }
+  function ftutAbre(id) {
+    let T = FTUT[id];
+    if (!T || viendo) return;
+    let b = $("tut");
+    if (b) b.remove();
+    $("info").classList.add("hidden");
+    tutSteps = T.pasos;
+    tutId = id;
+    tutFin = T.fin || null;
+    tutI = 0;
+    tutShow();
+  }
+  /* Lista de tutoriales, del más nuevo al más antiguo */
+  function ftutListaHtml() {
+    let ids = Object.keys(FTUT).sort((a, b) => vcmp(FTUT[b].v, FTUT[a].v));
+    return `<p>Cada tutorial te va señalando en la pantalla dónde tocar y qué hace cada cosa. No se cambia nada mientras miras.</p><div class="ftut-l">${ids
+      .map(
+        (id) =>
+          `<button type="button" class="secondary" data-ftut="${id}"><b>▶ ${esc(FTUT[id].t)}</b><small>${esc(FTUT[id].p)}${ftutVisto(id) ? " · ✓ Ya lo has visto" : ""}</small></button>`,
+      )
+      .join("")}<button type="button" class="secondary" data-acct="tutorial"><b>▶ Tutorial de bienvenida</b><small>Un repaso de toda la app, sección por sección.</small></button></div>`;
+  }
+  document.addEventListener("click", (e) => {
+    let b = e.target.closest && e.target.closest("[data-ftut]");
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    ftutAbre(b.dataset.ftut);
+  }, true);
   document.addEventListener("click", (e) => {
     let b = e.target.closest && e.target.closest("[data-tut]");
     if (!b || tutI < 0) return;
@@ -9298,14 +9560,14 @@
     let k = b.dataset.tut;
     if (k === "skip") return tutClose();
     if (k === "prev") tutI = Math.max(0, tutI - 1);
-    else if (tutI === TUT.length - 1) return tutClose();
+    else if (tutI === tutSteps.length - 1) return tutClose();
     else tutI++;
     tutShow();
   }, true);
   document.addEventListener("keydown", (e) => {
     if (tutI < 0) return;
     if (e.key === "Escape") tutClose();
-    else if (e.key === "ArrowRight" && tutI < TUT.length - 1) {
+    else if (e.key === "ArrowRight" && tutI < tutSteps.length - 1) {
       tutI++;
       tutShow();
     } else if (e.key === "ArrowLeft" && tutI > 0) {
@@ -9314,7 +9576,7 @@
     }
   });
   window.addEventListener("resize", () => {
-    if (tutI >= 0) tutShow();
+    if (tutI >= 0) tutPinta();
   });
   /* v11.18: «Pasar a Pro» desde Mi cuenta o desde el aviso no es por haber llegado al límite */
   let proElegido = false;
@@ -9335,7 +9597,7 @@
     } else if (k === "account") {
       delStep = false;
       t = "Mi cuenta";
-      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (enPrueba() && !(club && club.activo) ? '<button type="button" class="primary" data-info="pro">Seguir con Pro después de la prueba</button>' : c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · desde 3,33 €/mes</button>'}${codBtn()}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${bioPuede || (bioCfg() && bioCfg().uid === curUser) ? `<button type="button" class="secondary" data-acct="bio" aria-pressed="${!!(bioCfg() && bioCfg().uid === curUser)}">${bioCfg() && bioCfg().uid === curUser ? "Desactivar entrar con " + esc(bioNombre()) : "Entrar con " + esc(bioNombre())}</button>` : ""}${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button><button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
+      h = `${miPerfilHtml()}<p>Sesión iniciada como <b>${esc(curEmail)}</b></p><p>Plan: <b>${plan === "pro" ? (club && club.activo ? "Pro · gracias a tu club" : enPrueba() ? "Pro · modo prueba" : "Pro · sin límites") : "Gratuito"}</b></p>${enPrueba() ? `<p class="pro-fin">Estás en <b>modo prueba</b>: tienes el plan Pro gratis hasta el <b>${esc(fechaLarga(pruebaHasta))}</b> (${diasQuedan(pruebaHasta) === 1 ? "queda 1 día" : "quedan " + diasQuedan(pruebaHasta) + " días"}). Después pasarás al plan gratuito.</p>` : ""}${plan === "pro" && proHasta ? `<p class="pro-fin">Has cancelado tu suscripción. Tu plan Pro estará activo hasta el <b>${esc(fechaLarga(proHasta))}</b>; después pasarás al plan gratuito. Si cambias de idea, puedes reactivarla en «Gestionar o cancelar mi suscripción».</p>` : ""}${plan === "pro" ? "" : usageHtml()}<div class="stack">${enAndroid ? "" : plan === "pro" ? (enPrueba() && !(club && club.activo) ? '<button type="button" class="primary" data-info="pro">Seguir con Pro después de la prueba</button>' : c.portalUrl && (pagoActivo || stripeCliente) ? `<a class="secondary" href="${esc(c.portalUrl + (c.portalUrl.includes("?") ? "&" : "?") + "prefilled_email=" + encodeURIComponent(curEmail) + "&locale=es")}" target="_blank" rel="noopener" data-pro-portal>Gestionar o cancelar mi suscripción</a>` : "") : '<button type="button" class="primary" data-info="pro">Pasar a Pro · desde 3,33 €/mes</button>'}${codBtn()}<button type="button" class="secondary" data-info="club">${club ? "Mi club: " + esc(club.nombre) : "Plan para clubes"}</button><button type="button" class="secondary" data-acct="entrenos" aria-pressed="${entrenosOn()}">${entrenosOn() ? "Desactivar el control de entrenamientos" : "Activar el control de entrenamientos"}</button>${bioPuede || (bioCfg() && bioCfg().uid === curUser) ? `<button type="button" class="secondary" data-acct="bio" aria-pressed="${!!(bioCfg() && bioCfg().uid === curUser)}">${bioCfg() && bioCfg().uid === curUser ? "Desactivar entrar con " + esc(bioNombre()) : "Entrar con " + esc(bioNombre())}</button>` : ""}${dispOk ? `<button type="button" class="secondary" data-dsp-ver>Mis dispositivos</button>` : ""}<button type="button" class="secondary" data-info="ayuda">Guía de uso</button><button type="button" class="secondary" data-acct="tutorial">Ver el tutorial</button>${viendo ? "" : '<button type="button" class="secondary" data-info="tutoriales">Tutoriales paso a paso</button>'}<button type="button" class="secondary" data-acct="novedades">Novedades de esta versión</button><button type="button" class="secondary" data-acct="export">Descargar mis datos</button><button type="button" class="secondary" data-info="privacy">Política de privacidad</button><button type="button" class="secondary" data-info="terms">Términos de uso</button><button type="button" class="secondary" data-acct="logout">Cerrar sesión</button><button type="button" class="danger" data-acct="delete">Borrar mi cuenta y mis datos</button></div>`;
     } else if (k === "club") {
       t = club ? club.nombre : "Plan para clubes";
       h = clubHtml();
@@ -9349,9 +9611,24 @@
       t = "Guía de uso";
       h = ayudaHtml();
     } else if (k === "novedades") {
-      let n = novedades || { version: appVer(), lista: [] };
-      t = "Novedades · versión " + n.version;
-      h = `<p>Esto es lo nuevo en Mi Fútbol JV32:</p><ul class="novedades">${n.lista.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><div class="stack"><button type="button" class="primary" data-acct="novedades-ok">Entendido</button></div>`;
+      let n = novedades || { version: appVer(), todas: [] },
+        V = novVer || { lista: novDesde(n, null) },
+        vs = new Set(V.lista.map((x) => x.v)).size;
+      if (V.todas) {
+        t = "Todas las novedades";
+        h = `<p>Lo que ha ido llegando a Mi Fútbol JV32, de lo más nuevo a lo más antiguo:</p>`;
+      } else if (vs > 1) {
+        t = "Novedades desde tu última versión";
+        h = `<p>Tenías la versión <b>${esc(V.desde)}</b>. Esto es todo lo nuevo desde entonces:</p>`;
+      } else {
+        t = "Novedades · versión " + n.version;
+        h = `<p>Esto es lo nuevo en Mi Fútbol JV32:</p>`;
+      }
+      h += `${novHtml(V.lista)}<div class="stack"><button type="button" class="primary" data-acct="novedades-ok">Entendido</button>${V.todas || n.todas.length <= V.lista.length ? "" : '<button type="button" class="secondary" data-acct="novedades-todas">Ver novedades anteriores</button>'}</div>`;
+      novVer = null;
+    } else if (k === "tutoriales") {
+      t = "Tutoriales paso a paso";
+      h = ftutListaHtml();
     } else [t, h] = legalHtml(k);
     $("infoTitle").textContent = t;
     $("infoBody").innerHTML = h;
@@ -9839,10 +10116,12 @@
       $("info").classList.add("hidden");
       return;
     }
-    if (w === "novedades") {
+    if (w === "novedades" || w === "novedades-todas") {
       let n = await novedadesCarga();
-      if (n && n.lista.length) showInfo("novedades");
-      else note("No hay novedades que mostrar ahora mismo.");
+      if (n && n.todas.length) {
+        if (w === "novedades-todas") novVer = { lista: n.todas, todas: true };
+        showInfo("novedades");
+      } else note("No hay novedades que mostrar ahora mismo.");
       return;
     }
     if (w === "waitlist") {
