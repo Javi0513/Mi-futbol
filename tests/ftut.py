@@ -39,7 +39,7 @@ with sync_playwright() as p:
     ctx,pg=abre(b,'11.43')
     check('la novedad del campo en el mapa trae «Ver cómo se usa»',pg.locator('#infoBody .novedades [data-ftut=campo]').count()==1)
     check('v11.47: arriba de las novedades sale el aviso grande de los tutoriales',pg.locator('#infoBody > .ft-aviso').count()==1 and pg.evaluate("document.querySelector('#infoBody').firstElementChild.classList.contains('ft-aviso')"))
-    check('el aviso trae un botón grande por cada tutorial sin hacer',pg.locator('#infoBody .ft-aviso [data-ftut]').count()==2)
+    check('el aviso trae un botón grande por cada tutorial sin hacer',pg.locator('#infoBody .ft-aviso [data-ftut]').count()==3)
     foto(pg,'1-novedades-con-tutorial.png')
     pg.click('#infoBody .ft-aviso [data-ftut=campo]');pg.wait_for_timeout(400)
     check('al pulsarlo se cierran las novedades y empieza el tutorial',pg.locator('#info').is_hidden() and pg.locator('#tut').count()==1)
@@ -87,7 +87,7 @@ with sync_playwright() as p:
     pg.click('#view [data-action=cancel]');pg.wait_for_timeout(200)
     # Tutorial de la liga
     pg.click('#acct');pg.click('#info [data-info=ayuda]');pg.wait_for_timeout(300)
-    check('la Guía de uso empieza con los tutoriales',pg.locator('#infoBody .ayuda-tut [data-ftut]').count()==2)
+    check('la Guía de uso empieza con los tutoriales',pg.locator('#infoBody .ayuda-tut [data-ftut]').count()==3)
     check('y tiene el apartado «Novedades y tutoriales paso a paso»','Novedades y tutoriales paso a paso' in pg.locator('#infoBody .ayuda summary').all_inner_texts())
     pg.click('#infoBody .ayuda-tut [data-ftut=liga]');pg.wait_for_timeout(300)
     check('el tutorial de la liga empieza','clasificación de la liga' in card(pg).lower() and 'paso 1 de 6' in card(pg).lower())
@@ -110,7 +110,7 @@ with sync_playwright() as p:
     check('y se cierra con Escape',pg.locator('#tut').count()==0)
     ctx.close()
     # v11.47: aviso grande al abrir la app (sin novedades nuevas)
-    ctx,pg=abre(b,VER)
+    ctx,pg=abre(b,VER,"localStorage.setItem('mf_ftut:mapa','1');")
     t=pg.locator('#infoTitle').inner_text().lower() if pg.locator('#info').is_visible() else ''
     check('al abrir la app sale el aviso de los tutoriales sin hacer',t=='tutoriales nuevos' and pg.locator('#infoBody .ft-aviso [data-ftut]').count()==2,t)
     foto(pg,'7-aviso-tutoriales-al-abrir.png')
@@ -124,7 +124,7 @@ with sync_playwright() as p:
     entra(pg)
     check('y luego ya no insiste',pg.locator('#info').is_hidden())
     ctx.close()
-    ctx,pg=abre(b,VER,"localStorage.setItem('mf_ftut:campo','1');")
+    ctx,pg=abre(b,VER,"localStorage.setItem('mf_ftut:campo','1');localStorage.setItem('mf_ftut:mapa','1');")
     t=pg.locator('#infoTitle').inner_text().lower() if pg.locator('#info').is_visible() else ''
     check('solo ofrece los que no has hecho',t=='tutorial nuevo' and pg.locator('#infoBody .ft-aviso [data-ftut]').count()==1 and pg.locator('#infoBody .ft-aviso [data-ftut=liga]').count()==1,t)
     pg.click('#infoBody .ft-aviso [data-ftut=liga]');pg.wait_for_timeout(400)

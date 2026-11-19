@@ -7280,3 +7280,30 @@ body.intro-on {
 @media (prefers-reduced-motion: reduce) {
   .ft-av-b button { animation: none; }
 }
+/* v11.49 · Marcar en el campo después del partido (Editar partido) */
+.md-loc {
+  margin: 14px 0 6px;
+  padding: 10px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+}
+.md-loc h4 {
+  margin-top: 0;
+}
+.md-loc-t {
+  margin: 8px 0;
+}
+.md-campo {
+  max-width: 560px;
+  margin: 6px auto;
+}
+.campo .ml-on {
+  fill: #facc15;
+  stroke: #1a1a1a;
+  stroke-width: calc(var(--lw) * 0.7);
+}
+.campo .ml-off {
+  fill: rgba(255, 255, 255, 0.35);
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: calc(var(--lw) * 0.5);
+}
