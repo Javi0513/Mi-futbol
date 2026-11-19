@@ -9238,7 +9238,8 @@
         "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
-        "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la grabación se para sola y lo grabado hasta ese momento queda listo para guardar.",
+        "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la app la vuelve a abrir sola y la grabación sigue.",
+        "<b>Si te llaman mientras grabas o emites</b>: no se corta nada. La grabación y el vídeo en directo siguen; mientras dura la llamada la cámara o el sonido pueden quedarse en pausa y sale el aviso «Cámara o sonido en pausa», y la familia ve «Pausa» con el marcador al día. Tu conversación no se graba ni se oye en el directo. Al colgar, la cámara y el sonido vuelven solos (no cierres la cámara). Si contestas y sales de la app, vuelve a ella al colgar. Para que no te interrumpan, pon el móvil en modo «No molestar» o en modo avión con wifi durante el partido (en modo avión solo puedes emitir con wifi).",
         "Grabar vídeo gasta mucha batería y calienta el móvil. Para un partido entero, conéctalo a una <b>batería externa</b> o al cargador, quita el <b>ahorro de batería</b>, baja el brillo y no lo dejes al sol: si se calienta demasiado o se queda sin batería, el móvil se puede apagar solo.",
         "<b>Enlaces antes del partido</b>: no hace falta esperar a estar en el campo. En «Partidos», debajo de un partido que aún no se ha jugado, pulsa <b>«Preparar enlaces del directo»</b> (o, al editar el partido, «Enlaces del directo»). Ahí mandas por WhatsApp el <b>enlace para la familia</b> y creas y mandas el <b>enlace del anotador</b>. Son los mismos enlaces del Directo: cuando pulses «Empezar partido» se ponen en marcha solos, sin mandar nada más. Si cambias el rival o los convocados, el anotador los ve al momento.",
         "Si prefieres mandarlo todo junto, en la <b>Convocatoria</b> (la tarjeta «Ver y enviar» de «Partidos» o «Editar partido › Convocatoria») marca <b>«Añadir el enlace del directo»</b> y el enlace va al final del mensaje. Sale cuando el partido ya está guardado con el mismo día (y rival) que la convocatoria.",
@@ -9262,7 +9263,7 @@
         "Si falta alguien en la lista, pulsa «Añadir jugador» y escribe su nombre: queda en tu plantilla.",
         "Puedes apuntar la hora y <b>qué vais a trabajar</b> (por ejemplo, «juego de 4, defensa con cambio, activación»). Cada día del calendario sale de un color según la asistencia.",
         "<b>Enviar el entreno a los jugadores</b>: prepara el entreno antes (qué vais a trabajar, los ejercicios con su explicación y el circuito) y pulsa «Enviar el entreno a los jugadores». Te sale el mensaje escrito para mandarlo por WhatsApp al grupo, así llegan sabiendo lo que se va a hacer y pierdes menos tiempo explicando. Gratis: 3 envíos al mes; con Pro, ilimitados.",
-        "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis. Mientras la cámara está abierta la pantalla no se apaga; si grabas mucho rato, conecta el móvil al cargador.",
+        "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis. Mientras la cámara está abierta la pantalla no se apaga; si grabas mucho rato, conecta el móvil al cargador. Si te llaman mientras grabas, la grabación sigue y la cámara vuelve sola al colgar.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido (y cuántas llegó tarde), faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
         "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
@@ -12270,12 +12271,41 @@
         g.fillText(t2, xx + w1 + pad, y0 + bh / 2);
       }
     }
+    if (document.hidden || camSinImagen(c)) camCartel(c);
     if (c.rec) {
       let n = c.box.querySelector("[data-camt]");
       if (n) n.textContent = "● " + camHora(Date.now() - c.t0);
     }
     /* requestAnimationFrame se para con la pantalla apagada; el temporizador sigue grabando */
     c.raf = setTimeout(camPinta, 1000 / 30);
+  }
+  /* Llamada o cámara en pausa: no hay imagen nueva de la cámara */
+  const camSinImagen = (c) => {
+      let t = c.s.getVideoTracks()[0];
+      return !t || t.readyState === "ended" || t.muted;
+    },
+    camVideo = (frente) => ({ facingMode: frente ? "user" : "environment", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } });
+  /* Cartel «Pausa» dentro del vídeo: lo ve la familia en el directo y queda en la grabación */
+  function camCartel(c) {
+    let cv = c.canvas,
+      w = cv.width,
+      h = cv.height;
+    if (!w || !h) return;
+    let g = c.ctx,
+      u = Math.min(w, h) / 360,
+      t1 = "PAUSA",
+      t2 = c.tr ? "LA CÁMARA VUELVE ENSEGUIDA" : "EL VÍDEO VUELVE ENSEGUIDA · EL MARCADOR SIGUE";
+    g.fillStyle = "rgba(5,15,10,.78)";
+    g.fillRect(0, h / 2 - 40 * u, w, 80 * u);
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillStyle = "#facc15";
+    g.font = `800 ${28 * u}px "Barlow Condensed", Arial, sans-serif`;
+    g.fillText(t1, w / 2, h / 2 - 12 * u);
+    g.fillStyle = "#fff";
+    g.font = `700 ${14 * u}px "Barlow Condensed", Arial, sans-serif`;
+    g.fillText(t2, w / 2, h / 2 + 18 * u);
+    g.textAlign = "start";
   }
   function camBotones() {
     let c = cam;
@@ -12291,15 +12321,18 @@
     let em = c.emite
       ? `<button class="danger" data-cam="unemit">${c.emite === "on" ? "● En directo · Cortar" : "Conectando… · Cortar"}</button>`
       : `<button class="secondary" data-cam="emit">${ic("live", 18)}Emitir para la familia${plan === "pro" ? "" : " (Pro)"}</button>`;
+    let av = c.pausa
+      ? `<p class="cam-aviso" role="status">⏸️ <b>Cámara o sonido en pausa.</b> Una llamada u otra app los está usando. Vuelven solos en cuanto termine, no cierres la cámara${c.rec ? "; la grabación sigue" : ""}${c.emite ? "; la familia ve «Pausa» y el marcador" : ""}.</p>`
+      : "";
     if (c.tr) {
       c.box.querySelector(".cam-ui").innerHTML = c.listo
         ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button><button class="danger" data-cam="close">Cerrar</button></div>`
-        : `<div class="cam-row">${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. Pon el móvil en horizontal. Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta; si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
+        : `${av}<div class="cam-row">${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. Pon el móvil en horizontal. Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta; si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
       return;
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
       ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-      : `${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal. El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta; para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
+      : `${av}${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal. El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta; para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
   }
   /* tr: grabar un entrenamiento ({ fecha, equipo }); sin marcador ni emisión */
   async function camAbre(id, frente, tr) {
@@ -12307,10 +12340,7 @@
       return note("Este móvil o navegador no permite grabar vídeo desde la app.");
     let s;
     try {
-      s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: frente ? "user" : "environment", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-        audio: true,
-      });
+      s = await navigator.mediaDevices.getUserMedia({ video: camVideo(frente), audio: true });
     } catch (e) {
       return note(
         e && e.name === "NotAllowedError"
@@ -12329,7 +12359,9 @@
     document.body.classList.add("cam-on");
     cam = { id, tr: tr || null, s, v, video: v, box, canvas: box.querySelector("canvas"), frente: !!frente, rec: null, listo: null, pick: false };
     cam.ctx = cam.canvas.getContext("2d");
-    s.getVideoTracks().forEach(camVigila);
+    cam.conAudio = s.getAudioTracks().length > 0;
+    s.getTracks().forEach(camVigila);
+    cam.vig = setInterval(camRevisa, 2000);
     cam.out = cam.canvas.captureStream(30);
     s.getAudioTracks().forEach((t) => cam.out.addTrack(t));
     try {
@@ -12344,9 +12376,7 @@
     let c = cam,
       n;
     try {
-      n = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: c.frente ? "environment" : "user", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-      });
+      n = await navigator.mediaDevices.getUserMedia({ video: camVideo(!c.frente) });
     } catch (e) {
       return note("No se ha podido cambiar de cámara.");
     }
@@ -12364,6 +12394,8 @@
     if (!cam) return;
     camCorta();
     clearTimeout(cam.raf);
+    clearInterval(cam.vig);
+    clearTimeout(cam.recT);
     cam.s.getTracks().forEach((t) => t.stop());
     luzQuita("cam");
   }
@@ -12387,8 +12419,9 @@
   async function camGraba() {
     let c = cam,
       tipo = camTipo(),
-      out = c.out,
       r;
+    camSyncOut();
+    let out = c.out;
     try {
       r = new MediaRecorder(out, { mimeType: tipo || undefined, videoBitsPerSecond: 2500000, audioBitsPerSecond: 96000 });
     } catch (e) {
@@ -12397,7 +12430,11 @@
     c.trozos = [];
     c.tipo = r.mimeType || tipo || "video/webm";
     r.ondataavailable = (e) => e.data && e.data.size && c.trozos.push(e.data);
+    r.onerror = () => (c.cortada = true);
     r.onstop = () => {
+      if (!c.parando) c.cortada = true;
+      c.parando = false;
+      c.sinSonido = false;
       c.listo = new Blob(c.trozos, { type: c.tipo });
       c.trozos = [];
       c.dur = Date.now() - c.t0;
@@ -12407,7 +12444,7 @@
       camBotones();
       if (c.cortada) {
         c.cortada = false;
-        note("La cámara se ha cortado (se apagó la pantalla o se abrió otra app). Lo grabado hasta ese momento está listo: guárdalo y pulsa «Grabar otro trozo».");
+        note("La grabación se ha parado sola (el móvil cortó la cámara: una llamada, otra app o la pantalla apagada). Lo grabado hasta ese momento está listo: guárdalo y pulsa «Grabar otro trozo».");
       }
     };
     r.start(2000);
@@ -12420,16 +12457,105 @@
   function camLuz() {
     if (cam) luzPon("cam");
   }
-  /* Si la cámara se corta (pantalla apagada, otra app que la usa…), se para la grabación para no perder lo grabado */
+  /* Si la cámara o el micro se cortan (llamada, pantalla apagada, otra app que los usa…), no se para nada:
+     el vídeo sigue con el cartel «Pausa» y la cámara y el micro se piden otra vez solos */
   function camVigila(t) {
     t.addEventListener("ended", () => {
-      let c = cam;
-      if (!c || !c.s.getVideoTracks().includes(t) || !c.rec) return;
-      c.cortada = true;
       try {
-        c.rec.stop();
+        t.stop();
       } catch (e) {}
+      camRevisa();
     });
+    t.addEventListener("mute", camRevisa);
+    t.addEventListener("unmute", camRevisa);
+  }
+  /* El audio que se graba o se emite es siempre el micro que está funcionando */
+  function camSyncOut() {
+    let c = cam,
+      o = c.out,
+      a = c.s.getAudioTracks();
+    o.getAudioTracks().forEach((t) => a.includes(t) || o.removeTrack(t));
+    a.forEach((t) => o.getAudioTracks().includes(t) || o.addTrack(t));
+  }
+  function camRevisa() {
+    let c = cam;
+    if (!c) return;
+    let ahora = Date.now(),
+      falta = false;
+    c.s.getTracks().forEach((t) => {
+      if (t.readyState === "ended") return (falta = true);
+      if (!t.muted) return (t.mfMudo = 0);
+      t.mfMudo = t.mfMudo || ahora;
+      /* El iPhone a veces deja la cámara en pausa al acabar la llamada: con la app delante, se pide otra vez */
+      if (!document.hidden && t.kind === "video" && ahora - t.mfMudo > 6000) {
+        t.stop();
+        falta = true;
+      }
+    });
+    let vivas = (k) => c.s.getTracks().filter((t) => t.kind === k && t.readyState === "live"),
+      pausa = camSinImagen(c) || (c.conAudio && (!vivas("audio").length || vivas("audio")[0].muted));
+    if (!vivas("video").length || (c.conAudio && !vivas("audio").length)) falta = true;
+    if (pausa !== !!c.pausa) {
+      c.pausa = pausa;
+      if (pausa) c.huboPausa = true;
+      else if (c.huboPausa) {
+        c.huboPausa = false;
+        note(
+          "La cámara y el sonido han vuelto." +
+            (c.rec ? " La grabación ha seguido todo el rato." : "") +
+            (c.emite ? " La familia vuelve a ver el vídeo." : "") +
+            (c.sinSonido ? " Ojo: en este vídeo el sonido no vuelve hasta que pulses «Parar» y grabes otro trozo." : ""),
+          true,
+        );
+      }
+      camBotones();
+    }
+    if (falta) camRecupera();
+  }
+  /* Vuelve a pedir la cámara o el micro que se han cortado, sin parar la grabación ni el directo */
+  async function camRecupera() {
+    let c = cam;
+    if (!c || c.recup || document.hidden) return;
+    let vivas = (k) => c.s.getTracks().filter((t) => t.kind === k && t.readyState === "live"),
+      nv = !vivas("video").length,
+      na = c.conAudio && !vivas("audio").length;
+    if (!nv && !na) return;
+    c.recup = true;
+    let n = null;
+    try {
+      n = await navigator.mediaDevices.getUserMedia({ video: nv ? camVideo(c.frente) : false, audio: na });
+    } catch (e) {}
+    c.recup = false;
+    if (cam !== c) return n && n.getTracks().forEach((t) => t.stop());
+    clearTimeout(c.recT);
+    if (!n) {
+      /* Sigue la llamada o la cámara la usa otra app: se vuelve a probar cada vez más espaciado */
+      c.intentos = (c.intentos || 0) + 1;
+      c.recT = setTimeout(camRecupera, Math.min(30000, 2000 * c.intentos));
+      return;
+    }
+    c.intentos = 0;
+    n.getTracks().forEach((t) => {
+      c.s.getTracks().forEach((o) => {
+        if (o.kind !== t.kind) return;
+        o.stop();
+        c.s.removeTrack(o);
+      });
+      c.s.addTrack(t);
+      camVigila(t);
+    });
+    if (nv) {
+      c.v.srcObject = new MediaStream(c.s.getVideoTracks());
+      c.v.play().catch(() => {});
+    }
+    if (na) {
+      let a = c.s.getAudioTracks()[0];
+      if (c.aSnd && a) c.aSnd.replaceTrack(a).catch(() => {});
+      /* Una grabación en marcha no admite otro micro: el vídeo sigue sin sonido hasta el próximo trozo */
+      if (c.rec) c.sinSonido = true;
+      else camSyncOut();
+    }
+    camRevisa();
   }
   async function camEmite() {
     let c = cam;
@@ -12440,8 +12566,13 @@
     camLuz();
     try {
       let pc = new RTCPeerConnection({ iceServers: VID_ICE, bundlePolicy: "max-bundle" }),
-        tr = c.out.getTracks().map((t) => pc.addTransceiver(t, { direction: "sendonly" }));
+        tr = c.out
+          .getVideoTracks()
+          .concat(c.s.getAudioTracks().filter((t) => t.readyState === "live").slice(0, 1))
+          .map((t) => pc.addTransceiver(t, { direction: "sendonly" }));
       c.pc = pc;
+      let as = tr.find((t) => t.sender.track.kind === "audio");
+      c.aSnd = as ? as.sender : null;
       let vs = tr.find((t) => t.sender.track.kind === "video");
       if (vs) {
         let pr = vs.sender.getParameters();
@@ -12488,6 +12619,7 @@
     clearTimeout(c.reint);
     if (c.pc) c.pc.close();
     c.pc = null;
+    c.aSnd = null;
     c.emite = null;
     camLuz();
     let x = liveRows[c.id];
@@ -12542,7 +12674,7 @@
       m = state.matches.find((z) => z.id === cam.id);
     if (k === "close") return camCierra();
     if (k === "rec") return camGraba();
-    if (k === "stop") return cam.rec && cam.rec.stop();
+    if (k === "stop") return cam.rec && ((cam.parando = true), cam.rec.stop());
     if (k === "save") return camGuarda();
     if (k === "emit") return camEmite();
     if (k === "unemit") {
@@ -12570,12 +12702,21 @@
     if (!c) return;
     if (document.hidden) {
       if (c.rec) c.fuera = true;
+      /* Una llamada o salir de la app: la familia ve «Pausa» en vez de una imagen congelada */
+      camCartel(c);
       return;
     }
     c.v.play().catch(() => {});
     if (c.fuera && c.rec)
-      note("Mientras grababas se ha apagado la pantalla o has salido de la app, y ese rato puede no haberse grabado. Deja la app delante mientras grabas; si el móvil se calienta o tiene poca batería, conéctalo al cargador.");
+      note("Mientras grababas has salido de la app (una llamada, otra app o la pantalla apagada). La grabación sigue, pero ese rato puede no haberse grabado (imagen parada o sin sonido). Deja la app delante mientras grabas; si el móvil se calienta o tiene poca batería, conéctalo al cargador.");
     c.fuera = false;
+    camRevisa();
+    /* Si el directo se cortó mientras estabas fuera, se vuelve a conectar ya */
+    if (c.emite && c.pc && /failed|disconnected|closed/.test(c.pc.connectionState)) {
+      let pc = c.pc;
+      clearTimeout(c.reint);
+      c.reint = setTimeout(() => cam === c && c.emite && c.pc === pc && (pc.close(), camEmite()), 300);
+    }
   });
   window.addEventListener("beforeunload", (e) => {
     if (cam && (cam.rec || cam.emite || (cam.listo && !cam.guardado))) {

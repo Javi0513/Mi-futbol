@@ -92,10 +92,11 @@ with sync_playwright() as p:
     check('y avisa de que ese rato puede no haberse grabado','puede no haberse grabado' in pg.locator('body').inner_text(),'')
     check('la grabación sigue',pg.locator('[data-cam=stop]').count()==1)
     pg.wait_for_timeout(1500)
-    # la cámara se corta mientras graba: se para y queda listo para guardar
-    pg.evaluate("window.__st[0].getVideoTracks()[0].dispatchEvent(new Event('ended'))");pg.wait_for_selector('.cam-fin',timeout=5000)
-    check('si la cámara se corta, la grabación se para sola y queda lista para guardar',pg.locator('[data-cam=save]').count()==1)
-    check('y lo explica','La cámara se ha cortado' in pg.locator('body').inner_text())
+        # (v11.48) la cámara se corta mientras graba: se pide otra vez sola y la grabación sigue
+    pg.evaluate("window.__st[0].getVideoTracks()[0].dispatchEvent(new Event('ended'))");pg.wait_for_function("()=>window.__st.length>1",timeout=6000);pg.wait_for_timeout(600)
+    check('si la cámara se corta, se vuelve a abrir sola y la grabación sigue',pg.locator('[data-cam=stop]').count()==1 and pg.locator('.cam-aviso').count()==0)
+    pg.click('[data-cam=stop]');pg.wait_for_selector('.cam-fin')
+    check('al parar queda listo para guardar',pg.locator('[data-cam=save]').count()==1)
     with pg.expect_download() as dl:pg.click('[data-cam=save]')
     check('lo grabado se puede guardar',os.path.getsize(dl.value.path())>5000)
     pg.click('[data-cam=close]');pg.wait_for_timeout(300)

@@ -2354,6 +2354,15 @@ body.cam-on {
   font-size: 13px;
   margin: 2px 0 0;
 }
+.cam-aviso {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(250, 204, 21, 0.14);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  color: var(--ink);
+  font-size: 14px;
+}
 .cam-pick {
   display: flex;
   flex-wrap: wrap;
