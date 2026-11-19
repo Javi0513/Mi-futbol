@@ -57,6 +57,7 @@ with sync_playwright() as p:
     check('en el historial siguen las de la v11.26 (horizontal, Portero, discontinua)',all(w in body for w in ('horizontal','Portero','discontinua','fichas más pequeñas')))
     check('y las de la v11.44 (campo en el mapa)',all(w in body for w in ('el campo en el mapa','Buscar en el mapa','Cómo llegar','Mis campos','OpenStreetMap')))
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
+    check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.41 (clasificación de la liga)',all(w in body for w in ('Nueva clasificación de la liga','Federación Andaluza','4 días al mes')))
     check('la novedad del campo en el mapa trae su tutorial',pg.locator('#infoBody [data-ftut=campo]').count()==1)
     check('y la de la liga también',pg.locator('#infoBody [data-ftut=liga]').count()==1)
