@@ -1563,7 +1563,7 @@
   let mapaCtx = null;
   function mapasHtml(mod, L, quien) {
     if (!L.length)
-      return `<h3 class="ci-h3">Mapa de calor y campograma de tiro</h3><p class="muted">Aún no hay acciones marcadas en el campo. En el Directo, después de apuntar un robo, un tiro o un gol, toca en el campo dónde ha sido y aquí saldrán sus mapas.</p>`;
+      return `<h3 class="ci-h3">Mapa de calor y campograma de tiro</h3><p class="muted">Aún no hay acciones marcadas en el campo. En el Directo, después de apuntar un robo, un tiro o un gol, toca en el campo dónde ha sido. También después del partido, en «Editar partido › 📍 Dónde fue cada acción». Aquí saldrán sus mapas.</p>`;
     mapaCtx = { mod, L, k: "" };
     let ks = LOC_K.filter((k) => L.some((z) => z[0] === k[0])),
       T = L.filter((z) => TIRO_K.includes(z[0])),
@@ -7154,8 +7154,111 @@
         (p) =>
           `<tr><th scope="row">${esc(dname(p.id))}</th>${ESTP.map((s) => `<td><input type="number" min="0" max="999" inputmode="numeric" data-mdst="${esc(p.id)}" data-k="${s[0]}" value="${stv(p, s[0]) || ""}" placeholder="0" aria-label="${s[2]} de ${esc(name(p.id))}"></td>`).join("")}</tr>`,
       )
-      .join("")}</tbody></table></div><h4>Faltas acumuladas</h4><div class="mdfal">${fi("n1", "Nuestras 1ª")}${fi("r1", "Rival 1ª")}${fi("n2", "Nuestras 2ª")}${fi("r2", "Rival 2ª")}</div>`;
+      .join("")}</tbody></table></div>${mdLocHtml(d)}<h4>Faltas acumuladas</h4><div class="mdfal">${fi("n1", "Nuestras 1ª")}${fi("r1", "Rival 1ª")}${fi("n2", "Nuestras 2ª")}${fi("r2", "Rival 2ª")}</div>`;
   }
+  /* ===== Marcar en el campo después del partido (v11.49) =====
+     En «Editar partido» (o al crear uno ya jugado) el entrenador elige jugador y acción y toca en el
+     campo dónde fue: robos, pérdidas, tiros, goles, asistencias, paradas y faltas. Sirve para
+     completar el mapa de calor y el campograma después del partido o viendo el vídeo. Se guarda
+     igual que en el Directo (loc del convocado). Nunca más marcas que el total: si ya están todas
+     las de un dato, otro toque suma uno más a ese dato (en goles no, que cambian el resultado).
+     Plan gratuito: cuenta en los mismos LIM.mp partidos al mes que el Directo. Pro: ilimitado. */
+  const mdLocMid = (d) => state.editing || d._mid || (d._mid = crypto.randomUUID());
+  const mdLocTot = (p, k) => (k === "gol" ? Math.max(0, Number(p.goals) || 0) : stv(p, k));
+  function mdLocHtml(d) {
+    let ps = d.players.slice().sort((a, b) => name(a.id).localeCompare(name(b.id), "es"));
+    if (!ps.length) return "";
+    let q = state.mdLoc || {};
+    if (!ps.some((p) => p.id === q.pid)) q.pid = ps[0].id;
+    if (!LOC_K.some((k) => k[0] === q.k)) q.k = "rob";
+    state.mdLoc = q;
+    let mid = mdLocMid(d),
+      p = ps.find((z) => z.id === q.pid),
+      L = locDe(p),
+      n = L.filter((z) => z[0] === q.k).length,
+      tot = mdLocTot(p, q.k),
+      nom = locNom(q.k).toLowerCase(),
+      ok = locPuede(mid, false),
+      s = campoDe(state.mode).w / 105,
+      r = (1.3 * s + 0.35).toFixed(2),
+      dots = L.map((z) => {
+        let c = locXY(state.mode, z);
+        return `<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="${r}" class="${z[0] === q.k ? "ml-on" : "ml-off"}"/>`;
+      }).join(""),
+      tx = !tot
+        ? q.k === "gol"
+          ? `No tiene goles en este partido. Si marcó, pon sus goles arriba (en la lista de convocados) y después márcalos aquí.`
+          : `Toca en el campo dónde fue y se suma 1 a sus ${nom}.`
+        : n < tot
+          ? `<b>${n} de ${tot}</b> ${nom} marcados. Toca en el campo dónde fue ${n ? "el siguiente" : "el primero"}.`
+          : q.k === "gol"
+            ? `<b>Ya están marcados sus ${tot} goles.</b> Si marcó más, sube sus goles arriba.`
+            : `<b>Ya están marcados sus ${tot} ${nom}.</b> Si tocas otra vez en el campo, se suma uno más.`,
+      lim = esPro()
+        ? ""
+        : ok
+          ? `<p class="muted lim-q">Plan gratuito: marcar en el campo en ${LIM.mp} partidos al mes (${(envLee().mp || []).includes(mid) ? "este partido ya cuenta" : "te quedan " + Math.max(0, LIM.mp - envUsados("mp"))}). Con Pro, ilimitado.</p>`
+          : `<p class="muted lim-q">Plan gratuito: este mes ya has marcado en el campo en ${LIM.mp} partidos. Para marcar en este, plan Pro. <button type="button" class="linkb" data-mdloc-pro>Ver el plan Pro</button></p>`;
+    return `<div class="md-loc"><h4>📍 Dónde fue cada acción</h4><p class="hint">Después del partido o viendo el vídeo: elige el jugador y la acción y toca en el campo dónde fue. Así salen su mapa de calor y el campograma de tiro.</p>${lim}<div class="formgrid"><label>Jugador<select id="mdLocP">${ps.map((z) => `<option value="${esc(z.id)}" ${z.id === q.pid ? "selected" : ""}>${esc(dname(z.id))}${locDe(z).length ? " · 📍" + locDe(z).length : ""}</option>`).join("")}</select></label><label>Acción<select id="mdLocK">${LOC_K.map((k) => `<option value="${k[0]}" ${k[0] === q.k ? "selected" : ""}>${k[1]} (${L.filter((z) => z[0] === k[0]).length} de ${mdLocTot(p, k[0])})</option>`).join("")}</select></label></div><label class="mdparte">Minuto (opcional)<input id="mdLocM" type="number" min="0" max="130" inputmode="numeric" value="${q.mi === "" || q.mi == null ? "" : Number(q.mi) || 0}" placeholder="Min."></label><p class="md-loc-t">${tx}</p>${ok ? campoSvg(state.mode, dots, { flecha: 1, label: "Toca dónde fue", attr: 'data-mdloc="1"', cls: "lv-campo md-campo" }) : ""}<div class="hbtns"><button type="button" class="secondary small" data-mdloc="undo" ${n ? "" : "disabled"}>↶ Quitar la última</button><button type="button" class="secondary small" data-mdloc="clear" ${n ? "" : "disabled"}>Borrar las ${n || ""} de ${esc(nom)}</button></div><p class="hint">En el campo, más fuerte la acción elegida y más suaves las demás de este jugador. Siempre atacando hacia la derecha.</p></div>`;
+  }
+  document.addEventListener("click", (ev) => {
+    let d = state.draft;
+    if (!d || state.live || !ev.target.closest) return;
+    let svg = ev.target.closest("svg[data-mdloc]"),
+      b = ev.target.closest("button[data-mdloc]"),
+      pr = ev.target.closest("[data-mdloc-pro]");
+    if (pr) return showInfo("pro");
+    if (!svg && !b) return;
+    if (viendo) return note(SOLO_VER);
+    let q = state.mdLoc || {},
+      p = d.players.find((z) => z.id === q.pid);
+    if (!p) return;
+    if (b) {
+      let L = Array.isArray(p.loc) ? p.loc.slice() : [];
+      if (b.dataset.mdloc === "undo") {
+        let i = L.map((z) => z[0]).lastIndexOf(q.k);
+        if (i >= 0) L.splice(i, 1);
+      } else if (!confirm(`¿Borrar las marcas de ${locNom(q.k).toLowerCase()} de ${name(p.id)}?`)) return;
+      else L = L.filter((z) => z[0] !== q.k);
+      if (L.length) p.loc = L;
+      else delete p.loc;
+      return render();
+    }
+    let mid = mdLocMid(d);
+    if (!locPuede(mid, false)) return showInfo("pro");
+    let W = Number(svg.dataset.w),
+      H = Number(svg.dataset.h),
+      pt = svg.createSVGPoint(),
+      ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    pt.x = ev.clientX;
+    pt.y = ev.clientY;
+    let c = pt.matrixTransform(ctm.inverse());
+    if (c.x < -W * 0.05 || c.x > W * 1.05 || c.y < -H * 0.08 || c.y > H * 1.08) return;
+    let n = locDe(p).filter((z) => z[0] === q.k).length,
+      tot = mdLocTot(p, q.k);
+    if (n >= tot) {
+      if (q.k === "gol") return note("Ya están marcados todos sus goles. Si marcó más, sube sus goles en la lista de convocados.");
+      if (tot >= 999) return;
+      stSet(p, q.k, 1);
+    }
+    let mi = q.mi === "" || q.mi == null ? (p.stm && Array.isArray(p.stm[q.k]) && p.stm[q.k][n]) || 0 : Number(q.mi) || 0;
+    locPuede(mid, true);
+    if (!locAdd(p, q.k, (c.x / W) * 100, (c.y / H) * 100, mi)) return note("Demasiadas marcas para este jugador.");
+    render();
+  });
+  document.addEventListener("change", (ev) => {
+    if (!state.draft || !state.mdLoc) return;
+    let id = ev.target.id;
+    if (id === "mdLocP" || id === "mdLocK") {
+      state.mdLoc[id === "mdLocP" ? "pid" : "k"] = ev.target.value;
+      render();
+    }
+    if (id === "mdLocM") {
+      let v = parseInt(ev.target.value);
+      state.mdLoc.mi = v >= 0 && v <= 130 ? v : "";
+    }
+  });
   /* Duración del partido para calcular minutos: la del Directo si lo hay, si no la normal. */
   const mdParte = (d, id) => {
     let x = id && liveRows[id],
@@ -7847,6 +7950,7 @@
       if (js) state.draft.alineacion.jornada = js;
     }
     state.selectedSlot = null;
+    state.mdLoc = null;
     let al = state.draft.alineacion;
     if (!formations[state.mode][al.formation])
       al.formation = Object.keys(formations[state.mode])[0];
@@ -8010,7 +8114,7 @@
     };
     if (!state.editing && full("m")) return showInfo("pro");
     if (!state.editing) {
-      payload.id = crypto.randomUUID();
+      payload.id = d._mid || crypto.randomUUID();
       payload.owner_id = (await db.auth.getUser()).data.user.id;
       if (curTeam()) payload.equipo_id = curTeam();
     }
@@ -8080,6 +8184,8 @@
       return render();
     }
     if (x) x[field] = input.value;
+    /* Marcas de gol en el campo (v11.49): nunca más que sus goles */
+    if (x && field === "goals" && Array.isArray(x.loc)) locTrim(x, "gol", Math.max(0, parseInt(input.value) || 0));
   }
 
   let amode = "login",
@@ -9127,6 +9233,7 @@
         "En el <b>Directo</b>, cuando apuntas un robo, una pérdida, un tiro, una parada, una asistencia, una falta o un gol de un jugador, abajo sale un campo: <b>toca dónde ha sido</b>. Es opcional: si no quieres marcarlo, pulsa «Sin marcar» o sigue apuntando y se quita solo.",
         "El campo se ve siempre <b>atacando hacia la derecha</b> (hacia la portería del rival), también en la segunda parte. Así todos los partidos se comparan igual.",
         "Con el botón <b>«📍 Marcar en el campo dónde fue»</b> lo activas o lo quitas. Si te equivocas, «↶ Deshacer» quita el dato y su marca; si quitas un gol, también se quita su marca.",
+        "<b>Después del partido</b> (o viendo el vídeo): abre el partido con el lápiz ✏️ y baja hasta <b>«📍 Dónde fue cada acción»</b>. Elige el jugador y la acción, escribe el minuto si quieres y <b>toca en el campo dónde fue</b>. Ves cuántas llevas marcadas de las que tiene (por ejemplo «Robos (1 de 3)»); si ya están todas, otro toque suma una más a ese dato (los goles no). «↶ Quitar la última» y «Borrar» corrigen los errores. Luego pulsa «Guardar partido».",
         "En la <b>ficha del jugador</b> y en el <b>resumen del partido</b> salen el <b>mapa de calor</b>, como en Power BI: el campo verde a rayas y manchas suaves, <b>azul</b> donde hay pocas acciones y <b>turquesa o verde claro</b> donde más se repiten (puedes ver todas o solo robos, pérdidas, tiros…) y el <b>campograma de tiro</b>: en verde los goles, en amarillo los tiros a puerta y en rojo los tiros fuera, con el porcentaje de acierto.",
         "En el <b>Excel</b> hay una hoja <b>«Mapa»</b> con cada acción marcada: minuto, parte, jugador, las coordenadas X e Y (de 0 a 100 y en metros), el tercio del campo y el carril. Sirve para llevarlo a <b>Power BI</b> u otra herramienta de análisis.",
         "Con el plan gratuito puedes marcar en el campo en <b>2 partidos al mes</b> (apuntar los datos sigue siendo gratis). Con Pro, sin límite.",
@@ -9538,7 +9645,81 @@
     state.editing = null;
     render();
   }
+  /* Tutorial «Marcar en el campo después del partido» (v11.49): abre el último partido para
+     editarlo sin guardar nada; al terminar se cierra sin cambios */
+  function ftMdLoc() {
+    $("info").classList.add("hidden");
+    if (state.draft) return;
+    let m = state.matches.filter((z) => z.modalidad === state.mode)[0];
+    state.live = null;
+    state.tab = "partidos";
+    state.editing = m ? m.id : null;
+    resetDraft(m);
+    ftBorrador = true;
+  }
   const FTUT = {
+    mapa: {
+      t: "Marcar el mapa de calor después del partido",
+      v: "11.49",
+      p: "Marca dónde fue cada robo, tiro o gol después del partido o viendo el vídeo.",
+      pasos: [
+        {
+          t: "Mapa de calor después del partido",
+          p: "Te enseño a marcar en el campo dónde fue cada acción de un partido ya jugado: robos, pérdidas, tiros, goles, asistencias, paradas y faltas. Así salen el mapa de calor y el campograma de tiro aunque no usaras el Directo. No se guarda nada mientras miras.",
+          go: ftPartidos,
+        },
+        {
+          el: '#view [data-action="edit-match"]',
+          t: "1. Abre el partido",
+          p: "En «Partidos», toca el lápiz ✏️ del partido ya jugado para editarlo. (También vale al crear un partido nuevo que ya se ha jugado.)",
+          go: () => {
+            ftSinBorrador();
+            ftPartidos();
+          },
+        },
+        {
+          el: "#view .md-loc",
+          t: "2. Baja hasta «📍 Dónde fue cada acción»",
+          p: "Está en «Datos del partido», debajo de la tabla de estadísticas de cada jugador. Si en la tabla ya hay robos, tiros… (del Directo o puestos a mano), aquí marcas dónde fue cada uno.",
+          go: ftMdLoc,
+        },
+        {
+          el: "#mdLocP",
+          t: "3. Elige el jugador",
+          p: "Los que ya tienen marcas llevan 📍 y el número de marcas al lado del nombre.",
+        },
+        {
+          el: "#mdLocK",
+          t: "4. Elige la acción",
+          p: "Robos, pérdidas, tiros a puerta, tiros fuera, goles, asistencias, paradas o faltas. Entre paréntesis ves cuántas llevas marcadas de las que tiene (por ejemplo «Robos (1 de 3)»).",
+        },
+        {
+          el: "#mdLocM",
+          t: "5. El minuto (si quieres)",
+          p: "Si lo sabes (por ejemplo viendo el vídeo), escribe el minuto y saldrá en el Excel. Si lo dejas vacío, se usa el minuto apuntado en el Directo, si lo hay.",
+        },
+        {
+          el: "#view svg[data-mdloc]",
+          t: "6. Toca en el campo dónde fue",
+          p: "Siempre atacando hacia la derecha (la portería del rival). Sale un punto amarillo por cada marca; las demás acciones del jugador se ven en blanco. Si ya están marcadas todas, otro toque suma una más a ese dato (los goles no, para no cambiar el resultado).",
+        },
+        {
+          el: "#view .md-loc .hbtns",
+          t: "7. ¿Te has equivocado?",
+          p: "«↶ Quitar la última» borra la última marca de esa acción y «Borrar las … » quita todas las de esa acción. El número de la tabla no cambia.",
+        },
+        {
+          el: '#view [data-action="save"]',
+          t: "8. Guarda el partido",
+          p: "Al terminar, pulsa «Guardar partido». Las marcas se guardan con el partido.",
+        },
+        {
+          t: "¡Listo!",
+          p: "El mapa de calor y el campograma salen en la ficha del jugador, en el resumen del partido y en la imagen del jugador, y las coordenadas van a la hoja «Mapa» del Excel. En el plan gratuito, 2 partidos al mes con mapa (los mismos que en el Directo); con Pro, sin límite.",
+        },
+      ],
+      fin: ftSinBorrador,
+    },
     campo: {
       t: "Campo en el mapa",
       v: "11.44",
