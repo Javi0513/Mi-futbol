@@ -9401,6 +9401,7 @@
         "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la app la vuelve a abrir sola y la grabación sigue.",
         "<b>Si aun así se apaga la pantalla</b> (emitiendo o grabando): en iPhone y iPad ve a Ajustes › Pantalla y brillo › Bloqueo automático y pon «Nunca» durante el partido, y quita el Modo de bajo consumo, que bloquea el iPhone a los 30 segundos. En Android, Ajustes › Pantalla › Tiempo de espera de la pantalla al máximo y sin ahorro de batería. Si ya la tenías abierta, cierra la app del todo y vuelve a abrirla para tener la última versión.",
         "<b>Imagen de lado</b>: si pones el móvil en horizontal con la rotación bloqueada, la app endereza la imagen sola (botón «🔄 Imagen: Automática»), así la familia y la grabación ven el campo derecho. Si aun así sale girada, toca ese botón para elegir «Girada ↶», «Girada ↷» o «Sin girar»; la app lo recuerda.",
+        "<b>Cuántos te siguen</b>: en el Directo, debajo del marcador (y en la cámara), ves cuántas personas tienen abierto ahora el enlace del directo, por ejemplo «👁 12 personas están viendo el directo ahora». Cuenta a todos los que lo miran, con vídeo o solo el marcador, y se actualiza cada 15 segundos. Quien sigue el partido desde el enlace también ve cuántos son. Gratis para todos.",
         "<b>La familia en el enlace del directo</b>: mientras ven el vídeo, su pantalla tampoco se apaga. Si giran el móvil, el vídeo se pone en grande en toda la pantalla, con el marcador dentro. Si se les corta la conexión, el vídeo vuelve solo.",
         "<b>Si te llaman mientras grabas o emites</b>: no se corta nada. La grabación y el vídeo en directo siguen; mientras dura la llamada la cámara o el sonido pueden quedarse en pausa y sale el aviso «Cámara o sonido en pausa», y la familia ve «Pausa» con el marcador al día. Tu conversación no se graba ni se oye en el directo. Al colgar, la cámara y el sonido vuelven solos (no cierres la cámara). Si contestas y sales de la app, vuelve a ella al colgar. Para que no te interrumpan, pon el móvil en modo «No molestar» o en modo avión con wifi durante el partido (en modo avión solo puedes emitir con wifi).",
         "Grabar vídeo gasta mucha batería y calienta el móvil. Para un partido entero, conéctalo a una <b>batería externa</b> o al cargador, quita el <b>ahorro de batería</b>, baja el brillo y no lo dejes al sol: si se calienta demasiado o se queda sin batería, el móvil se puede apagar solo.",
@@ -9524,7 +9525,7 @@
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
         "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -10881,6 +10882,46 @@
       (x.estado === "2T" ? x.parte_min : 0)
     );
   }
+  /* ===== Espectadores del directo (v11.51) =====
+     Cuántas personas tienen abierto ahora el enlace del directo (marcador o vídeo). La página del enlace
+     avisa cada 10 s (rpc directo_visto, que devuelve cuántos son) y el entrenador lo pregunta cada 15 s
+     (rpc directo_viendo). Lo ven el entrenador y quien sigue el partido. Gratis para todos. */
+  const espV = { n: {}, t: {}, err: false };
+  const viendoHtml = (did) => (espV.err ? "" : `<p class="lv-viendo" data-viendo="${esc(did)}" role="status" aria-live="polite"></p>`);
+  const viendoFrase = (n) => (n ? `👁 <b>${n}</b> ${n === 1 ? "persona está" : "personas están"} viendo el directo ahora` : "👁 Ahora mismo nadie tiene abierto el enlace del directo");
+  function viendoTxt(did) {
+    let n = espV.n[did];
+    return n == null ? "👁 Contando quién te sigue…" : viendoFrase(n);
+  }
+  async function viendoPide(did) {
+    espV.t[did] = Date.now();
+    try {
+      let r = await db.rpc("directo_viendo", { codigo: did });
+      if (r.error) throw r.error;
+      espV.n[did] = +r.data || 0;
+    } catch (e) {
+      /* Sin el SQL de espectadores (o sin conexión): no se enseña nada */
+      if (e && /directo_viendo|function|schema/i.test(e.message || "")) espV.err = true;
+    }
+  }
+  function viendoPinta() {
+    let els = document.querySelectorAll("[data-viendo]");
+    if (espV.err) return els.forEach((el) => el.remove());
+    els.forEach((el) => {
+      let did = el.dataset.viendo;
+      if (!did) return;
+      /* Cada 15 s, y enseguida al abrir el Directo o la cámara */
+      if (!espV.t[did] || Date.now() - espV.t[did] > (el.dataset.h ? 15000 : 2000)) viendoPide(did).then(viendoPinta);
+      let h = viendoTxt(did);
+      if (el.dataset.h !== h) {
+        el.dataset.h = h;
+        el.innerHTML = h;
+      }
+    });
+  }
+  setInterval(() => {
+    if (!document.hidden && !PUB) viendoPinta();
+  }, 1000);
   function liveBoard(x, now, own) {
     let c = liveClock(x, now);
     return `<div class="lv-board"><div class="lv-team">${own ? `<input id="lvTeam" value="${esc(x.equipo)}" maxlength="60" aria-label="Nombre de tu equipo" title="Toca para cambiar el nombre de tu equipo">` : `<span>${esc(x.equipo)}</span>`}</div><div class="lv-score" role="img" aria-label="Marcador ${x.gf} a ${x.gc}"><b>${x.gf}</b><i>-</i><b>${x.gc}</b></div><div class="lv-team"><span>${esc(x.rival)}</span></div></div><div class="lv-clock${x.desde ? " run" : ""}"><span class="lv-st">${x.estado === "1T" || x.estado === "2T" ? "● " + LIVE_EST[x.estado] : x.estado === "pre" ? LIVE_EST.pre : ""}</span><b data-lvmin>${c[0]}</b><small data-lvss>${c[1]}</small></div>${liveFalBoard(x)}`;
@@ -11103,7 +11144,7 @@
       capgk = ids.length
         ? `<div class="formgrid lv-cg"><label>Capitán<select id="lvCap">${so(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="lvGk">${so(gk, "—")}</select></label></div>`
         : "";
-    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${jorTxt(m.alineacion) ? esc(jorTxt(m.alineacion)) + " · " : ""}${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? ventPanel(m, x) : ""}${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${jorTxt(m.alineacion) ? esc(jorTxt(m.alineacion)) + " · " : ""}${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}${viendoHtml(x.id)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div><div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? ventPanel(m, x) : ""}${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
   }
   /* Estadísticas en directo: eliges qué apuntar (robo, pérdida, tiro…) y tocas al jugador */
   function liveStats(m, x) {
@@ -12649,7 +12690,7 @@
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
       ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-      : `${av}${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
+      : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
   }
   /* tr: grabar un entrenamiento ({ fecha, equipo }); sin marcador ni emisión */
   async function camAbre(id, frente, tr) {
@@ -13125,7 +13166,28 @@
   /* Página pública del enlace (sin cuenta): se actualiza sola cada 10 s */
   const pubShell = (h) =>
     `<div class="pub-in"><div class="brand"><span class="mark" role="img" aria-label="Logo JV32"></span><span class="word">Mi Fútbol <i>JV32</i></span></div><section class="panel live">${h}</section><p class="legal-links"><a href="${esc(location.pathname)}">¿Eres entrenador? Lleva tu equipo con Mi Fútbol JV32</a></p></div>`;
+  /* v11.51: la página del enlace avisa de que sigue abierta (para el contador de espectadores del entrenador) */
+  const pubQuien = (() => {
+    try {
+      let q = sessionStorage.getItem("mf_quien");
+      if (!q) sessionStorage.setItem("mf_quien", (q = Math.random().toString(36).slice(2) + Date.now().toString(36)));
+      return q;
+    } catch (e) {
+      return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+  })();
   async function pubLoad() {
+    if (PUB && !document.hidden)
+      try {
+        db.rpc("directo_visto", { codigo: PUB, quien: pubQuien }).then(
+          (r) => {
+            let el = $("pubViendo");
+            if (!el || !r || r.error || typeof r.data !== "number") return;
+            el.innerHTML = viendoFrase(Math.max(1, r.data)).replace("el directo ahora", "este partido ahora");
+          },
+          () => {},
+        );
+      } catch (e) {}
     let r;
     try {
       r = await db.rpc("ver_directo", { codigo: PUB });
@@ -13155,7 +13217,7 @@
     document.body.appendChild(box);
     document.title = "Directo · Mi Fútbol JV32";
     box.innerHTML = pubShell(
-      '<div id="pubVid" class="pub-vid hidden"><video playsinline autoplay muted controls aria-label="Vídeo del partido en directo"></video><button class="secondary small" data-pubsound>🔊 Activar sonido</button><p class="pub-gira muted">Gira el móvil para verlo en grande.</p></div><p id="pubLleno" class="pro-fin hidden">El vídeo ya lo están viendo 25 personas, que es el máximo por partido. Sigue aquí el marcador; el vídeo te entrará solo en cuanto quede un sitio libre.</p><div id="pubData"><p class="muted">Cargando el directo…</p></div>',
+      '<div id="pubVid" class="pub-vid hidden"><video playsinline autoplay muted controls aria-label="Vídeo del partido en directo"></video><button class="secondary small" data-pubsound>🔊 Activar sonido</button><p class="pub-gira muted">Gira el móvil para verlo en grande.</p></div><p id="pubLleno" class="pro-fin hidden">El vídeo ya lo están viendo 25 personas, que es el máximo por partido. Sigue aquí el marcador; el vídeo te entrará solo en cuanto quede un sitio libre.</p><p id="pubViendo" class="lv-viendo" role="status" aria-live="polite"></p><div id="pubData"><p class="muted">Cargando el directo…</p></div>',
     );
     box.addEventListener("click", (e) => {
       let b = e.target.closest("[data-pubsound]");
