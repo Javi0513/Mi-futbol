@@ -107,7 +107,7 @@ with sync_playwright() as p:
     pg=page(b,seed('gratis',CP(T)),ON+WL+"window.__wl_fail=1;"+HID);login(pg)
     pg.evaluate("window.__wl.fail=true");abre_cam(pg)
     v=pg.evaluate(VID)
-    check('si el Wake Lock falla (ahorro de batería), se usa el vídeo mudo en bucle',v and v['on'] and v['muted'] and v['inline'] and v['loop'],v)
+    check('si el Wake Lock falla (ahorro de batería), se usa el vídeo de silencio (sin «loop» y con sonido: el iPhone no cuenta los vídeos en bucle ni los silenciados)',v and v['on'] and v['inline'] and not v['loop'],v)
     pg.click('[data-cam=close]');pg.wait_for_timeout(300)
     check('al cerrar se para el vídeo mudo',(pg.evaluate(VID) or {}).get('on') is False,pg.evaluate(VID))
     pg.context.close()

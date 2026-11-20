@@ -59,6 +59,7 @@ with sync_playwright() as p:
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.49 (mapa de calor después del partido)',all(w in body for w in ('Mapa de calor también después del partido','Dónde fue cada acción','2 partidos al mes')))
+    check('y las de la v11.50 (pantalla encendida en el directo, imagen derecha)',all(w in body for w in ('la pantalla se apagaba al emitir el directo','Bloqueo automático','Imagen: Automática','La familia ve mejor el directo')))
     check('la novedad del mapa después del partido trae su tutorial',pg.locator('#infoBody [data-ftut=mapa]').count()==1)
     check('y las de la v11.41 (clasificación de la liga)',all(w in body for w in ('Nueva clasificación de la liga','Federación Andaluza','4 días al mes')))
     check('la novedad del campo en el mapa trae su tutorial',pg.locator('#infoBody [data-ftut=campo]').count()==1)
