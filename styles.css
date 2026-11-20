@@ -7307,3 +7307,49 @@ body.intro-on {
   stroke: rgba(255, 255, 255, 0.7);
   stroke-width: calc(var(--lw) * 0.5);
 }
+
+/* ===== v11.50: imagen derecha con la rotación bloqueada + ver el directo en grande en horizontal ===== */
+.cam-vw {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+.cam-vw .cam-cv {
+  flex: 1;
+  height: 100%;
+}
+.pub-vid video {
+  aspect-ratio: auto;
+  min-height: 180px;
+  max-height: 70vh;
+  object-fit: contain;
+}
+.pub-gira {
+  font-size: 12px;
+  margin: 4px 0 0;
+  text-align: center;
+}
+/* Móvil girado: el vídeo ocupa toda la pantalla (el marcador va dentro del vídeo) */
+@media (orientation: landscape) and (max-height: 520px) {
+  .pub-vid:not(.hidden) video {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    z-index: 300;
+    background: #000;
+  }
+  .pub-vid:not(.hidden) [data-pubsound] {
+    position: fixed;
+    z-index: 301;
+  }
+  .pub-gira {
+    display: none;
+  }
+}
