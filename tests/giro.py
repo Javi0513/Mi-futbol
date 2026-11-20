@@ -51,6 +51,7 @@ with sync_playwright() as p:
     check('con el móvil derecho la imagen no se gira',pg.evaluate(DIM)==[W,H] and not pg.evaluate(ROT),[W,H])
     grav(pg,9.8,0)
     check('móvil en horizontal con la app en vertical (rotación bloqueada): la imagen se endereza',pg.evaluate(DIM)==[H,W],pg.evaluate(DIM))
+    pg.screenshot(path=OUT+'/giro_camara_enderezada.png')
     check('y en la pantalla del entrenador se ve derecha con el móvil en la mano','rotate(-270deg)' in pg.evaluate(ROT),pg.evaluate(ROT))
     pg.click('[data-cam=rec]');pg.wait_for_selector('[data-cam=stop]');pg.wait_for_timeout(1200)
     check('se graba con la imagen enderezada',pg.evaluate(DIM)==[H,W])
