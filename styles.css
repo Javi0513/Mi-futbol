@@ -7353,3 +7353,28 @@ body.intro-on {
     display: none;
   }
 }
+/* Espectadores del directo (v11.51) */
+.lv-viendo {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(43, 227, 106, 0.1);
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+.lv-viendo:empty {
+  display: none;
+}
+.lv-viendo b {
+  color: var(--lime);
+  font-size: 17px;
+}
+.lv-viendo small {
+  display: block;
+  color: var(--mut);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.cam-ui .lv-viendo {
+  margin: 0 0 8px;
+}
