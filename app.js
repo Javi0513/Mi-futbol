@@ -9416,7 +9416,8 @@
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
         "<b>Tiros desde el anotador</b>: también tiene <b>«🎯 Tiro a puerta»</b> y <b>«Tiro fuera»</b> (elige quién ha tirado; primero salen los que están en el campo) y <b>«Tiro del rival»</b>. En tu Directo se suman solos a las estadísticas de cada jugador y a los tiros del rival, y salen en el resumen, en su ficha y en el Excel. Si el anotador quita un tiro con la ✕, se resta. Plan gratuito: tiros desde el anotador en <b>2 partidos al mes</b> (el resto del anotador sigue igual y tú los puedes apuntar en tu Directo siempre). Con Pro, ilimitado.",
         "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
-        "<b>El anotador también lleva la grabación</b>: con la cámara abierta en el móvil que graba (Directo › «Cámara: grabar el partido»), en el enlace del anotador sale «Grabación» con <b>«● Empezar a grabar»</b>, <b>«⏸ Pausar grabación»</b> y <b>«▶ Reanudar grabación»</b>. El móvil que graba lo hace solo en unos segundos y el anotador ve si está grabando o en pausa. Al pausar y reanudar sigue siendo un solo vídeo, sin el rato de la pausa. En el móvil que graba también tienes «⏸ Pausar» y «▶ Reanudar». Parar y guardar el vídeo se hace siempre en el móvil que graba. Va con el anotador (plan gratuito: 3 partidos al mes; con Pro, ilimitado).",
+        "<b>El anotador también lleva la grabación</b>: con la cámara abierta en el móvil que graba (Directo › «Cámara: grabar el partido»), en el enlace del anotador sale «Grabación» con <b>«● Empezar a grabar»</b>, <b>«⏸ Pausar grabación»</b> y <b>«▶ Reanudar grabación»</b> y <b>«■ Parar grabación»</b>. El móvil que graba lo hace solo en unos segundos y el anotador ve si está grabando o en pausa. Al pausar y reanudar sigue siendo un solo vídeo, sin el rato de la pausa. En el móvil que graba también tienes «⏸ Pausar» y «▶ Reanudar». <b>Guardar el vídeo se hace siempre en el móvil que graba</b> (el anotador no puede). Va con el anotador (plan gratuito: 3 partidos al mes; con Pro, ilimitado).",
+        "<b>Guardar el vídeo en iPhone o iPad</b>: al parar, pulsa <b>«Guardar en Fotos»</b> y elige <b>«Guardar vídeo»</b>: así sale en la galería. «Guardar en Archivos» lo descarga a la app <b>Archivos › Descargas</b> (no a Fotos), y solo si en el aviso de Safari pulsas «Descargar». No cierres la cámara ni pulses «Grabar otro trozo» hasta tenerlo guardado. Si un vídeo está en Archivos, ábrelo allí y con el botón de compartir elige «Guardar vídeo» para pasarlo a Fotos.",
         "<b>No hace falta que tengas la app abierta</b>: si el anotador empieza, apunta y termina el partido él solo, al abrir la app el partido ya sale con el resultado, los goleadores, los cambios, las tarjetas y los minutos de cada jugador. Si la tienes abierta en otra pantalla (Inicio, Partidos…), se pone al día sola en unos segundos.",
         "En el <b>descanso</b>, el anotador apunta los cambios con «🔄 Cambio del descanso» y no gastan ventana. Si se le olvidó, en la 2ª parte tiene el botón «🔄 Cambio del descanso (no gasta ventana)».",
         "En tu móvil el marcador, los goleadores y el marcador del vídeo se actualizan solos en unos segundos, y todo se guarda en el partido y en las estadísticas. El anotador puede quitar con la ✕ lo que haya apuntado él. Con «Quitar el anotador» su enlace deja de funcionar. Con el plan gratuito, el anotador se puede usar en 3 partidos al mes; con Pro, sin límite.",
@@ -9748,7 +9749,7 @@
         },
         {
           t: "¡Listo!",
-          p: "Al final, «Parar» y «Guardar en el móvil» se hacen en el móvil que graba (consejo: para y guarda en el descanso). Va con el anotador: plan gratuito 3 partidos al mes; con Pro, ilimitado.",
+          p: "El anotador también puede «■ Parar grabación», pero guardar el vídeo se hace siempre en el móvil que graba: en iPhone, «Guardar en Fotos» › «Guardar vídeo» (consejo: para y guarda en el descanso). Va con el anotador: plan gratuito 3 partidos al mes; con Pro, ilimitado.",
         },
       ],
     },
@@ -12771,12 +12772,12 @@
         lnk = xt ? `<a class="secondary" data-cam-lnk href="${esc(trLiveWa(xt))}" target="_blank" rel="noopener">${ic("share", 18)}Enviar el enlace</a>` : "",
         vd = xt && (c.emite || c.tr.live) ? viendoHtml(xt.id) : "";
       c.box.querySelector(".cam-ui").innerHTML = c.listo
-        ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? emt : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
+        ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? emt : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
         : `${av}${vd}<div class="cam-row">${emt}${lnk}</div><div class="cam-row">${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
       return;
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
-      ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
+      ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
       : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
   }
   /* v11.53: «⏸ Pausar» / «▶ Reanudar» la grabación (en el móvil que graba o desde el anotador) */
@@ -12844,8 +12845,14 @@
       if (c.listo && !c.guardado)
         return note("El anotador quiere empezar a grabar, pero aquí hay un vídeo sin guardar. Guárdalo y pulsa «Grabar otro trozo».");
       c.listo = null;
+      c.enArchivos = false;
       camGraba();
       if (c.rec) note("El anotador ha empezado a grabar.", true);
+    } else if (o.a === "stop") {
+      if (!c.rec) return;
+      c.parando = true;
+      c.rec.stop();
+      note("El anotador ha parado la grabación. Guarda el vídeo en este móvil (" + (camFotos() ? "«Guardar en Fotos»" : "«Guardar en el móvil»") + ") antes de grabar otro trozo.");
     } else if (camPausa(o.a === "pause")) note(o.a === "pause" ? "El anotador ha pausado la grabación." : "El anotador ha reanudado la grabación.", true);
   }
   /* tr: grabar un entrenamiento ({ fecha, equipo }); sin marcador ni emisión */
@@ -12961,6 +12968,7 @@
       c.pausaDesde = 0;
       c.rec = null;
       c.guardado = false;
+      c.enArchivos = false;
       camLuz();
       camBotones();
       if (c.cortada) {
@@ -13224,6 +13232,17 @@
         : ["partido", lim(x.equipo), lim(x.rival), m.fecha || "", new Date().toTimeString().slice(0, 5).replace(":", "h")].filter(Boolean).join("-");
     return new File([c.listo], n + "." + ext, { type: c.tipo.split(";")[0] });
   }
+  /* v11.54: en iPhone/iPad «Guardar en el móvil» (descarga) no lo deja en Fotos: va a la app Archivos › Descargas,
+     y solo si se acepta el aviso «Descargar» de Safari. Por eso allí el botón principal es «Guardar en Fotos»
+     (compartir › «Guardar vídeo») y el vídeo no se da por guardado con la descarga. */
+  const camFotos = () => luzIOS && !!navigator.canShare;
+  function camFinHtml(c) {
+    let mb = Math.max(1, Math.round(c.listo.size / 1048576)),
+      cab = `<p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${mb} MB</p>`;
+    if (camFotos())
+      return `${cab}<p class="cam-tip">En iPhone: pulsa <b>«Guardar en Fotos»</b> y elige <b>«Guardar vídeo»</b>. Con «Guardar en Archivos», Safari pregunta «¿Descargar?»: pulsa «Descargar» y el vídeo queda en la app <b>Archivos › Descargas</b> (no en Fotos).${c.guardado ? " <b>✓ Ya está en Fotos.</b>" : c.enArchivos ? " Si ya lo ves en Archivos, puedes grabar otro trozo." : ""}</p><button class="primary" data-cam="share">${ic("image", 18)}Guardar en Fotos</button><button class="secondary" data-cam="save">${ic("share", 18)}Guardar en Archivos</button>`;
+    return `${cab}<button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}`;
+  }
   function camGuarda() {
     let f = camArchivo(),
       u = URL.createObjectURL(f),
@@ -13234,6 +13253,12 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(u), 60000);
+    if (luzIOS) {
+      /* No se sabe si han pulsado «Descargar»: no se da por guardado */
+      cam.enArchivos = true;
+      camBotones();
+      return note("Si Safari pregunta «¿Descargar?», pulsa «Descargar». El vídeo queda en la app Archivos › Descargas (" + f.name + "), no en Fotos. Para tenerlo en Fotos, pulsa «Guardar en Fotos» y elige «Guardar vídeo».", true);
+    }
     cam.guardado = true;
     camEst(cam, camEstDe(cam));
     note("Vídeo guardado en Descargas del móvil (" + f.name + ").", true);
@@ -13245,8 +13270,13 @@
       await navigator.share({ files: [f], title: f.name });
       cam.guardado = true;
       camEst(cam, camEstDe(cam));
+      camBotones();
+      if (luzIOS) note("Si elegiste «Guardar vídeo», ya está en Fotos (puede tardar unos segundos en salir si es largo).", true);
     } catch (e) {
-      if (!e || e.name !== "AbortError") camGuarda();
+      if (!e || e.name !== "AbortError") {
+        if (luzIOS) return note("No se ha podido abrir «Guardar en Fotos» (" + ((e && e.message) || "error") + "). Prueba «Guardar en Archivos». No cierres la cámara hasta tenerlo guardado.");
+        camGuarda();
+      }
     }
   }
   document.addEventListener("click", async (e) => {
@@ -13284,8 +13314,9 @@
     }
     if (k === "share") return camComparte();
     if (k === "again") {
-      if (!cam.guardado && !confirm("Aún no has guardado este vídeo. Si sigues, se pierde. ¿Seguir?")) return;
+      if (!cam.guardado && !confirm(cam.enArchivos ? "¿Ya ves el vídeo en la app Archivos › Descargas? Si no lo has descargado, se pierde. ¿Seguir?" : "Aún no has guardado este vídeo. Si sigues, se pierde. ¿Seguir?")) return;
       cam.listo = null;
+      cam.enArchivos = false;
       return camBotones();
     }
     if (k === "flip") return camGira();
@@ -13787,8 +13818,11 @@
     anSide = "n",
     anBusy = false,
     anErr = "";
+  let anCamOp = "";
   const anMsg = (t) =>
-    /anotar_camara/i.test(t)
+    anCamOp === "stop" && /DATOS/.test(t)
+      ? "Falta un paso en el servidor para parar la grabación desde aquí. Avisa al entrenador. Mientras, párala en el móvil que graba."
+      : /anotar_camara/i.test(t)
       ? "Falta un paso en el servidor para llevar la grabación desde aquí. Avisa al entrenador."
       : /SIN_CAMARA/.test(t)
       ? "La cámara no está abierta en el móvil que graba. Que la abran en el Directo («Cámara») y vuelve a probar."
@@ -13844,22 +13878,23 @@
     rec: "Orden enviada: el móvil que graba empieza en unos segundos.",
     pause: "Orden enviada: la grabación se pausa en unos segundos.",
     resume: "Orden enviada: la grabación sigue en unos segundos.",
+    stop: "Orden enviada: la grabación se para en unos segundos. Después hay que guardar el vídeo en el móvil que graba.",
   };
   function anCamHtml(x, d) {
     if (!("cam" in x)) return "";
     let e = x.cam || "",
       o = x.cam_ord,
-      falta = o && Date.parse(x.ahora) - Date.parse(o.at) < 20000 && ({ rec: "rec", pause: "pausa", resume: "rec" })[o.a] !== e && e !== "listo",
+      falta = o && Date.parse(x.ahora) - Date.parse(o.at) < 20000 && ({ rec: "rec", pause: "pausa", resume: "rec", stop: "listo" })[o.a] !== e && e !== "listo",
       C = (k, t, cl = "secondary") => `<button class="${cl}" data-anc="${k}" ${d || (falta ? "disabled" : "")}>${t}</button>`,
       st =
         e === "rec"
-          ? ["🔴 <b>Grabando</b> en el móvil de la cámara", C("pause", "⏸ Pausar grabación")]
+          ? ["🔴 <b>Grabando</b> en el móvil de la cámara", C("pause", "⏸ Pausar grabación") + C("stop", "■ Parar grabación", "danger")]
           : e === "pausa"
-            ? ["⏸ <b>Grabación en pausa</b>", C("resume", "▶ Reanudar grabación", "primary")]
+            ? ["⏸ <b>Grabación en pausa</b>", C("resume", "▶ Reanudar grabación", "primary") + C("stop", "■ Parar grabación", "danger")]
             : e === "lista"
               ? ["🎥 Cámara abierta, <b>sin grabar</b>", C("rec", "● Empezar a grabar", "primary")]
               : e === "listo"
-                ? ["🎥 En el móvil de la cámara hay un vídeo terminado <b>sin guardar</b>: que lo guarden allí y pulsen «Grabar otro trozo».", ""]
+                ? ["🎥 En el móvil de la cámara hay un vídeo terminado <b>sin guardar</b>. El vídeo solo se puede guardar en ese móvil: que pulsen allí «Guardar en Fotos» (iPhone) o «Guardar en el móvil» y luego «Grabar otro trozo». Desde aquí no se puede guardar.", ""]
                 : ["🎥 La cámara no está abierta en el móvil que graba. Cuando la abran en el Directo («Cámara»), aquí podrás empezar, pausar y reanudar la grabación.", ""];
     return `<div class="an-cam"><h3 class="lv-h">Grabación</h3><p class="muted">${st[0]}</p>${st[1] ? `<div class="lv-ctl">${st[1]}</div>` : ""}${
       falta ? '<p class="hint">Orden enviada. El móvil que graba la hace en unos segundos…</p>' : ""
@@ -14067,7 +14102,12 @@
         rl = e.target.closest("[data-anr]"),
         cm = e.target.closest("[data-anc]");
       if (anBusy) return;
-      if (cm) return anCall("anotar_camara", { accion: cm.dataset.anc }, () => AN_C[cm.dataset.anc]);
+      if (cm) {
+        if (cm.dataset.anc === "stop" && !confirm("¿Parar la grabación? Después hay que guardar el vídeo en el móvil que graba (desde aquí no se puede).")) return;
+        anCamOp = cm.dataset.anc;
+        return anCall("anotar_camara", { accion: cm.dataset.anc }, () => AN_C[cm.dataset.anc]);
+      }
+      anCamOp = "";
       if (rl) {
         let a = rl.dataset.anr;
         if (a === "half" && !confirm("¿Pasar al descanso? El reloj se para.")) return;

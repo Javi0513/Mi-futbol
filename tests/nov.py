@@ -59,6 +59,7 @@ with sync_playwright() as p:
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.49 (mapa de calor después del partido)',all(w in body for w in ('Mapa de calor también después del partido','Dónde fue cada acción','2 partidos al mes')))
+    check('y la de la v11.54 (guardar en Fotos en iPhone)',all(w in body for w in ('Guardar en Fotos','Archivos › Descargas','Parar grabación')))
     check('y la de la v11.53 (grabación desde el anotador)',all(w in body for w in ('el anotador también lleva la grabación','Pausar grabación','Reanudar grabación')))
     check('y la de la v11.52 (entreno en directo)',all(w in body for w in ('emite el entreno en directo','Enviar el enlace','2 entrenos en directo al mes')))
     check('y la de la v11.51 (cuántos te siguen en el directo)',all(w in body for w in ('Cuántos están viendo el directo','personas están viendo el directo','también lo ven')))

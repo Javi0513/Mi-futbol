@@ -1,4 +1,4 @@
--- Mi Fútbol JV32 · v11.53 · El anotador empieza, pausa y reanuda la grabación del móvil que graba
+-- Mi Fútbol JV32 · v11.53 (+v11.54: también «stop») · El anotador empieza, pausa, reanuda y para la grabación del móvil que graba
 -- Pega todo esto en Supabase › SQL Editor y pulsa «Run». Se puede ejecutar más de una vez.
 -- Añade dos columnas a directos y una función nueva (anotar_camara), y pone al día ver_anotador.
 -- No borra ni cambia datos. Sin esto la app funciona igual, pero el anotador no ve la grabación.
@@ -6,7 +6,7 @@
 -- 1) cam_est: cómo está la cámara del móvil que graba (lo escribe la app del entrenador):
 --    null = cerrada · 'lista' = abierta sin grabar · 'rec' = grabando · 'pausa' = grabación en pausa
 --    'listo' = hay un vídeo terminado sin guardar en ese móvil.
---    cam_ord: la última orden del anotador ({a: 'rec'|'pause'|'resume', n: número, at: hora}).
+--    cam_ord: la última orden del anotador ({a: 'rec'|'pause'|'resume'|'stop', n: número, at: hora}).
 alter table public.directos add column if not exists cam_est text;
 alter table public.directos add column if not exists cam_ord jsonb;
 alter table public.directos drop constraint if exists directos_cam_est_check;
@@ -34,7 +34,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   d public.directos;
 begin
-  if accion is null or accion not in ('rec','pause','resume') then raise exception 'DATOS'; end if;
+  if accion is null or accion not in ('rec','pause','resume','stop') then raise exception 'DATOS'; end if;
   select * into d from public.directos where anotador = codigo for update;
   if not found then raise exception 'NO_EXISTE'; end if;
   if d.cam_est is null then raise exception 'SIN_CAMARA'; end if;
