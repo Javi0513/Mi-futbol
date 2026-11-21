@@ -6,6 +6,7 @@
 //
 // Acciones (POST JSON):
 //   emitir    {directo, sdp, pistas:[{mid, trackName}]}  entrenador Pro dueño del directo
+//             (v11.52: entreno en directo también en el plan gratuito, ENTRENOS_GRATIS al mes)
 //   parar     {directo}                                   entrenador dueño del directo
 //   ver       {codigo}                                    cualquiera con el enlace
 //   responder {sesion, sdp}                               el espectador acepta la oferta
@@ -26,6 +27,7 @@ const SESION = /^[0-9a-zA-Z_-]{8,128}$/;
 const PISTA = /^[0-9a-zA-Z_-]{1,64}$/;
 const MAX_ESPECTADORES = 25;
 const ESPERA = 120000;
+const ENTRENOS_GRATIS = 2;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -101,7 +103,21 @@ Deno.serve(async (req) => {
     if (b.accion === "emitir") {
       const uid = await miDirecto(req, b.directo);
       const p = await db(`perfiles?id=eq.${uid}&select=plan`);
-      if (p?.[0]?.plan !== "pro") return res({ error: "El vídeo en directo es del plan Pro." }, 403);
+      if (p?.[0]?.plan !== "pro") {
+        // v11.52: los entrenos en directo (partido_id «tr:fecha:usuario») tienen ENTRENOS_GRATIS al mes en el plan gratuito
+        const f = await db(`directos?id=eq.${b.directo}&select=partido_id,eventos`);
+        const pid = String(f?.[0]?.partido_id ?? "");
+        if (!pid.startsWith("tr:")) return res({ error: "El vídeo en directo es del plan Pro." }, 403);
+        const ya = Array.isArray(f?.[0]?.eventos) && f[0].eventos.some((e: { id?: string }) => e?.id === "emitido");
+        if (!ya) {
+          const mes = new Date().toISOString().slice(0, 7);
+          const usados = await db(
+            `directos?owner_id=eq.${uid}&partido_id=like.tr:${mes}*&eventos=cs.${encodeURIComponent('[{"id":"emitido"}]')}&select=id`,
+          );
+          if ((usados?.length ?? 0) >= ENTRENOS_GRATIS)
+            return res({ error: `En el plan gratuito puedes emitir ${ENTRENOS_GRATIS} entrenos en directo al mes y ya los has usado. Con Pro, ilimitado.` }, 403);
+        }
+      }
       const pistas = Array.isArray(b.pistas) ? b.pistas : [];
       if (typeof b.sdp !== "string" || b.sdp.length > 20000 || !pistas.length || pistas.length > 2 ||
           !pistas.every((t) => t && PISTA.test(String(t.trackName)) && typeof t.mid === "string" && t.mid.length < 10))
@@ -115,6 +131,11 @@ Deno.serve(async (req) => {
         method: "PATCH",
         body: JSON.stringify({ video: { s: s.sessionId, p: pistas.map((t) => t.trackName) }, video_desde: new Date().toISOString() }),
       });
+      // Entreno: queda marcado como emitido (cuenta para el plan gratuito una vez por día)
+      await db(`directos?id=eq.${b.directo}&partido_id=like.tr:*&eventos=eq.[]`, {
+        method: "PATCH",
+        body: JSON.stringify({ eventos: [{ id: "emitido" }] }),
+      }).catch(() => {});
       return res({ sdp: r.sessionDescription.sdp });
     }
     if (b.accion === "parar") {

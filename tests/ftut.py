@@ -87,7 +87,7 @@ with sync_playwright() as p:
     pg.click('#view [data-action=cancel]');pg.wait_for_timeout(200)
     # Tutorial de la liga
     pg.click('#acct');pg.click('#info [data-info=ayuda]');pg.wait_for_timeout(300)
-    check('la Guía de uso empieza con los tutoriales',pg.locator('#infoBody .ayuda-tut [data-ftut]').count()==3)
+    check('la Guía de uso empieza con los tutoriales',pg.locator('#infoBody .ayuda-tut [data-ftut]').count()==4)
     check('y tiene el apartado «Novedades y tutoriales paso a paso»','Novedades y tutoriales paso a paso' in pg.locator('#infoBody .ayuda summary').all_inner_texts())
     pg.click('#infoBody .ayuda-tut [data-ftut=liga]');pg.wait_for_timeout(300)
     check('el tutorial de la liga empieza','clasificación de la liga' in card(pg).lower() and 'paso 1 de 6' in card(pg).lower())

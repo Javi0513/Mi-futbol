@@ -7378,3 +7378,7 @@ body.intro-on {
 .cam-ui .lv-viendo {
   margin: 0 0 8px;
 }
+/* v11.52: los avisos (plan Pro…) salen encima de la cámara del entreno en directo */
+body.cam-on #info {
+  z-index: 210;
+}

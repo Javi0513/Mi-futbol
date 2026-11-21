@@ -2273,7 +2273,7 @@
       dayT = T.filter((t) => t.fecha === state.trDay);
     if (!state.trOk)
       return `<section class="panel"><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">El control de entrenamientos aún no está activado en el servidor (falta ejecutar supabase-entrenamientos.sql en Supabase).</p></section>`;
-    return `<section class="panel"><div class="bar"><div><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : state.trainings.filter((t) => t.modalidad === state.mode).length + " / " + MODES[state.mode].maxE + " · "}${T.length} ${T.length === 1 ? "entrenamiento" : "entrenamientos"}${tp === null ? "" : " · " + tp + "% de asistencia"}</p></div><button class="primary" data-tr="new">${ic("plus")}Entreno</button></div>${trCalendar()}</section><section class="panel"><div class="bar"><div><div class="kicker">${esc(trDayLabel(state.trDay))}</div><h2 class="h2s">${dayT.length ? (dayT.length > 1 ? dayT.length + " entrenamientos" : "Pasar lista") : "Sin entrenamiento"}</h2></div>${dayT.length ? `<button type="button" class="secondary small" data-tr="new">${ic("plus", 18)}Otro</button>` : ""}</div>${viendo ? "" : `<div class="btools"><button type="button" class="secondary small" data-tr="rec">${ic("live", 18)}Grabar el entreno</button></div>`}${
+    return `<section class="panel"><div class="bar"><div><div class="kicker">Entrenamientos</div><h2>${MN()}</h2><p class="muted">${plan === "pro" ? "" : state.trainings.filter((t) => t.modalidad === state.mode).length + " / " + MODES[state.mode].maxE + " · "}${T.length} ${T.length === 1 ? "entrenamiento" : "entrenamientos"}${tp === null ? "" : " · " + tp + "% de asistencia"}</p></div><button class="primary" data-tr="new">${ic("plus")}Entreno</button></div>${trCalendar()}</section><section class="panel"><div class="bar"><div><div class="kicker">${esc(trDayLabel(state.trDay))}</div><h2 class="h2s">${dayT.length ? (dayT.length > 1 ? dayT.length + " entrenamientos" : "Pasar lista") : "Sin entrenamiento"}</h2></div>${dayT.length ? `<button type="button" class="secondary small" data-tr="new">${ic("plus", 18)}Otro</button>` : ""}</div>${viendo ? "" : `<div class="btools"><button type="button" class="secondary small" data-tr="rec">${ic("live", 18)}Grabar el entreno</button><button type="button" class="secondary small" data-tr="emite">📡 Emitir en directo</button></div>`}${
       dayT.length
         ? dayT.map(trSession).join("")
         : `<p class="muted">Este día no hay entrenamiento.</p><div class="stack"><button type="button" class="primary" data-tr="new">${ic("plus")}Crear entrenamiento este día</button></div>`
@@ -2375,6 +2375,8 @@
     }
     /* Grabar el entreno: misma cámara que el Directo, el vídeo se queda en el móvil (gratis) */
     if (k === "rec") return camAbre(null, false, { fecha: state.trDay || ymd(new Date()), equipo: teamName() });
+    /* v11.52: emitir el entreno en directo (misma cámara; el enlace es como el del directo del partido) */
+    if (k === "emite") return camAbre(null, false, { fecha: state.trDay || ymd(new Date()), equipo: teamName(), live: true });
     if (k === "new") {
       if (
         plan !== "pro" &&
@@ -2791,14 +2793,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3, etv: 2 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: mapa de calor y campograma de tiro, «Mis campos» del mapa, pegar la clasificación de la liga, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: entrenos en directo, mapa de calor y campograma de tiro, «Mis campos» del mapa, pegar la clasificación de la liga, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -2832,6 +2834,8 @@
           ? `En el plan gratuito puedes compartir <b>${LIM.rj} resúmenes de jugador al mes</b> (cada jugador de cada partido cuenta una vez) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rj}.`
           : tipo === "rs"
           ? `En el plan gratuito puedes compartir <b>${LIM.rs} resúmenes de partido al mes</b> (o de la temporada) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rs}.`
+          : tipo === "etv"
+          ? `En el plan gratuito puedes <b>emitir en directo ${LIM.etv} entrenos al mes</b> y este mes ya los has usado. Grabar el entreno en el móvil sigue siendo gratis. El mes que viene vuelves a tener ${LIM.etv}.`
           : tipo === "cv"
           ? `En el plan gratuito puedes enviar <b>${LIM.cv} convocatorias al mes</b> y este mes ya las has usado. El mes que viene vuelves a tener ${LIM.cv}.`
           : `En el plan gratuito puedes enviar <b>${LIM.tr} entrenos al mes</b> a tus jugadores y este mes ya los has usado. El mes que viene vuelves a tener ${LIM.tr}.`,
@@ -9143,7 +9147,7 @@
   function ftPend() {
     if (viendo) return [];
     return Object.keys(FTUT)
-      .filter((id) => !ftutVisto(id) && ftAvVeces(id) < FTA_MAX)
+      .filter((id) => !ftutVisto(id) && ftAvVeces(id) < FTA_MAX && (!FTUT[id].si || FTUT[id].si()))
       .sort((a, b) => vcmp(FTUT[b].v, FTUT[a].v));
   }
   function ftAvCuenta(ids) {
@@ -9428,6 +9432,7 @@
         "Puedes apuntar la hora y <b>qué vais a trabajar</b> (por ejemplo, «juego de 4, defensa con cambio, activación»). Cada día del calendario sale de un color según la asistencia.",
         "<b>Enviar el entreno a los jugadores</b>: prepara el entreno antes (qué vais a trabajar, los ejercicios con su explicación y el circuito) y pulsa «Enviar el entreno a los jugadores». Te sale el mensaje escrito para mandarlo por WhatsApp al grupo, así llegan sabiendo lo que se va a hacer y pierdes menos tiempo explicando. Gratis: 3 envíos al mes; con Pro, ilimitados.",
         "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis. Mientras la cámara está abierta la pantalla no se apaga; si grabas mucho rato, conecta el móvil al cargador. Si te llaman mientras grabas, la grabación sigue y la cámara vuelve sola al colgar.",
+        "<b>Emitir el entreno en directo</b>: toca un día y pulsa «📡 Emitir en directo». Se abre la cámara. Pulsa «Enviar el enlace» para mandarlo por WhatsApp a las familias, al cuerpo técnico o al coordinador, y «📡 Emitir en directo» cuando vayas a empezar: lo ven en vivo desde el enlace, sin cuenta. Arriba ves cuántas personas lo están viendo; con «Cortar» paras la emisión. Puedes emitir y grabar a la vez. El enlace es el mismo todo el día. Plan gratuito: 2 entrenos en directo al mes (emitir varias veces el mismo día cuenta como uno); con Pro, ilimitados. Hasta 25 personas a la vez pueden ver el vídeo.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido (y cuántas llegó tarde), faltado o justificado, y su porcentaje.",
         "Cada equipo tiene sus propios entrenamientos. En el plan gratuito puedes guardar hasta 5 entrenamientos por modalidad; con el plan Pro, ilimitados.",
         "Si lo desactivas, la pestaña se oculta pero tus entrenamientos no se borran.",
@@ -9524,8 +9529,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -9715,6 +9720,42 @@
     ftBorrador = true;
   }
   const FTUT = {
+    entdir: {
+      t: "Emitir el entreno en directo",
+      v: "11.52",
+      p: "Emite el entreno en vivo para la familia, el cuerpo técnico o el coordinador, con su enlace.",
+      si: () => entrenosOn(),
+      pasos: [
+        {
+          t: "Entreno en directo",
+          p: "Te enseño a emitir un entreno en directo: quien tenga el enlace lo ve en vivo desde el móvil, sin cuenta y sin instalar nada. No se emite nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft || !entrenosOn()) return;
+            state.live = null;
+            state.tab = "entrenos";
+            render();
+          },
+        },
+        {
+          el: "#view [data-tr=emite]",
+          t: "1. Toca «📡 Emitir en directo»",
+          p: "En «Entrenos», elige el día en el calendario y pulsa «📡 Emitir en directo». Se abre la cámara. (Si no ves la pestaña Entrenos, actívala en «Mi cuenta › Activar el control de entrenamientos».)",
+        },
+        {
+          t: "2. Manda el enlace",
+          p: "En la cámara, «Enviar el enlace» abre WhatsApp con el enlace del entreno de hoy para el grupo de las familias, el cuerpo técnico o el coordinador. Es el mismo todo el día: puedes mandarlo antes de empezar.",
+        },
+        {
+          t: "3. Empieza a emitir",
+          p: "Pon el móvil en horizontal en el trípode y pulsa «📡 Emitir en directo». Arriba ves cuántas personas lo están viendo. Puedes grabar a la vez con «● Grabar». Con «Cortar» paras la emisión.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Plan gratuito: 2 entrenos en directo al mes (emitir varias veces el mismo día cuenta como uno). Con Pro, ilimitados. Hasta 25 personas a la vez pueden ver el vídeo.",
+        },
+      ],
+    },
     mapa: {
       t: "Marcar el mapa de calor después del partido",
       v: "11.49",
@@ -12570,7 +12611,7 @@
         g.restore();
       } else g.drawImage(v, 0, 0, w, h);
       camVista(c, r);
-      if (x) {
+      if (x && !c.tr) {
         /* Marcador arriba a la izquierda, a escala del vídeo */
         let u = Math.min(w, h) / 360,
           clk = liveClock(x, serverNow())[0],
@@ -12611,7 +12652,7 @@
           pad = 8 * u,
           fs = 15 * u,
           y0 = 10 * u,
-          t1 = "ENTRENO",
+          t1 = c.emite === "on" ? "● ENTRENO EN DIRECTO" : "ENTRENO",
           t2 = (String(c.tr.equipo || "").slice(0, 20) + " · " + c.tr.fecha.split("-").reverse().slice(0, 2).join("/")).toUpperCase();
         g.font = `700 ${fs}px "Barlow Condensed", Arial, sans-serif`;
         g.textBaseline = "middle";
@@ -12683,9 +12724,17 @@
       ? `<p class="cam-aviso" role="status">⏸️ <b>Cámara o sonido en pausa.</b> Una llamada u otra app los está usando. Vuelven solos en cuanto termine, no cierres la cámara${c.rec ? "; la grabación sigue" : ""}${c.emite ? "; la familia ve «Pausa» y el marcador" : ""}.</p>`
       : "";
     if (c.tr) {
+      /* v11.52: el entreno también se puede emitir en directo, con su enlace para la familia o el cuerpo técnico */
+      let xt = liveRows[c.id],
+        q = esPro() || (envLee().etv || []).includes(c.id) ? "" : ` (${Math.max(0, LIM.etv - envUsados("etv"))} gratis este mes)`,
+        emt = c.emite
+          ? `<button class="danger" data-cam="unemit">${c.emite === "on" ? "● En directo · Cortar" : "Conectando… · Cortar"}</button>`
+          : `<button class="secondary" data-cam="emit">📡 Emitir en directo${q}</button>`,
+        lnk = xt ? `<a class="secondary" data-cam-lnk href="${esc(trLiveWa(xt))}" target="_blank" rel="noopener">${ic("share", 18)}Enviar el enlace</a>` : "",
+        vd = xt && (c.emite || c.tr.live) ? viendoHtml(xt.id) : "";
       c.box.querySelector(".cam-ui").innerHTML = c.listo
-        ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button><button class="danger" data-cam="close">Cerrar</button></div>`
-        : `${av}<div class="cam-row">${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
+        ? `<div class="cam-fin"><p><b>Vídeo listo</b> · ${esc(camHora(c.dur))} · ${Math.max(1, Math.round(c.listo.size / 1048576))} MB</p><button class="primary" data-cam="save">${ic("image", 18)}Guardar en el móvil</button>${navigator.canShare ? `<button class="secondary" data-cam="share">${ic("share", 18)}Compartir / Guardar en galería</button>` : ""}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? emt : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
+        : `${av}${vd}<div class="cam-row">${emt}${lnk}</div><div class="cam-row">${c.rec ? `<button class="danger cam-rec" data-cam="stop"><span data-camt>● 0:00</span> Parar</button>` : `<button class="primary cam-rec" data-cam="rec">● Grabar</button><button class="secondary" data-cam="close">Cerrar</button>`}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
       return;
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
@@ -12715,7 +12764,7 @@
     v.srcObject = new MediaStream(s.getVideoTracks());
     document.body.appendChild(box);
     document.body.classList.add("cam-on");
-    cam = { id, tr: tr || null, s, v, video: v, box, canvas: box.querySelector("canvas"), frente: !!frente, rec: null, listo: null, pick: false, giro: camGiroGuardado(), rot: 0 };
+    cam = { id: tr ? trLiveKey() : id, tr: tr || null, s, v, video: v, box, canvas: box.querySelector("canvas"), frente: !!frente, rec: null, listo: null, pick: false, giro: camGiroGuardado(), rot: 0 };
     cam.ctx = cam.canvas.getContext("2d");
     cam.conAudio = s.getAudioTracks().length > 0;
     s.getTracks().forEach(camVigila);
@@ -12728,6 +12777,11 @@
     camLuz();
     camPinta();
     camBotones();
+    /* v11.52: «Emitir en directo» desde el entreno: se prepara ya el enlace para mandarlo a las familias */
+    if (tr && tr.live) {
+      let c = cam;
+      if (await trLiveRow(c)) cam === c && camBotones();
+    }
   }
   /* Cambia de cámara sin cortar la grabación ni el directo (solo se cambia la imagen que se pinta) */
   async function camGira() {
@@ -12924,10 +12978,66 @@
     }
     camRevisa();
   }
+  /* ===== Entreno en directo (v11.52) =====
+     Un directo por día y entrenador (partido_id «tr:fecha:usuario», sin marcador: jornada = TR_JOR).
+     El vídeo va igual que el del partido (Edge Function video-directo, máximo 25 viendo a la vez). */
+  const TR_JOR = "🏃 Entreno";
+  const trLiveKey = () => "tr:" + ymd(new Date()) + ":" + curUser;
+  const esTrLive = (x) => !!x && x.jornada === TR_JOR;
+  const trLiveWa = (x) =>
+    "https://wa.me/?text=" +
+    encodeURIComponent(`📡 *Entreno en directo · ${x.equipo || teamName()}*\nSigue el entreno de hoy en directo desde aquí (no hace falta cuenta):\n${liveUrl(x)}`);
+  async function trLiveRow(c) {
+    let t = state.trainings.find((z) => z.fecha === c.tr.fecha && ubDeTr(z)),
+      l = t ? ubDeTr(t) : null,
+      d = {
+        modalidad: ["7", "11", "fs"].includes(String(state.mode)) ? String(state.mode) : "7",
+        equipo: String(c.tr.equipo || "Mi equipo").slice(0, 60) || "Mi equipo",
+        jornada: TR_JOR,
+        lugar: l ? { n: String(l.n || "").slice(0, 120), ...(ubGeo(l) || {}) } : null,
+      },
+      x = liveRows[c.id],
+      r;
+    if (!x) {
+      /* Puede que ya exista (abierto en otro móvil): se busca antes de crearlo */
+      try {
+        r = await db.from("directos").select("*").eq("partido_id", c.id);
+        if (!r.error && r.data && r.data[0]) x = liveRows[c.id] = r.data[0];
+      } catch (e) {}
+    }
+    if (x) {
+      if (x.equipo !== d.equipo || x.modalidad !== d.modalidad || JSON.stringify(x.lugar || null) !== JSON.stringify(d.lugar)) {
+        try {
+          r = await db.from("directos").update(d).eq("id", x.id).select("id");
+          if (!r.error) Object.assign(x, d);
+        } catch (e) {}
+      }
+      return x;
+    }
+    let row = { id: crypto.randomUUID(), owner_id: curUser, partido_id: c.id, rival: "", gf: 0, gc: 0, estado: "pre", parte_min: 30, acum_ms: 0, desde: null, eventos: [], ...d };
+    try {
+      r = await db.from("directos").insert(row).select();
+    } catch (e) {
+      r = { error: e };
+    }
+    if (r.error) {
+      note(liveErr(String(r.error.message || r.error)));
+      return null;
+    }
+    x = liveRows[c.id] = (r.data && r.data[0]) || row;
+    x._seen = new Set();
+    x._clk = liveClk(x);
+    return x;
+  }
   async function camEmite() {
     let c = cam;
-    if (plan !== "pro") return note("El vídeo en directo para la familia es del plan Pro. Grabar en el móvil es gratis.");
+    if (plan !== "pro" && !c.tr) return note("El vídeo en directo para la familia es del plan Pro. Grabar en el móvil es gratis.");
     if (!window.RTCPeerConnection) return note("Este móvil no permite emitir vídeo en directo.");
+    /* v11.52: entreno en directo. Plan gratuito: LIM.etv entrenos al mes (cada día cuenta una vez) */
+    if (c.tr) {
+      if (!(await trLiveRow(c)) || cam !== c) return;
+      if (!envPuede("etv", c.id)) return;
+    }
     c.emite = "con";
     camBotones();
     camLuz();
@@ -13183,7 +13293,7 @@
           (r) => {
             let el = $("pubViendo");
             if (!el || !r || r.error || typeof r.data !== "number") return;
-            el.innerHTML = viendoFrase(Math.max(1, r.data)).replace("el directo ahora", "este partido ahora");
+            el.innerHTML = viendoFrase(Math.max(1, r.data)).replace("el directo ahora", esTrLive(pubRow) ? "este entreno ahora" : "este partido ahora");
           },
           () => {},
         );
@@ -13204,9 +13314,17 @@
     if (pubRow && pubRow.ahora)
       liveSkew = Date.parse(pubRow.ahora) - Date.now();
     pubVideo((pubRow && pubRow.video_desde) || null);
-    $("pubData").innerHTML = pubRow
+    $("pubData").innerHTML = esTrLive(pubRow)
+      ? pubTrHtml(pubRow)
+      : pubRow
         ? `<div class="kicker">${liveOn(pubRow) ? "En directo" : pubRow.estado === "FIN" ? "Partido terminado" : "Directo"} · ${esc(MN(pubRow.modalidad))}${pubRow.jornada ? " · " + esc(pubRow.jornada) : ""}</div>${liveBoard(pubRow, serverNow(), false)}${pubRow.estado === "pre" ? '<p class="hint">El partido aún no ha empezado. Deja esta página abierta o vuelve a entrar con el mismo enlace cuando empiece: el marcador se pone en marcha solo.</p>' : ""}${pubRow.lugar && typeof pubRow.lugar === "object" ? `<div class="pub-lug">${ubVer(pubRow.lugar.n, pubRow.lugar, { sinMapa: pubRow.estado !== "pre" })}</div>` : ""}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(pubRow, false)}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`
         : '<h2 class="h2s">Directo no disponible</h2><p class="muted">Este enlace no existe o el entrenador lo ha desactivado.</p>';
+  }
+  /* v11.52: enlace de un entreno en directo: solo el vídeo, sin marcador */
+  function pubTrHtml(x) {
+    document.title = "Entreno en directo · Mi Fútbol JV32";
+    let on = !!x.video_desde;
+    return `<div class="kicker">${on ? "● En directo" : "Entreno"} · ${esc(MN(x.modalidad))}</div><h2>🏃 Entreno de ${esc(x.equipo || "Mi equipo")}</h2>${on ? '<p class="hint">El entrenador está emitiendo el entreno. Si no ves el vídeo, espera unos segundos: entra solo.</p>' : '<p class="hint">El entrenador todavía no está emitiendo. Deja esta página abierta: el vídeo aparece solo en cuanto empiece.</p>'}${x.lugar && typeof x.lugar === "object" ? `<div class="pub-lug">${ubVer(x.lugar.n, x.lugar, { sinMapa: on })}</div>` : ""}<p class="muted lv-upd">Se actualiza solo · ${new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>`;
   }
   function startPub() {
     $("login").classList.add("hidden");
@@ -13217,7 +13335,7 @@
     document.body.appendChild(box);
     document.title = "Directo · Mi Fútbol JV32";
     box.innerHTML = pubShell(
-      '<div id="pubVid" class="pub-vid hidden"><video playsinline autoplay muted controls aria-label="Vídeo del partido en directo"></video><button class="secondary small" data-pubsound>🔊 Activar sonido</button><p class="pub-gira muted">Gira el móvil para verlo en grande.</p></div><p id="pubLleno" class="pro-fin hidden">El vídeo ya lo están viendo 25 personas, que es el máximo por partido. Sigue aquí el marcador; el vídeo te entrará solo en cuanto quede un sitio libre.</p><p id="pubViendo" class="lv-viendo" role="status" aria-live="polite"></p><div id="pubData"><p class="muted">Cargando el directo…</p></div>',
+      '<div id="pubVid" class="pub-vid hidden"><video playsinline autoplay muted controls aria-label="Vídeo del partido en directo"></video><button class="secondary small" data-pubsound>🔊 Activar sonido</button><p class="pub-gira muted">Gira el móvil para verlo en grande.</p></div><p id="pubLleno" class="pro-fin hidden">El vídeo ya lo están viendo 25 personas, que es el máximo por directo. Sigue aquí el marcador; el vídeo te entrará solo en cuanto quede un sitio libre.</p><p id="pubViendo" class="lv-viendo" role="status" aria-live="polite"></p><div id="pubData"><p class="muted">Cargando el directo…</p></div>',
     );
     box.addEventListener("click", (e) => {
       let b = e.target.closest("[data-pubsound]");
