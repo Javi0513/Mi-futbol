@@ -7,6 +7,9 @@
 //   POST {op:"grupos", d, c}        → grupos de una competición
 //   POST {op:"liga", d, c, g, j?}   → clasificación + resultados de la jornada j (o la última) + jornadas
 //   POST {op:"jornada", d, c, g, j} → resultados de una jornada (fecha, hora, campo y estado) (v11.42)
+//   POST {op:"busca", d, q, cat, fs} → busca el equipo q en los grupos de su categoría (v11.57)
+// v11.57: si la federación falla (Novanet) se reintenta una vez y, para competiciones y grupos,
+// se usa lo último bueno que se leyó; ya no devuelve una lista vacía de competiciones.
 const BASE = "https://stars.rfaf.es/";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -14,10 +17,30 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const cache = new Map<string, { t: number; v: string }>();
+/* Lo último bueno de las listas (competiciones y grupos), sin caducar: si la federación falla, se usa */
+const bueno = new Map<string, string>();
+const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function lee(params: Record<string, string>): Promise<string> {
   const u = BASE + "?" + new URLSearchParams(params).toString();
   const c = cache.get(u);
   if (c && Date.now() - c.t < 15 * 60 * 1000) return c.v;
+  let v = await trae(u);
+  /* Novanet falla a ratos unos segundos: se prueba otra vez antes de rendirse */
+  if (caida(v)) {
+    await espera(1500);
+    v = await trae(u);
+  }
+  const lista = !params.grupo;
+  if (caida(v)) return lista && bueno.has(u) ? (bueno.get(u) as string) : v;
+  if (lista) {
+    if (bueno.size > 300) bueno.clear();
+    bueno.set(u, v);
+  }
+  if (cache.size > 300) cache.clear();
+  cache.set(u, { t: Date.now(), v });
+  return v;
+}
+async function trae(u: string): Promise<string> {
   const r = await fetch(u, {
     headers: {
       "User-Agent": "Mozilla/5.0 (compatible; MiFutbolJV32/1.0; +https://app.monetizaplus.com)",
@@ -26,17 +49,62 @@ async function lee(params: Record<string, string>): Promise<string> {
     },
   });
   if (!r.ok) throw new Error("La web de la federación no responde (" + r.status + ").");
-  const v = await r.text();
   /* A veces la web de la federación no consigue entrar en su propio sistema (Novanet)
      y enseña la página vacía («No hay partidos publicados») aunque la jornada exista. No se
      guarda en memoria y se avisa claro, para que no parezca que la jornada no está. */
-  if (caida(v)) return v;
-  if (cache.size > 300) cache.clear();
-  cache.set(u, { t: Date.now(), v });
-  return v;
+  return await r.text();
 }
 const caida = (v: string) => /No se pudo validar la sesi(ó|o|&oacute;)n de Novanet/i.test(v);
-const CAIDA = "La web de la Federación Andaluza está fallando ahora mismo y no da los grupos ni los partidos. Vuelve a probar en un rato.";
+const CAIDA = "La web de la Federación Andaluza está fallando ahora mismo (también en su propia página) y no da las competiciones, los grupos ni los partidos. Vuelve a probar en un rato.";
+/* Nombres sin tildes, mayúsculas, siglas del club ni categoría, para buscar el equipo */
+const norm = (s: string) =>
+  String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[.,;:'"´`()\[\]\-\/]/g, " ")
+    .replace(/\b(c ?d|c ?f|u ?d|a ?d|s ?d|c ?d ?e|e ?f|a ?c ?d|club|deportivo|futbol|f ?c|f ?b ?c|c ?p|sad|de|del|la|el|los|las|escuela|e ?d ?f|prebenjamin|prebejamin|prebenjamines|benjamin|benjamines|alevin|alevines|infantil|infantiles|cadete|cadetes|juvenil|juveniles|senior|aficionado|femenino|femenina|masculino|f7|f11|sala)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+/* ¿La competición es de esa categoría? «benjamín» no vale para «prebenjamín» */
+const CATRE: Record<string, RegExp> = {
+  prebenjamin: /pre ?benjamin|prebejamin/,
+  benjamin: /(^|[^a-z])benjamin/,
+  alevin: /alevin/,
+  infantil: /infantil/,
+  cadete: /cadete/,
+  juvenil: /juvenil/,
+  senior: /senior|aficionado|penas/,
+};
+const plano = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const esFS = (n: string) => /f\. ?s\b|f\.s\.|futbol sala/.test(plano(n));
+function parece(nombre: string, q: string) {
+  const a = norm(nombre),
+    b = norm(q);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const A = a.split(" "),
+    B = b.split(" ").filter((w) => w.length > 1);
+  if (!B.length) return 0;
+  const com = B.filter((w) => A.some((x) => x === w || (w.length > 3 && x.startsWith(w)))).length;
+  if (com === B.length) return 0.9;
+  if (a.indexOf(b) >= 0) return 0.85;
+  return (com / B.length) * 0.8;
+}
+/* Corre las tareas de n en n */
+async function poco<T>(xs: (() => Promise<T>)[], n: number): Promise<T[]> {
+  const out: T[] = [];
+  let i = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(n, xs.length) }, async () => {
+      while (i < xs.length) {
+        const k = i++;
+        out[k] = await xs[k]().catch(() => undefined as unknown as T);
+      }
+    }),
+  );
+  return out;
+}
 const txt = (s: string) =>
   s
     .replace(/<[^>]+>/g, " ")
@@ -111,7 +179,42 @@ Deno.serve(async (req) => {
       g = String(b.g || "").replace(/\D/g, ""),
       j = String(b.j || "").replace(/\D/g, "");
     if (!d) return resp({ error: "Falta la delegación." }, 400);
-    if (b.op === "comps") return resp({ comps: opciones(await lee({ widget_view: "classification", delegacion: d }), "competicion") });
+    if (b.op === "comps" || b.op === "busca") {
+      const h = await lee({ widget_view: "classification", delegacion: d });
+      const comps = opciones(h, "competicion");
+      /* Una delegación sin ninguna competición es que la federación está fallando */
+      if (!comps.length) return resp({ error: CAIDA }, 503);
+      if (b.op === "comps") return resp({ comps });
+      /* Buscar mi equipo: en las competiciones de su categoría (y de fútbol sala o no) */
+      const q = String(b.q || "").slice(0, 80);
+      if (norm(q).length < 3) return resp({ error: "Escribe el nombre de tu equipo (por ejemplo, el del pueblo o el club)." }, 400);
+      const re = CATRE[String(b.cat || "")];
+      const fs = !!b.fs;
+      const C = comps.filter((x) => (!re || re.test(plano(x.n))) && esFS(x.n) === fs && !/playa/i.test(x.n)).slice(0, re ? 16 : 0);
+      if (!C.length) return resp({ error: re ? "No hay competiciones de esa categoría en esa delegación." : "Elige la categoría de tu equipo para buscarlo." }, 400);
+      const G = (await poco(C.map((x) => async () => {
+        const hg = await lee({ widget_view: "classification", delegacion: d, competicion: x.id });
+        if (caida(hg)) throw new Error("caida");
+        return opciones(hg, "grupo").map((y) => ({ c: x.id, cn: x.n, g: y.id, gn: y.n }));
+      }), 6)).filter(Boolean).flat().slice(0, 60);
+      let fallo = 0;
+      const R = await poco(G.map((x) => async () => {
+        const p = { delegacion: d, competicion: x.c, grupo: x.g };
+        let ht = await lee({ widget_view: "classification", ...p });
+        if (caida(ht)) return fallo++, [];
+        let N = tabla(ht).map((t) => t.n);
+        if (!N.length) {
+          const hr = await lee({ widget_view: "results", ...p });
+          if (caida(hr)) return fallo++, [];
+          resultados(hr).partidos.forEach((m) => N.push(m.l, m.v));
+        }
+        N = [...new Set(N)];
+        return N.map((n) => ({ ...x, n, s: parece(n, q) })).filter((m) => m.s >= 0.5);
+      }), 8);
+      const M = R.filter(Boolean).flat().sort((a, z) => z.s - a.s).slice(0, 12);
+      if (!M.length && (fallo || !G.length)) return resp({ error: CAIDA }, 503);
+      return resp({ eq: M, grupos: G.length });
+    }
     if (!c) return resp({ error: "Falta la competición." }, 400);
     if (b.op === "grupos") {
       const h = await lee({ widget_view: "classification", delegacion: d, competicion: c });
