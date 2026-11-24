@@ -6396,6 +6396,8 @@
       .replace(/[̀-ͯ]/g, "")
       .replace(/[.,;:'"´`()\[\]]/g, " ")
       .replace(/\b(c ?d|c ?f|u ?d|a ?d|s ?d|c ?d ?e|e ?f|a ?c ?d|club|deportivo|futbol|f ?c|f ?b ?c|c ?p|cp|sad)\b/g, " ")
+      /* v11.57: sin la categoría («CD Valderrubio Prebenjamín» = «C.D. Valderrubio Fútbol 98») */
+      .replace(/\b(prebenjamin|prebejamin|prebenjamines|benjamin|benjamines|alevin|alevines|infantil|infantiles|cadete|cadetes|juvenil|juveniles|senior|aficionado|femenino|femenina|masculino)\b/g, " ")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -6763,13 +6765,47 @@
   $("info").addEventListener("change", (e) => {
     if (e.target.id === "lgFj") lgVerJornada(e.target.value);
   });
+  /* v11.57: filtrar las competiciones por categoría y «Buscar mi equipo».
+     «benjamín» no vale para «prebenjamín»; sin tildes ni mayúsculas. */
+  const LG_CATRE = { prebenjamin: /pre ?benjamin|prebejamin/, benjamin: /(^|[^a-z])benjamin/, alevin: /alevin/, infantil: /infantil/, cadete: /cadete/, juvenil: /juvenil/, senior: /senior|aficionado|penas/ };
+  function lgCompVale(n, f) {
+    let F = fold(f).trim(),
+      N = fold(n);
+    if (!F) return true;
+    let k = (CATS.find((z) => fold(z[1]).split(" ")[0] === F || z[0] === F.replace(/\s+/g, "")) || [])[0];
+    if (k && LG_CATRE[k]) return LG_CATRE[k].test(N);
+    return F.split(/\s+/).every((w) => N.indexOf(w) >= 0);
+  }
+  function lgCompOpts(e) {
+    let C = (e.comps || []).filter((x) => x.id === e.c || lgCompVale(x.n, e.f || ""));
+    return `<option value="">${e.comps ? (C.length ? "Elegir…" : "Ninguna con ese nombre") : "Cargando…"}</option>${C.map((x) => `<option value="${esc(x.id)}" ${e.c === x.id ? "selected" : ""}>${esc(x.n)}</option>`).join("")}`;
+  }
+  /* Categoría y nombre del equipo para buscarlo en la federación */
+  const lgMiCat = () => (catOf(undefined, curTeam()) || [])[0] || "";
+  const lgMiNom = () => {
+    let n = teamName();
+    return n === "Mi equipo" ? "" : n;
+  };
+  function lgBuscaHtml(e) {
+    let r = e.bRes;
+    return `<div class="lg-fed lg-busca"><b>🔎 Buscar mi equipo</b><span>Escribe el nombre de tu equipo (el del club o el pueblo) y la app mira en todas las competiciones de tu categoría en qué grupo estáis.</span><label>Nombre del equipo<input id="lgFq" maxlength="60" value="${esc(e.q == null ? lgMiNom() : e.q)}" placeholder="Ej.: Valderrubio" autocomplete="off"></label><label>Categoría<select id="lgFcat"><option value="">Elegir…</option>${CATS.map((z) => `<option value="${z[0]}" ${(e.cat == null ? lgMiCat() : e.cat) === z[0] ? "selected" : ""}>${esc(z[1])}</option>`).join("")}</select></label><div class="btools"><button type="button" class="primary small" data-lg="fedBusca"${e.bCargando ? " disabled" : ""}>${e.bCargando ? "Buscando en la federación…" : "Buscar mi equipo"}</button></div>${e.bErr ? `<p class="lg-mal">${esc(e.bErr)}</p>` : ""}${
+      r
+        ? r.length
+          ? `<p><b>${r.length === 1 ? "Lo he encontrado. Tócalo para conectar:" : "He encontrado " + r.length + " equipos parecidos. Toca el tuyo para conectar:"}</b></p>${r.map((x, i) => `<button type="button" class="secondary lg-hit" data-lg="fedElige" data-i="${i}"${e.cargando ? " disabled" : ""}><b>${esc(x.n)}</b><span>${esc(x.cn)} · ${esc(x.gn)}</span></button>`).join("")}`
+          : `<p class="lg-mal">No encuentro ningún equipo con ese nombre en ${esc((CATS.find((z) => z[0] === e.cat) || [, "esa categoría"])[1])}. Prueba solo con el nombre del pueblo o del club (sin «CD», «Prebenjamín»…), o elige tú abajo la competición y el grupo.</p>`
+        : ""
+    }</div>`;
+  }
   function lgFedForm() {
     let e = lgEd;
-    return `<p>Elige tu delegación, la competición y el grupo, como en la web de la Federación Andaluza. La app leerá la clasificación y los resultados cada vez que la abras.</p><label>Delegación<select id="lgFd"><option value="">Elegir…</option>${LG_DELEG.map((x) => `<option value="${x[0]}" ${e.d === x[0] ? "selected" : ""}>${x[1]}</option>`).join("")}</select></label>${
-      e.d
-        ? `<label>Competición<select id="lgFc"${e.comps ? "" : " disabled"}><option value="">${e.comps ? "Elegir…" : "Cargando…"}</option>${(e.comps || []).map((x) => `<option value="${esc(x.id)}" ${e.c === x.id ? "selected" : ""}>${esc(x.n)}</option>`).join("")}</select></label>`
+    if (e.f == null) e.f = ((CATS.find((z) => z[0] === lgMiCat()) || [])[1] || "").split(" ")[0];
+    return `<p>Elige tu delegación y busca tu equipo, o elige tú la competición y el grupo, como en la web de la Federación Andaluza. La app leerá la clasificación y los resultados cada vez que la abras.</p><label>Delegación<select id="lgFd"><option value="">Elegir…</option>${LG_DELEG.map((x) => `<option value="${x[0]}" ${e.d === x[0] ? "selected" : ""}>${x[1]}</option>`).join("")}</select></label>${
+      e.d && e.comps ? lgBuscaHtml(e) + `<p class="muted">O elige tú la competición y el grupo:</p><label>Buscar la competición<input id="lgFf" maxlength="40" value="${esc(e.f || "")}" placeholder="Ej.: prebenjamín, alevín, 3ª…" autocomplete="off"></label>` : ""
+    }${
+      e.d && (e.comps || !e.err)
+        ? `<label>Competición<select id="lgFc"${e.comps ? "" : " disabled"}>${lgCompOpts(e)}</select></label>`
         : ""
-    }${e.c ? `<label>Grupo<select id="lgFg"${e.grupos ? "" : " disabled"}><option value="">${e.grupos ? "Elegir…" : "Cargando…"}</option>${(e.grupos || []).map((x) => `<option value="${esc(x.id)}" ${e.g === x.id ? "selected" : ""}>${esc(x.n)}</option>`).join("")}</select></label>` : ""}${e.err ? `<p class="lg-mal">${esc(e.err)}</p>` : ""}<div class="stack"><button type="button" class="primary" data-lg="fedOk"${e.g && !e.cargando ? "" : " disabled"}>${e.cargando ? "Leyendo la federación…" : "Conectar"}</button><button type="button" class="secondary" data-lg="ver">Volver</button></div><p class="muted">Los datos son los que publica la Real Federación Andaluza de Fútbol en su web. Si cambian algo, lo verás la próxima vez que se actualice.</p>`;
+    }${e.c ? `<label>Grupo<select id="lgFg"${e.grupos ? "" : " disabled"}><option value="">${e.grupos ? "Elegir…" : "Cargando…"}</option>${(e.grupos || []).map((x) => `<option value="${esc(x.id)}" ${e.g === x.id ? "selected" : ""}>${esc(x.n)}</option>`).join("")}</select></label>` : ""}${e.err ? `<p class="lg-mal">${esc(e.err)}</p>${e.d && !e.comps ? `<div class="btools"><button type="button" class="secondary small" data-lg="fedOtra">Volver a probar</button></div>` : ""}` : ""}<div class="stack"><button type="button" class="primary" data-lg="fedOk"${e.g && !e.cargando ? "" : " disabled"}>${e.cargando ? "Leyendo la federación…" : "Conectar"}</button><button type="button" class="secondary" data-lg="ver">Volver</button></div><p class="muted">Los datos son los que publica la Real Federación Andaluza de Fútbol en su web. Si cambian algo, lo verás la próxima vez que se actualice.</p>`;
   }
   async function lgFedCambia(id, v) {
     let e = lgEd;
@@ -6777,10 +6813,13 @@
     e.err = "";
     try {
       if (id === "lgFd") {
-        Object.assign(e, { d: v, c: "", g: "", comps: null, grupos: null });
+        Object.assign(e, { d: v, c: "", g: "", comps: null, grupos: null, bRes: null, bErr: "" });
         lgPinta();
         if (!v) return;
-        let r = await lgFn({ op: "comps", d: v });
+        let r = await lgFn({ op: "comps", d: v }).catch((x) => {
+          if (lgEd === e && e.d === v) e.comps = null;
+          throw x;
+        });
         if (lgEd !== e || e.d !== v) return;
         e.comps = r.comps || [];
         if (!e.comps.length) e.err = "No hay competiciones en esa delegación ahora mismo.";
@@ -6801,7 +6840,42 @@
   }
   $("info").addEventListener("change", (e) => {
     if (/^lgF[dcg]$/.test(e.target.id)) lgFedCambia(e.target.id, e.target.value);
+    if (e.target.id === "lgFcat" && lgEd && lgEd.v === "fed") lgEd.cat = e.target.value;
   });
+  /* Escribir en «Buscar la competición» filtra la lista sin volver a pintar (no se pierde el teclado) */
+  $("info").addEventListener("input", (e) => {
+    let x = lgEd;
+    if (!x || x.v !== "fed") return;
+    if (e.target.id === "lgFf") {
+      x.f = e.target.value;
+      let s = $("lgFc");
+      if (s) s.innerHTML = lgCompOpts(x);
+    } else if (e.target.id === "lgFq") x.q = e.target.value;
+  });
+  /* Busca el equipo en los grupos de su categoría (no cuenta como día de federación) */
+  async function lgFedBusca() {
+    let e = lgEd;
+    if (!e || e.v !== "fed" || !e.d || e.bCargando) return;
+    let q = (e.q == null ? lgMiNom() : e.q).trim(),
+      cat = e.cat == null ? lgMiCat() : e.cat;
+    e.q = q;
+    e.cat = cat;
+    e.bErr = "";
+    e.bRes = null;
+    if (lgNorm(q).length < 3) return (e.bErr = "Escribe el nombre de tu equipo (por ejemplo, el del pueblo o el club)."), lgPinta();
+    if (!cat) return (e.bErr = "Elige la categoría de tu equipo."), lgPinta();
+    e.bCargando = true;
+    lgPinta();
+    try {
+      let r = await lgFn({ op: "busca", d: e.d, q, cat, fs: state.mode === "fs" });
+      if (lgEd !== e) return;
+      e.bRes = (r.eq || []).slice(0, 12);
+    } catch (x) {
+      e.bErr = x.message || String(x);
+    }
+    e.bCargando = false;
+    if (lgEd === e) lgPinta();
+  }
   /* --- Pantallas --- */
   let lgEd = null;
   const lgSigJ = (L) => {
@@ -6939,6 +7013,16 @@
       $("infoBody").scrollTop = 0;
       return;
     }
+    if (k === "fedBusca") return lgFedBusca();
+    if (k === "fedOtra") return lgEd && lgFedCambia("lgFd", lgEd.d);
+    if (k === "fedElige") {
+      let e = lgEd,
+        x = e && e.bRes && e.bRes[+b.dataset.i];
+      if (!x) return;
+      Object.assign(e, { c: x.c, g: x.g, yo: x.n, grupos: [{ id: x.g, n: x.gn }] });
+      if (!(e.comps || []).some((z) => z.id === x.c)) e.comps = (e.comps || []).concat([{ id: x.c, n: x.cn }]);
+      k = "fedOk";
+    }
     if (k === "fedOk") {
       let e = lgEd;
       if (!e || e.v !== "fed" || !e.g || e.cargando) return;
@@ -6956,6 +7040,7 @@
         if (!L.nom) L.nom = lgTxt(cn + (gn && gn !== "Grupo Único" ? " · " + gn : ""), 60);
         L.url = "https://stars.rfaf.es/?widget_view=classification&delegacion=" + e.d + "&competicion=" + e.c + "&grupo=" + e.g;
         lgMete(L, d);
+        if (e.yo) L.yo = lgTxt(e.yo, 60);
         let r = await lgGuarda(L);
         if (!r) return (e.cargando = false), lgPinta();
         note("Liga conectada con la Federación Andaluza." + (r === "local" ? " De momento solo en este dispositivo (falta un paso en el servidor)." : ""), r !== "local");
@@ -9378,7 +9463,7 @@
         "<b>Pegar la clasificación</b>: en la web de la federación mantén el dedo sobre el primer equipo, arrastra hasta el último y pulsa «Copiar» (en el ordenador, selecciona la tabla y Ctrl + C). Vuelve a la app, pégala en el recuadro y pulsa «Leer»: te enseña los equipos con sus puntos, partidos y goles para que lo revises, y pulsas «Guardar».",
         "<b>Pegar los resultados de una jornada</b>: igual, pero con los resultados (por ejemplo «CD Norte 2 - 1 UD Sur») y el número de jornada. Si no hay tabla pegada, la app calcula la clasificación con los resultados (3 puntos por victoria y 1 por empate).",
         "<b>Apuntar un resultado a mano</b>: elige la jornada, el local, el visitante y los goles. Tus partidos de liga con resultado y número de jornada se suman solos.",
-        "<b>Si juegas en Andalucía</b>, pulsa <b>«Conectar con la Federación Andaluza»</b>, elige tu delegación (por ejemplo Granada), la competición y el grupo, y pulsa «Conectar». La clasificación y los resultados de la última jornada se ponen solos y se actualizan cada vez que abres la clasificación (si han pasado 3 horas) o con «Actualizar ahora». Con «Desconectar» dejas de leerla.",
+        "<b>Si juegas en Andalucía</b>, pulsa <b>«Conectar con la Federación Andaluza»</b> y elige tu delegación (por ejemplo Granada). Lo más fácil es <b>«🔎 Buscar mi equipo»</b>: escribe el nombre de tu equipo (el del club o el pueblo, por ejemplo «Valderrubio»), comprueba la categoría y pulsa «Buscar mi equipo»; la app mira en todas las competiciones de tu categoría y te enseña en qué competición y grupo estáis. Tócalo y queda conectado. Si prefieres elegirlo tú, escribe tu categoría en «Buscar la competición» (por ejemplo «prebenjamín») para ver solo las suyas, elige la competición y el grupo y pulsa «Conectar». Si la web de la federación está fallando, la app te lo dice y con «Volver a probar» lo intentas otra vez. La clasificación y los resultados de la última jornada se ponen solos y se actualizan cada vez que abres la clasificación (si han pasado 3 horas) o con «Actualizar ahora». Con «Desconectar» dejas de leerla.",
         "En cada partido, <b>«🏟️ Poner el campo de la federación»</b> (en «📍 Campo del partido») escribe solo el campo donde se juega según la federación y lo pone en el mapa.",
         "Con la liga de Andalucía conectada, en <b>«Ver jornada»</b> eliges cualquier jornada, pasada o futura, y ves sus partidos con el resultado, la fecha, la hora, el campo y si se ha jugado. Las actas solo están en la web de la Federación Andaluza (hay un enlace). Ver otra jornada cuenta como un día de federación en el plan gratuito.",
         "Si la app no reconoce tu equipo, elígelo en «Mi equipo en la tabla». Con «Enviar la clasificación por WhatsApp» la mandas al grupo de las familias.",
@@ -9975,7 +10060,7 @@
         {
           el: '#infoBody .lg-fed',
           t: "2. Si juegas en Andalucía",
-          p: "Pulsa «Conectar con la Federación Andaluza», elige tu delegación, la competición y el grupo. La clasificación y los resultados se ponen solos y se actualizan al abrirla. En «Ver jornada» ves cualquier jornada.",
+          p: "Pulsa «Conectar con la Federación Andaluza», elige tu delegación y pulsa «🔎 Buscar mi equipo» (o elige tú la competición y el grupo). La clasificación y los resultados se ponen solos y se actualizan al abrirla. En «Ver jornada» ves cualquier jornada.",
           go: () => {
             if (state.draft) return;
             lgAbre();
