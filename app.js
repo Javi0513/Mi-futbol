@@ -2795,14 +2795,14 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3, etv: 2, ext: 2, sig: 2 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3, etv: 2, ext: 2, sig: 2, je: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
   function proLimite(txt) {
     ciOpen(
       "Plan Pro",
-      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: vídeo de cámara externa (YouTube, Veo, XbotGo) en el enlace del directo, entrenos en directo, mapa de calor y campograma de tiro, «Mis campos» del mapa, pegar la clasificación de la liga, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
+      `<p>${txt}</p><p>Con el <b>plan Pro</b> todo es <b>ilimitado</b>: vídeo de cámara externa (YouTube, Veo, XbotGo) en el enlace del directo, entrenos en directo, mapa de calor y campograma de tiro, «Mis campos» del mapa, pegar la clasificación de la liga, exportar a Excel, la ficha de cada jugador con todos sus partidos, enlaces del directo antes del partido, anotador del directo (también los tiros de cada jugador), ventanas de cambios, convocatorias, envíos de entrenos, resúmenes de partido y de cada jugador compartidos, vídeos de jugadas, jugadas de la pizarra enviadas por WhatsApp, enlace del equipo (y el esfuerzo de los jugadores), enlace del preparador físico, jugadas guardadas, pizarra limpia, jugadas con todos los pasos que quieras, ejercicios, «Mis ejercicios», dispositivos, jugadores, partidos, entrenamientos y equipos.</p>${precioProHtml()}<div class="stack">${proBtn()}${clubLinkBtn()}</div>`,
     );
     $("infoBody").scrollTop = 0;
     return false;
@@ -2840,6 +2840,8 @@
           ? `En el plan gratuito puedes poner el vídeo de una <b>cámara externa</b> (YouTube, Veo, XbotGo…) en el enlace del directo en <b>${LIM.ext} partidos o entrenos al mes</b> y este mes ya los has usado. El marcador del enlace y el vídeo del móvil siguen igual. El mes que viene vuelves a tener ${LIM.ext}.`
           : tipo === "sig"
           ? `En el plan gratuito puedes usar <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca y sigue el balón) en <b>${LIM.sig} partidos o entrenos al mes</b> y este mes ya los has usado. Grabar y emitir con todo el campo sigue igual. El mes que viene vuelves a tener ${LIM.sig}.`
+          : tipo === "je"
+          ? `En el plan gratuito puedes enviar por WhatsApp <b>${LIM.je} jugadas de la pizarra al mes</b> (imagen o vídeo; volver a mandar la misma no gasta) y este mes ya las has usado. <b>Guardarlas en el móvil sigue siendo gratis</b>: luego puedes mandarlas tú desde la galería. El mes que viene vuelves a tener ${LIM.je}.`
           : tipo === "etv"
           ? `En el plan gratuito puedes <b>emitir en directo ${LIM.etv} entrenos al mes</b> y este mes ya los has usado. Grabar el entreno en el móvil sigue siendo gratis. El mes que viene vuelves a tener ${LIM.etv}.`
           : tipo === "cv"
@@ -4224,7 +4226,7 @@
         L.length
           ? `<div class="vj-list">${L.map(
               (j) =>
-                `<div class="vj-it"><button type="button" class="ci-opt" data-jg="abrir" data-id="${esc(j.id)}">${ic("play", 20)}<span><b>${esc(j.nombre)}</b><small>${Math.max(1, parseInt(j.datos.steps) || 1)} ${(parseInt(j.datos.steps) || 1) === 1 ? "paso" : "pasos"} · ${esc(fmtDate(String(j.creado || "").slice(0, 10)))}${FASE[j.datos.f] ? " " + faseTag(j.datos.f) : ""}</small></span></button><button type="button" class="ib" data-jg="borrar" data-id="${esc(j.id)}" aria-label="Borrar ${esc(j.nombre)}">${ic("trash", 18)}</button></div>`,
+                `<div class="vj-it"><button type="button" class="ci-opt" data-jg="abrir" data-id="${esc(j.id)}">${ic("play", 20)}<span><b>${esc(j.nombre)}</b><small>${Math.max(1, parseInt(j.datos.steps) || 1)} ${(parseInt(j.datos.steps) || 1) === 1 ? "paso" : "pasos"} · ${esc(fmtDate(String(j.creado || "").slice(0, 10)))}${FASE[j.datos.f] ? " " + faseTag(j.datos.f) : ""}</small></span></button><button type="button" class="ib" data-jg="enviar" data-id="${esc(j.id)}" aria-label="Enviar o guardar ${esc(j.nombre)}" title="Enviar por WhatsApp o guardar en el móvil">${ic("share", 18)}</button><button type="button" class="ib" data-jg="borrar" data-id="${esc(j.id)}" aria-label="Borrar ${esc(j.nombre)}">${ic("trash", 18)}</button></div>`,
             ).join("")}</div>`
           : `<p class="muted vj-vacio">${jgFil ? "No tienes jugadas de esta fase." : `Todavía no tienes jugadas guardadas en ${esc(MN())}.`}</p>`
       }`,
@@ -4256,13 +4258,16 @@
       if (r.error) return note(/plan gratuito/.test(r.error.message) ? r.error.message : "No se pudo guardar: " + r.error.message);
       jgL.unshift({ ...row, creado: new Date().toISOString() });
     }
+    b.jn = n;
+    saveBoard();
     note(`Jugada «${n}» guardada en «Mis jugadas».`, true);
     if (!$("info").classList.contains("hidden") && $("infoTitle").textContent === "Mis jugadas") jgAbre();
   }
   function jgCargaEnPizarra(j) {
     let b = bd(),
       d = j.datos || {};
-    if ((b.strokes.length || b.items.length) && !confirm("Se cambia lo que tienes en la pizarra por esta jugada. Si te arrepientes, pulsa «Deshacer». ¿Seguir?")) return;
+    let mismo = b.jn === j.nombre && JSON.stringify(b.items) === JSON.stringify(cleanItems(d.items, Math.min(PASOS_MAX, Math.max(1, parseInt(d.steps) || 1))));
+    if (!mismo && (b.strokes.length || b.items.length) && !confirm("Se cambia lo que tienes en la pizarra por esta jugada. Si te arrepientes, pulsa «Deshacer». ¿Seguir?")) return false;
     stopAnim();
     pushHist(b);
     let n = Math.min(PASOS_MAX, Math.max(1, parseInt(d.steps) || 1));
@@ -4276,12 +4281,14 @@
     if (d.ts) b.ts = tszOk(d.ts);
     b.est = typeof d.est === "string" && estDe(d.est) ? d.est : "";
     b.f = FASE[d.f] ? d.f : "";
+    b.jn = j.nombre;
     b.tool = "move";
     state.boardPick = null;
     saveBoard();
     $("info").classList.add("hidden");
     render();
     note(`Jugada «${j.nombre}» en la pizarra.`, true);
+    return true;
   }
   $("info").addEventListener("click", async (e) => {
     let b = e.target.closest("[data-jg]");
@@ -4301,6 +4308,7 @@
         return jgAbre();
       }
       if (k === "abrir" && j) return jgCargaEnPizarra(j);
+      if (k === "enviar" && j) return jgCargaEnPizarra(j) && jeAbre();
       if (k === "borrar" && j) {
         if (!confirm(`¿Borrar la jugada «${j.nombre}»?`)) return;
         let r = await db.from("jugadas_guardadas").delete().eq("id", j.id);
@@ -4311,6 +4319,160 @@
     } catch (x) {
       note(x.message || String(x));
     }
+  });
+
+  /* --- Enviar o guardar la jugada (v11.61) ---
+     Desde la pizarra («Enviar») o desde «Mis jugadas»: la imagen o el vídeo de la jugada se
+     manda por WhatsApp (hoja de compartir del móvil, con WhatsApp en ella) o se guarda en el móvil
+     (en iPhone/iPad, «Guardar imagen/vídeo» de la hoja de compartir para que vaya a Fotos; en
+     Android y ordenador, descarga). Guardar en el móvil es gratis siempre; enviar por WhatsApp:
+     3 jugadas distintas al mes en el plan gratuito (volver a mandar la misma no gasta), Pro ilimitado.
+     Crear el vídeo tarda lo que dura la jugada y el navegador ya no deja abrir la hoja de compartir
+     sin otro toque: por eso el vídeo se prepara primero y luego se pulsa «Enviar» o «Guardar». */
+  let jeF = { img: null, vid: null },
+    jeSig = "",
+    jeVidPrep = false;
+  const jeLisa = (b) => b.strokes.length || b.items.length;
+  const jeVidPuede = (b) => b.steps > 1 && b.items.length > 0;
+  function jeFirma(b) {
+    let t = JSON.stringify([state.mode, b.strokes, b.items, b.steps, b.step, b.tcol, b.bg || "", !!b.clean && esPro(), b.ts || 1]),
+      h = 0;
+    for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36) + t.length.toString(36);
+  }
+  function jeNombre(b) {
+    let e = b.est ? estDe(b.est) : null;
+    return (b.jn || (e && e.n) || "").slice(0, 60);
+  }
+  const jeArch = (b, f) => {
+    let n = jeNombre(b)
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^\w -]+/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+    return n ? f.fname.replace(/^(pizarra|jugada)-[^.]*/, "jugada-" + n.slice(0, 40)) : f.fname;
+  };
+  const jeShareOk = (f) => {
+    try {
+      return !!(navigator.canShare && navigator.canShare({ files: [f] }));
+    } catch (e) {
+      return false;
+    }
+  };
+  const jeTactil = () => window.matchMedia("(pointer:coarse)").matches;
+  function jeAbre() {
+    let b = bd();
+    if (!jeLisa(b)) return note("La pizarra está vacía: pon jugadores o dibuja la jugada y luego envíala.");
+    let sig = jeFirma(b);
+    if (sig !== jeSig) {
+      jeSig = sig;
+      jeF = { img: null, vid: null };
+    }
+    let n = jeNombre(b),
+      vidOk = jeVidPuede(b),
+      vidNav = boardVidOk(),
+      ios = luzIOS,
+      quedan = esPro() ? "" : `<p class="muted lim-q">Plan gratuito: te quedan ${Math.max(0, LIM.je - envUsados("je"))} de ${LIM.je} jugadas para enviar por WhatsApp este mes (volver a mandar la misma no gasta). Guardarlas en el móvil es gratis siempre. Con Pro, ilimitado.</p>`,
+      vid = !vidOk
+        ? `<p class="muted">Para el vídeo, pon fichas en el campo y añade al menos un paso más moviéndolas (botón <b>+</b> de «Paso»).</p>`
+        : !vidNav
+        ? `<p class="muted">Este navegador no permite crear vídeos. Prueba con Chrome o con Safari actualizado.</p>`
+        : jeVidPrep
+        ? `<p class="je-prep" role="status">⏳ Creando el vídeo de la jugada… tarda lo que dura la jugada (unos ${Math.max(2, Math.round((animTotal(b) + 1700) / 1000))} s). No cierres esta ventana.</p>`
+        : jeF.vid
+        ? `<p class="je-ok">✅ El vídeo está listo. Toca para enviarlo o guardarlo.</p><div class="stack"><button type="button" class="primary" data-je="wa" data-t="vid">${ic("share", 20)}Enviar el vídeo por WhatsApp</button><button type="button" class="secondary" data-je="save" data-t="vid">${ic("download", 20)}${ios ? "Guardar el vídeo en Fotos" : "Guardar el vídeo en el móvil"}</button></div>`
+        : `<p class="muted">La jugada se mueve sola, paso a paso (${b.steps} pasos). Primero se crea el vídeo y luego eliges enviarlo o guardarlo.</p><div class="stack"><button type="button" class="primary" data-je="prep">${ic("film", 20)}Crear el vídeo de la jugada</button></div>`;
+    ciOpen(
+      "Enviar la jugada",
+      `<p class="muted">${n ? `<b>${esc(n)}</b>. ` : ""}Mándala por WhatsApp a tus jugadores, al cuerpo técnico o a quien quieras (le llega aunque no tenga la app), o guárdala en el móvil.</p>${quedan}<h3 class="ci-h3">🖼️ Imagen</h3><p class="muted">Cómo está ahora la pizarra${b.steps > 1 ? ` (paso ${b.step + 1} de ${b.steps})` : ""}.</p><div class="stack"><button type="button" class="primary" data-je="wa" data-t="img">${ic("share", 20)}Enviar la imagen por WhatsApp</button><button type="button" class="secondary" data-je="save" data-t="img">${ic("download", 20)}${ios ? "Guardar la imagen en Fotos" : "Guardar la imagen en el móvil"}</button></div><h3 class="ci-h3">🎬 Vídeo de la jugada</h3>${vid}<p class="muted je-tip">${
+        ios
+          ? "En iPhone y iPad se abre la ventana de compartir: para WhatsApp toca su icono; para guardar, elige «Guardar imagen» o «Guardar vídeo» y va a la app Fotos."
+          : jeTactil()
+          ? "Se abre la ventana de compartir del móvil: toca WhatsApp y elige el chat o el grupo. Al guardar, va a la galería (carpeta Descargas)."
+          : "En el ordenador se descarga el archivo y se abre WhatsApp: adjúntalo en el chat con el clip 📎."
+      }</p>`,
+    );
+  }
+  async function jeArchivo(t) {
+    let b = bd();
+    if (jeFirma(b) !== jeSig) {
+      jeSig = jeFirma(b);
+      jeF = { img: null, vid: null };
+    }
+    if (jeF[t]) return jeF[t];
+    if (t === "img") jeF.img = await boardImgFile(b);
+    return jeF[t];
+  }
+  function jeDescarga(f, done) {
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(f.blob);
+    a.download = f.fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+    if (done) note(done, true);
+  }
+  async function jeComparte(f, titulo) {
+    let file = new File([f.blob], f.fname, { type: f.blob.type });
+    if (!jeShareOk(file)) return false;
+    try {
+      await navigator.share({ files: [file], title: titulo });
+      return true;
+    } catch (e) {
+      if (e && e.name === "AbortError") return true;
+      return false;
+    }
+  }
+  async function jeAct(k, t) {
+    let b = bd();
+    if (!jeLisa(b)) return note("La pizarra está vacía.");
+    if (k === "prep") {
+      if (jeVidPrep || !jeVidPuede(b)) return;
+      jeVidPrep = true;
+      jeAbre();
+      try {
+        let sig = jeFirma(b),
+          f = await boardVidFile(b);
+        if (f && jeFirma(bd()) === sig) {
+          jeSig = sig;
+          jeF.vid = { ...f, fname: jeArch(b, f) };
+        }
+      } catch (x) {
+        note("No se pudo crear el vídeo: " + (x.message || x));
+      } finally {
+        jeVidPrep = false;
+      }
+      if (!$("info").classList.contains("hidden") && $("infoTitle").textContent === "Enviar la jugada") jeAbre();
+      return;
+    }
+    let f0 = await jeArchivo(t);
+    if (!f0) return jeAbre();
+    let f = { ...f0, fname: jeArch(b, f0) },
+      n = jeNombre(b),
+      titulo = n ? "Jugada «" + n + "»" : "Jugada";
+    if (k === "save") {
+      /* iPhone/iPad: la descarga va a Archivos; con la hoja de compartir sale «Guardar imagen/vídeo» (Fotos) */
+      if (luzIOS && (await jeComparte(f, titulo))) return;
+      return jeDescarga(f, t === "vid" ? "Vídeo guardado en el móvil (Descargas)." : "Imagen guardada en el móvil (Descargas).");
+    }
+    if (k === "wa") {
+      if (!envPuede("je", jeSig)) return;
+      const reabre = () => !$("info").classList.contains("hidden") && $("infoTitle").textContent === "Enviar la jugada" && !esPro() && jeAbre();
+      if (jeTactil() && (await jeComparte(f, titulo))) return reabre();
+      /* Ordenador o navegador sin compartir archivos: se descarga y se abre WhatsApp con un texto */
+      jeDescarga(f, "");
+      window.open("https://wa.me/?text=" + encodeURIComponent("⚽ " + titulo + " (te la adjunto). Hecha con Mi Fútbol JV32."), "_blank", "noopener");
+      note(`Se ha descargado ${t === "vid" ? "el vídeo" : "la imagen"}: en WhatsApp, adjúntal${t === "vid" ? "o" : "a"} con el clip 📎.`, true);
+      reabre();
+    }
+  }
+  $("info").addEventListener("click", (e) => {
+    let x = e.target.closest("[data-je]");
+    if (!x) return;
+    jeAct(x.dataset.je, x.dataset.t).catch((y) => note("No se pudo: " + (y.message || String(y))));
   });
 
   /* --- Convocatoria (v11.3) ---
@@ -9016,7 +9178,7 @@
     if (k === "privacy")
       return [
         "Política de privacidad",
-        `<p>Última actualización: noviembre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan en tu dispositivo y, si usas «Guardar» en la pizarra, también en tu cuenta. Si creas el <b>enlace del equipo</b>, quien tenga ese enlace ve el nombre del equipo, el nombre y dorsal de los jugadores, la convocatoria, los próximos entrenos y los vídeos que compartas; las respuestas «Voy» / «No puedo ir» y su motivo se guardan en tu cuenta (el motivo solo lo ves tú) y se borran a los 120 días. Si pides el esfuerzo, el número del 1 al 10 que anota cada jugador se guarda igual (120 días) y solo lo ves tú y, si creas su enlace, el preparador físico; los demás solo ven que ya lo ha anotado. Quien tenga el <b>enlace del preparador físico</b> ve el nombre y dorsal de los jugadores, su esfuerzo y su carga física (minutos × esfuerzo), sin poder cambiar nada. Puedes desactivar los enlaces cuando quieras.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). Si activas «Entrar con Face ID / huella», la comprobación de tu cara o tu huella la hace tu propio dispositivo: nunca recibimos ni guardamos esos datos, solo se guarda en tu dispositivo un identificador de la llave creada. No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
+        `<p>Última actualización: noviembre de 2026.</p><h3>Quién es el responsable</h3><p>${id}. Contacto: ${ct}.</p><h3>Qué datos tratamos</h3><p>Tu email y contraseña (la contraseña se guarda cifrada), tu foto de perfil y tu nombre si decides ponerlos, y el contenido que introduces: jugadores (nombre y foto opcional), partidos, alineaciones, resultados y estadísticas. Los dibujos de la pizarra se guardan en tu dispositivo y, si usas «Mis jugadas» en la pizarra, también en tu cuenta. Si creas el <b>enlace del equipo</b>, quien tenga ese enlace ve el nombre del equipo, el nombre y dorsal de los jugadores, la convocatoria, los próximos entrenos y los vídeos que compartas; las respuestas «Voy» / «No puedo ir» y su motivo se guardan en tu cuenta (el motivo solo lo ves tú) y se borran a los 120 días. Si pides el esfuerzo, el número del 1 al 10 que anota cada jugador se guarda igual (120 días) y solo lo ves tú y, si creas su enlace, el preparador físico; los demás solo ven que ya lo ha anotado. Quien tenga el <b>enlace del preparador físico</b> ve el nombre y dorsal de los jugadores, su esfuerzo y su carga física (minutos × esfuerzo), sin poder cambiar nada. Puedes desactivar los enlaces cuando quieras.</p><h3>Para qué y con qué base</h3><p>Solo para darte el servicio de la app (art. 6.1.b RGPD, ejecución del contrato). No hacemos publicidad, no vendemos datos ni elaboramos perfiles.</p><h3>Con quién se comparten</h3><p>Con nuestros proveedores técnicos: <b>Supabase</b> (base de datos y autenticación, servidores en la Unión Europea), <b>GitHub Pages</b> (alojamiento de la web), <b>Resend</b> (envío de correo) y <b>Stripe</b> (cobro del plan Pro: los datos de la tarjeta los trata Stripe directamente, nosotros nunca los vemos).${c.turnstileSiteKey ? " Y <b>Cloudflare</b> (verificación anti-robots)." : ""} No se ceden datos a otros terceros salvo obligación legal.</p><h3>Lista de avisos del plan Pro</h3><p>Si pulsas «Avísame cuando esté disponible», guardamos tu email en una lista para avisarte una sola vez cuando el plan Pro esté disponible. Puedes pedirnos que te quitemos cuando quieras; se borra también si eliminas tu cuenta.</p><h3>Plan para clubes</h3><p>Si te unes a un club con su código, el encargado del club ve tu email y la fecha en que te uniste, para poder gestionar las plazas. Si pones tu foto de perfil y tu nombre en «Mi cuenta», además de ti solo los ve el supervisor del club, para saber de quién es cada cuenta; puedes quitarlos cuando quieras. El escudo que sube el encargado lo ven todos los entrenadores del club. Los demás entrenadores del club no ven nada tuyo. Solo si lo aceptas (al unirte o después, en «Mi cuenta › Plan para clubes»), el <b>supervisor del club</b> (el encargado y las personas del club que él nombre supervisoras) puede <b>ver, sin poder cambiarlos</b>, tus equipos, jugadores, partidos, alineaciones, convocatorias y entrenamientos, mientras el club esté pagado. Nunca ve tu contraseña, tu plan ni tus pagos. Puedes dejar de compartirlos cuando quieras desde el mismo sitio. El encargado puede quitarte del club (pierdes el plan Pro del club, pero conservas tu cuenta y tus datos) y tú puedes salir cuando quieras.</p><h3>Directo de partidos</h3><p>Si activas el directo de un partido, se crea un enlace secreto. Cualquiera que tenga ese enlace puede ver, sin cuenta, los nombres de los dos equipos, el marcador, el minuto, y el nombre y dorsal de quien marca cada gol, de los jugadores que entran y salen en los cambios y de quien recibe una tarjeta en ese partido, también los del rival que apuntes (nada más). Tú decides con quién compartirlo y puedes desactivarlo cuando quieras; también se borra si borras el partido o tu cuenta.</p><h3>Vídeo del partido</h3><p>Si usas la cámara del directo, el vídeo se graba en tu móvil y se guarda solo en tu dispositivo: no lo subimos a ningún sitio. Si además pulsas «Emitir», el vídeo y el sonido se envían en vivo, a través de <b>Cloudflare</b> (que solo los reparte y no los guarda), a quien abra el enlace del directo, mientras emites. No grabamos ni conservamos esa emisión. Si en el vídeo aparecen menores, eres responsable de contar con la autorización de sus tutores antes de grabar o emitir.</p><h3>Cuánto tiempo</h3><p>Mientras mantengas la cuenta. Si la borras desde «Mi cuenta», se eliminan tus datos de forma definitiva.</p><h3>Tus derechos</h3><p>Puedes acceder, rectificar, suprimir, portar, limitar u oponerte al tratamiento. Desde «Mi cuenta» puedes descargar y borrar tus datos tú mismo; también puedes escribirnos. Si no estás conforme, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p><h3>Datos de jugadores y menores</h3><p>La app es para entrenadores y responsables adultos. Si introduces datos de otras personas, y en especial de menores, eres responsable de contar con su autorización (o la de sus tutores). Te recomendamos usar solo el nombre de pila y subir fotos solo con permiso. En relación con esos datos de terceros, tú eres quien decide para qué se usan y nosotros actuamos como encargados del tratamiento: los guardamos solo para prestarte el servicio, no los usamos para ningún otro fin y los borramos cuando borras la cuenta o el dato.</p><h3>Almacenamiento en tu dispositivo</h3><p>Usamos únicamente almacenamiento técnico necesario (sesión y pizarra). Si activas «Entrar con Face ID / huella», la comprobación de tu cara o tu huella la hace tu propio dispositivo: nunca recibimos ni guardamos esos datos, solo se guarda en tu dispositivo un identificador de la llave creada. No usamos cookies de publicidad ni de analítica.${c.turnstileSiteKey ? " Para evitar registros automáticos, al crear la cuenta o entrar se usa la verificación anti-robots de <b>Cloudflare Turnstile</b>, que puede tratar datos técnicos del navegador." : ""}</p>`,
       ];
     return [
       "Términos de uso",
@@ -9594,12 +9756,13 @@
         "<b>Color de los jugadores</b>: toca un jugador o un rival (sin arrastrarlo) y abajo sale su color. Elige una muestra o mueve la barra de color hasta el que quieras; la segunda barra lo hace más claro u oscuro. «A todos los míos» (o «A todos los rivales») los pinta a todos igual, y los que añadas después saldrán de ese color. «Color normal» lo deja como estaba. Toca el campo o la X para cerrarlo.",
         "Con los iconos de <b>encima del campo</b> (a la izquierda en horizontal) dibujas con el lápiz o las flechas y eliges el color: la <b>flecha continua</b> es para el golpeo (pase o tiro) y la <b>flecha discontinua</b> para el movimiento del jugador (desmarque, carrera sin balón). La goma borra la línea o la ficha que toques. También tienes deshacer y la papelera para borrarlo todo.",
         "<b>Jugada en movimiento</b>: coloca las fichas, toca el <b>+</b> de la fila «Paso» y arrástralas a donde se mueven (verás una flecha desde el sitio anterior). Repite para cada paso. El botón verde ▶ las mueve solas de un paso a otro, y con las flechas ‹ › cambias de paso para retocarlo. La X roja quita el paso en el que estás.",
-        "Con el icono de la cámara sacas un <b>vídeo</b> de la jugada para mandarlo por WhatsApp; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
+        "<b>Enviar</b> (abajo, junto a «Mis jugadas»): manda la jugada <b>por WhatsApp</b> o <b>guárdala en el móvil</b>, en <b>imagen</b> (cómo está ahora la pizarra) o en <b>vídeo</b> (la jugada moviéndose sola, si tiene varios pasos: primero «Crear el vídeo de la jugada» y luego enviar o guardar). Al enviar se abre la ventana de compartir del móvil: toca WhatsApp y elige el chat o el grupo. En iPhone y iPad, «Guardar en Fotos» abre esa ventana: elige «Guardar imagen» o «Guardar vídeo». En el ordenador se descarga el archivo y se abre WhatsApp para adjuntarlo con el clip. Guardar en el móvil es gratis siempre; enviar por WhatsApp, 3 jugadas al mes en el plan gratuito (volver a mandar la misma no gasta) e ilimitado con Pro.",
+        "Con el icono de la cámara sacas también un <b>vídeo</b> de la jugada; con el de descargar, una <b>imagen</b>. El botón de pantalla completa la pone en grande para explicarla. La pizarra se guarda en tu móvil.",
         "<b>Limpia</b> (plan Pro): deja el campo liso, sin rayas ni escudo, para que se vean mejor las fichas y los movimientos. Vuelve a tocarlo para dejarlo como antes. La imagen y el vídeo salen también limpios. Junto con la pantalla completa tienes la pizarra grande y despejada.",
         "<b>Vídeos</b> (2 gratis por modalidad, ilimitados con Pro): sube desde el móvil el vídeo de una jugada (de un partido, de otro equipo…), ponle nombre y enséñalo cuando quieras, también a pantalla completa. Se guardan solo en ese dispositivo, cada modalidad con los suyos. Con «Compartir o guardar» lo mandas por WhatsApp y con «Compartir con el equipo» lo ven tus jugadores en el enlace del equipo.",
-        "<b>Fase de la jugada</b>: en «Guardar» puedes marcar la fase de la jugada (ataque organizado, contraataque, defensa organizada, reorganización defensiva o ABP) antes de guardarla. En «Mis jugadas» sale su fase y puedes ver solo las de una fase.",
+        "<b>Fase de la jugada</b>: en «Mis jugadas» puedes marcar la fase de la jugada (ataque organizado, contraataque, defensa organizada, reorganización defensiva o ABP) antes de guardarla. En «Mis jugadas» sale su fase y puedes ver solo las de una fase.",
         "<b>Jugadas a balón parado (ABP)</b>: en fútbol 7 y fútbol 11, encima de la pizarra tienes el botón <b>«Jugadas a balón parado (ABP)»</b>: 14 jugadas que se mueven solas paso a paso: córners (primer palo, segundo palo, en corto, con bloqueos, raso al borde del área), faltas laterales y frontales, saques de banda y cómo <b>defender</b> el córner (en zona o mixto) y la falta lateral. Arriba te explica cada paso y tienes las claves. Las <b>5 más usadas</b> (TOP) son gratis; con el plan Pro, las 14. Los números de las fichas son dorsales y P es el portero.",
-        "<b>Guardar</b> y <b>Mis jugadas</b> (3 gratis, ilimitadas con Pro): con «Guardar» le pones un nombre a la jugada que tienes en la pizarra (con sus pasos, colores y dibujos) y se guarda en tu cuenta. En «Mis jugadas» la vuelves a abrir cuando quieras, también desde el ordenador o la tablet entrando con tu cuenta. Si guardas con un nombre que ya tienes, te pregunta si quieres cambiarla.",
+        "<b>Mis jugadas</b> (3 gratis, ilimitadas con Pro): toca el botón «Mis jugadas» (abajo, a la derecha). Arriba, «Guardar la jugada de la pizarra» le pone un nombre a la jugada que tienes en la pizarra (con sus pasos, colores y dibujos) y la guarda en tu cuenta. Debajo salen todas las que ya guardaste (solo las de la modalidad en la que estás): toca una para abrirla en la pizarra, o su botón de compartir para enviarla por WhatsApp o guardarla en el móvil. La vuelves a abrir cuando quieras, también desde el ordenador o la tablet entrando con tu cuenta. Si guardas con un nombre que ya tienes, te pregunta si quieres cambiarla.",
       ],
     },
     {
@@ -9626,7 +9789,7 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», enviar por WhatsApp <b>3 jugadas de la pizarra al mes</b> (guardarlas en el móvil es gratis siempre), en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
         "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
@@ -9817,6 +9980,46 @@
     ftBorrador = true;
   }
   const FTUT = {
+    enviar: {
+      t: "Enviar la jugada por WhatsApp",
+      v: "11.61",
+      p: "Manda la jugada de la pizarra por WhatsApp o guárdala en el móvil, en imagen o en vídeo.",
+      pasos: [
+        {
+          t: "Enviar la jugada",
+          p: "Te enseño a mandar una jugada de la pizarra por WhatsApp o a guardarla en el móvil. No se envía nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft) return;
+            state.live = null;
+            state.tab = "pizarra";
+            render();
+          },
+        },
+        {
+          el: '#view [data-b="env"]',
+          t: "1. Toca «Enviar»",
+          p: "Está debajo del campo (a la derecha si la pizarra está en horizontal), junto a «Mis jugadas». Primero pon las fichas o dibuja la jugada.",
+        },
+        {
+          t: "2. Imagen o vídeo",
+          p: "«Enviar la imagen por WhatsApp» manda cómo está ahora la pizarra. Si la jugada tiene varios pasos, «Crear el vídeo de la jugada» la graba moviéndose sola; cuando esté listo, «Enviar el vídeo por WhatsApp».",
+        },
+        {
+          t: "3. Elige WhatsApp",
+          p: "Se abre la ventana de compartir del móvil: toca WhatsApp y elige el chat o el grupo. Para guardarla, «Guardar en el móvil» (en iPhone y iPad «Guardar en Fotos» y luego «Guardar imagen» o «Guardar vídeo»).",
+        },
+        {
+          el: '#view [data-b="jg"]',
+          t: "4. También desde «Mis jugadas»",
+          p: "En «Mis jugadas» están todas las que guardaste. Cada una tiene su botón de compartir para enviarla o guardarla sin buscarla.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Guardar en el móvil es gratis siempre. Plan gratuito: enviar por WhatsApp 3 jugadas al mes (volver a mandar la misma no gasta); con Pro, ilimitado.",
+        },
+      ],
+    },
     sigue: {
       t: "Cámara que sigue la jugada",
       v: "11.59",
@@ -14792,6 +14995,7 @@
         tcol: x.tcol && typeof x.tcol === "object" ? x.tcol : {},
         tool: "move",
         est: typeof x.est === "string" ? x.est : "",
+        jn: typeof x.jn === "string" ? x.jn.slice(0, 60) : "",
         f: typeof x.f === "string" ? x.f : "",
         clean: !!x.clean,
         ts: tszOk(x.ts),
@@ -14816,6 +15020,7 @@
           tool: x.tool,
           est: x.est || "",
           f: x.f || "",
+          jn: x.jn || "",
           clean: !!x.clean,
           ts: tszOk(x.ts),
         };
@@ -15402,6 +15607,7 @@
     b.step = 0;
     b.tool = "move";
     b.est = id;
+    b.jn = "";
     b.f = estFase(e);
     state.boardPick = null;
     state.boardMenu = false;
@@ -15518,7 +15724,7 @@
       )
       .join("")}${menu}${gkMenu}</div></div>
 <div class="bbot"><div class="bsteps" role="toolbar" aria-label="Jugada en movimiento"><button class="bi" data-b="prev" aria-label="Paso anterior" title="Paso anterior"${dis(b.step < 1)}>${ic("left")}</button><b class="bst-n" aria-live="polite">Paso ${b.step + 1} / ${b.steps}</b><button class="bi" data-b="next" aria-label="Paso siguiente" title="Paso siguiente"${dis(b.step >= b.steps - 1)}>${ic("right")}</button><button class="bi" data-b="addstep" aria-label="Añadir paso" title="Añadir paso"${dis()}>${ic("plus")}</button><button class="bi d" data-b="delstep" aria-label="Quitar este paso" title="Quitar este paso"${dis(b.steps < 2)}>${ic("x")}</button><span class="brs"></span><button class="bi go" data-b="play" aria-label="${playing ? "Parar" : "Ver jugada"}" title="${playing ? "Parar" : "Ver jugada"}">${ic(playing ? "stop" : "play")}</button><button class="bi" data-b="video" aria-label="Vídeo de la jugada" title="Vídeo de la jugada"${dis()}>${ic("film")}</button></div>
-<div class="bextra"><span class="btsz" role="group" aria-label="Tamaño de las fichas"><button class="bi" data-b="tsz" data-v="-1" aria-label="Fichas más pequeñas" title="Fichas más pequeñas"${dis(tszOk(b.ts) <= TSZ[0])}><i aria-hidden="true">−</i></button><b class="btsz-n" title="Tamaño de las fichas">${ic("tsz", 16)}${Math.round(tszOk(b.ts) * 100)}%</b><button class="bi" data-b="tsz" data-v="1" aria-label="Fichas más grandes" title="Fichas más grandes"${dis(tszOk(b.ts) >= TSZ[TSZ.length - 1])}><i aria-hidden="true">+</i></button></span><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean && esPro() ? " on" : ""}" data-b="clean" aria-pressed="${!!(b.clean && esPro())}" title="Pizarra limpia: campo liso, sin rayas ni escudo${esPro() ? "" : " (plan Pro)"}">${ic("eraser", 18)}Limpia${esPro() ? "" : '<em class="pro-tag">PRO</em>'}</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}<button class="btx" data-b="jg" title="Guardar la jugada con un nombre y ver «Mis jugadas»">${ic("download", 18)}Guardar</button></div></div>${pick}</section>`;
+<div class="bextra"><span class="btsz" role="group" aria-label="Tamaño de las fichas"><button class="bi" data-b="tsz" data-v="-1" aria-label="Fichas más pequeñas" title="Fichas más pequeñas"${dis(tszOk(b.ts) <= TSZ[0])}><i aria-hidden="true">−</i></button><b class="btsz-n" title="Tamaño de las fichas">${ic("tsz", 16)}${Math.round(tszOk(b.ts) * 100)}%</b><button class="bi" data-b="tsz" data-v="1" aria-label="Fichas más grandes" title="Fichas más grandes"${dis(tszOk(b.ts) >= TSZ[TSZ.length - 1])}><i aria-hidden="true">+</i></button></span><button class="bi" data-b="img" aria-label="Guardar imagen" title="Guardar imagen">${ic("download")}</button><button class="btx${b.clean && esPro() ? " on" : ""}" data-b="clean" aria-pressed="${!!(b.clean && esPro())}" title="Pizarra limpia: campo liso, sin rayas ni escudo${esPro() ? "" : " (plan Pro)"}">${ic("eraser", 18)}Limpia${esPro() ? "" : '<em class="pro-tag">PRO</em>'}</button><button class="btx" data-b="vids" title="Vídeos de jugadas guardados en este dispositivo">${ic("film", 18)}Vídeos</button><button class="bi go" data-b="present" aria-label="${state.present ? "Salir de pantalla completa" : "Presentar a pantalla completa"}" title="${state.present ? "Salir" : "Presentar"}">${ic(state.present ? "x" : "maximize")}</button>${gs.length ? `<label class="bgsel"><span>Titulares</span><select id="boardBg" aria-label="Poner en el campo los titulares de un partido"><option value="">Poner titulares de…</option>${gs.map((m) => `<option value="${m.id}">vs ${esc(m.rival)} · ${esc(fmtDate(m.fecha))}</option>`).join("")}</select></label>` : ""}<button class="btx" data-b="env" title="Enviar la jugada por WhatsApp o guardarla en el móvil (imagen o vídeo)">${ic("share", 18)}Enviar</button><button class="btx" data-b="jg" title="Mis jugadas: guardar la jugada con un nombre y abrir las que ya guardaste">${ic("download", 18)}Mis jugadas</button></div></div>${pick}</section>`;
   }
   let boardRO = null;
   function initBoard() {
@@ -15780,6 +15986,13 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     note(done, true);
   }
+  /* Imagen de la pizarra como archivo (la usan el botón de descargar y «Enviar») */
+  async function boardImgFile(b) {
+    let { cv, o } = await boardBase(b, (it) => it.p[b.step], true),
+      blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+    if (!blob) throw new Error("el navegador no ha podido crear la imagen");
+    return { blob, fname: `pizarra-${MFN(o.modalidad)}-${o.fecha}.png` };
+  }
   async function boardExport() {
     let b = bd();
     if (!b.strokes.length && !b.items.length) {
@@ -15787,31 +16000,34 @@
       return;
     }
     note("Preparando imagen…", true);
-    let { cv, o } = await boardBase(b, (it) => it.p[b.step], true),
-      blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+    let f = await boardImgFile(b);
     note("");
-    await shareOrSave(
-      blob,
-      `pizarra-${MFN(o.modalidad)}-${o.fecha}.png`,
-      "Pizarra",
-      "Imagen descargada.",
-    );
+    await shareOrSave(f.blob, f.fname, "Pizarra", "Imagen descargada.");
   }
   /* Vídeo de la jugada: se dibuja cada fotograma en un lienzo y se graba con MediaRecorder. */
   let boardRec = false;
+  const boardVidOk = () => !!(window.MediaRecorder && HTMLCanvasElement.prototype.captureStream);
   async function boardVideo() {
     let b = bd();
     if (b.steps < 2 || !b.items.length) {
       note("Para el vídeo, pon fichas en el campo y añade al menos un paso más moviéndolas.");
       return;
     }
-    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+    if (!boardVidOk()) {
       note("Tu navegador no permite crear vídeos. Prueba con Chrome.");
       return;
     }
     if (boardRec) return;
-    boardRec = true;
     note("Creando el vídeo de la jugada…", true);
+    let f = await boardVidFile(b);
+    if (!f) return;
+    note("");
+    await shareOrSave(f.blob, f.fname, "Jugada", "Vídeo descargado.");
+  }
+  /* Vídeo de la jugada como archivo (la usan el botón de la cámara y «Enviar») */
+  async function boardVidFile(b) {
+    if (boardRec) return null;
+    boardRec = true;
     try {
       let { cv: base, o } = await boardBase(b, null),
         W = 720,
@@ -15862,13 +16078,8 @@
       st.getTracks().forEach((x) => x.stop());
       let mt = (rec.mimeType || type || "video/webm").split(";")[0],
         blob = new Blob(parts, { type: mt });
-      note("");
-      await shareOrSave(
-        blob,
-        `jugada-${MFN(o.modalidad)}-${o.fecha}.${mt.includes("mp4") ? "mp4" : "webm"}`,
-        "Jugada",
-        "Vídeo descargado.",
-      );
+      if (!blob.size) throw new Error("el vídeo ha salido vacío");
+      return { blob, fname: `jugada-${MFN(o.modalidad)}-${o.fecha}.${mt.includes("mp4") ? "mp4" : "webm"}` };
     } finally {
       boardRec = false;
     }
@@ -15878,7 +16089,7 @@
     if (!t || state.tab !== "pizarra") return;
     let b = bd(),
       k = t.dataset.b;
-    if (boardAnim && k !== "play" && k !== "present" && k !== "est" && k !== "jg" && k !== "jgsave") return;
+    if (boardAnim && k !== "play" && k !== "present" && k !== "est" && k !== "jg" && k !== "jgsave" && k !== "env") return;
     if (k !== "add" && k !== "addp" && k !== "addgk") state.boardMenu = false;
     if (k === "est") {
       estOpen();
@@ -15894,6 +16105,8 @@
       note(b.clean ? "Pizarra limpia: campo liso, sin rayas ni escudo." : "Pizarra normal.", true);
     } else if (k === "vids") {
       vjAbre();
+    } else if (k === "env") {
+      jeAbre();
     } else if (k === "jg") {
       jgAbre();
     } else if (k === "jgsave") {
@@ -15922,6 +16135,7 @@
         b.step = 0;
         b.est = "";
         b.f = "";
+        b.jn = "";
         saveBoard();
         render();
       }

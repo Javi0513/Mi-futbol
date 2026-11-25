@@ -7454,3 +7454,48 @@ body.cam-on #info {
   background: var(--s1);
   padding-bottom: 4px;
 }
+/* v11.61: Enviar la jugada */
+.je-prep,
+.je-ok {
+  margin: 6px 0 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.je-prep {
+  background: rgba(255, 214, 10, 0.12);
+  border: 1px solid rgba(255, 214, 10, 0.35);
+}
+.je-ok {
+  background: rgba(37, 211, 102, 0.12);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+}
+.je-tip {
+  margin-top: 12px;
+  font-size: 0.9em;
+}
+/* v11.61: con «Enviar» y «Mis jugadas», en el móvil girado los botones de abajo se compactan
+   para que quepan en la misma fila que los pasos y el campo no se salga por arriba. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .board .bbot {
+    column-gap: 10px;
+  }
+  .board .bextra {
+    gap: 5px;
+  }
+  .board .bextra .btx {
+    height: 36px;
+    padding: 0 8px;
+    gap: 4px;
+    font-size: 13px;
+  }
+  .board .bextra .btx[data-b="clean"] svg,
+  .board .bextra .btx[data-b="vids"] svg,
+  .board .bextra .btx[data-b="jg"] svg {
+    display: none;
+  }
+  .board .bextra .bi {
+    width: 36px;
+    height: 36px;
+  }
+}
