@@ -2795,7 +2795,7 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3, etv: 2, ext: 2 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3, etv: 2, ext: 2, sig: 2 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
@@ -2838,6 +2838,8 @@
           ? `En el plan gratuito puedes compartir <b>${LIM.rs} resúmenes de partido al mes</b> (o de la temporada) y este mes ya los has usado. Verlos en la app es siempre gratis. El mes que viene vuelves a tener ${LIM.rs}.`
           : tipo === "ext"
           ? `En el plan gratuito puedes poner el vídeo de una <b>cámara externa</b> (YouTube, Veo, XbotGo…) en el enlace del directo en <b>${LIM.ext} partidos o entrenos al mes</b> y este mes ya los has usado. El marcador del enlace y el vídeo del móvil siguen igual. El mes que viene vuelves a tener ${LIM.ext}.`
+          : tipo === "sig"
+          ? `En el plan gratuito puedes usar <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca y sigue el balón) en <b>${LIM.sig} partidos o entrenos al mes</b> y este mes ya los has usado. Grabar y emitir con todo el campo sigue igual. El mes que viene vuelves a tener ${LIM.sig}.`
           : tipo === "etv"
           ? `En el plan gratuito puedes <b>emitir en directo ${LIM.etv} entrenos al mes</b> y este mes ya los has usado. Grabar el entreno en el móvil sigue siendo gratis. El mes que viene vuelves a tener ${LIM.etv}.`
           : tipo === "cv"
@@ -9018,7 +9020,7 @@
       ];
     return [
       "Términos de uso",
-      `<p>Última actualización: noviembre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (16 en Fútbol 11, 10 en Fútbol 7 y 10 en Fútbol sala; quien ya tuviera más antes de este cambio los conserva, pero no puede añadir otros), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador, con cámara externa o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico, o los campos guardados en «Mis campos»), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual, o de 4,99 € al mes (IVA incluido), con renovación mensual y sin permanencia. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Podemos ofrecer códigos promocionales que dan el plan Pro gratis durante unos días, sin tarjeta y sin renovación: cada código se puede usar una vez por cuenta, puede tener fecha de fin o un número máximo de usos, y al terminar la cuenta vuelve al plan gratuito sin perder sus datos. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
+      `<p>Última actualización: noviembre de 2026.</p><h3>Qué es</h3><p>Mi Fútbol JV32 es una aplicación web para gestionar plantillas, alineaciones, partidos, estadísticas y pizarra táctica. Titular del servicio: ${id}.</p><h3>Cuenta</h3><p>Debes ser mayor de edad. Eres responsable de mantener tu contraseña en secreto y de la actividad de tu cuenta.</p><h3>Tu contenido</h3><p>Los datos que introduces son tuyos. Garantizas que tienes derecho a usarlos y que cuentas con la autorización de las personas cuyos datos introduces. No puedes usar la app para fines ilícitos ni subir contenido ofensivo o que vulnere derechos de terceros.</p><h3>Plan gratuito y plan Pro</h3><p>El plan gratuito permite, en cada modalidad, un equipo, hasta 5 partidos, 5 entrenamientos y un máximo de jugadores (16 en Fútbol 11, 10 en Fútbol 7 y 10 en Fútbol sala; quien ya tuviera más antes de este cambio los conserva, pero no puede añadir otros), usar la cuenta en un máximo de 3 dispositivos y algunas funciones con tope (por ejemplo, convocatorias, envíos de entrenos y partidos con anotador, con cámara externa, con «Seguir la jugada» o con control de ventanas de cambios al mes, vídeos de jugadas, pasos de una jugada, jugadas guardadas, lo que se ve en el enlace del equipo o en el del preparador físico, o los campos guardados en «Mis campos»), tal como se indica en la app. Para superar esos límites o llevar varios equipos existe el plan Pro, de 39,99 € al año (IVA incluido), con renovación anual, o de 4,99 € al mes (IVA incluido), con renovación mensual y sin permanencia. Quien ya lo tenga contratado a un precio anterior lo mantiene mientras no cancele su suscripción. Las suscripciones mensuales contratadas antes se mantienen hasta que se cancelen. Los clubes pueden contratar un plan para clubes: un pack anual según el número de entrenadores, con el que todos los entrenadores que se unan al club con su código tienen el plan Pro mientras el club esté pagado y sigan en el club. El encargado del club es quien lo contrata y gestiona, y puede quitar entrenadores del club. El encargado y los supervisores que él nombre pueden ver, sin modificarlos, los datos de los entrenadores del club que lo hayan aceptado. Podemos ofrecer códigos promocionales que dan el plan Pro gratis durante unos días, sin tarjeta y sin renovación: cada código se puede usar una vez por cuenta, puede tener fecha de fin o un número máximo de usos, y al terminar la cuenta vuelve al plan gratuito sin perder sus datos. Solo se contrata y se cobra con tu aceptación expresa y puedes cancelarlo cuando quieras. Podremos modificar planes y precios avisando con antelación; el cambio no se aplicará a una suscripción en curso sin tu consentimiento.</p><h3>Disponibilidad</h3><p>La app se ofrece «tal cual». Hacemos copias razonables, pero te recomendamos descargar tus datos de vez en cuando desde «Mi cuenta». No respondemos de pérdidas indirectas ni de interrupciones ajenas a nuestro control, en los límites que permite la ley.</p><h3>Propiedad</h3><p>El nombre, logo, diseño y código de la app son propiedad de su titular y no pueden copiarse ni reutilizarse sin permiso.</p><h3>Cambios y baja</h3><p>Podemos actualizar estos términos avisando en la app. Puedes darte de baja y borrar tus datos cuando quieras desde «Mi cuenta». Podemos suspender cuentas que incumplan estos términos.</p><h3>Ley aplicable</h3><p>Legislación española. Si eres consumidor, te amparan además las normas de tu lugar de residencia.</p>`,
     ];
   }
   /* Si algún enlace vuelve a ser de modo prueba (test_), el pago solo se ve abriendo la app con ?probarpago */
@@ -9495,6 +9497,7 @@
         "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la app la vuelve a abrir sola y la grabación sigue.",
         "<b>Si aun así se apaga la pantalla</b> (emitiendo o grabando): en iPhone y iPad ve a Ajustes › Pantalla y brillo › Bloqueo automático y pon «Nunca» durante el partido, y quita el Modo de bajo consumo, que bloquea el iPhone a los 30 segundos. En Android, Ajustes › Pantalla › Tiempo de espera de la pantalla al máximo y sin ahorro de batería. Si ya la tenías abierta, cierra la app del todo y vuelve a abrirla para tener la última versión.",
         "<b>Imagen de lado</b>: si pones el móvil en horizontal con la rotación bloqueada, la app endereza la imagen sola (botón «🔄 Imagen: Automática»), así la familia y la grabación ven el campo derecho. Si aun así sale girada, toca ese botón para elegir «Girada ↶», «Girada ↷» o «Sin girar»; la app lo recuerda.",
+        "<b>🎯 Seguir la jugada (estilo Veo)</b>: en la cámara, toca <b>«🎯 Seguir la jugada»</b>. Pon el móvil <b>quieto en el trípode</b>, lo más alto posible y en el centro de la banda, viendo <b>todo el campo</b> (si tu móvil tiene la cámara <b>0,5x</b> o gran angular, la app intenta ponerla sola). La app mira en el propio móvil dónde se mueven los jugadores y el balón y <b>se acerca y mueve la imagen sola</b> hacia la jugada, suave, como si hubiera un cámara. Lo que ves en la pantalla es lo que se graba y lo que ve la familia en el directo. Si nadie se mueve, se queda quieta; si mueves el móvil, espera a que se quede quieto. Se quita tocando otra vez el botón. No hace falta internet ni soporte motorizado. En móviles o iPad antiguos mira menos veces por segundo y, si van muy justos, se quita sola y avisa. Plan gratuito: <b>2 partidos o entrenos al mes</b>; con Pro, ilimitado.",
         "<b>Cuántos te siguen</b>: en el Directo, debajo del marcador (y en la cámara), ves cuántas personas tienen abierto ahora el enlace del directo, por ejemplo «👁 12 personas están viendo el directo ahora». Cuenta a todos los que lo miran, con vídeo o solo el marcador, y se actualiza cada 15 segundos. Quien sigue el partido desde el enlace también ve cuántos son. Gratis para todos.",
         "<b>La familia en el enlace del directo</b>: mientras ven el vídeo, su pantalla tampoco se apaga. Si giran el móvil, el vídeo se pone en grande en toda la pantalla, con el marcador dentro. Si se les corta la conexión, el vídeo vuelve solo.",
         "<b>Si te llaman mientras grabas o emites</b>: no se corta nada. La grabación y el vídeo en directo siguen; mientras dura la llamada la cámara o el sonido pueden quedarse en pausa y sale el aviso «Cámara o sonido en pausa», y la familia ve «Pausa» con el marcador al día. Tu conversación no se graba ni se oye en el directo. Al colgar, la cámara y el sonido vuelven solos (no cierres la cámara). Si contestas y sales de la app, vuelve a ella al colgar. Para que no te interrumpan, pon el móvil en modo «No molestar» o en modo avión con wifi durante el partido (en modo avión solo puedes emitir con wifi).",
@@ -9524,6 +9527,7 @@
         "Puedes apuntar la hora y <b>qué vais a trabajar</b> (por ejemplo, «juego de 4, defensa con cambio, activación»). Cada día del calendario sale de un color según la asistencia.",
         "<b>Enviar el entreno a los jugadores</b>: prepara el entreno antes (qué vais a trabajar, los ejercicios con su explicación y el circuito) y pulsa «Enviar el entreno a los jugadores». Te sale el mensaje escrito para mandarlo por WhatsApp al grupo, así llegan sabiendo lo que se va a hacer y pierdes menos tiempo explicando. Gratis: 3 envíos al mes; con Pro, ilimitados.",
         "<b>Grabar el entreno</b>: toca un día y pulsa «Grabar el entreno». Se abre la cámara; pulsa «● Grabar» y luego «Parar». Con «Guardar en el móvil» o «Compartir / Guardar en galería» el vídeo se queda en tu móvil (no se sube a internet). El vídeo lleva el nombre del equipo y la fecha. Grabar es gratis. Mientras la cámara está abierta la pantalla no se apaga; si grabas mucho rato, conecta el móvil al cargador. Si te llaman mientras grabas, la grabación sigue y la cámara vuelve sola al colgar.",
+        "<b>🎯 Seguir la jugada en el entreno</b>: con la cámara abierta («Grabar el entreno» o «📡 Emitir en directo»), toca «🎯 Seguir la jugada» y la imagen se acerca sola a donde están jugando, por ejemplo en un partidillo. Cuenta para los 2 partidos o entrenos al mes del plan gratuito; con Pro, ilimitado.",
         "<b>Emitir el entreno en directo</b>: toca un día y pulsa «📡 Emitir en directo». Se abre la cámara. Pulsa «Enviar el enlace» para mandarlo por WhatsApp a las familias, al cuerpo técnico o al coordinador, y «📡 Emitir en directo» cuando vayas a empezar: lo ven en vivo desde el enlace, sin cuenta. Arriba ves cuántas personas lo están viendo; con «Cortar» paras la emisión. Puedes emitir y grabar a la vez. El enlace es el mismo todo el día. Plan gratuito: 2 entrenos en directo al mes (emitir varias veces el mismo día cuenta como uno); con Pro, ilimitados. Hasta 25 personas a la vez pueden ver el vídeo.",
         "<b>Cámara externa en el entreno</b>: si emites el entreno con otra cámara a YouTube (por ejemplo con XbotGo), pulsa <b>«📺 Cámara externa»</b>, pega el enlace de YouTube y pulsa «Poner el vídeo». Quien abra el enlace del entreno de hoy (el mismo de «📡 Emitir en directo») lo ve ahí. Con «Enviar el enlace» lo mandas por WhatsApp. Cuenta para los 2 partidos o entrenos al mes con cámara externa del plan gratuito; con Pro, ilimitado.",
         "Abajo tienes la <b>asistencia por jugador</b>: cuántas veces ha venido (y cuántas llegó tarde), faltado o justificado, y su porcentaje.",
@@ -9622,8 +9626,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -9813,6 +9817,37 @@
     ftBorrador = true;
   }
   const FTUT = {
+    sigue: {
+      t: "Cámara que sigue la jugada",
+      v: "11.59",
+      p: "La imagen se acerca y se mueve sola hacia el balón y los jugadores, estilo Veo.",
+      pasos: [
+        {
+          t: "Seguir la jugada",
+          p: "Te enseño a grabar o emitir con la cámara que sigue la jugada: el móvil ve todo el campo y la app se acerca sola a donde están el balón y los jugadores. No se cambia nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (!state.draft) ftPartidos();
+          },
+        },
+        {
+          t: "1. Pon el móvil viendo todo el campo",
+          p: "Móvil en horizontal, quieto en un trípode, lo más alto posible y en el centro de la banda. Que se vea el campo entero (si tu móvil tiene la cámara 0,5x, mejor). No hace falta soporte motorizado.",
+        },
+        {
+          t: "2. Abre la cámara",
+          p: "En «Partidos», abre el Directo del partido y pulsa «Cámara: grabar el partido». En «Entrenos» vale «Grabar el entreno» o «📡 Emitir en directo».",
+        },
+        {
+          t: "3. Toca «🎯 Seguir la jugada»",
+          p: "Está debajo de «🔄 Imagen». Al ponerlo en «Sí», la imagen se acerca y se mueve sola, suave, hacia la jugada. Lo que ves es lo que se graba y lo que ve la familia en el directo.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Graba o emite como siempre, con el marcador dentro. Para ver todo el campo otra vez, toca el botón y queda en «No». Plan gratuito: 2 partidos o entrenos al mes; con Pro, ilimitado y se queda puesto para la próxima vez.",
+        },
+      ],
+    },
     camext: {
       t: "Cámara externa (YouTube, XbotGo, Veo)",
       v: "11.55",
@@ -12744,6 +12779,242 @@
       st = r % 180 ? [H, W] : [W, H];
     cv.style.cssText = `position:absolute;left:50%;top:50%;width:${st[0]}px;height:${st[1]}px;transform:translate(-50%,-50%) rotate(${-r}deg)`;
   }
+  /* ===== v11.59 «🎯 Seguir la jugada» (estilo Veo) =====
+     Con el móvil quieto en el trípode viendo todo el campo, la app mira en el propio móvil dónde se mueven
+     los jugadores y dónde está el balón (un punto claro pequeño que se mueve) y hace zoom digital hacia la
+     jugada, moviendo el encuadre suave como un cámara. Lo que se graba y lo que ve la familia es ese encuadre.
+     Sin librerías ni internet: se compara cada imagen con la anterior en una copia pequeña (80 px de ancho),
+     así va también en móviles e iPad antiguos. Si el móvil va justo, mira menos veces por segundo, y si
+     va muy lento, lo apaga y avisa. Plan gratuito: LIM.sig partidos o entrenos al mes; con Pro, ilimitado. */
+  const SG_ZMAX = 2,
+    SG_W = 80;
+  /* Análisis de una imagen (gris, 0-255) frente a la anterior. Devuelve el centro de la jugada (0-1), el zoom
+     que conviene y el balón si se ve, o null si no hay nada que seguir (todo quieto o el móvil se ha movido). */
+  function sgAnaliza(gr, pr, br, aw, ah) {
+    let n = 0,
+      col = new Float32Array(aw),
+      row = new Float32Array(ah),
+      m = new Uint8Array(aw * ah),
+      bx = 0,
+      by = 0,
+      bn = 0;
+    for (let y = 0; y < ah; y++)
+      for (let x = 0; x < aw; x++) {
+        let i = y * aw + x;
+        if (Math.abs(gr[i] - pr[i]) > 22) {
+          m[i] = 1;
+          n++;
+          col[x]++;
+          row[y]++;
+          if (br[i]) {
+            bx += x;
+            by += y;
+            bn++;
+          }
+        }
+      }
+    let tot = aw * ah;
+    /* Casi nada se mueve: no hay jugada. Demasiado: se ha movido el móvil o ha cambiado la luz */
+    if (n < tot * 0.002 || n > tot * 0.35) return null;
+    /* La ventana (del tamaño del encuadre) donde más movimiento hay: así no la despista alguien que pasa por un lado */
+    const mejor = (h, L, k) => {
+      let s = 0,
+        b = 0,
+        bi = 0;
+      for (let i = 0; i < L; i++) {
+        s += h[i] - (i >= k ? h[i - k] : 0);
+        if (i >= k - 1 && s > b) (b = s), (bi = i - k + 1);
+      }
+      return bi + k / 2;
+    };
+    let kx = Math.max(4, Math.round(aw * 0.3)),
+      ky = Math.max(3, Math.round(ah * 0.4)),
+      cx = mejor(col, aw, kx),
+      cy = mejor(row, ah, ky),
+      sx = 0,
+      sw = 0;
+    /* Lo separados que están los jugadores alrededor de la jugada → cuánto zoom */
+    for (let x = 0; x < aw; x++)
+      if (Math.abs(x - cx) < aw * 0.4) {
+        sx += col[x] * (x - cx) * (x - cx);
+        sw += col[x];
+      }
+    let sd = sw ? Math.sqrt(sx / sw) : aw / 4,
+      zz = Math.max(1, Math.min(SG_ZMAX, (aw * 0.5) / (2.2 * sd + aw * 0.06))),
+      ball = null;
+    /* Balón: pocos puntos claros que se mueven, juntos, cerca de la jugada */
+    if (bn >= 1 && bn <= Math.max(6, tot * 0.004)) {
+      bx /= bn;
+      by /= bn;
+      let ok = true;
+      for (let y = 0; y < ah && ok; y++)
+        for (let x = 0; x < aw; x++) {
+          let i = y * aw + x;
+          if (m[i] && br[i] && (Math.abs(x - bx) > 4 || Math.abs(y - by) > 4)) {
+            ok = false;
+            break;
+          }
+        }
+      if (ok && Math.abs(bx - cx) < aw * 0.35) ball = { x: bx / aw, y: by / ah };
+    }
+    let fx = cx / aw,
+      fy = cy / ah;
+    if (ball) {
+      fx = fx * 0.4 + ball.x * 0.6;
+      fy = fy * 0.4 + ball.y * 0.6;
+    }
+    return { x: fx, y: fy, z: zz, ball, mov: n / tot };
+  }
+  /* Para las pruebas: el análisis y cómo está el encuadre */
+  window.__mfSg = sgAnaliza;
+  window.__mfSgEst = () => (cam && cam.sg ? { x: cam.sg.x, y: cam.sg.y, z: cam.sg.z, w: cam.sg.w, h: cam.sg.h, cada: cam.sg.cada } : null);
+  /* Pinta la imagen de la cámara (girada si hace falta) en un lienzo de w×h */
+  function camDibuja(g, v, w, h, r, w0, h0) {
+    if (r) {
+      g.save();
+      g.translate(w / 2, h / 2);
+      g.rotate((r * Math.PI) / 180);
+      let k = (r % 180 ? h : w) / w0;
+      g.drawImage(v, (-w0 * k) / 2, (-h0 * k) / 2, w0 * k, h0 * k);
+      g.restore();
+    } else g.drawImage(v, 0, 0, w, h);
+  }
+  /* Mira la imagen en pequeño (pocas veces por segundo) y pone el objetivo del encuadre */
+  function sgMira(c, w, h, r, w0, h0) {
+    let S = c.sg,
+      t = performance.now();
+    if (document.hidden || camSinImagen(c) || t - (S.ult || 0) < S.cada) return;
+    S.ult = t;
+    let aw = SG_W,
+      ah = Math.max(16, Math.round((SG_W * h) / w));
+    if (!S.cv) {
+      S.cv = document.createElement("canvas");
+      S.g = S.cv.getContext("2d", { willReadFrequently: true });
+    }
+    if (S.cv.width !== aw || S.cv.height !== ah) {
+      S.cv.width = aw;
+      S.cv.height = ah;
+      S.pr = null;
+    }
+    let d;
+    try {
+      camDibuja(S.g, c.video, aw, ah, r, w0, h0);
+      d = S.g.getImageData(0, 0, aw, ah).data;
+    } catch (e) {
+      return sgApaga(c, "Este móvil no deja analizar la imagen de la cámara. El vídeo sigue sin seguir la jugada.");
+    }
+    let L = aw * ah,
+      gr = new Uint8Array(L),
+      br = new Uint8Array(L);
+    for (let i = 0, j = 0; i < L; i++, j += 4) {
+      let R = d[j],
+        G = d[j + 1],
+        B = d[j + 2];
+      gr[i] = (R * 77 + G * 150 + B * 29) >> 8;
+      br[i] = gr[i] > 185 && Math.max(R, G, B) - Math.min(R, G, B) < 45 ? 1 : 0;
+    }
+    if (S.pr) {
+      let a = sgAnaliza(gr, S.pr, br, aw, ah);
+      if (a) {
+        S.tx = a.x * w;
+        /* En vertical se mueve menos: desde la banda casi todo pasa a la misma altura */
+        S.ty = (a.y * 0.6 + 0.5 * 0.4) * h;
+        S.tz = a.z;
+        S.quieto = 0;
+        S.balon = a.ball ? t : S.balon;
+      } else if (++S.quieto > 30) S.tz = Math.max(1, S.tz - 0.01);
+    }
+    S.pr = gr;
+    /* Móvil lento: menos veces por segundo; muy lento, se apaga */
+    let ms = performance.now() - t;
+    S.ms = S.ms == null ? ms : S.ms * 0.9 + ms * 0.1;
+    S.cada = S.ms > 25 ? 330 : S.ms > 12 ? 200 : 100;
+    if (S.ms > 70 && ++S.lento > 20) sgApaga(c, "Este móvil va justo para seguir la jugada y grabar a la vez, así que se ha quitado. El vídeo sigue normal, con todo el campo.");
+  }
+  /* Mueve el encuadre poco a poco hacia el objetivo (como un cámara, sin tirones) */
+  function sgMueve(c, w, h) {
+    let S = c.sg;
+    if (S.w !== w || S.h !== h) Object.assign(S, { w, h, x: w / 2, y: h / 2, tx: w / 2, ty: h / 2, z: 1, tz: 1, pr: null });
+    let dx = S.tx - S.x,
+      dy = S.ty - S.y,
+      zona = (w * 0.06) / S.z,
+      paso = w * 0.012;
+    if (Math.abs(dx) > zona) S.x += Math.max(-paso, Math.min(paso, dx * 0.06));
+    if (Math.abs(dy) > zona * 0.6) S.y += Math.max(-paso * 0.6, Math.min(paso * 0.6, dy * 0.05));
+    S.z += (Math.max(1, Math.min(SG_ZMAX, S.tz)) - S.z) * 0.02;
+    let hw = w / (2 * S.z),
+      hh = h / (2 * S.z);
+    S.x = Math.max(hw, Math.min(w - hw, S.x));
+    S.y = Math.max(hh, Math.min(h - hh, S.y));
+  }
+  function sgApaga(c, txt) {
+    if (!c || !c.sg) return;
+    c.sg = null;
+    if (txt) note(txt);
+    camBotones();
+  }
+  /* Busca la cámara más abierta (0,5x / gran angular) para ver todo el campo; sin ella, la normal sin zoom */
+  async function sgAncha(c) {
+    let t = c.s.getVideoTracks()[0];
+    /* Más resolución para que al acercar se vea nítido (no mientras graba: cambiaría el tamaño del vídeo) */
+    try {
+      if (t && !c.rec && (navigator.hardwareConcurrency || 2) >= 4 && (t.getSettings().width || 0) < 1920)
+        await t.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } });
+    } catch (e) {}
+    try {
+      let cap = t && typeof t.getCapabilities === "function" ? t.getCapabilities() : null;
+      if (cap && cap.zoom && cap.zoom.min < (t.getSettings().zoom || 1)) {
+        await t.applyConstraints({ advanced: [{ zoom: cap.zoom.min }] });
+        return true;
+      }
+    } catch (e) {}
+    if (c.frente || c.rec || !navigator.mediaDevices.enumerateDevices) return false;
+    try {
+      let ds = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"),
+        u = ds.find((d) => /ultra|gran angular|0[.,]5/i.test(d.label) && !/front|frontal|delantera/i.test(d.label));
+      if (!u || (t && t.getSettings().deviceId === u.deviceId)) return false;
+      let n = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: u.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } } });
+      if (cam !== c || c.rec) {
+        n.getTracks().forEach((k) => k.stop());
+        return false;
+      }
+      c.s.getVideoTracks().forEach((k) => {
+        k.stop();
+        c.s.removeTrack(k);
+      });
+      n.getVideoTracks().forEach((k) => (c.s.addTrack(k), camVigila(k)));
+      c.v.srcObject = new MediaStream(n.getVideoTracks());
+      c.v.play().catch(() => {});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  const sgQueda = (c) => (esPro() || (envLee().sig || []).includes(c.id) ? "" : ` (${Math.max(0, LIM.sig - envUsados("sig"))} gratis este mes)`),
+    sgBtn = (c) =>
+      `<button class="${c.sg ? "primary" : "secondary"} small" data-cam="sigue" aria-pressed="${c.sg ? "true" : "false"}">🎯 Seguir la jugada: ${c.sg ? "Sí" : "No" + sgQueda(c)}</button>`;
+  async function sgPon(c) {
+    if (c.sg) {
+      sgApaga(c);
+      try {
+        localStorage.setItem("mf_cam_sigue", "0");
+      } catch (e) {}
+      return note("Seguir la jugada quitado: se ve todo el campo.", true);
+    }
+    if (!envPuede("sig", c.id)) return;
+    c.sg = { cada: 100, z: 1, tz: 1, quieto: 0, lento: 0 };
+    try {
+      localStorage.setItem("mf_cam_sigue", "1");
+    } catch (e) {}
+    camBotones();
+    let an = await sgAncha(c);
+    note(
+      "🎯 Siguiendo la jugada: la imagen se acerca y se mueve sola hacia donde están el balón y los jugadores. Pon el móvil quieto en el trípode, alto y en el centro de la banda, viendo todo el campo" +
+        (an ? " (ya está puesta la cámara más abierta)." : "; si tu móvil tiene la cámara 0,5x, usa esa.") +
+        " Lo que ves es lo que se graba y lo que ve la familia.",
+      true,
+    );
+  }
   function camPinta() {
     let c = cam;
     if (!c) return;
@@ -12763,13 +13034,20 @@
       }
       let g = c.ctx,
         x = liveRows[c.id];
-      if (r) {
+      /* v11.59: con «Seguir la jugada» se dibuja solo el trozo del campo donde está la jugada, ampliado */
+      if (c.sg) {
+        sgMira(c, w, h, r, w0, h0);
+        if (c.sg) sgMueve(c, w, h);
+      }
+      let S = c.sg;
+      if (S && S.z > 1.001) {
         g.save();
         g.translate(w / 2, h / 2);
-        g.rotate((r * Math.PI) / 180);
-        g.drawImage(v, -w0 / 2, -h0 / 2, w0, h0);
-        g.restore();
-      } else g.drawImage(v, 0, 0, w, h);
+        g.scale(S.z, S.z);
+        g.translate(-S.x, -S.y);
+      }
+      camDibuja(g, v, w, h, r, w0, h0);
+      if (S && S.z > 1.001) g.restore();
       camVista(c, r);
       if (x && !c.tr) {
         /* Marcador arriba a la izquierda, a escala del vídeo */
@@ -12895,12 +13173,12 @@
         vd = xt && (c.emite || c.tr.live) ? viendoHtml(xt.id) : "";
       c.box.querySelector(".cam-ui").innerHTML = c.listo
         ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? emt : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-        : `${av}${vd}<div class="cam-row">${emt}${lnk}</div><div class="cam-row">${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
+        : `${av}${vd}<div class="cam-row">${emt}${lnk}</div><div class="cam-row">${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
       return;
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
       ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-      : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button></div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
+      : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «🎯 Seguir la jugada» acerca la imagen sola a donde están el balón y los jugadores (pon el móvil quieto viendo todo el campo). «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
   }
   /* v11.53: «⏸ Pausar» / «▶ Reanudar» la grabación (en el móvil que graba o desde el anotador) */
   const camT = (c) => Date.now() - c.t0 - (c.pausaMs || 0) - (c.pausaDesde ? Date.now() - c.pausaDesde : 0),
@@ -13013,6 +13291,10 @@
     camLuz();
     camPinta();
     camBotones();
+    /* v11.59: con Pro, si la última vez se dejó «Seguir la jugada» puesto, se pone solo */
+    try {
+      if (esPro() && localStorage.getItem("mf_cam_sigue") === "1") sgPon(cam);
+    } catch (e) {}
     /* v11.52: «Emitir en directo» desde el entreno: se prepara ya el enlace para mandarlo a las familias */
     if (tr && tr.live) {
       let c = cam;
@@ -13425,6 +13707,7 @@
       note(cam.giro === "auto" ? "Imagen automática: si el móvil está en horizontal con la rotación bloqueada, la imagen se endereza sola." : "Imagen: " + camGiroTxt(cam.giro).toLowerCase() + ". Así la ve la familia y así se graba.");
       return camBotones();
     }
+    if (k === "sigue") return sgPon(cam);
     if (k === "rec") return camGraba();
     if (k === "pause" || k === "resume") return camPausa(k === "pause");
     if (k === "stop") return cam.rec && ((cam.parando = true), cam.rec.stop());

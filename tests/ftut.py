@@ -15,7 +15,7 @@ SEED="window.__seed={futbol_personal_jugadores:[{id:'j1',user_id:'u1',nombre:'Le
 def abre(b,visto,extra=''):
     ctx=b.new_context(viewport={'width':390,'height':844},service_workers='block',device_scale_factor=2 if SHOT else 1)
     pg=ctx.new_page();pg.on('pageerror',lambda e:errs.append(str(e)))
-    pg.add_init_script("window.__probarNovedades=true;"+SEED+"try{if(!sessionStorage.getItem('__ls')){sessionStorage.setItem('__ls','1');localStorage.setItem('mf_novedades_visto','%s');localStorage.setItem('mf_ftut:anograb','1');localStorage.setItem('mf_ftut:camext','1');"%visto+extra+"}}catch(e){}")
+    pg.add_init_script("window.__probarNovedades=true;"+SEED+"try{if(!sessionStorage.getItem('__ls')){sessionStorage.setItem('__ls','1');localStorage.setItem('mf_novedades_visto','%s');localStorage.setItem('mf_ftut:anograb','1');localStorage.setItem('mf_ftut:camext','1');localStorage.setItem('mf_ftut:sigue','1');"%visto+extra+"}}catch(e){}")
     pg.route('**/supabase.js',lambda r:r.fulfill(content_type='application/javascript',body=FAKE2))
     entra(pg)
     return ctx,pg
@@ -87,7 +87,7 @@ with sync_playwright() as p:
     pg.click('#view [data-action=cancel]');pg.wait_for_timeout(200)
     # Tutorial de la liga
     pg.click('#acct');pg.click('#info [data-info=ayuda]');pg.wait_for_timeout(300)
-    check('la Guía de uso empieza con los tutoriales',pg.locator('#infoBody .ayuda-tut [data-ftut]').count()==6)
+    check('la Guía de uso empieza con los tutoriales',pg.locator('#infoBody .ayuda-tut [data-ftut]').count()==7)
     check('y tiene el apartado «Novedades y tutoriales paso a paso»','Novedades y tutoriales paso a paso' in pg.locator('#infoBody .ayuda summary').all_inner_texts())
     pg.click('#infoBody .ayuda-tut [data-ftut=liga]');pg.wait_for_timeout(300)
     check('el tutorial de la liga empieza','clasificación de la liga' in card(pg).lower() and 'paso 1 de 6' in card(pg).lower())
