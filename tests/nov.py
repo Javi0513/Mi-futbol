@@ -59,6 +59,7 @@ with sync_playwright() as p:
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.49 (mapa de calor después del partido)',all(w in body for w in ('Mapa de calor también después del partido','Dónde fue cada acción','2 partidos al mes')))
+    check('y la de la v11.60 (seguir la jugada desde el anotador)',all(w in body for w in ('también desde el anotador','Ver todo el campo')))
     check('y la de la v11.59 (cámara que sigue la jugada)',all(w in body for w in ('Seguir la jugada','estilo Veo','2 partidos o entrenos al mes')) and pg.locator('#infoBody [data-ftut=sigue]').count()==1)
     check('y las de la v11.57 (buscar mi equipo en la federación)',all(w in body for w in ('Buscar mi equipo','filtrada por la categoría','Volver a probar')))
     check('y la de la v11.58 (barra flotando en iPad antiguos)',all(w in body for w in ('Arreglo en iPad antiguos','barra de abajo','flotando')))
