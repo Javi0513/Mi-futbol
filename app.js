@@ -4335,7 +4335,7 @@
   const jeLisa = (b) => b.strokes.length || b.items.length;
   const jeVidPuede = (b) => b.steps > 1 && b.items.length > 0;
   function jeFirma(b) {
-    let t = JSON.stringify([state.mode, b.strokes, b.items, b.steps, b.step, b.tcol, b.bg || "", !!b.clean && esPro(), b.ts || 1]),
+    let t = JSON.stringify([state.mode, b.strokes, b.items, b.steps, b.tcol, b.bg || "", !!b.clean && esPro(), b.ts || 1]),
       h = 0;
     for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
     return (h >>> 0).toString(36) + t.length.toString(36);
@@ -4364,6 +4364,7 @@
   const jeTactil = () => window.matchMedia("(pointer:coarse)").matches;
   function jeAbre() {
     let b = bd();
+    if (boardAnim) stopAnim(true);
     if (!jeLisa(b)) return note("La pizarra está vacía: pon jugadores o dibuja la jugada y luego envíala.");
     let sig = jeFirma(b);
     if (sig !== jeSig) {
@@ -4401,8 +4402,8 @@
       jeSig = jeFirma(b);
       jeF = { img: null, vid: null };
     }
-    if (jeF[t]) return jeF[t];
-    if (t === "img") jeF.img = await boardImgFile(b);
+    /* La imagen es la del paso que se ve; el vídeo, la jugada entera */
+    if (t === "img" && (!jeF.img || jeF.img.paso !== b.step)) jeF.img = { ...(await boardImgFile(b)), paso: b.step };
     return jeF[t];
   }
   function jeDescarga(f, done) {
