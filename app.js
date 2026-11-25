@@ -9812,6 +9812,7 @@
         "<b>Si eres el encargado del club:</b> en «Mi cuenta › Plan para clubes» escribe el nombre del club, pulsa «Crear el club» y elige y paga el pack (desde el navegador, en app.monetizaplus.com). <b>Cuando esté pagado</b>, comparte el código con tus entrenadores (Copiar o WhatsApp); si alguien lo escribe antes, la app le avisa de que el club aún no ha pagado. Desde ahí ves quién se ha unido, puedes quitar entrenadores y cambiar el código.",
         "<b>Plazas del pack:</b> el encargado ocupa una de las plazas. Un pack de 5 son 5 cuentas con el plan Pro: la tuya y la de 4 entrenadores más. Si quitas a un entrenador, su plaza queda libre para otro. Si os quedáis sin plazas y necesitáis un pack más grande, escríbenos y te lo cambiamos.",
         "<b>Supervisor del club:</b> el encargado es siempre supervisor y puede pulsar «Hacer supervisor» junto a otra persona del club (por ejemplo, el gerente o el director deportivo). El supervisor ve el club como un árbol: arriba el escudo y el nombre del club, y debajo cada entrenador con su foto y su nombre. Con el club pagado, toca a un entrenador y la app le enseña su plantilla, partidos, alineaciones y entrenamientos en <b>solo lectura</b>: arriba sale «Viendo a…» y el botón «Volver a mis datos».",
+        "<b>Árbol del club:</b> cada persona sale en su tarjeta con su nombre, su email y desde cuándo está en el club. Si es supervisor o entrenador, debajo, en una fila aparte, están los botones «Hacer supervisor» (o «Quitar supervisor») y «Quitar»; el botón «Ver» sale a la derecha si comparte sus datos. Los emails largos se parten en dos líneas para que nada se monte encima.",
         "<b>Escudo del club:</b> el encargado lo sube en «Mi cuenta › Plan para clubes › Escudo del club». Lo ven todos los entrenadores del club, arriba junto al logo de la app.",
         "<b>Foto de cada entrenador:</b> cada uno pone su foto de perfil y su nombre en «Mi cuenta». En el club solo los ve el supervisor, para saber de quién es cada cuenta. Los demás entrenadores no los ven.",
         { texto: "Packs anuales: 5 entrenadores por 149 €, 10 por 259 €, 15 por 385 €, 20 por 459 € y 30 por 599 € (IVA incluido). Cuantos más entrenadores, menos cuesta cada uno, y siempre menos que el Pro individual (39,99 €): de 29,80 € con el pack de 5 a 19,97 € con el de 30. Si tu club tiene entre 11 y 15 entrenadores, el pack de 15 es el que mejor encaja: no pagas plazas que no vas a usar.", soloWeb: true },
@@ -10577,7 +10578,8 @@
       .map((m) => {
         let rol = m.admin ? "Encargado" : m.supervisor ? "Supervisor" : "Entrenador";
         if (gestion && !m.admin && m.desde) rol += " · Desde el " + esc(fechaLarga(m.desde));
-        let dentro = `${fotoDe(m)}<span><b>${esc(m.nombre || m.email || "")}</b><small>${m.nombre && m.email ? esc(m.email) + " · " : ""}${rol}${verEstado(m)}</small></span>`;
+        /* v11.63: el email va en su propia línea y se parte si es largo, para que no se monte encima de «Ver» */
+        let dentro = `${fotoDe(m)}<span><b>${esc(m.nombre || m.email || "")}</b>${m.nombre && m.email ? `<small class="an-mail">${esc(m.email)}</small>` : ""}<small>${rol}${verEstado(m)}</small></span>`;
         let per = puedeVer(m)
           ? `<button type="button" class="an-p" data-acct="club-ver" data-id="${esc(m.id)}" aria-label="Ver los datos de ${esc(m.nombre || m.email || "")}">${dentro}<em class="an-ver">Ver</em></button>`
           : `<div class="an-p">${dentro}</div>`;
