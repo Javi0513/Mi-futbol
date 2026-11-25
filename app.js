@@ -14820,6 +14820,73 @@
   function boardPhoneLand() {
     return boardLand() && window.innerHeight <= 560;
   }
+  /* v11.56: en iPad antiguos (iOS 15 o menos, app en pantalla de inicio), al girar la pantalla
+     la barra de secciones se quedaba flotando a media pantalla (Safari calcula «abajo» con el alto
+     de antes de girar). Se comprueba que la barra toque el borde de abajo y, si no, se recoloca. */
+  let dockT = 0;
+  function dockAbajo() {
+    let dk = document.querySelector(".dock");
+    if (!dk || document.hidden) return;
+    let cs = getComputedStyle(dk),
+      r = dk.getBoundingClientRect();
+    /* solo cuando va abajo, a todo lo ancho (en tablet horizontal o móvil girado va a la izquierda) */
+    if (r.width < window.innerWidth * 0.6 || cs.display === "none" || cs.visibility === "hidden") {
+      if (dockT) {
+        dockT = 0;
+        dk.style.transform = "";
+      }
+      return;
+    }
+    let ae = document.activeElement;
+    /* con el teclado abierto o con zoom, el alto visible no sirve de referencia */
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+    if (window.visualViewport && window.visualViewport.scale > 1.01) return;
+    let h = window.innerHeight,
+      d = h - r.bottom;
+    if (!r.height || Math.abs(d) < 3) return;
+    /* nunca la baja de su sitio normal: solo corrige cuando ha quedado por encima del borde */
+    let t = Math.max(0, dockT + d);
+    if (t > h * 0.6) t = 0;
+    if (t === dockT) return;
+    dockT = t;
+    dk.style.transform = t ? "translateY(" + Math.round(t) + "px)" : "";
+  }
+  function dockReflow() {
+    let dk = document.querySelector(".dock");
+    if (!dk) return;
+    dockT = 0;
+    dk.style.transform = "";
+    /* fuerza a Safari a recolocar la barra fija */
+    dk.style.display = "none";
+    void dk.offsetHeight;
+    dk.style.display = "";
+    try {
+      window.scrollTo(window.pageXOffset, window.pageYOffset);
+    } catch (e) {}
+    dockAbajo();
+  }
+  function dockGiro() {
+    [0, 250, 700, 1500].forEach((ms) => setTimeout(ms ? dockAbajo : dockReflow, ms));
+  }
+  window.addEventListener("orientationchange", dockGiro);
+  window.addEventListener("resize", dockGiro);
+  window.addEventListener("pageshow", dockGiro);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) dockGiro();
+  });
+  let dockScr = 0;
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (dockScr) return;
+      dockScr = setTimeout(() => {
+        dockScr = 0;
+        dockAbajo();
+      }, 150);
+    },
+    { passive: true },
+  );
+  setInterval(dockAbajo, 2000);
   let boardWasLand = false;
   window.addEventListener("resize", () => {
     if (state.tab === "pizarra" && !state.draft && boardLand() !== boardWasLand) {
