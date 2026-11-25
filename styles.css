@@ -3620,7 +3620,7 @@ body.presenting .dock {
   content: "";
   position: absolute;
   left: -18px;
-  top: 50%;
+  top: 28px;
   width: 16px;
   border-top: 2px solid var(--line2);
 }
@@ -3641,24 +3641,33 @@ button.an-p {
   cursor: pointer;
 }
 .an-p .avatar {
+  flex: none;
   width: 40px;
   height: 40px;
   font-size: 20px;
   border-radius: 50%;
 }
 .an-p span {
-  display: grid;
-  flex: 1;
+  display: block;
+  flex: 1 1 auto;
   min-width: 0;
 }
+.an-p b,
+.an-p small {
+  display: block;
+}
 .an-p b {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
   color: var(--ink);
 }
 .an-p small {
   color: var(--mut);
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 .an-ver {
   flex: none;
@@ -3669,15 +3678,23 @@ button.an-p {
   border: 1px solid var(--lime);
   border-radius: 999px;
 }
+/* v11.63: los botones van en su propia fila, debajo de los datos, para que no tapen el texto */
 .an-b {
   display: flex;
-  gap: 12px;
-  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 18px;
+  flex: 1 1 100%;
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
 }
 .an-b .lnk {
   width: auto;
-  padding: 0;
-  font-size: 13px;
+  padding: 4px 0;
+  font-size: 14px;
+  white-space: nowrap;
 }
 .perfil-c .avatar,
 .ver-bar .avatar {

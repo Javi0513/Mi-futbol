@@ -72,6 +72,7 @@ with sync_playwright() as p:
     t=pg.locator('#info .ayuda details[open]').inner_text()
     check('clubes: explica el código y al encargado','código' in t and 'encargado' in t and 'Crear el club' in t,t[:120])
     check('en la web se ven los precios de los packs','149 €' in t)
+    check('clubes: explica el árbol con los botones debajo','Árbol del club' in t and 'fila aparte' in t)
     pg.screenshot(path=OUT+'/ayuda_club.png')
     pg.locator('#info .ayuda summary',has_text='Directo').click();pg.wait_for_timeout(150)
     t=pg.locator('#info .ayuda details',has_text='Compartir enlace').inner_text()
