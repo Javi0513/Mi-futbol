@@ -1,4 +1,4 @@
--- Mi Fútbol JV32 · v11.60 · El anotador activa o quita «🎯 Seguir la jugada» en el móvil que graba
+-- Mi Fútbol JV32 · v11.62 · El anotador activa o quita «🎯 Seguir la jugada» en el móvil que graba
 -- Pega todo esto en Supabase › SQL Editor y pulsa «Run». Se puede ejecutar más de una vez.
 -- Añade una columna a directos (cam_sig) y pone al día ver_anotador y anotar_camara.
 -- No borra ni cambia datos. Sin esto la app funciona igual, pero el anotador no ve el botón.

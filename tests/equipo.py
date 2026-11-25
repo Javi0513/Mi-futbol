@@ -120,7 +120,7 @@ with sync_playwright() as p:
     cierra(pg)
     # ================= Mis jugadas (gratis: 3) =================
     pg.click('[data-tab=pizarra]');pg.wait_for_selector('#bcanvas')
-    check('pizarra: botón «Guardar»',pg.locator('[data-b=jg]').count()==1 and 'Guardar' in pg.text_content('[data-b=jg]'))
+    check('pizarra: botón «Mis jugadas»',pg.locator('[data-b=jg]').count()==1 and 'Mis jugadas' in pg.text_content('[data-b=jg]'))
     pg.click('[data-b=jg]');pg.wait_for_selector('[data-jg=guardar]');pg.click('[data-jg=guardar]');pg.wait_for_timeout(200);cierra(pg)
     check('pizarra vacía: no guarda',len(pg.evaluate("window.__db.jugadas_guardadas||[]"))==0)
     pg.click('[data-b=add][data-v=ball]');pg.click('[data-b=addstep]');pg.wait_for_timeout(100)

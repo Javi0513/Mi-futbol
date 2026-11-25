@@ -2,7 +2,7 @@ import sys,os,re;sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from paths import *
 import http.server,threading,functools,json
 from playwright.sync_api import sync_playwright
-# «🎯 Seguir la jugada» desde el anotador (v11.60): el móvil que graba dice si sigue la jugada (directos.cam_sig)
+# «🎯 Seguir la jugada» desde el anotador (v11.62): el móvil que graba dice si sigue la jugada (directos.cam_sig)
 # y hace las órdenes sig1 / sig0 del anotador (directos.cam_ord), como en supabase-anotador-sigue.sql.
 FAKE=re.search(r'FAKE=r"""(.*?)"""',open(os.path.join(TESTS,'anotador.py'),encoding='utf-8').read(),re.S).group(1)
 FAKE0=FAKE.replace("actualizado:d.actualizado,ahora:","cam:d.cam_est||'',cam_ord:d.cam_ord||null,actualizado:d.actualizado,ahora:")
