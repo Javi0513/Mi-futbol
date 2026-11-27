@@ -595,6 +595,155 @@
       { games: 0, starts: 0, minutes: 0, goals: 0, amarillas: 0, rojas: 0, cap: 0, rob: 0, per: 0, tp: 0, tf: 0, par: 0, asi: 0, fal: 0 },
     );
   }
+  /* ===== Porteros y minutos de los goles (v11.64, idea de un entrenador Pro que lo llevaba en Excel) =====
+     Goles con minuto: los del Directo (eventos f = nuestro, c = rival) o, si el partido no se llevó en
+     Directo, los minutos que el entrenador apunta en «Datos del partido» (alineacion.gmin {f:[..], c:[..]}).
+     Cada gol en contra se le apunta al portero que estaba en el campo en ese minuto (el portero del
+     partido y los cambios en los que sale el portero). Plan gratuito: últimos GK_LIBRE partidos; Pro: todos. */
+  const GK_LIBRE = 5;
+  const pmOf = (m) => {
+    let al = m.alineacion || {},
+      x = liveRows[m.id];
+    return Number(al.parte) || (x && Number(x.parte_min)) || parteDe(m.modalidad, teamOf(m)) || 25;
+  };
+  const gminLista = (v) =>
+    (Array.isArray(v) ? v : [])
+      .map((n) => parseInt(n))
+      .filter((n) => n >= 0 && n <= 130)
+      .slice(0, 40);
+  /* Minutos de los goles de un partido: {f:[{m,p}], c:[{m,p}], dir: si vienen del Directo} */
+  function golMins(m) {
+    let x = liveRows[m.id],
+      ev = x && Array.isArray(x.eventos) ? x.eventos : [],
+      g = ev.filter((z) => z && (z.t === "f" || z.t === "c" || !z.t));
+    if (g.length)
+      return {
+        dir: true,
+        f: g.filter((z) => z.t !== "c").map((z) => ({ m: Number(z.m) || 0, p: z.p })),
+        c: g.filter((z) => z.t === "c").map((z) => ({ m: Number(z.m) || 0, p: z.p })),
+      };
+    let G = (m.alineacion && m.alineacion.gmin) || {};
+    return { dir: false, f: gminLista(G.f).map((n) => ({ m: n })), c: gminLista(G.c).map((n) => ({ m: n })) };
+  }
+  /* Tramo (0-5) de un minuto: cada parte en tres trozos iguales. */
+  function tramoDe(mi, p, pm) {
+    let h = p === 1 || p === 2 ? p : mi <= pm ? 1 : 2,
+      w = h === 1 ? mi : mi - pm,
+      t = w <= 0 ? 0 : Math.min(2, Math.ceil(w / (pm / 3)) - 1);
+    return (h - 1) * 3 + Math.max(0, t);
+  }
+  function tramoTxt(i, pm) {
+    let h = i < 3 ? 0 : 1,
+      t = i % 3,
+      b = (k) => Math.round((k * pm) / 3) + h * pm,
+      a = t || h ? b(t) + 1 : 0;
+    return `${a}-${b(t + 1)}'`;
+  }
+  /* Partidos que cuentan: con resultado o con goles apuntados; gratis, los últimos GK_LIBRE. */
+  function gkPartidos() {
+    let G = games()
+      .filter((m) => (m.alineacion && m.alineacion.resultado) || liveRows[m.id])
+      .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+    return esPro() ? G : G.slice(0, GK_LIBRE);
+  }
+  function gkStats(G) {
+    let R = {},
+      row = (id) => (R[id] = R[id] || { id, pj: 0, min: 0, par: 0, gc: 0, cero: 0 });
+    G.forEach((m) => {
+      let al = m.alineacion || {},
+        E = entries(m),
+        ids = E.map((e) => e.id),
+        gk0 = gkOf(al, ids),
+        pm = pmOf(m),
+        tot = pm * 2,
+        gm = golMins(m),
+        r = al.resultado;
+      E.forEach((e) => {
+        let p = stv(e, "par");
+        if (p) row(e.id).par += p;
+      });
+      if (!gk0 || !ids.includes(gk0)) return;
+      let tl = [{ id: gk0, d: 0 }];
+      mdList(al, "cambios")
+        .slice()
+        .sort((a, b) => (Number(a.m) || 0) - (Number(b.m) || 0))
+        .forEach((c) => {
+          if (c.sale === tl[tl.length - 1].id && c.entra && ids.includes(c.entra)) tl.push({ id: c.entra, d: c.ds ? pm : Number(c.m) || 0 });
+        });
+      tl.forEach((s, i) => {
+        let h = i + 1 < tl.length ? tl[i + 1].d : tot,
+          e = E.find((z) => z.id === s.id),
+          mins = tl.length === 1 ? Number(e && e.minutes) || tot : Math.max(0, h - s.d);
+        row(s.id).pj++;
+        R[s.id].min += mins;
+      });
+      let enc = {};
+      gm.c.forEach((g) => {
+        let s = tl.filter((z) => z.d < g.m || z.d === 0).pop() || tl[0];
+        enc[s.id] = (enc[s.id] || 0) + 1;
+      });
+      let gc = r ? Math.max(0, Number(r.gc) || 0) : gm.c.length,
+        resto = Math.max(0, gc - gm.c.length);
+      if (resto) enc[gk0] = (enc[gk0] || 0) + resto;
+      tl.forEach((s) => (R[s.id].gc += enc[s.id] || 0));
+      if (r && gc === 0 && tl.length === 1) R[gk0].cero++;
+    });
+    return Object.values(R)
+      .filter((x) => x.pj || x.par)
+      .sort((a, b) => b.pj - a.pj || b.min - a.min || b.par - a.par);
+  }
+  function tramoStats(G) {
+    let pm = parteDe(state.mode, curTeam()) || 25,
+      T = [0, 1, 2, 3, 4, 5].map((i) => ({ i, t: tramoTxt(i, pm), f: 0, c: 0 })),
+      sin = { f: 0, c: 0 },
+      n = 0;
+    G.forEach((m) => {
+      let g = golMins(m),
+        r = m.alineacion && m.alineacion.resultado,
+        p = pmOf(m);
+      if (g.f.length || g.c.length) n++;
+      g.f.forEach((z) => T[tramoDe(z.m, z.p, p)].f++);
+      g.c.forEach((z) => T[tramoDe(z.m, z.p, p)].c++);
+      if (r) {
+        sin.f += Math.max(0, (Number(r.gf) || 0) - g.f.length);
+        sin.c += Math.max(0, (Number(r.gc) || 0) - g.c.length);
+      }
+    });
+    let F = T.reduce((a, x) => a + x.f, 0),
+      C = T.reduce((a, x) => a + x.c, 0);
+    return { T, F, C, sin, n, pm };
+  }
+  const gkPct = (a, b) => (b ? Math.round((a * 100) / b) : 0);
+  function gkPanel() {
+    let G = gkPartidos(),
+      L = gkStats(G),
+      todos = games().filter((m) => (m.alineacion && m.alineacion.resultado) || liveRows[m.id]).length,
+      lim = !esPro() && todos > GK_LIBRE ? `<p class="hint gk-lim">Plan gratuito: se cuentan tus <b>últimos ${GK_LIBRE} partidos</b>. Con el plan Pro, toda la temporada. <button type="button" class="linkb" data-ini="pro">Ver el plan Pro</button></p>` : "";
+    let gk = L.filter((x) => x.pj);
+    let body = gk.length
+      ? `<div class="gk-list">${gk
+          .map((x) => {
+            let pc = x.par + x.gc ? gkPct(x.par, x.par + x.gc) : null;
+            return `<div class="gk-row"><div class="gk-n"><b>${esc(dname(x.id))}</b><small>${x.pj} ${x.pj === 1 ? "partido" : "partidos"} · ${x.min}'${x.cero ? ` · ${x.cero} ${x.cero === 1 ? "portería" : "porterías"} a cero` : ""}</small></div><div class="gk-k"><span><b>${x.par}</b><small>${x.par === 1 ? "parada" : "paradas"}</small></span><span class="gc"><b>${x.gc}</b><small>${x.gc === 1 ? "gol encajado" : "goles encajados"}</small></span><span><b>${x.pj ? (Math.round((x.gc / x.pj) * 10) / 10).toString().replace(".", ",") : 0}</b><small>encajados por partido</small></span><span class="pc"><b>${pc === null ? "–" : pc + "%"}</b><small>de paradas</small></span></div>${pc === null ? "" : `<div class="gk-bar" role="img" aria-label="${pc}% de tiros a puerta parados"><i style="width:${pc}%"></i></div>`}</div>`;
+          })
+          .join("")}</div><p class="hint">«% de paradas» = paradas ÷ (paradas + goles encajados). Las paradas se apuntan en el Directo (botón «Parada» del portero) o al editar el partido. Cada gol en contra cuenta para el portero que estaba en el campo en ese minuto; si cambias de portero, ponlo en «Cambios».</p>`
+      : `<p class="muted">Elige el portero en cada partido (en «Datos del partido» o en el Directo) y apunta sus paradas: aquí verás paradas, goles encajados y % de paradas de cada portero.</p>`;
+    return `<section class="panel gk-p"><div class="kicker">Porteros</div><h2 class="h2s">Paradas y goles encajados</h2>${lim}${body}</section>`;
+  }
+  function tramoPanel() {
+    let S = tramoStats(gkPartidos()),
+      mx = Math.max(1, ...S.T.map((x) => Math.max(x.f, x.c))),
+      top = S.F ? S.T.slice().sort((a, b) => b.f - a.f)[0] : null,
+      topC = S.C ? S.T.slice().sort((a, b) => b.c - a.c)[0] : null,
+      h1 = S.T.slice(0, 3).reduce((a, x) => a + x.f, 0),
+      sinTxt = S.sin.f + S.sin.c ? `<p class="hint">${S.sin.f + S.sin.c} ${S.sin.f + S.sin.c === 1 ? "gol no tiene" : "goles no tienen"} minuto y no cuentan aquí. Llévalos en el Directo o apunta el minuto en «Datos del partido» al editar el partido.</p>` : "";
+    if (!S.F && !S.C)
+      return `<section class="panel tr-p"><div class="kicker">Goles por minutos</div><h2 class="h2s">¿En qué minutos marcamos?</h2><p class="muted">Lleva los partidos en el Directo (cada gol se guarda con su minuto) o apunta el minuto de los goles al editar el partido, y aquí verás en qué tramos marcáis y encajáis más, con porcentajes.</p>${sinTxt}</section>`;
+    return `<section class="panel tr-p"><div class="kicker">Goles por minutos</div><h2 class="h2s">¿En qué minutos marcamos?</h2>${top ? `<p class="tr-top">Donde más marcáis: <b>${top.t}</b> · ${gkPct(top.f, S.F)} % de los goles${topC ? `<br>Donde más encajáis: <b>${topC.t}</b> · ${gkPct(topC.c, S.C)} %` : ""}</p>` : ""}<div class="tr-t" role="table" aria-label="Goles por tramos de minutos"><div class="tr-r tr-h" role="row"><span role="columnheader">Minutos</span><span role="columnheader">A favor</span><span role="columnheader">En contra</span></div>${S.T.map(
+      (x) =>
+        `${x.i === 3 ? '<div class="tr-sep" role="presentation">2ª parte</div>' : x.i === 0 ? '<div class="tr-sep" role="presentation">1ª parte</div>' : ""}<div class="tr-r" role="row"><span role="cell"><b>${x.t}</b></span><span role="cell" class="tr-c"><i class="tr-b f" style="width:${Math.round((x.f / mx) * 100)}%"></i><em>${x.f} · ${gkPct(x.f, S.F)} %</em></span><span role="cell" class="tr-c"><i class="tr-b c" style="width:${Math.round((x.c / mx) * 100)}%"></i><em>${x.c} · ${gkPct(x.c, S.C)} %</em></span></div>`,
+    ).join("")}</div><p class="muted tr-pie">${S.F} goles a favor y ${S.C} en contra con minuto, en ${S.n} ${S.n === 1 ? "partido" : "partidos"} · 1ª parte ${gkPct(h1, S.F)} % de vuestros goles, 2ª parte ${S.F ? 100 - gkPct(h1, S.F) : 0} %. El último tramo de cada parte incluye el descuento.</p>${sinTxt}</section>`;
+  }
   function render() {
     directoRecuerda();
     lvLocSync();
@@ -1173,7 +1322,7 @@
           })
           .join("")}</section>`
       : "";
-    return team + list + playerSummary();
+    return team + (rs.length || gs.some((m) => liveRows[m.id]) ? tramoPanel() + gkPanel() : "") + list + playerSummary();
   }
   function playerSummary() {
     let r = roster()
@@ -2031,6 +2180,31 @@
       { n: "Acciones", rows: S3, w: [12, 20, 14, 9, 7, 16, 8, 22, 20] },
       { n: "Equipo", rows: S4, w: [12, 20, 14] },
       { n: "Mapa", rows: S5, w: [12, 20, 14, 9, 7, 16, 8, 22, 20, 10, 10, 11, 11, 11, 10] },
+      ...xlGkHojas(),
+    ];
+  }
+  /* Hojas «Porteros» y «Goles por minutos» (v11.64) con fórmulas: si cambias un número se recalcula. */
+  function xlGkHojas() {
+    let G = gkPartidos(),
+      L = gkStats(G).filter((x) => x.pj),
+      P = [["Dorsal", "Portero", "Partidos", "Minutos", "Paradas", "Goles encajados", "Encajados por partido", "% de paradas", "Porterías a cero"]];
+    L.forEach((x, i) => {
+      let y = i + 2,
+        d = dorsal(state.players.find((p) => p.id === x.id));
+      P.push([d ? Number(d) : "", name(x.id), x.pj, x.min, x.par, x.gc, { f: `IF(C${y}>0,ROUND(F${y}/C${y},2),"")`, v: x.pj ? Math.round((x.gc / x.pj) * 100) / 100 : "" }, { f: `IF(E${y}+F${y}>0,E${y}/(E${y}+F${y}),"")`, v: x.par + x.gc ? x.par / (x.par + x.gc) : "", s: 6 }, x.cero]);
+    });
+    let S = tramoStats(G),
+      n = S.T.length,
+      T = [["Parte", "Minutos", "Goles a favor", "% a favor", "Goles en contra", "% en contra"]];
+    S.T.forEach((x, i) => {
+      let y = i + 2;
+      T.push([x.i < 3 ? "1ª parte" : "2ª parte", x.t, x.f, { f: `IF(SUM(C$2:C$${n + 1})>0,C${y}/SUM(C$2:C$${n + 1}),"")`, v: S.F ? x.f / S.F : "", s: 6 }, x.c, { f: `IF(SUM(E$2:E$${n + 1})>0,E${y}/SUM(E$2:E$${n + 1}),"")`, v: S.C ? x.c / S.C : "", s: 6 }]);
+    });
+    T.push(["TOTAL", "", { f: `SUM(C2:C${n + 1})`, v: S.F, s: 3 }, "", { f: `SUM(E2:E${n + 1})`, v: S.C, s: 3 }, ""]);
+    if (S.sin.f + S.sin.c) T.push(["Sin minuto", "", S.sin.f, "", S.sin.c, ""]);
+    return [
+      { n: "Porteros", rows: P, w: [8, 22, 10, 10, 10, 15, 18, 13, 15] },
+      { n: "Goles por minutos", rows: T, w: [10, 12, 14, 11, 16, 13], nf: 1 },
     ];
   }
   async function bajaArchivo(blob, fname, titulo) {
@@ -7395,6 +7569,17 @@
 <div><h3>Convocatoria</h3><div style="height:8px"></div><div class="checkline muted"><span>Jugador</span><span>Conv.</span><span>Inicial</span><span>Min.</span><span>Goles</span></div>${choices || '<div class="blank">Añade primero jugadores en Plantilla.</div>'}<h3 style="margin-top:18px">Inicial</h3><div style="margin-top:6px">${start.map((x) => `<span class="badge">${esc(name(x.id))}</span>`).join("") || '<span class="muted">Selecciona titulares.</span>'}</div>${mdEditor(d, gk)}</div></div>
 <div class="savebar"><button class="primary" data-action="save" ${state.busy ? "disabled" : ""}>${ic("check", 20)}Guardar partido</button><button class="secondary" data-action="cancel">Cancelar</button></div></section>`;
   }
+  /* Minuto de los goles (v11.64): si el partido se llevó en Directo vienen de ahí; si no, se apuntan aquí. */
+  function mdGoles(d) {
+    let x = state.editing && liveRows[state.editing],
+      ev = x && Array.isArray(x.eventos) ? x.eventos.filter((z) => z && (z.t === "f" || z.t === "c" || !z.t)) : [],
+      mm = (L) => (L.length ? L.map((n) => n + "'").join(", ") : "ninguno");
+    if (ev.length)
+      return `<h4>Minuto de los goles</h4><p class="hint">Vienen del Directo: nuestros ${mm(ev.filter((z) => z.t !== "c").map((z) => Number(z.m) || 0))} · del rival ${mm(ev.filter((z) => z.t === "c").map((z) => Number(z.m) || 0))}. Salen en «Estadísticas › ¿En qué minutos marcamos?» y en los goles encajados de cada portero.</p>`;
+    let G = d.alineacion.gmin || {},
+      inp = (k, l) => `<label><small>${l}</small><input type="text" inputmode="decimal" data-mdg="${k}" value="${esc(gminLista(G[k]).join(", "))}" placeholder="Ej.: 12, 34, 78" maxlength="160" aria-label="${l}"></label>`;
+    return `<h4>Minuto de los goles</h4><div class="formgrid">${inp("f", "Nuestros goles (minutos)")}${inp("c", "Goles del rival (minutos)")}</div><p class="hint">Separa los minutos con comas. Sirven para ver en qué minutos marcáis y encajáis más y qué portero encajó cada gol (en «Estadísticas»). Si llevas el partido en el Directo se apuntan solos.</p>`;
+  }
   /* Capitán, portero, cambios y tarjetas del partido (también se rellenan solos desde el Directo) */
   function mdEditor(d, gk) {
     let al = d.alineacion,
@@ -7440,7 +7625,7 @@
         )
         .join(""),
       rv = esc(d.rival || "Rival");
-    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}${mdVent(d)}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div>${mdStats(d)}<h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><label class="mdparte">Tiros del rival<input type="number" min="0" max="999" inputmode="numeric" data-mdr="tir" value="${Number((al.estR || {}).tir) || ""}" placeholder="0"></label><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
+    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}${mdVent(d)}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div>${mdGoles(d)}${mdStats(d)}<h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><label class="mdparte">Tiros del rival<input type="number" min="0" max="999" inputmode="numeric" data-mdr="tir" value="${Number((al.estR || {}).tir) || ""}" placeholder="0"></label><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
   }
   /* Ventanas de cambios en el editor del partido: resumen por parte e interruptor */
   function mdVent(d) {
@@ -11202,6 +11387,15 @@
       delete F.lv;
       F[ds.mdfal] = v;
       d.alineacion.faltas = F;
+    }
+    if (ds.mdg) {
+      let L = (String(e.target.value).match(/\d+/g) || []).map(Number).filter((n) => n <= 130).sort((a, b) => a - b).slice(0, 40),
+        G = { ...(d.alineacion.gmin || {}) };
+      if (L.length) G[ds.mdg] = L;
+      else delete G[ds.mdg];
+      if (G.f || G.c) d.alineacion.gmin = G;
+      else delete d.alineacion.gmin;
+      e.target.value = L.join(", ");
     }
     if (ds.mdr) {
       let v = Math.min(999, Math.max(0, parseInt(e.target.value) || 0));
