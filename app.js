@@ -9969,7 +9969,7 @@
         "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos), <b>también antes de darle a grabar</b>: puedes dejarlo en el trípode con la cámara abierta esperando a que el anotador empiece a grabar. Arriba de los botones lo ves: «🔆 Pantalla encendida». Si sale «👆 Toca la pantalla una vez», tócala (en algunos iPhone hace falta un toque para que no se apague). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la app la vuelve a abrir sola y la grabación sigue.",
         "<b>Si aun así se apaga la pantalla</b> (emitiendo o grabando): en iPhone y iPad ve a Ajustes › Pantalla y brillo › Bloqueo automático y pon «Nunca» durante el partido, y quita el Modo de bajo consumo, que bloquea el iPhone a los 30 segundos. En Android, Ajustes › Pantalla › Tiempo de espera de la pantalla al máximo y sin ahorro de batería. Si ya la tenías abierta, cierra la app del todo y vuelve a abrirla para tener la última versión.",
         "<b>Imagen de lado</b>: si pones el móvil en horizontal con la rotación bloqueada, la app endereza la imagen sola (botón «🔄 Imagen: Automática»), así la familia y la grabación ven el campo derecho. Si aun así sale girada, toca ese botón para elegir «Girada ↶», «Girada ↷» o «Sin girar»; la app lo recuerda.",
-        "<b>🎯 Seguir la jugada (estilo Veo)</b>: en la cámara, toca <b>«🎯 Seguir la jugada»</b>. Pon el móvil <b>quieto en el trípode</b>, lo más alto posible y en el centro de la banda, viendo <b>todo el campo</b> (si tu móvil tiene la cámara <b>0,5x</b> o gran angular, la app intenta ponerla sola). La app mira en el propio móvil dónde se mueven los jugadores y el balón y <b>se acerca y mueve la imagen sola</b> hacia la jugada, suave, como si hubiera un cámara. Lo que ves en la pantalla es lo que se graba y lo que ve la familia en el directo. Si nadie se mueve, se queda quieta; si mueves el móvil, espera a que se quede quieto. Se quita tocando otra vez el botón. No hace falta internet ni soporte motorizado. En móviles o iPad antiguos mira menos veces por segundo y, si van muy justos, se quita sola y avisa. Plan gratuito: <b>2 partidos o entrenos al mes</b>; con Pro, ilimitado.",
+        "<b>🎯 Seguir la jugada (estilo Veo)</b>: en la cámara, toca <b>«🎯 Seguir la jugada»</b>. Pon el móvil <b>quieto en el trípode</b>, lo más alto posible y en el centro de la banda, viendo <b>todo el campo</b> (si tu móvil tiene la cámara <b>0,5x</b> o gran angular, la app intenta ponerla sola). La app mira en el propio móvil dónde se mueven los jugadores y el balón y <b>se acerca y mueve la imagen sola</b> hacia la jugada, suave, como si hubiera un cámara. Lo que ves en la pantalla es lo que se graba y lo que ve la familia en el directo. Si nadie se mueve, se queda quieta; si mueves el móvil, espera a que se quede quieto. <b>No se va detrás de la gente que pasa pegada a la cámara</b> (entrenador, público) y solo cambia de lado si la jugada se ha ido de verdad, así que tarda un segundo en girar: es a propósito, para no ir y venir. Ponlo algo separado del banquillo. Se quita tocando otra vez el botón. No hace falta internet ni soporte motorizado. En móviles o iPad antiguos mira menos veces por segundo y, si van muy justos, se quita sola y avisa. Plan gratuito: <b>2 partidos o entrenos al mes</b>; con Pro, ilimitado.",
         "<b>Cuántos te siguen</b>: en el Directo, debajo del marcador (y en la cámara), ves cuántas personas tienen abierto ahora el enlace del directo, por ejemplo «👁 12 personas están viendo el directo ahora». Cuenta a todos los que lo miran, con vídeo o solo el marcador, y se actualiza cada 15 segundos. Quien sigue el partido desde el enlace también ve cuántos son. Gratis para todos.",
         "<b>La familia en el enlace del directo</b>: mientras ven el vídeo, su pantalla tampoco se apaga. Si giran el móvil, el vídeo se pone en grande en toda la pantalla, con el marcador dentro. Si se les corta la conexión, el vídeo vuelve solo.",
         "<b>Si te llaman mientras grabas o emites</b>: no se corta nada. La grabación y el vídeo en directo siguen; mientras dura la llamada la cámara o el sonido pueden quedarse en pausa y sale el aviso «Cámara o sonido en pausa», y la familia ve «Pausa» con el marcador al día. Tu conversación no se graba ni se oye en el directo. Al colgar, la cámara y el sonido vuelven solos (no cierres la cámara). Si contestas y sales de la app, vuelve a ella al colgar. Para que no te interrumpan, pon el móvil en modo «No molestar» o en modo avión con wifi durante el partido (en modo avión solo puedes emitir con wifi).",
@@ -13446,83 +13446,149 @@
      así va también en móviles e iPad antiguos. Si el móvil va justo, mira menos veces por segundo, y si
      va muy lento, lo apaga y avisa. Plan gratuito: LIM.sig partidos o entrenos al mes; con Pro, ilimitado. */
   const SG_ZMAX = 2,
-    SG_W = 80;
-  /* Análisis de una imagen (gris, 0-255) frente a la anterior. Devuelve el centro de la jugada (0-1), el zoom
-     que conviene y el balón si se ve, o null si no hay nada que seguir (todo quieto o el móvil se ha movido). */
-  function sgAnaliza(gr, pr, br, aw, ah) {
-    let n = 0,
-      col = new Float32Array(aw),
-      row = new Float32Array(ah),
-      m = new Uint8Array(aw * ah),
-      bx = 0,
-      by = 0,
-      bn = 0;
-    for (let y = 0; y < ah; y++)
-      for (let x = 0; x < aw; x++) {
-        let i = y * aw + x;
-        if (Math.abs(gr[i] - pr[i]) > 22) {
-          m[i] = 1;
-          n++;
-          col[x]++;
-          row[y]++;
-          if (br[i]) {
-            bx += x;
-            by += y;
-            bn++;
-          }
-        }
-      }
-    let tot = aw * ah;
-    /* Casi nada se mueve: no hay jugada. Demasiado: se ha movido el móvil o ha cambiado la luz */
-    if (n < tot * 0.002 || n > tot * 0.35) return null;
-    /* La ventana (del tamaño del encuadre) donde más movimiento hay: así no la despista alguien que pasa por un lado */
-    const mejor = (h, L, k) => {
-      let s = 0,
-        b = 0,
-        bi = 0;
-      for (let i = 0; i < L; i++) {
-        s += h[i] - (i >= k ? h[i - k] : 0);
-        if (i >= k - 1 && s > b) (b = s), (bi = i - k + 1);
-      }
-      return bi + k / 2;
-    };
+    SG_W = 160;
+  /* v11.67: más fino. En un partido real (móvil bajo en la banda, de noche) se iba detrás del entrenador o de
+     quien pasaba delante de la cámara, y cambiaba de sitio diez veces por segundo. Ahora:
+     - mira con el doble de detalle (160 px) para ver a los jugadores del otro lado del campo;
+     - no hace caso a lo que está muy cerca de la cámara (manchas altas o pegadas al borde de abajo);
+     - suma el movimiento de los últimos ~2 segundos antes de decidir (sgCentro sobre lo acumulado);
+     - solo cambia de sitio si la jugada se ha ido de verdad (se tiene que mantener casi 1 segundo)
+       y se mueve más despacio, como un cámara. */
+  /* Ventana (del tamaño del encuadre) donde más movimiento hay y cuánto zoom conviene */
+  function sgCentro(col, aw) {
     let kx = Math.max(4, Math.round(aw * 0.3)),
-      ky = Math.max(3, Math.round(ah * 0.4)),
-      cx = mejor(col, aw, kx),
-      cy = mejor(row, ah, ky),
+      s = 0,
+      b = -1,
+      bi = 0,
+      tot = 0;
+    for (let i = 0; i < aw; i++) {
+      tot += col[i];
+      s += col[i] - (i >= kx ? col[i - kx] : 0);
+      if (i >= kx - 1 && s > b) (b = s), (bi = i - kx + 1);
+    }
+    let cx = bi + kx / 2,
       sx = 0,
       sw = 0;
-    /* Lo separados que están los jugadores alrededor de la jugada → cuánto zoom */
     for (let x = 0; x < aw; x++)
       if (Math.abs(x - cx) < aw * 0.4) {
         sx += col[x] * (x - cx) * (x - cx);
         sw += col[x];
       }
-    let sd = sw ? Math.sqrt(sx / sw) : aw / 4,
-      zz = Math.max(1, Math.min(SG_ZMAX, (aw * 0.5) / (2.2 * sd + aw * 0.06))),
+    let sd = sw ? Math.sqrt(sx / sw) : aw / 4;
+    return { cx, z: Math.max(1, Math.min(SG_ZMAX, (aw * 0.5) / (2.2 * sd + aw * 0.06))), peso: tot };
+  }
+  /* Análisis de una imagen (gris, 0-255) frente a la anterior. Devuelve el centro de la jugada (0-1), el zoom
+     que conviene, el balón si se ve y el movimiento por columnas (col) para ir sumándolo; o null si no hay
+     nada que seguir (todo quieto o el móvil se ha movido). */
+  function sgAnaliza(gr, pr, br, aw, ah) {
+    let n = 0,
+      tot = aw * ah,
+      m = new Uint8Array(tot);
+    for (let i = 0; i < tot; i++)
+      if (Math.abs(gr[i] - pr[i]) > 22) {
+        m[i] = 1;
+        n++;
+      }
+    /* Casi nada se mueve: no hay jugada. Demasiado: se ha movido el móvil o ha cambiado la luz */
+    if (n < tot * 0.0015 || n > tot * 0.35) return null;
+    /* Manchas de movimiento (zonas que se tocan). Una persona pegada a la cámara es una mancha alta o que
+       llega al borde de abajo: casi no cuenta. Los jugadores del campo son manchas pequeñas. */
+    let col = new Float32Array(aw),
+      row = new Float32Array(ah),
+      lab = new Int32Array(tot),
+      pila = new Int32Array(tot),
+      alto = ah * 0.28,
+      bx = 0,
+      by = 0,
+      bn = 0,
+      bmal = false,
+      nl = 0,
+      cuenta = 0;
+    for (let i0 = 0; i0 < tot; i0++) {
+      if (!m[i0] || lab[i0]) continue;
+      nl++;
+      let sp = 0,
+        y0 = ah,
+        y1 = 0,
+        x0 = aw,
+        x1 = 0,
+        k = 0,
+        px = [];
+      pila[sp++] = i0;
+      lab[i0] = nl;
+      while (sp) {
+        let i = pila[--sp],
+          x = i % aw,
+          y = (i / aw) | 0;
+        px.push(i);
+        k++;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) {
+            let xx = x + dx,
+              yy = y + dy;
+            if (xx < 0 || yy < 0 || xx >= aw || yy >= ah) continue;
+            let j = yy * aw + xx;
+            if (m[j] && !lab[j]) {
+              lab[j] = nl;
+              pila[sp++] = j;
+            }
+          }
+      }
+      let h = y1 - y0 + 1,
+        /* Cuanto más abajo (más cerca de la cámara), menos cuenta */
+        /* Alta y llena (una persona delante), no una fila de jugadores en diagonal */
+        cerca = y1 >= ah - 2 || (h > alto && k > h * (x1 - x0 + 1) * 0.3),
+        wv = cerca ? 0.05 : 1;
+      for (let q = 0; q < k; q++) {
+        let i = px[q],
+          x = i % aw,
+          y = (i / aw) | 0,
+          wy = y < ah * 0.6 ? 1 : Math.max(0.2, 1 - ((y / ah - 0.6) / 0.4) * 0.8),
+          v = wv * wy;
+        col[x] += v;
+        row[y] += v;
+        if (!cerca) cuenta += v;
+        if (br[i] && !cerca) {
+          bx += x;
+          by += y;
+          bn++;
+        } else if (br[i]) bmal = true;
+      }
+    }
+    /* Solo se mueve lo que está pegado a la cámara: no hay jugada que seguir */
+    if (cuenta < tot * 0.001) return null;
+    let C = sgCentro(col, aw),
+      cx = C.cx,
+      ky = Math.max(3, Math.round(ah * 0.4)),
+      s = 0,
+      b = -1,
+      cy = ah / 2,
       ball = null;
+    for (let i = 0; i < ah; i++) {
+      s += row[i] - (i >= ky ? row[i - ky] : 0);
+      if (i >= ky - 1 && s > b) (b = s), (cy = i - ky + 1 + ky / 2);
+    }
     /* Balón: pocos puntos claros que se mueven, juntos, cerca de la jugada */
-    if (bn >= 1 && bn <= Math.max(6, tot * 0.004)) {
+    let rb = Math.max(4, Math.round(aw / 20));
+    if (!bmal && bn >= 1 && bn <= Math.max(6, tot * 0.004)) {
       bx /= bn;
       by /= bn;
       let ok = true;
-      for (let y = 0; y < ah && ok; y++)
-        for (let x = 0; x < aw; x++) {
-          let i = y * aw + x;
-          if (m[i] && br[i] && (Math.abs(x - bx) > 4 || Math.abs(y - by) > 4)) {
-            ok = false;
-            break;
-          }
-        }
+      for (let i = 0; i < tot && ok; i++)
+        if (m[i] && br[i] && (Math.abs((i % aw) - bx) > rb || Math.abs(((i / aw) | 0) - by) > rb)) ok = false;
       if (ok && Math.abs(bx - cx) < aw * 0.35) ball = { x: bx / aw, y: by / ah };
     }
     let fx = cx / aw,
       fy = cy / ah;
     if (ball) {
-      fx = fx * 0.4 + ball.x * 0.6;
-      fy = fy * 0.4 + ball.y * 0.6;
+      fx = fx * 0.65 + ball.x * 0.35;
+      fy = fy * 0.65 + ball.y * 0.35;
     }
-    return { x: fx, y: fy, z: zz, ball, mov: n / tot };
+    return { x: fx, y: fy, z: C.z, ball, mov: n / tot, col, cy: cy / ah };
   }
   /* Para las pruebas: el análisis y cómo está el encuadre */
   window.__mfSg = sgAnaliza;
@@ -13544,8 +13610,8 @@
       t = performance.now();
     if (document.hidden || camSinImagen(c) || t - (S.ult || 0) < S.cada) return;
     S.ult = t;
-    let aw = SG_W,
-      ah = Math.max(16, Math.round((SG_W * h) / w));
+    let aw = S.aw || SG_W,
+      ah = Math.max(16, Math.round((aw * h) / w));
     if (!S.cv) {
       S.cv = document.createElement("canvas");
       S.g = S.cv.getContext("2d", { willReadFrequently: true });
@@ -13574,11 +13640,25 @@
     }
     if (S.pr) {
       let a = sgAnaliza(gr, S.pr, br, aw, ah);
+      /* Se suma el movimiento de los últimos ~2 s (lo de antes va pesando menos) */
+      if (!S.hc || S.hc.length !== aw) (S.hc = new Float32Array(aw)), (S.hy = 0.5);
+      let dec = Math.pow(0.88, S.cada / 100);
+      for (let x = 0; x < aw; x++) S.hc[x] = S.hc[x] * dec + (a ? a.col[x] : 0);
       if (a) {
-        S.tx = a.x * w;
+        S.hy = S.hy * 0.85 + a.cy * 0.15;
+        let C = sgCentro(S.hc, aw),
+          fx = C.cx / aw;
+        if (a.ball) fx = fx * 0.75 + a.ball.x * 0.25;
+        let nx = fx * w,
+          ny = (S.hy * 0.6 + 0.5 * 0.4) * h;
+        /* Paciencia: un cambio grande de sitio se tiene que mantener casi 1 s antes de ir */
+        if (S.tx == null || Math.abs(nx - S.tx) < w * 0.12) S.tx = S.tx == null ? nx : S.tx + (nx - S.tx) * 0.5;
+        else if (S.cand != null && Math.abs(nx - S.cand) < w * 0.1) {
+          if (t - S.candT > 800) (S.tx = nx), (S.cand = null);
+        } else (S.cand = nx), (S.candT = t);
         /* En vertical se mueve menos: desde la banda casi todo pasa a la misma altura */
-        S.ty = (a.y * 0.6 + 0.5 * 0.4) * h;
-        S.tz = a.z;
+        S.ty = ny;
+        S.tz = S.tz + (C.z - S.tz) * 0.3;
         S.quieto = 0;
         S.balon = a.ball ? t : S.balon;
       } else if (++S.quieto > 30) S.tz = Math.max(1, S.tz - 0.01);
@@ -13587,20 +13667,23 @@
     /* Móvil lento: menos veces por segundo; muy lento, se apaga */
     let ms = performance.now() - t;
     S.ms = S.ms == null ? ms : S.ms * 0.9 + ms * 0.1;
-    S.cada = S.ms > 25 ? 330 : S.ms > 12 ? 200 : 100;
+    /* Móvil justo: primero mira con menos detalle (como antes, 80 px) y luego menos veces */
+    if (S.ms > 12 && !S.aw) (S.aw = 80), (S.ms = null), (S.hc = null);
+    else S.cada = S.ms > 25 ? 330 : S.ms > 12 ? 200 : 100;
     if (S.ms > 70 && ++S.lento > 20) sgApaga(c, "Este móvil va justo para seguir la jugada y grabar a la vez, así que se ha quitado. El vídeo sigue normal, con todo el campo.");
   }
   /* Mueve el encuadre poco a poco hacia el objetivo (como un cámara, sin tirones) */
   function sgMueve(c, w, h) {
     let S = c.sg;
-    if (S.w !== w || S.h !== h) Object.assign(S, { w, h, x: w / 2, y: h / 2, tx: w / 2, ty: h / 2, z: 1, tz: 1, pr: null });
+    if (S.w !== w || S.h !== h) Object.assign(S, { w, h, x: w / 2, y: h / 2, tx: w / 2, ty: h / 2, z: 1, tz: 1, pr: null, hc: null, cand: null });
     let dx = S.tx - S.x,
       dy = S.ty - S.y,
-      zona = (w * 0.06) / S.z,
-      paso = w * 0.012;
-    if (Math.abs(dx) > zona) S.x += Math.max(-paso, Math.min(paso, dx * 0.06));
-    if (Math.abs(dy) > zona * 0.6) S.y += Math.max(-paso * 0.6, Math.min(paso * 0.6, dy * 0.05));
-    S.z += (Math.max(1, Math.min(SG_ZMAX, S.tz)) - S.z) * 0.02;
+      zona = (w * 0.08) / S.z,
+      paso = w * 0.008;
+    /* Más despacio que antes (v11.67): como un cámara que acompaña, sin ir y venir */
+    if (Math.abs(dx) > zona) S.x += Math.max(-paso, Math.min(paso, dx * 0.035));
+    if (Math.abs(dy) > zona * 0.6) S.y += Math.max(-paso * 0.5, Math.min(paso * 0.5, dy * 0.03));
+    S.z += (Math.max(1, Math.min(SG_ZMAX, S.tz)) - S.z) * 0.015;
     let hw = w / (2 * S.z),
       hh = h / (2 * S.z);
     S.x = Math.max(hw, Math.min(w - hw, S.x));

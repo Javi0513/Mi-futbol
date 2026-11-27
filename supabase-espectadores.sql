@@ -23,7 +23,7 @@ begin
   if quien is null or length(quien) < 8 or length(quien) > 40 then return null; end if;
   if not exists (select 1 from public.directos where id = codigo) then return null; end if;
   insert into public.directo_vistas (directo, quien, visto) values (codigo, quien, now())
-  on conflict (directo, quien) do update set visto = now();
+  on conflict on constraint directo_vistas_pkey do update set visto = now();
   -- limpieza: lo de hace más de un día ya no sirve
   delete from public.directo_vistas where directo = codigo and visto < now() - interval '1 day';
   select count(*)::int into n from public.directo_vistas where directo = codigo and visto > now() - interval '35 seconds';
