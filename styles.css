@@ -2354,6 +2354,24 @@ body.cam-on {
   font-size: 13px;
   margin: 2px 0 0;
 }
+/* v11.65: pantalla encendida mientras la cámara espera (en el trípode, antes de grabar) */
+.cam-luz {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #86efac;
+}
+.cam-luz:empty {
+  display: none;
+}
+.cam-luz.no {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(250, 204, 21, 0.14);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
 .cam-aviso {
   margin: 0 0 8px;
   padding: 8px 10px;

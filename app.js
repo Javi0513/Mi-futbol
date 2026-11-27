@@ -5630,6 +5630,7 @@
         v.currentTime = 0;
         if (luz.video) luzJuega(v);
       });
+      ["playing", "pause", "volumechange"].forEach((ev) => v.addEventListener(ev, () => setTimeout(luzAviso, 50)));
       v.setAttribute("aria-hidden", "true");
       v.className = "luz-vid";
       try {
@@ -5672,6 +5673,7 @@
     if (document.hidden) return;
     if (!(luz.lock && !luz.lock.released)) luzPon();
     else if (luz.video && luz.vid && (luz.vid.paused || luz.vid.muted)) luzJuega(luz.vid);
+    luzAviso();
   }
   /* Cualquier toque en la pantalla vale para poner el vídeo con sonido (el móvil lo exige) */
   ["touchend", "click"].forEach((ev) =>
@@ -5679,6 +5681,7 @@
       ev,
       () => {
         if (luz.quien.size && luz.video && luz.vid && (luz.vid.paused || luz.vid.muted)) luzJuega(luz.vid);
+        setTimeout(luzAviso, 300);
       },
       true,
     ),
@@ -5709,8 +5712,28 @@
           }
         } catch (e) {}
       luzVideo(luz.quien.size && (!ok || luzIOS));
+      setTimeout(luzAviso, 300);
     })().finally(() => (luz.pide = null));
     return luz.pide;
+  }
+  /* v11.65: ¿está de verdad la pantalla protegida? En iPhone/iPad hace falta el vídeo sonando (sin silenciar) */
+  function luzOk() {
+    let lk = !!(luz.lock && !luz.lock.released),
+      vd = !!(luz.video && luz.vid && !luz.vid.paused && !luz.vid.muted);
+    return luzIOS ? vd : lk || vd;
+  }
+  /* Línea de la cámara: «Pantalla encendida» o, si el móvil aún no lo deja, que se toque la pantalla una vez */
+  function luzAviso() {
+    let el = document.querySelector(".cam [data-camluz]");
+    if (!el) return;
+    let ok = luzOk(),
+      c = cam,
+      x = c && !c.tr && liveRows[c.id],
+      espera = c && !c.rec && !c.listo && x && x.anotador;
+    el.className = "cam-luz" + (ok ? "" : " no");
+    el.textContent = ok
+      ? "🔆 Pantalla encendida: no se apagará mientras la cámara esté abierta" + (espera ? ". Deja el móvil en el trípode, el anotador puede empezar a grabar desde su enlace." : ".")
+      : "👆 Toca la pantalla una vez para que no se apague mientras esperas" + (espera ? " al anotador." : ".");
   }
   function luzQuita(k) {
     luz.quien.delete(k);
@@ -9941,7 +9964,7 @@
         "«Emitir» envía el vídeo en vivo a quien tenga el enlace del directo (plan Pro). Puedes emitir y grabar a la vez.",
         "El vídeo en vivo lo pueden ver hasta <b>25 personas a la vez</b> en cada partido. Si ya hay 25, los demás siguen viendo el marcador y los goles, y el vídeo les entra solo en cuanto alguien lo deja de ver. El marcador no tiene límite.",
         "Consejo: para y guarda en el descanso, así los archivos son más pequeños.",
-        "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la app la vuelve a abrir sola y la grabación sigue.",
+        "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos), <b>también antes de darle a grabar</b>: puedes dejarlo en el trípode con la cámara abierta esperando a que el anotador empiece a grabar. Arriba de los botones lo ves: «🔆 Pantalla encendida». Si sale «👆 Toca la pantalla una vez», tócala (en algunos iPhone hace falta un toque para que no se apague). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la app la vuelve a abrir sola y la grabación sigue.",
         "<b>Si aun así se apaga la pantalla</b> (emitiendo o grabando): en iPhone y iPad ve a Ajustes › Pantalla y brillo › Bloqueo automático y pon «Nunca» durante el partido, y quita el Modo de bajo consumo, que bloquea el iPhone a los 30 segundos. En Android, Ajustes › Pantalla › Tiempo de espera de la pantalla al máximo y sin ahorro de batería. Si ya la tenías abierta, cierra la app del todo y vuelve a abrirla para tener la última versión.",
         "<b>Imagen de lado</b>: si pones el móvil en horizontal con la rotación bloqueada, la app endereza la imagen sola (botón «🔄 Imagen: Automática»), así la familia y la grabación ven el campo derecho. Si aun así sale girada, toca ese botón para elegir «Girada ↶», «Girada ↷» o «Sin girar»; la app lo recuerda.",
         "<b>🎯 Seguir la jugada (estilo Veo)</b>: en la cámara, toca <b>«🎯 Seguir la jugada»</b>. Pon el móvil <b>quieto en el trípode</b>, lo más alto posible y en el centro de la banda, viendo <b>todo el campo</b> (si tu móvil tiene la cámara <b>0,5x</b> o gran angular, la app intenta ponerla sola). La app mira en el propio móvil dónde se mueven los jugadores y el balón y <b>se acerca y mueve la imagen sola</b> hacia la jugada, suave, como si hubiera un cámara. Lo que ves en la pantalla es lo que se graba y lo que ve la familia en el directo. Si nadie se mueve, se queda quieta; si mueves el móvil, espera a que se quede quieto. Se quita tocando otra vez el botón. No hace falta internet ni soporte motorizado. En móviles o iPad antiguos mira menos veces por segundo y, si van muy justos, se quita sola y avisa. Plan gratuito: <b>2 partidos o entrenos al mes</b>; con Pro, ilimitado.",
@@ -9956,7 +9979,7 @@
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
         "<b>Tiros desde el anotador</b>: también tiene <b>«🎯 Tiro a puerta»</b> y <b>«Tiro fuera»</b> (elige quién ha tirado; primero salen los que están en el campo) y <b>«Tiro del rival»</b>. En tu Directo se suman solos a las estadísticas de cada jugador y a los tiros del rival, y salen en el resumen, en su ficha y en el Excel. Si el anotador quita un tiro con la ✕, se resta. Plan gratuito: tiros desde el anotador en <b>2 partidos al mes</b> (el resto del anotador sigue igual y tú los puedes apuntar en tu Directo siempre). Con Pro, ilimitado.",
         "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
-        "<b>El anotador también lleva la grabación</b>: con la cámara abierta en el móvil que graba (Directo › «Cámara: grabar el partido»), en el enlace del anotador sale «Grabación» con <b>«● Empezar a grabar»</b>, <b>«⏸ Pausar grabación»</b> y <b>«▶ Reanudar grabación»</b> y <b>«■ Parar grabación»</b>. El móvil que graba lo hace solo en unos segundos y el anotador ve si está grabando o en pausa. Al pausar y reanudar sigue siendo un solo vídeo, sin el rato de la pausa. En el móvil que graba también tienes «⏸ Pausar» y «▶ Reanudar». <b>Guardar el vídeo se hace siempre en el móvil que graba</b> (el anotador no puede). Va con el anotador (plan gratuito: 3 partidos al mes; con Pro, ilimitado).",
+        "<b>El anotador también lleva la grabación</b>: con la cámara abierta en el móvil que graba (Directo › «Cámara: grabar el partido»), en el enlace del anotador sale «Grabación» con <b>«● Empezar a grabar»</b>, <b>«⏸ Pausar grabación»</b> y <b>«▶ Reanudar grabación»</b> y <b>«■ Parar grabación»</b>. El móvil que graba lo hace solo en unos segundos y el anotador ve si está grabando o en pausa. Al pausar y reanudar sigue siendo un solo vídeo, sin el rato de la pausa. En el móvil que graba también tienes «⏸ Pausar» y «▶ Reanudar». <b>Guardar el vídeo se hace siempre en el móvil que graba</b> (el anotador no puede): cuando el anotador pulsa «■ Parar grabación», en el móvil del trípode sale «Guardar en Fotos» (iPhone) o «Guardar en el móvil». Si a la vez emites el directo para la familia (Pro), lo que se graba se queda igualmente guardado en ese móvil. Va con el anotador (plan gratuito: 3 partidos al mes; con Pro, ilimitado).",
         "<b>«🎯 Seguir la jugada» desde el anotador</b>: con la cámara abierta en el móvil que graba, en «Grabación» del enlace del anotador sale <b>«🎯 Seguir la jugada»</b>. Al pulsarlo, en unos segundos el móvil que graba empieza a acercar la imagen sola a donde están el balón y los jugadores; con <b>«Ver todo el campo»</b> lo quita. El anotador ve en todo momento si está puesto. También se puede poner o quitar en el propio móvil que graba. Cuenta para los 2 partidos o entrenos al mes del plan gratuito de «Seguir la jugada» del entrenador; con Pro, ilimitado.",
         "<b>Guardar el vídeo en iPhone o iPad</b>: al parar, pulsa <b>«Guardar en Fotos»</b> y elige <b>«Guardar vídeo»</b>: así sale en la galería. «Guardar en Archivos» lo descarga a la app <b>Archivos › Descargas</b> (no a Fotos), y solo si en el aviso de Safari pulsas «Descargar». No cierres la cámara ni pulses «Grabar otro trozo» hasta tenerlo guardado. Si un vídeo está en Archivos, ábrelo allí y con el botón de compartir elige «Guardar vídeo» para pasarlo a Fotos.",
         "<b>No hace falta que tengas la app abierta</b>: si el anotador empieza, apunta y termina el partido él solo, al abrir la app el partido ya sale con el resultado, los goleadores, los cambios, las tarjetas y los minutos de cada jugador. Si la tienes abierta en otra pantalla (Inicio, Partidos…), se pone al día sola en unos segundos.",
@@ -13801,12 +13824,14 @@
         vd = xt && (c.emite || c.tr.live) ? viendoHtml(xt.id) : "";
       c.box.querySelector(".cam-ui").innerHTML = c.listo
         ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? emt : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-        : `${av}${vd}<div class="cam-row">${emt}${lnk}</div><div class="cam-row">${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
+        : `${av}${vd}<p class="cam-luz" data-camluz role="status"></p><div class="cam-row">${emt}${lnk}</div><div class="cam-row">${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
+      luzAviso();
       return;
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
       ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-      : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «🎯 Seguir la jugada» acerca la imagen sola a donde están el balón y los jugadores (pon el móvil quieto viendo todo el campo). «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
+      : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<p class="cam-luz" data-camluz role="status"></p><div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «🎯 Seguir la jugada» acerca la imagen sola a donde están el balón y los jugadores (pon el móvil quieto viendo todo el campo). «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
+    luzAviso();
   }
   /* v11.53: «⏸ Pausar» / «▶ Reanudar» la grabación (en el móvil que graba o desde el anotador) */
   const camT = (c) => Date.now() - c.t0 - (c.pausaMs || 0) - (c.pausaDesde ? Date.now() - c.pausaDesde : 0),
@@ -13917,10 +13942,15 @@
   async function camAbre(id, frente, tr) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream)
       return note("Este móvil o navegador no permite grabar vídeo desde la app.");
+    /* v11.65: la pantalla encendida se pide ya, dentro del toque en «Cámara». Después de pedir la cámara el
+       toque ya no cuenta y el iPhone solo deja el vídeo de la luz en silencio, que no evita que se bloquee:
+       con el móvil en el trípode esperando al anotador (sin tocar nada más) la pantalla se apagaba. */
+    luzPon("cam");
     let s;
     try {
       s = await navigator.mediaDevices.getUserMedia({ video: camVideo(frente), audio: true });
     } catch (e) {
+      if (!cam) luzQuita("cam");
       return note(
         e && e.name === "NotAllowedError"
           ? "No hay permiso para usar la cámara. Actívalo en los ajustes del móvil (permisos de la app o de Chrome) y vuelve a intentarlo."
