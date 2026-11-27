@@ -7690,3 +7690,55 @@ body.cam-on #info {
 .ci-opt.lock {
   opacity: 0.75;
 }
+/* v11.66: móvil en el trípode esperando a que el anotador abra la cámara */
+body.tri-on {
+  overflow: hidden;
+}
+.tri {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: #000;
+  color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+.tri-in {
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+}
+.tri-ic {
+  font-size: 44px;
+}
+.tri h2 {
+  margin: 6px 0 4px;
+}
+.tri-big {
+  font-size: 22px;
+  font-weight: 700;
+  color: #86efac;
+  margin: 0 0 10px;
+}
+.tri p {
+  margin: 0 0 10px;
+}
+.tri .cam-luz {
+  text-align: left;
+}
+.tri-tip {
+  color: var(--mut);
+  font-size: 13px;
+}
+.tri-bt {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.tri-bt > * {
+  flex: 1 1 auto;
+}
