@@ -77,12 +77,20 @@ with sync_playwright() as p:
       let [p5]=img(g=>{put(g,15,10,2,4,20);put(g,30,30,2,4,20);put(g,45,15,2,4,20);put(g,60,30,2,4,20)}),[q5,b5]=img(g=>{put(g,16,11,2,4,20);put(g,31,31,2,4,20);put(g,46,16,2,4,20);put(g,61,31,2,4,20)});
       let [p6]=img(g=>{put(g,40,20,2,4,20);put(g,44,22,2,4,20)}),[q6,b6]=img(g=>{put(g,41,21,2,4,20);put(g,45,23,2,4,20)});
       out.junto=A(q6,p6,b6,aw,ah,1);out.lejos=A(q5,p5,b5,aw,ah,1);
+      // v11.67: alguien que pasa pegado a la cámara (mancha alta a la izquierda, hasta abajo) y jugadores pequeños a la derecha
+      let [p7]=img(g=>{put(g,8,12,9,33,20);for(let k=0;k<5;k++)put(g,58+k*3,14+k%2*3,2,3,20)}),[q7,b7]=img(g=>{put(g,11,12,9,33,20);for(let k=0;k<5;k++)put(g,59+k*3,15+k%2*3,2,3,20)});
+      out.cerca=A(q7,p7,b7,aw,ah,1);
+      // solo se mueve alguien pegado a la cámara: no hay jugada
+      let [p8]=img(g=>put(g,30,14,10,31,20)),[q8,b8]=img(g=>put(g,33,14,10,31,20));
+      out.solocerca=A(q8,p8,b8,aw,ah,1);
       return out})()""")
     check('si no se mueve nada no hay jugada que seguir',r['quieto'] is None)
-    check('jugadores moviéndose a la derecha → encuadre a la derecha',r['derecha'] and r['derecha']['x']>0.65,r['derecha'])
-    check('jugadores moviéndose a la izquierda → encuadre a la izquierda',r['izquierda'] and r['izquierda']['x']<0.3,r['izquierda'])
-    check('encuentra el balón (punto claro pequeño que se mueve)',r['balon'] and r['balon']['ball'] and abs(r['balon']['ball']['x']-0.55)<0.06,r['balon'])
+    check('jugadores moviéndose a la derecha → encuadre a la derecha',r['derecha'] and r['derecha']['x']>0.65,r['derecha'] and r['derecha']['x'])
+    check('jugadores moviéndose a la izquierda → encuadre a la izquierda',r['izquierda'] and r['izquierda']['x']<0.3,r['izquierda'] and r['izquierda']['x'])
+    check('encuentra el balón (punto claro pequeño que se mueve)',r['balon'] and r['balon']['ball'] and abs(r['balon']['ball']['x']-0.55)<0.06,r['balon'] and r['balon']['ball'])
     check('si cambia toda la imagen (móvil movido o luz) no se mueve el encuadre',r['todo'] is None)
+    check('no se va detrás de quien pasa pegado a la cámara: sigue a los jugadores',r['cerca'] and r['cerca']['x']>0.65,r['cerca'] and r['cerca']['x'])
+    check('si solo se mueve alguien delante de la cámara, no hay jugada',r['solocerca'] is None,r['solocerca'] and r['solocerca']['x'])
     check('jugadores juntos → más zoom que separados',r['junto']['z']>r['lejos']['z']+0.3 and r['junto']['z']<=2.0,[r['junto']['z'],r['lejos']['z']])
     # 2) En la cámara del Directo, plan gratuito
     camara(pg,'m1')

@@ -59,6 +59,7 @@ with sync_playwright() as p:
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.49 (mapa de calor después del partido)',all(w in body for w in ('Mapa de calor también después del partido','Dónde fue cada acción','2 partidos al mes')))
+    check('v11.67: «Seguir la jugada» más tranquilo',all(w in body for w in ('más tranquilo y certero','pasa pegada al móvil','últimos 2 segundos')))
     check('v11.66: el anotador abre la cámara del móvil del trípode',all(w in body for w in ('Dejar en el trípode','Abrir la cámara','Abrir y emitir para la familia')) and pg.locator('#infoBody [data-ftut=anograb]').count()>=1)
     check('v11.65: la pantalla no se apaga esperando al anotador',all(w in body for w in ('esperando al anotador','Pantalla encendida','Toca la pantalla una vez')))
     check('v11.64: jugadas más largas, porteros y prevención, con sus tutoriales',all(w in body for w in ('8-10 segundos','Porteros y goles por minutos','prevención de lesiones y de arrancada')) and all(pg.locator('#infoBody [data-ftut=%s]'%k).count()>=1 for k in ('jugadas','porteros','prevencion')))
