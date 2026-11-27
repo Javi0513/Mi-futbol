@@ -9889,6 +9889,7 @@
         "<b>Color de las fichas</b>: toca a un jugador del campo y, debajo, elige su color con las muestras o moviendo la barra de color (y la de claro u oscuro). «Poner este color a todo el equipo» pinta a todos igual y «Color normal» lo deja en verde (o en amarillo si es el portero); el portero no coge el color del equipo. El color sale también en la imagen para WhatsApp.",
         "Después del partido apunta los minutos, los goles y el resultado.",
         "En <b>Datos del partido</b> (al crear o editar un partido) eliges el <b>capitán</b> y el <b>portero</b>. El capitán lleva una «C» y el portero sale de otro color en el campo y en la imagen. Si no eliges portero, es el que pongas en la portería (POR).",
+        "<b>Minuto de los goles</b>: si no llevaste el partido en el Directo, al editarlo escribe en «Minuto de los goles» los minutos de vuestros goles y de los del rival, separados por comas (por ejemplo 12, 34, 78). Sirven para «¿En qué minutos marcamos?» y para los goles encajados de cada portero, en Estadísticas. Con el Directo se apuntan solos.",
         "En «Datos del partido» también están los <b>minutos por parte</b> de ese partido (salen de la categoría o del Directo). «Calcular minutos» los usa.",
         "Ahí mismo apuntas los <b>cambios</b> (minuto, quién sale y quién entra, con su dorsal) y las <b>tarjetas</b> amarillas y rojas. «Calcular minutos» rellena los minutos de cada jugador con los titulares, los cambios y las expulsiones.",
         "Más abajo está el apartado del <b>rival</b>: sus cambios (dorsal que sale y dorsal que entra) y sus tarjetas (dorsal y nombre opcional), cada uno con su minuto.",
@@ -9985,10 +9986,12 @@
       t: "Circuitos de fuerza y coordinación",
       p: [
         "Están en la pestaña <b>Entrenos</b>. Toca un día con entrenamiento y pulsa «Añadir circuito de fuerza o coordinación».",
-        "Puedes empezar con una <b>plantilla</b> (fuerza básica, coordinación con escalera y conos, velocidad y reacción, prevención de lesiones o calentamiento con balón) y luego cambiarla a tu gusto.",
+        "Puedes empezar con una <b>plantilla</b> (fuerza básica, coordinación con escalera y conos, velocidad y reacción, prevención de lesiones, calentamiento con balón, fuerza de tren inferior y las de prevención y arrancada de tu modalidad) y luego cambiarla a tu gusto.",
         "Escribe el tiempo de <b>trabajo</b> de cada ejercicio, el <b>descanso</b> y la pausa entre series en <b>minutos y segundos</b>, el que tú quieras (por ejemplo 0 min 45 s o 2 min 30 s; hasta 30 min por ejercicio), y elige cuántas <b>series</b>. La app te dice cuánto dura el circuito.",
         "Si un ejercicio necesita <b>otro tiempo</b>, escríbelo en su ⏱ Tiempo, debajo del ejercicio. Si lo dejas vacío usa el tiempo general. «Usar el general» le quita el tiempo propio.",
-        "«Ejercicio de la biblioteca»: hay 40 ejercicios con su dibujo y cómo se hacen, por tipos: fuerza, core, coordinación, velocidad y calentamiento. Todos con el peso del cuerpo, aptos para fútbol base.",
+        "«Ejercicio de la biblioteca»: hay 70 ejercicios con su dibujo y cómo se hacen, por tipos: fuerza, core, coordinación, velocidad, calentamiento, <b>prevención de lesiones</b> y <b>arrancada</b>. Todos con el peso del cuerpo, una goma o un compañero, aptos para fútbol base.",
+        "<b>Prevención de lesiones</b> (rodilla, cuádriceps, aductores, isquios y tobillo) y <b>Arrancada</b> (salir más rápido): cada ejercicio dice qué zona trabaja y para qué modalidad es, y solo te salen los de la modalidad en la que estás. En <b>fútbol sala</b>, salidas de 3-5 m, frenadas, cambios de dirección y aductores; en <b>fútbol 11</b>, aceleraciones de 10 a 30 m, sprints repetidos e isquios; en <b>fútbol 7</b>, una mezcla de los dos. Hay también plantillas de cada modalidad: «Prevención…» y «Arrancada…».",
+        "Plan gratuito: los ejercicios de prevención y arrancada marcados <b>TOP</b> (5 de prevención y 4 de arrancada) y la plantilla de prevención de tu modalidad. Con el <b>plan Pro</b>, los 30 y todas las plantillas (arrancada de cada modalidad y fuerza de tren inferior).",
         "«Ejercicio propio»: escribe uno tuyo con su explicación. Con las flechas cambias el orden y con la ✗ lo quitas.",
         "Pulsa <b>▶ Iniciar</b> en el campo: sale un cronómetro grande que pita al empezar cada ejercicio y en los 3 últimos segundos, y te dice qué ejercicio viene después. Tienes Pausa, Atrás y Saltar. La pantalla no se apaga mientras corre.",
         "Marca «Guardar también en Mis circuitos» para reutilizarlo otro día. Abajo, en <b>Circuitos</b>, tienes tus circuitos guardados y la biblioteca de ejercicios.",
@@ -10055,6 +10058,7 @@
         "En <b>Fútbol sala</b>, encima de la pizarra tienes el botón <b>«Estrategias de fútbol sala»</b>: una biblioteca de 34 jugadas a balón parado para ensayar en los entrenos.",
         "Están por tipos: <b>córners</b>, <b>saques de banda</b>, <b>faltas y doble penalti</b>, <b>saque de centro</b>, <b>saque del portero</b>, <b>5x4 con portero-jugador</b> y cómo <b>defender</b> el córner y el 5x4. Con «Las más usadas» ves solo las TOP.",
         "Toca una y se carga en la pizarra moviéndose sola, paso a paso. Encima del campo te dice qué pasa en cada paso, y en «Claves para que salga bien» tienes los detalles. Las letras de las fichas son los puestos: P portero, PJ portero-jugador, C cierre, AI y AD alas izquierdo y derecho, PV pívot.",
+        "Cada jugada dura unos <b>8-10 segundos</b> y es completa: primero se ve la colocación, luego el <b>amago</b> de los que se desmarcan (dan un paso hacia el lado contrario y su marca se va con ellos), la jugada, y al final qué pasa después del remate: quién entra al <b>rechace</b> y quién se queda atrás <b>vigilando la contra</b>. En las defensivas, cómo se sale a la contra al recuperar. El balón sale cuando el compañero ya está llegando, como en un partido. Lo mismo en las jugadas a balón parado (ABP) de fútbol 7 y 11.",
         "Con ‹ › vas paso a paso para explicarla con calma, y con ▶ la vuelves a ver. Puedes mover las fichas, cambiar colores o poner a tus jugadores, y sacar la <b>imagen</b> o el <b>vídeo</b> para mandarlo al grupo. Si cargas una estrategia y tenías otra jugada, con «Deshacer» la recuperas. La X de la explicación la quita.",
         "Las <b>10 más usadas</b> (TOP) son gratis para todos. Con el <b>plan Pro</b> tienes las 34.",
       ],
@@ -10065,6 +10069,9 @@
         "En <b>Estadísticas</b> ves el ranking de tus jugadores por goles, minutos, partidos y titularidades.",
         "En <b>Resultados</b> toca cualquier partido para ver su resumen (minutos, goles y estadísticas) y mandarlo por WhatsApp. Con «Resumen de la temporada» mandas todos los partidos de una vez.",
         "Debajo de cada jugador salen también sus <b>robos, pérdidas, tiros, paradas, asistencias y faltas</b> de toda la temporada (solo los que tenga apuntados).",
+        "<b>¿En qué minutos marcamos?</b>: cada parte se divide en tres tramos (en fútbol 11, 0-15', 16-30', 31-45'…; en fútbol 7 y sala según los minutos de tu categoría) y ves cuántos goles marcáis y encajáis en cada tramo, con su <b>porcentaje</b>, y dónde más marcáis y más encajáis. Salen los goles con minuto: los del Directo se apuntan solos; si no llevaste el partido en el Directo, al editarlo escribe los minutos en «Minuto de los goles».",
+        "<b>Porteros</b>: de cada portero, los partidos y minutos en la portería, sus <b>paradas</b>, los <b>goles encajados</b>, los encajados por partido, el <b>% de paradas</b> (paradas ÷ paradas + goles encajados) y las porterías a cero. Elige el portero en «Datos del partido» o en el Directo y apunta sus paradas con el botón «Parada». Si cambias de portero en el partido, pon el cambio: cada gol en contra cuenta para el que estaba en la portería en ese minuto.",
+        "Las dos cosas salen también en el <b>Excel</b> (hojas «Porteros» y «Goles por minutos», con fórmulas). Plan gratuito: con tus <b>últimos 5 partidos</b>; con el plan Pro, toda la temporada.",
         "<b>Distancia recorrida</b>: no la medimos. Hace falta un GPS o un reloj deportivo puesto en cada jugador; con el móvil del entrenador no se puede saber.",
         "Con la lupa buscas cualquier jugador o partido de todas tus modalidades.",
       ],
@@ -10073,8 +10080,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», enviar por WhatsApp <b>3 jugadas de la pizarra al mes</b> (guardarlas en el móvil es gratis siempre), en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», enviar por WhatsApp <b>3 jugadas de la pizarra al mes</b> (guardarlas en el móvil es gratis siempre), en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, las fases del juego de la semana actual, los <b>porteros y los goles por minutos</b> de tus <b>últimos 5 partidos</b>, y los ejercicios de <b>prevención y arrancada</b> TOP (9) con la plantilla de prevención de tu modalidad. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11, las fases del juego de las 6 últimas semanas, porteros y goles por minutos de toda la temporada, y los 30 ejercicios de prevención y arrancada con todas las plantillas de cada modalidad.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -10265,6 +10272,126 @@
     ftBorrador = true;
   }
   const FTUT = {
+    porteros: {
+      t: "Porteros y goles por minutos",
+      v: "11.64",
+      p: "Paradas y goles encajados de cada portero, y en qué minutos marcáis y encajáis más, con porcentajes.",
+      pasos: [
+        {
+          t: "Porteros y goles por minutos",
+          p: "Te enseño dónde ver las paradas y los goles encajados de cada portero, y en qué tramos del partido marcáis más. No se cambia nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft) return;
+            state.live = null;
+            state.tab = "resumen";
+            render();
+          },
+        },
+        {
+          el: "#view .tr-p",
+          t: "1. ¿En qué minutos marcamos?",
+          p: "En «Estadísticas», cada parte va en tres tramos (en fútbol 11: 0-15', 16-30', 31-45'…). Ves los goles a favor y en contra de cada tramo con su %, y arriba dónde más marcáis y más encajáis.",
+        },
+        {
+          t: "2. ¿De dónde sale el minuto?",
+          p: "Los goles del Directo llevan su minuto solos. Si un partido no lo llevaste en el Directo, edítalo (lápiz ✏️) y en «Datos del partido › Minuto de los goles» escribe los minutos separados por comas.",
+        },
+        {
+          el: "#view .gk-p",
+          t: "3. Porteros",
+          p: "De cada portero: partidos y minutos en la portería, paradas, goles encajados, encajados por partido, % de paradas y porterías a cero. El portero se elige en «Datos del partido» o en el Directo, y las paradas con el botón «Parada».",
+        },
+        {
+          t: "4. Si cambias de portero",
+          p: "Pon el cambio en el partido (minuto, sale y entra). Cada gol en contra cuenta para el portero que estaba en la portería en ese minuto.",
+        },
+        {
+          el: '#view [data-xl="go"]',
+          t: "5. También en Excel",
+          p: "«Exportar a Excel» trae las hojas «Porteros» y «Goles por minutos», con fórmulas: si cambias un número, se recalculan los porcentajes.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Plan gratuito: con tus últimos 5 partidos. Con el plan Pro, toda la temporada.",
+        },
+      ],
+    },
+    prevencion: {
+      t: "Ejercicios de prevención y arrancada",
+      v: "11.64",
+      p: "Ejercicios para evitar lesiones (rodilla, cuádriceps, aductores…) y para arrancar más rápido, por modalidad.",
+      si: () => entrenosOn() && state.ciOk,
+      pasos: [
+        {
+          t: "Prevención y arrancada",
+          p: "Te enseño dónde están los nuevos ejercicios para evitar lesiones y para la arrancada, elegidos para tu modalidad. No se cambia nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft) return;
+            state.live = null;
+            state.tab = "entrenos";
+            render();
+          },
+        },
+        {
+          el: "#view .ci-panel",
+          t: "1. En «Entrenos › Circuitos»",
+          p: "Abre la biblioteca de ejercicios desde el apartado «Circuitos», o al crear un circuito en un entreno con «Ejercicio de la biblioteca».",
+        },
+        {
+          t: "2. Dos tipos nuevos",
+          p: "«Prevención de lesiones»: rodilla, cuádriceps, aductores, isquios y tobillo. «Arrancada»: salidas cortas, frenadas, cambios de dirección y sprints. Cada ejercicio dice qué zona trabaja y para qué modalidad es.",
+        },
+        {
+          t: "3. Según tu modalidad",
+          p: "Solo te salen los de la modalidad en la que estás: en fútbol sala, salidas de 3-5 m y aductores; en fútbol 11, aceleraciones de 10-30 m e isquios; en fútbol 7, una mezcla.",
+        },
+        {
+          t: "4. Plantillas listas",
+          p: "Al crear un circuito, arriba tienes «Prevención…» y «Arrancada…» de tu modalidad: 6 ejercicios con sus tiempos, que luego puedes cambiar. Haz 2 o 3 sesiones de prevención a la semana.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Plan gratuito: los marcados TOP y la plantilla de prevención de tu modalidad. Con el plan Pro, los 30 ejercicios y todas las plantillas.",
+        },
+      ],
+    },
+    jugadas: {
+      t: "Jugadas de balón parado más largas",
+      v: "11.64",
+      p: "Las estrategias de fútbol sala y las ABP duran ahora 8-10 s: colocación, amago, jugada, rechace y contra.",
+      pasos: [
+        {
+          t: "Jugadas más completas",
+          p: "Te enseño las jugadas a balón parado nuevas: más largas y más reales. No se cambia nada de tu pizarra mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft) return;
+            state.live = null;
+            state.tab = "pizarra";
+            render();
+          },
+        },
+        {
+          el: '#view [data-b="est"]',
+          t: "1. Abre la biblioteca",
+          p: "Encima del campo: «Estrategias de fútbol sala» en sala o «Jugadas a balón parado (ABP)» en fútbol 7 y 11. Toca una y se mueve sola.",
+        },
+        {
+          t: "2. Más despacio y completa",
+          p: "Primero ves la colocación, luego el amago de los que se desmarcan (su marca se va con ellos), la jugada y, al final, quién entra al rechace y quién se queda vigilando la contra. Dura unos 8-10 segundos.",
+        },
+        {
+          t: "3. Paso a paso",
+          p: "Encima del campo se explica cada paso. Con ‹ › vas paso a paso para explicarla con calma en el entreno, y con ▶ la vuelves a ver.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Gratis: las 10 estrategias TOP de sala y las 5 ABP TOP. Con el plan Pro, las 34 y las 14.",
+        },
+      ],
+    },
     enviar: {
       t: "Enviar la jugada por WhatsApp",
       v: "11.61",

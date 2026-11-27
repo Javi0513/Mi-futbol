@@ -86,6 +86,18 @@ with sync_playwright() as p:
     allx=''.join(z.read(n).decode() for n in names)
     check('Excel: fórmula % de paradas','E2/(E2+F2)' in allx)
     check('Excel: fórmula % a favor','C2/SUM(C$2:C$7)' in allx)
+    # Tutorial «Porteros y goles por minutos» (v11.64)
+    pg.click('#acct');pg.wait_for_timeout(200);pg.click('#infoBody [data-info=ayuda]');pg.wait_for_timeout(200)
+    pg.click('#infoBody .ayuda-tut [data-ftut=porteros]');pg.wait_for_timeout(400)
+    card=lambda:pg.locator('#tut .tut-card').inner_text() if pg.locator('#tut').count() else ''
+    check('tutorial porteros: empieza','paso 1 de 7' in card().lower(),card()[:80])
+    vis=[]
+    for i in range(6):
+        pg.click('#tut [data-tut=next]');pg.wait_for_timeout(350)
+        vis.append(card().lower())
+    check('tutorial porteros: recorre los 7 pasos y señala los paneles','minutos marcamos' in ' '.join(vis) and 'porteros' in ' '.join(vis) and 'excel' in ' '.join(vis) and pg.locator('#tut').count()==1,vis)
+    pg.click('#tut [data-tut=next]');pg.wait_for_timeout(300)
+    check('tutorial porteros: se cierra al terminar',pg.locator('#tut').count()==0)
     # Editar partido: minutos de los goles
     pg.click('[data-tab=partidos]');pg.wait_for_timeout(200)
     pg.click('[data-action=edit-match][data-id=m3]');pg.wait_for_timeout(300)
