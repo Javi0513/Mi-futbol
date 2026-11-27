@@ -128,6 +128,31 @@ with sync_playwright() as p:
     abre_cam(pg)
     check('iPhone/iPad con Wake Lock: se usan el Wake Lock y el vídeo mudo',pg.evaluate("window.__wl.n")==1 and pg.evaluate(VID)['on'])
     pg.context.close()
+    # 5) v11.65: iPhone en el trípode esperando al anotador (sin tocar nada después de abrir la cámara).
+    #    Como en Safari, el vídeo solo puede sonar dentro de un toque: si no, se queda en silencio y el iPhone se bloquea.
+    # (page.evaluate cuenta como toque en Chromium: con __sinToque solo cuenta un toque de verdad en la pantalla)
+    GESTO="(()=>{addEventListener('pointerdown',()=>window.__toque=true,true);const _p=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){if(!this.muted&&(window.__sinToque?!window.__toque:!navigator.userActivation.isActive))return Promise.reject(new DOMException('sin toque','NotAllowedError'));return _p.call(this)}})();"
+    pg=page(b,seed('gratis',CP(T)),ON+WL+IPAD+HID+GESTO);login(pg)
+    abre_cam(pg)
+    v=pg.evaluate(VID)
+    check('v11.65: al abrir la cámara el vídeo de la luz ya suena (se pone dentro del toque en «Cámara»), antes de grabar',v and v['on'] and not v['muted'],v)
+    check('v11.65: sale «Pantalla encendida» encima de los botones','Pantalla encendida' in pg.locator('.cam [data-camluz]').inner_text(),pg.locator('.cam [data-camluz]').inner_text())
+    pg.wait_for_timeout(4500)
+    check('v11.65: sin tocar nada, 4 s después sigue sonando y sin grabar',pg.evaluate(VID)['on'] and not pg.evaluate(VID)['muted'] and pg.locator('[data-cam=rec]').count()==1)
+    pg.evaluate("(()=>{window.__sinToque=true;window.__toque=false;let v=document.querySelector('video.luz-vid');v.pause();v.muted=true})()");pg.wait_for_timeout(4600)  # como hace el iPhone: lo para (llamada, otra app…)
+    t=pg.locator('.cam [data-camluz]').inner_text()
+    check('v11.65: si el móvil lo deja en silencio, pide un toque',('Toca la pantalla una vez' in t) and pg.locator('.cam [data-camluz].no').count()==1,t)
+    pg.mouse.click(195,200);pg.wait_for_timeout(800)
+    check('v11.65: con un toque vuelve a sonar y dice «Pantalla encendida»',(not pg.evaluate(VID)['muted']) and 'Pantalla encendida' in pg.locator('.cam [data-camluz]').inner_text(),pg.evaluate(VID))
+    pg.screenshot(path=OUT+'/pantalla_espera.png')
+    pg.click('[data-cam=close]');pg.wait_for_timeout(300)
+    check('v11.65: al cerrar la cámara se para el vídeo',(pg.evaluate(VID) or {}).get('on') is False)
+    pg.context.close()
+    # 6) v11.65: si no hay permiso de cámara, no se queda la pantalla encendida
+    pg=page(b,seed('gratis',CP(T)),ON+WL+HID+"navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('no','NotAllowedError')};");login(pg)
+    pg.click('[data-tab=entrenos]');pg.wait_for_selector('#view [data-tr=rec]');pg.click('#view [data-tr=rec]');pg.wait_for_timeout(800)
+    check('v11.65: sin permiso de cámara se suelta el bloqueo',pg.evaluate("!window.__wl.s||window.__wl.s.released===true") and pg.locator('.cam').count()==0)
+    pg.context.close()
     b.close()
 srv.shutdown()
 errs=[e for e in errs if 'Failed to load resource' not in e]
