@@ -9969,7 +9969,7 @@
         "<b>Grabar con el móvil en el trípode</b>: mientras la cámara está abierta, la pantalla se queda encendida sola y el móvil no se bloquea (también en iPhone y iPad antiguos), <b>también antes de darle a grabar</b>: puedes dejarlo en el trípode con la cámara abierta esperando a que el anotador empiece a grabar. Arriba de los botones lo ves: «🔆 Pantalla encendida». Si sale «👆 Toca la pantalla una vez», tócala (en algunos iPhone hace falta un toque para que no se apague). No bloquees tú el móvil ni salgas de la app mientras grabas, porque el móvil corta la cámara. Si la cámara se corta, la app la vuelve a abrir sola y la grabación sigue.",
         "<b>Si aun así se apaga la pantalla</b> (emitiendo o grabando): en iPhone y iPad ve a Ajustes › Pantalla y brillo › Bloqueo automático y pon «Nunca» durante el partido, y quita el Modo de bajo consumo, que bloquea el iPhone a los 30 segundos. En Android, Ajustes › Pantalla › Tiempo de espera de la pantalla al máximo y sin ahorro de batería. Si ya la tenías abierta, cierra la app del todo y vuelve a abrirla para tener la última versión.",
         "<b>Imagen de lado</b>: si pones el móvil en horizontal con la rotación bloqueada, la app endereza la imagen sola (botón «🔄 Imagen: Automática»), así la familia y la grabación ven el campo derecho. Si aun así sale girada, toca ese botón para elegir «Girada ↶», «Girada ↷» o «Sin girar»; la app lo recuerda.",
-        "<b>🎯 Seguir la jugada (estilo Veo)</b>: en la cámara, toca <b>«🎯 Seguir la jugada»</b>. Pon el móvil <b>quieto en el trípode</b>, lo más alto posible y en el centro de la banda, viendo <b>todo el campo</b> (si tu móvil tiene la cámara <b>0,5x</b> o gran angular, la app intenta ponerla sola). La app mira en el propio móvil dónde se mueven los jugadores y el balón y <b>se acerca y mueve la imagen sola</b> hacia la jugada, suave, como si hubiera un cámara. Lo que ves en la pantalla es lo que se graba y lo que ve la familia en el directo. Si nadie se mueve, se queda quieta; si mueves el móvil, espera a que se quede quieto. <b>No se va detrás de la gente que pasa pegada a la cámara</b> (entrenador, público) y solo cambia de lado si la jugada se ha ido de verdad, así que tarda un segundo en girar: es a propósito, para no ir y venir. Ponlo algo separado del banquillo. Se quita tocando otra vez el botón. No hace falta internet ni soporte motorizado. En móviles o iPad antiguos mira menos veces por segundo y, si van muy justos, se quita sola y avisa. Plan gratuito: <b>2 partidos o entrenos al mes</b>; con Pro, ilimitado.",
+        "<b>🎯 Seguir la jugada (estilo Veo)</b>: en la cámara, toca <b>«🎯 Seguir la jugada»</b>. Pon el móvil <b>quieto en el trípode</b>, lo más alto posible y en el centro de la banda, viendo <b>todo el campo</b> (si tu móvil tiene la cámara <b>0,5x</b> o gran angular, la app intenta ponerla sola). La app mira en el propio móvil dónde se mueven los jugadores y el balón y <b>se acerca y mueve la imagen sola</b> hacia la jugada, suave, como si hubiera un cámara. Lo que ves en la pantalla es lo que se graba y lo que ve la familia en el directo. Si nadie se mueve, se queda quieta; si mueves el móvil, espera a que se quede quieto. <b>No se va detrás de la gente que pasa pegada a la cámara</b> (entrenador, público) y solo cambia de lado si la jugada se ha ido de verdad, así que tarda un segundo en girar: es a propósito, para no ir y venir. Ponlo algo separado del banquillo, viendo las dos porterías. Con <b>«🔍 Encuadre»</b> eliges cuánto se acerca: <b>Abierto</b> (el normal: se ve más campo y el balón), <b>Medio</b> o <b>Cerrado</b> (acerca más, pero se ve menos campo y algo menos nítido); la app lo recuerda. Cuando la jugada se va hacia un lado, la imagen llega hasta esa portería. Se quita tocando otra vez el botón. No hace falta internet ni soporte motorizado. En móviles o iPad antiguos mira menos veces por segundo y, si van muy justos, se quita sola y avisa. Plan gratuito: <b>2 partidos o entrenos al mes</b>; con Pro, ilimitado.",
         "<b>Cuántos te siguen</b>: en el Directo, debajo del marcador (y en la cámara), ves cuántas personas tienen abierto ahora el enlace del directo, por ejemplo «👁 12 personas están viendo el directo ahora». Cuenta a todos los que lo miran, con vídeo o solo el marcador, y se actualiza cada 15 segundos. Quien sigue el partido desde el enlace también ve cuántos son. Gratis para todos.",
         "<b>La familia en el enlace del directo</b>: mientras ven el vídeo, su pantalla tampoco se apaga. Si giran el móvil, el vídeo se pone en grande en toda la pantalla, con el marcador dentro. Si se les corta la conexión, el vídeo vuelve solo.",
         "<b>Si te llaman mientras grabas o emites</b>: no se corta nada. La grabación y el vídeo en directo siguen; mientras dura la llamada la cámara o el sonido pueden quedarse en pausa y sale el aviso «Cámara o sonido en pausa», y la familia ve «Pausa» con el marcador al día. Tu conversación no se graba ni se oye en el directo. Al colgar, la cámara y el sonido vuelven solos (no cierres la cámara). Si contestas y sales de la app, vuelve a ella al colgar. Para que no te interrumpan, pon el móvil en modo «No molestar» o en modo avión con wifi durante el partido (en modo avión solo puedes emitir con wifi).",
@@ -10483,6 +10483,10 @@
         {
           t: "3. Toca «🎯 Seguir la jugada»",
           p: "Está debajo de «🔄 Imagen». Al ponerlo en «Sí», la imagen se acerca y se mueve sola, suave, hacia la jugada. Lo que ves es lo que se graba y lo que ve la familia en el directo.",
+        },
+        {
+          t: "4. Elige el «🔍 Encuadre»",
+          p: "Con «Seguir la jugada» puesto sale «🔍 Encuadre». «Abierto» es el normal: se ve más campo y el balón. «Medio» y «Cerrado» acercan más a la jugada. La app lo recuerda para la próxima vez.",
         },
         {
           t: "¡Listo!",
@@ -13447,6 +13451,17 @@
      va muy lento, lo apaga y avisa. Plan gratuito: LIM.sig partidos o entrenos al mes; con Pro, ilimitado. */
   const SG_ZMAX = 2,
     SG_W = 160;
+  /* v11.68: un entrenador vio su partido grabado «muy pillado»: no se veía dónde estaba el balón y en la
+     segunda parte nunca llegaba a la portería rival. Ahora el encuadre se elige (Abierto por defecto, que
+     acerca poco), llega hasta las porterías cuando la jugada se va a un lado y reacciona antes. */
+  const SG_ENC = { a: ["Abierto", 1.35], m: ["Medio", 1.65], c: ["Cerrado", SG_ZMAX] },
+    sgEnc = () => {
+      let k = "a";
+      try {
+        k = localStorage.getItem("mf_cam_enc") || "a";
+      } catch (e) {}
+      return SG_ENC[k] ? k : "a";
+    };
   /* v11.67: más fino. En un partido real (móvil bajo en la banda, de noche) se iba detrás del entrenador o de
      quien pasaba delante de la cámara, y cambiaba de sitio diez veces por segundo. Ahora:
      - mira con el doble de detalle (160 px) para ver a los jugadores del otro lado del campo;
@@ -13455,7 +13470,7 @@
      - solo cambia de sitio si la jugada se ha ido de verdad (se tiene que mantener casi 1 segundo)
        y se mueve más despacio, como un cámara. */
   /* Ventana (del tamaño del encuadre) donde más movimiento hay y cuánto zoom conviene */
-  function sgCentro(col, aw) {
+  function sgCentro(col, aw, zm) {
     let kx = Math.max(4, Math.round(aw * 0.3)),
       s = 0,
       b = -1,
@@ -13475,7 +13490,7 @@
         sw += col[x];
       }
     let sd = sw ? Math.sqrt(sx / sw) : aw / 4;
-    return { cx, z: Math.max(1, Math.min(SG_ZMAX, (aw * 0.5) / (2.2 * sd + aw * 0.06))), peso: tot };
+    return { cx, z: Math.max(1, Math.min(zm || SG_ZMAX, (aw * 0.5) / (2.2 * sd + aw * 0.06))), peso: tot };
   }
   /* Análisis de una imagen (gris, 0-255) frente a la anterior. Devuelve el centro de la jugada (0-1), el zoom
      que conviene, el balón si se ve y el movimiento por columnas (col) para ir sumándolo; o null si no hay
@@ -13547,7 +13562,8 @@
         let i = px[q],
           x = i % aw,
           y = (i / aw) | 0,
-          wy = y < ah * 0.6 ? 1 : Math.max(0.2, 1 - ((y / ah - 0.6) / 0.4) * 0.8),
+          /* v11.68: lo del fondo (lejos, jugadores pequeños) cuenta algo más, para no perder la otra portería */
+          wy = y < ah * 0.4 ? 1.4 : y < ah * 0.6 ? 1 : Math.max(0.2, 1 - ((y / ah - 0.6) / 0.4) * 0.8),
           v = wv * wy;
         col[x] += v;
         row[y] += v;
@@ -13646,15 +13662,19 @@
       for (let x = 0; x < aw; x++) S.hc[x] = S.hc[x] * dec + (a ? a.col[x] : 0);
       if (a) {
         S.hy = S.hy * 0.85 + a.cy * 0.15;
-        let C = sgCentro(S.hc, aw),
+        let zm = SG_ENC[sgEnc()][1],
+          C = sgCentro(S.hc, aw, zm),
           fx = C.cx / aw;
         if (a.ball) fx = fx * 0.75 + a.ball.x * 0.25;
+        /* v11.68: si la jugada se va hacia un lado, el encuadre llega hasta esa portería (no se queda a medias) */
+        fx = Math.max(0, Math.min(1, 0.5 + (fx - 0.5) * 1.35));
         let nx = fx * w,
           ny = (S.hy * 0.6 + 0.5 * 0.4) * h;
         /* Paciencia: un cambio grande de sitio se tiene que mantener casi 1 s antes de ir */
+        /* v11.68: medio segundo (antes casi 1 s), para llegar a tiempo a los ataques */
         if (S.tx == null || Math.abs(nx - S.tx) < w * 0.12) S.tx = S.tx == null ? nx : S.tx + (nx - S.tx) * 0.5;
-        else if (S.cand != null && Math.abs(nx - S.cand) < w * 0.1) {
-          if (t - S.candT > 800) (S.tx = nx), (S.cand = null);
+        else if (S.cand != null && Math.abs(nx - S.cand) < w * 0.14) {
+          if (t - S.candT > 450) (S.tx = nx), (S.cand = null);
         } else (S.cand = nx), (S.candT = t);
         /* En vertical se mueve menos: desde la banda casi todo pasa a la misma altura */
         S.ty = ny;
@@ -13679,11 +13699,11 @@
     let dx = S.tx - S.x,
       dy = S.ty - S.y,
       zona = (w * 0.08) / S.z,
-      paso = w * 0.008;
-    /* Más despacio que antes (v11.67): como un cámara que acompaña, sin ir y venir */
-    if (Math.abs(dx) > zona) S.x += Math.max(-paso, Math.min(paso, dx * 0.035));
+      paso = w * 0.012;
+    /* Suave como un cámara (v11.67), pero algo más rápido (v11.68) para llegar a la portería en un ataque */
+    if (Math.abs(dx) > zona) S.x += Math.max(-paso, Math.min(paso, dx * 0.05));
     if (Math.abs(dy) > zona * 0.6) S.y += Math.max(-paso * 0.5, Math.min(paso * 0.5, dy * 0.03));
-    S.z += (Math.max(1, Math.min(SG_ZMAX, S.tz)) - S.z) * 0.015;
+    S.z += (Math.max(1, Math.min(SG_ENC[sgEnc()][1], S.tz)) - S.z) * 0.015;
     let hw = w / (2 * S.z),
       hh = h / (2 * S.z);
     S.x = Math.max(hw, Math.min(w - hw, S.x));
@@ -13734,7 +13754,8 @@
   }
   const sgQueda = (c) => (esPro() || (envLee().sig || []).includes(c.id) ? "" : ` (${Math.max(0, LIM.sig - envUsados("sig"))} gratis este mes)`),
     sgBtn = (c) =>
-      `<button class="${c.sg ? "primary" : "secondary"} small" data-cam="sigue" aria-pressed="${c.sg ? "true" : "false"}">🎯 Seguir la jugada: ${c.sg ? "Sí" : "No" + sgQueda(c)}</button>`;
+      `<button class="${c.sg ? "primary" : "secondary"} small" data-cam="sigue" aria-pressed="${c.sg ? "true" : "false"}">🎯 Seguir la jugada: ${c.sg ? "Sí" : "No" + sgQueda(c)}</button>` +
+      (c.sg ? `<button class="secondary small" data-cam="encuadre" aria-label="Cuánto se acerca la imagen">🔍 Encuadre: ${SG_ENC[sgEnc()][0]}</button>` : "");
   async function sgPon(c) {
     if (c.sg) {
       sgApaga(c);
@@ -14287,7 +14308,7 @@
     camSyncOut();
     let out = c.out;
     try {
-      r = new MediaRecorder(out, { mimeType: tipo || undefined, videoBitsPerSecond: 2500000, audioBitsPerSecond: 96000 });
+      r = new MediaRecorder(out, { mimeType: tipo || undefined, videoBitsPerSecond: c.canvas.width >= 1600 || c.canvas.height >= 1600 ? 4000000 : 2500000, audioBitsPerSecond: 96000 });
     } catch (e) {
       return note("Este móvil no permite grabar vídeo desde la app.");
     }
@@ -14641,6 +14662,18 @@
       return camBotones();
     }
     if (k === "sigue") return sgPon(cam);
+    if (k === "encuadre") {
+      /* v11.68: Abierto (se ve más campo, acerca poco) → Medio → Cerrado (acerca más) */
+      let n = { a: "m", m: "c", c: "a" }[sgEnc()];
+      try {
+        localStorage.setItem("mf_cam_enc", n);
+      } catch (e) {}
+      camBotones();
+      return note(
+        n === "a" ? "Encuadre abierto: se ve más campo y el balón, y acerca poco." : n === "m" ? "Encuadre medio: acerca algo más a la jugada." : "Encuadre cerrado: acerca mucho a la jugada (se ve menos campo y algo menos nítido).",
+        true,
+      );
+    }
     if (k === "rec") return camGraba();
     if (k === "pause" || k === "resume") return camPausa(k === "pause");
     if (k === "stop") return cam.rec && ((cam.parando = true), cam.rec.stop());
