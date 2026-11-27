@@ -108,7 +108,7 @@ with sync_playwright() as p:
     f=os.path.join(OUT,'ficha-estadisticas.xlsx');dl.value.save_as(f)
     check('descarga un .xlsx',dl.value.suggested_filename.startswith('estadisticas-f7-') and dl.value.suggested_filename.endswith('.xlsx'),dl.value.suggested_filename)
     wb=xlsx(f)
-    check('5 hojas (v11.27: + Mapa)',wb.sheetnames==['Jugadores','Partidos','Acciones','Equipo','Mapa'],wb.sheetnames)
+    check('7 hojas (v11.27: + Mapa; v11.64: + Porteros, Goles por minutos)',wb.sheetnames==['Jugadores','Partidos','Acciones','Equipo','Mapa','Porteros','Goles por minutos'],wb.sheetnames)
     ws=wb['Jugadores'];H=[c.value for c in ws[1]];rows=[[c.value for c in r] for r in ws.iter_rows(min_row=2)]
     pab=[r for r in rows if r[1]=='Pablo'][0];X=lambda r,h:r[H.index(h)]
     check('Jugadores: totales de Pablo',X(pab,'Dorsal')==4 and X(pab,'Posición')=='Mediapunta' and X(pab,'Otra posición')=='Delantero centro' and X(pab,'Pie')=='Ambidiestro' and X(pab,'Partidos')==4 and X(pab,'Minutos')==200 and X(pab,'Goles')==5 and X(pab,'Robos')==3 and X(pab,'% a puerta')==80,pab)

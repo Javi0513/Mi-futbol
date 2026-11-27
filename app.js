@@ -595,6 +595,155 @@
       { games: 0, starts: 0, minutes: 0, goals: 0, amarillas: 0, rojas: 0, cap: 0, rob: 0, per: 0, tp: 0, tf: 0, par: 0, asi: 0, fal: 0 },
     );
   }
+  /* ===== Porteros y minutos de los goles (v11.64, idea de un entrenador Pro que lo llevaba en Excel) =====
+     Goles con minuto: los del Directo (eventos f = nuestro, c = rival) o, si el partido no se llevó en
+     Directo, los minutos que el entrenador apunta en «Datos del partido» (alineacion.gmin {f:[..], c:[..]}).
+     Cada gol en contra se le apunta al portero que estaba en el campo en ese minuto (el portero del
+     partido y los cambios en los que sale el portero). Plan gratuito: últimos GK_LIBRE partidos; Pro: todos. */
+  const GK_LIBRE = 5;
+  const pmOf = (m) => {
+    let al = m.alineacion || {},
+      x = liveRows[m.id];
+    return Number(al.parte) || (x && Number(x.parte_min)) || parteDe(m.modalidad, teamOf(m)) || 25;
+  };
+  const gminLista = (v) =>
+    (Array.isArray(v) ? v : [])
+      .map((n) => parseInt(n))
+      .filter((n) => n >= 0 && n <= 130)
+      .slice(0, 40);
+  /* Minutos de los goles de un partido: {f:[{m,p}], c:[{m,p}], dir: si vienen del Directo} */
+  function golMins(m) {
+    let x = liveRows[m.id],
+      ev = x && Array.isArray(x.eventos) ? x.eventos : [],
+      g = ev.filter((z) => z && (z.t === "f" || z.t === "c" || !z.t));
+    if (g.length)
+      return {
+        dir: true,
+        f: g.filter((z) => z.t !== "c").map((z) => ({ m: Number(z.m) || 0, p: z.p })),
+        c: g.filter((z) => z.t === "c").map((z) => ({ m: Number(z.m) || 0, p: z.p })),
+      };
+    let G = (m.alineacion && m.alineacion.gmin) || {};
+    return { dir: false, f: gminLista(G.f).map((n) => ({ m: n })), c: gminLista(G.c).map((n) => ({ m: n })) };
+  }
+  /* Tramo (0-5) de un minuto: cada parte en tres trozos iguales. */
+  function tramoDe(mi, p, pm) {
+    let h = p === 1 || p === 2 ? p : mi <= pm ? 1 : 2,
+      w = h === 1 ? mi : mi - pm,
+      t = w <= 0 ? 0 : Math.min(2, Math.ceil(w / (pm / 3)) - 1);
+    return (h - 1) * 3 + Math.max(0, t);
+  }
+  function tramoTxt(i, pm) {
+    let h = i < 3 ? 0 : 1,
+      t = i % 3,
+      b = (k) => Math.round((k * pm) / 3) + h * pm,
+      a = t || h ? b(t) + 1 : 0;
+    return `${a}-${b(t + 1)}'`;
+  }
+  /* Partidos que cuentan: con resultado o con goles apuntados; gratis, los últimos GK_LIBRE. */
+  function gkPartidos() {
+    let G = games()
+      .filter((m) => (m.alineacion && m.alineacion.resultado) || liveRows[m.id])
+      .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+    return esPro() ? G : G.slice(0, GK_LIBRE);
+  }
+  function gkStats(G) {
+    let R = {},
+      row = (id) => (R[id] = R[id] || { id, pj: 0, min: 0, par: 0, gc: 0, cero: 0 });
+    G.forEach((m) => {
+      let al = m.alineacion || {},
+        E = entries(m),
+        ids = E.map((e) => e.id),
+        gk0 = gkOf(al, ids),
+        pm = pmOf(m),
+        tot = pm * 2,
+        gm = golMins(m),
+        r = al.resultado;
+      E.forEach((e) => {
+        let p = stv(e, "par");
+        if (p) row(e.id).par += p;
+      });
+      if (!gk0 || !ids.includes(gk0)) return;
+      let tl = [{ id: gk0, d: 0 }];
+      mdList(al, "cambios")
+        .slice()
+        .sort((a, b) => (Number(a.m) || 0) - (Number(b.m) || 0))
+        .forEach((c) => {
+          if (c.sale === tl[tl.length - 1].id && c.entra && ids.includes(c.entra)) tl.push({ id: c.entra, d: c.ds ? pm : Number(c.m) || 0 });
+        });
+      tl.forEach((s, i) => {
+        let h = i + 1 < tl.length ? tl[i + 1].d : tot,
+          e = E.find((z) => z.id === s.id),
+          mins = tl.length === 1 ? Number(e && e.minutes) || tot : Math.max(0, h - s.d);
+        row(s.id).pj++;
+        R[s.id].min += mins;
+      });
+      let enc = {};
+      gm.c.forEach((g) => {
+        let s = tl.filter((z) => z.d < g.m || z.d === 0).pop() || tl[0];
+        enc[s.id] = (enc[s.id] || 0) + 1;
+      });
+      let gc = r ? Math.max(0, Number(r.gc) || 0) : gm.c.length,
+        resto = Math.max(0, gc - gm.c.length);
+      if (resto) enc[gk0] = (enc[gk0] || 0) + resto;
+      tl.forEach((s) => (R[s.id].gc += enc[s.id] || 0));
+      if (r && gc === 0 && tl.length === 1) R[gk0].cero++;
+    });
+    return Object.values(R)
+      .filter((x) => x.pj || x.par)
+      .sort((a, b) => b.pj - a.pj || b.min - a.min || b.par - a.par);
+  }
+  function tramoStats(G) {
+    let pm = parteDe(state.mode, curTeam()) || 25,
+      T = [0, 1, 2, 3, 4, 5].map((i) => ({ i, t: tramoTxt(i, pm), f: 0, c: 0 })),
+      sin = { f: 0, c: 0 },
+      n = 0;
+    G.forEach((m) => {
+      let g = golMins(m),
+        r = m.alineacion && m.alineacion.resultado,
+        p = pmOf(m);
+      if (g.f.length || g.c.length) n++;
+      g.f.forEach((z) => T[tramoDe(z.m, z.p, p)].f++);
+      g.c.forEach((z) => T[tramoDe(z.m, z.p, p)].c++);
+      if (r) {
+        sin.f += Math.max(0, (Number(r.gf) || 0) - g.f.length);
+        sin.c += Math.max(0, (Number(r.gc) || 0) - g.c.length);
+      }
+    });
+    let F = T.reduce((a, x) => a + x.f, 0),
+      C = T.reduce((a, x) => a + x.c, 0);
+    return { T, F, C, sin, n, pm };
+  }
+  const gkPct = (a, b) => (b ? Math.round((a * 100) / b) : 0);
+  function gkPanel() {
+    let G = gkPartidos(),
+      L = gkStats(G),
+      todos = games().filter((m) => (m.alineacion && m.alineacion.resultado) || liveRows[m.id]).length,
+      lim = !esPro() && todos > GK_LIBRE ? `<p class="hint gk-lim">Plan gratuito: se cuentan tus <b>últimos ${GK_LIBRE} partidos</b>. Con el plan Pro, toda la temporada. <button type="button" class="linkb" data-ini="pro">Ver el plan Pro</button></p>` : "";
+    let gk = L.filter((x) => x.pj);
+    let body = gk.length
+      ? `<div class="gk-list">${gk
+          .map((x) => {
+            let pc = x.par + x.gc ? gkPct(x.par, x.par + x.gc) : null;
+            return `<div class="gk-row"><div class="gk-n"><b>${esc(dname(x.id))}</b><small>${x.pj} ${x.pj === 1 ? "partido" : "partidos"} · ${x.min}'${x.cero ? ` · ${x.cero} ${x.cero === 1 ? "portería" : "porterías"} a cero` : ""}</small></div><div class="gk-k"><span><b>${x.par}</b><small>${x.par === 1 ? "parada" : "paradas"}</small></span><span class="gc"><b>${x.gc}</b><small>${x.gc === 1 ? "gol encajado" : "goles encajados"}</small></span><span><b>${x.pj ? (Math.round((x.gc / x.pj) * 10) / 10).toString().replace(".", ",") : 0}</b><small>encajados por partido</small></span><span class="pc"><b>${pc === null ? "–" : pc + "%"}</b><small>de paradas</small></span></div>${pc === null ? "" : `<div class="gk-bar" role="img" aria-label="${pc}% de tiros a puerta parados"><i style="width:${pc}%"></i></div>`}</div>`;
+          })
+          .join("")}</div><p class="hint">«% de paradas» = paradas ÷ (paradas + goles encajados). Las paradas se apuntan en el Directo (botón «Parada» del portero) o al editar el partido. Cada gol en contra cuenta para el portero que estaba en el campo en ese minuto; si cambias de portero, ponlo en «Cambios».</p>`
+      : `<p class="muted">Elige el portero en cada partido (en «Datos del partido» o en el Directo) y apunta sus paradas: aquí verás paradas, goles encajados y % de paradas de cada portero.</p>`;
+    return `<section class="panel gk-p"><div class="kicker">Porteros</div><h2 class="h2s">Paradas y goles encajados</h2>${lim}${body}</section>`;
+  }
+  function tramoPanel() {
+    let S = tramoStats(gkPartidos()),
+      mx = Math.max(1, ...S.T.map((x) => Math.max(x.f, x.c))),
+      top = S.F ? S.T.slice().sort((a, b) => b.f - a.f)[0] : null,
+      topC = S.C ? S.T.slice().sort((a, b) => b.c - a.c)[0] : null,
+      h1 = S.T.slice(0, 3).reduce((a, x) => a + x.f, 0),
+      sinTxt = S.sin.f + S.sin.c ? `<p class="hint">${S.sin.f + S.sin.c} ${S.sin.f + S.sin.c === 1 ? "gol no tiene" : "goles no tienen"} minuto y no cuentan aquí. Llévalos en el Directo o apunta el minuto en «Datos del partido» al editar el partido.</p>` : "";
+    if (!S.F && !S.C)
+      return `<section class="panel tr-p"><div class="kicker">Goles por minutos</div><h2 class="h2s">¿En qué minutos marcamos?</h2><p class="muted">Lleva los partidos en el Directo (cada gol se guarda con su minuto) o apunta el minuto de los goles al editar el partido, y aquí verás en qué tramos marcáis y encajáis más, con porcentajes.</p>${sinTxt}</section>`;
+    return `<section class="panel tr-p"><div class="kicker">Goles por minutos</div><h2 class="h2s">¿En qué minutos marcamos?</h2>${top ? `<p class="tr-top">Donde más marcáis: <b>${top.t}</b> · ${gkPct(top.f, S.F)} % de los goles${topC ? `<br>Donde más encajáis: <b>${topC.t}</b> · ${gkPct(topC.c, S.C)} %` : ""}</p>` : ""}<div class="tr-t" role="table" aria-label="Goles por tramos de minutos"><div class="tr-r tr-h" role="row"><span role="columnheader">Minutos</span><span role="columnheader">A favor</span><span role="columnheader">En contra</span></div>${S.T.map(
+      (x) =>
+        `${x.i === 3 ? '<div class="tr-sep" role="presentation">2ª parte</div>' : x.i === 0 ? '<div class="tr-sep" role="presentation">1ª parte</div>' : ""}<div class="tr-r" role="row"><span role="cell"><b>${x.t}</b></span><span role="cell" class="tr-c"><i class="tr-b f" style="width:${Math.round((x.f / mx) * 100)}%"></i><em>${x.f} · ${gkPct(x.f, S.F)} %</em></span><span role="cell" class="tr-c"><i class="tr-b c" style="width:${Math.round((x.c / mx) * 100)}%"></i><em>${x.c} · ${gkPct(x.c, S.C)} %</em></span></div>`,
+    ).join("")}</div><p class="muted tr-pie">${S.F} goles a favor y ${S.C} en contra con minuto, en ${S.n} ${S.n === 1 ? "partido" : "partidos"} · 1ª parte ${gkPct(h1, S.F)} % de vuestros goles, 2ª parte ${S.F ? 100 - gkPct(h1, S.F) : 0} %. El último tramo de cada parte incluye el descuento.</p>${sinTxt}</section>`;
+  }
   function render() {
     directoRecuerda();
     lvLocSync();
@@ -1173,7 +1322,7 @@
           })
           .join("")}</section>`
       : "";
-    return team + list + playerSummary();
+    return team + (rs.length || gs.some((m) => liveRows[m.id]) ? tramoPanel() + gkPanel() : "") + list + playerSummary();
   }
   function playerSummary() {
     let r = roster()
@@ -2031,6 +2180,31 @@
       { n: "Acciones", rows: S3, w: [12, 20, 14, 9, 7, 16, 8, 22, 20] },
       { n: "Equipo", rows: S4, w: [12, 20, 14] },
       { n: "Mapa", rows: S5, w: [12, 20, 14, 9, 7, 16, 8, 22, 20, 10, 10, 11, 11, 11, 10] },
+      ...xlGkHojas(),
+    ];
+  }
+  /* Hojas «Porteros» y «Goles por minutos» (v11.64) con fórmulas: si cambias un número se recalcula. */
+  function xlGkHojas() {
+    let G = gkPartidos(),
+      L = gkStats(G).filter((x) => x.pj),
+      P = [["Dorsal", "Portero", "Partidos", "Minutos", "Paradas", "Goles encajados", "Encajados por partido", "% de paradas", "Porterías a cero"]];
+    L.forEach((x, i) => {
+      let y = i + 2,
+        d = dorsal(state.players.find((p) => p.id === x.id));
+      P.push([d ? Number(d) : "", name(x.id), x.pj, x.min, x.par, x.gc, { f: `IF(C${y}>0,ROUND(F${y}/C${y},2),"")`, v: x.pj ? Math.round((x.gc / x.pj) * 100) / 100 : "" }, { f: `IF(E${y}+F${y}>0,E${y}/(E${y}+F${y}),"")`, v: x.par + x.gc ? x.par / (x.par + x.gc) : "", s: 6 }, x.cero]);
+    });
+    let S = tramoStats(G),
+      n = S.T.length,
+      T = [["Parte", "Minutos", "Goles a favor", "% a favor", "Goles en contra", "% en contra"]];
+    S.T.forEach((x, i) => {
+      let y = i + 2;
+      T.push([x.i < 3 ? "1ª parte" : "2ª parte", x.t, x.f, { f: `IF(SUM(C$2:C$${n + 1})>0,C${y}/SUM(C$2:C$${n + 1}),"")`, v: S.F ? x.f / S.F : "", s: 6 }, x.c, { f: `IF(SUM(E$2:E$${n + 1})>0,E${y}/SUM(E$2:E$${n + 1}),"")`, v: S.C ? x.c / S.C : "", s: 6 }]);
+    });
+    T.push(["TOTAL", "", { f: `SUM(C2:C${n + 1})`, v: S.F, s: 3 }, "", { f: `SUM(E2:E${n + 1})`, v: S.C, s: 3 }, ""]);
+    if (S.sin.f + S.sin.c) T.push(["Sin minuto", "", S.sin.f, "", S.sin.c, ""]);
+    return [
+      { n: "Porteros", rows: P, w: [8, 22, 10, 10, 10, 15, 18, 13, 15] },
+      { n: "Goles por minutos", rows: T, w: [10, 12, 14, 11, 16, 13], nf: 1 },
     ];
   }
   async function bajaArchivo(blob, fname, titulo) {
@@ -2471,6 +2645,8 @@
     ["coord", "Coordinación"],
     ["veloc", "Velocidad"],
     ["movil", "Calentamiento"],
+    ["prev", "Prevención de lesiones"],
+    ["arr", "Arrancada"],
   ];
   /* [id, categoría, dibujo, nombre, cómo se hace] — todo con el peso del cuerpo, apto para fútbol base */
   const CI_EJ = [
@@ -2514,7 +2690,76 @@
     ["tobi", "movil", "equilibrio", "Tobillos y rodillas", "Círculos con los tobillos y con las rodillas juntas, hacia un lado y hacia el otro."],
     ["trot", "movil", "sprint", "Carrera suave con brazos", "Trote suave haciendo círculos con los brazos hacia delante y hacia atrás."],
     ["pata", "movil", "zancada", "Patadas al frente", "Andando, sube la pierna estirada al frente intentando tocar la punta del pie con la mano contraria."],
+    /* v11.64 (un entrenador de fútbol sala: «ejercicios específicos por modalidad para fortalecer el tren
+       inferior, rodilla, cuádriceps, aductores… para evitar lesiones, y para la arrancada»). La zona
+       y las modalidades de cada uno están en CI_META. Peso del cuerpo, goma o un compañero. */
+    ["isoq", "prev", "sentadilla", "Sentadilla isométrica en la pared", "Espalda apoyada en la pared y rodillas dobladas a 90°, como sentado en una silla invisible. Aguanta quieto. Fortalece el cuádriceps sin impacto y calma el dolor de rodilla."],
+    ["span", "prev", "sentadilla", "Sentadilla española con goma", "Una goma fuerte atada a un poste por detrás de las rodillas. Échate hacia atrás y baja con la espalda recta y las tibias verticales; aguanta abajo 30-45 s. Protege el tendón de la rodilla (rotuliano)."],
+    ["bajx", "prev", "equilibrio", "Bajada lenta de escalón", "De pie en un escalón con una pierna, baja el otro talón al suelo en 3-4 segundos, sin que la rodilla se vaya hacia dentro. Sube con las dos. Cuádriceps y rodilla."],
+    ["bulg", "prev", "zancada", "Sentadilla búlgara", "El pie de atrás apoyado en un banco. Baja hasta que el muslo de delante quede paralelo al suelo y sube. Cambia de pierna a mitad. Cuádriceps y glúteo."],
+    ["pmu1", "prev", "equilibrio", "Peso muerto a una pierna", "A una pierna, inclínate hacia delante con la espalda recta y lleva la otra pierna atrás hasta quedar como una «T». Vuelve despacio. Isquios y equilibrio."],
+    ["pisq", "prev", "puente", "Puente de isquios a una pierna", "Boca arriba, un talón en un banco y la otra pierna arriba. Sube la cadera empujando con el talón y baja despacio. Previene roturas de isquios en los sprints."],
+    ["copc", "prev", "lateral", "Copenhague corto (rodilla apoyada)", "Plancha lateral con la RODILLA de arriba sobre un banco o en las manos de un compañero y la otra pierna debajo. Aguanta recto. Versión fácil del Copenhague: aductores e ingle."],
+    ["adba", "prev", "puente", "Apretar el balón con las rodillas", "Boca arriba con las rodillas dobladas y un balón entre ellas. Apriétalo fuerte 5 segundos y suelta. Aductores y pubis, muy útil en fútbol sala."],
+    ["cosa", "prev", "zancada", "Zancada lateral", "Pies muy abiertos. Baja hacia un lado doblando esa rodilla y con la otra pierna estirada; vuelve al centro y al otro lado. Aductores y cadera."],
+    ["glmd", "prev", "equilibrio", "Paso lateral con goma", "Una goma alrededor de las rodillas o los tobillos. Medio agachado, da pasos laterales sin juntar los pies. Glúteo medio: evita que la rodilla se vaya hacia dentro."],
+    ["ater", "prev", "salto", "Aterrizaje de salto estable", "Salta hacia arriba y cae con las dos piernas, rodillas dobladas y alineadas con los pies, sin ruido. Aguanta 2 s quieto. Previene la rotura del ligamento cruzado."],
+    ["pivx", "prev", "conos", "Frenada y cambio de dirección controlado", "Corre 5 m, frena en dos apoyos cortos con la cadera baja y sal a 45° hacia el otro lado. Rodilla siempre encima del pie. Rodilla y tobillo en los giros."],
+    ["sole", "prev", "equilibrio", "Elevación de sóleo (rodilla doblada)", "Con las rodillas un poco dobladas, sube de puntillas y baja despacio. Mejor a una pierna. Gemelo profundo y tendón de Aquiles."],
+    ["tobq", "prev", "equilibrio", "Equilibrio a una pierna con ojos cerrados", "A una pierna, rodilla un poco doblada, cierra los ojos y aguanta. Más difícil: sobre un cojín o pasando un balón. Previene esguinces de tobillo."],
+    ["f11p", "prev", "sprint", "Carrera abriendo y cerrando la cadera", "Trote suave de un cono a otro. En cada cono sube la rodilla y ábrela hacia fuera (ida) y hacia dentro (vuelta). Calentamiento preventivo tipo «11+»."],
+    ["ninv", "prev", "nordico", "Nórdico inverso (cuádriceps)", "De rodillas con el cuerpo recto, échate hacia atrás despacio todo lo que puedas sin doblar la cadera y vuelve. Cuádriceps de la pierna de golpeo."],
+    ["a5m", "arr", "sprint", "Salida explosiva de 5 metros", "Desde parado, con un pie adelantado, arranca a tope 5 m. Pasos cortos y cuerpo inclinado los primeros 3 apoyos. Descansa 30 s entre salidas."],
+    ["acai", "arr", "sprint", "Salida en caída", "De pie y recto, déjate caer hacia delante y, justo antes de perder el equilibrio, arranca en sprint 10 m. Enseña la inclinación de la arrancada."],
+    ["aret", "arr", "sprint", "Arrancada con resistencia", "Un compañero te frena con una goma o una toalla por la cintura durante 5-10 m. Empuja el suelo hacia atrás con pasos cortos y potentes."],
+    ["agir", "arr", "sprint", "Giro de 180° y arrancada", "De espaldas a la dirección de carrera. A la señal, gira rápido y arranca 5-10 m. Como cuando te pasan la espalda en una contra."],
+    ["acru", "arr", "conos", "Arrancada lateral con paso cruzado", "De lado, a la señal cruza la pierna de fuera por delante y arranca hacia ese lado 5 m. La salida del defensor cuando le desbordan."],
+    ["afre", "arr", "conos", "Arrancar y frenar en 3 metros", "Sprint de 3 m, frena en seco, vuelve a arrancar 3 m. Seis veces seguidas. Típico de fútbol sala: aceleraciones cortas y muchas frenadas."],
+    ["a20", "arr", "sprint", "Aceleración de 20 metros", "Salida desde parado y aceleración progresiva hasta 20 m, sin frenar de golpe. Recupera andando 60-90 s."],
+    ["a30", "arr", "sprint", "Sprints repetidos de 30 metros", "6 sprints de 30 m saliendo cada 30 s. Mejora repetir esfuerzos máximos como en un partido de fútbol 11."],
+    ["rsa", "arr", "conos", "Sprints repetidos con cambio de dirección", "6 sprints de 15 m (7,5 m de ida, giro y vuelta) saliendo cada 25 s. Esfuerzos cortos y repetidos de fútbol sala y fútbol 7."],
+    ["hor", "arr", "salto", "Saltos horizontales encadenados", "Tres saltos seguidos hacia delante con los pies juntos, lo más lejos posible, cayendo suave. Potencia de piernas para la arrancada."],
+    ["boun", "arr", "zancada", "Zancadas saltadas", "Carrera exagerada con zancadas muy largas, empujando fuerte y quedando un momento en el aire en cada paso, 20-30 m."],
+    ["rbal", "arr", "balon", "Arrancada a balón suelto", "El entrenador lanza o pasa el balón a un lado sin avisar y el jugador arranca a por él. Reacción y arrancada con algo que buscar, como en el partido."],
+    ["cues", "arr", "sprint", "Arrancada en cuesta", "Sprint de 10-15 m cuesta arriba. La cuesta obliga a inclinarse y empujar como en la arrancada. Vuelve andando."],
+    ["skat", "arr", "salto", "Salto lateral a una pierna (patinador)", "Salta de lado de una pierna a la otra, cae y aguanta 1 s antes del siguiente. Fuerza para arrancar hacia los lados y rodilla estable."],
   ];
+  /* Zona del cuerpo, modalidades (fs, 7, 11; vacío = todas) y si es gratis (top) de los ejercicios de
+     prevención y arrancada (v11.64). Plan gratuito: los TOP; Pro: todos. */
+  const CI_META = {
+    isoq: { z: "Rodilla · cuádriceps", top: 1 },
+    span: { z: "Tendón de la rodilla" },
+    bajx: { z: "Rodilla · cuádriceps", top: 1 },
+    bulg: { z: "Cuádriceps · glúteo" },
+    pmu1: { z: "Isquios · equilibrio", top: 1 },
+    pisq: { z: "Isquios" },
+    copc: { z: "Aductores · ingle", top: 1 },
+    adba: { z: "Aductores · pubis", m: "fs 7" },
+    cosa: { z: "Aductores · cadera" },
+    glmd: { z: "Glúteo medio · rodilla" },
+    ater: { z: "Rodilla (cruzado)", top: 1 },
+    pivx: { z: "Rodilla · tobillo", m: "fs 7" },
+    sole: { z: "Gemelo · Aquiles" },
+    tobq: { z: "Tobillo" },
+    f11p: { z: "Calentamiento preventivo", m: "7 11" },
+    ninv: { z: "Cuádriceps de golpeo", m: "7 11" },
+    a5m: { z: "Primeros pasos", m: "fs 7", top: 1 },
+    acai: { z: "Inclinación de salida", top: 1 },
+    aret: { z: "Fuerza de empuje" },
+    agir: { z: "Giro y salida", m: "fs 7" },
+    acru: { z: "Salida lateral", m: "fs 7" },
+    afre: { z: "Acelerar y frenar", m: "fs", top: 1 },
+    a20: { z: "Aceleración larga", m: "7 11" },
+    a30: { z: "Sprint repetido", m: "11" },
+    rsa: { z: "Sprint repetido", m: "fs 7" },
+    hor: { z: "Potencia de piernas" },
+    boun: { z: "Zancada", m: "7 11" },
+    rbal: { z: "Reacción", top: 1 },
+    cues: { z: "Empuje", m: "7 11" },
+    skat: { z: "Salida lateral · rodilla" },
+  };
+  const ciMod = (id) => !CI_META[id] || !CI_META[id].m || CI_META[id].m.split(" ").includes(state.mode);
+  const ciLibre = (id) => !CI_META[id] || !!CI_META[id].top || esPro();
   const ciEj = (id) => CI_EJ.find((x) => x[0] === id);
   const ciEst = (id) => {
     let e = ciEj(id);
@@ -2527,7 +2772,16 @@
     { nombre: "Velocidad y reacción", trabajo: 20, descanso: 40, series: 3, pausa: 90, est: ["skip", "reac", "5105", "spr1", "ldef"] },
     { nombre: "Prevención de lesiones", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["nord", "cope", "plat", "equi", "geme", "puen"] },
     { nombre: "Calentamiento con balón", trabajo: 40, descanso: 10, series: 1, pausa: 0, est: ["trot", "cade", "pata", "talo", "slal", "toqu"] },
+    /* v11.64: por modalidad (m). Las de prevención son gratis; las demás, Pro. */
+    { nombre: "Prevención fútbol sala: rodilla, aductores y tobillo", m: "fs", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["isoq", "copc", "adba", "glmd", "pivx", "tobq"] },
+    { nombre: "Arrancada fútbol sala: 3-5 m y cambios de dirección", m: "fs", pro: 1, trabajo: 15, descanso: 45, series: 3, pausa: 90, est: ["a5m", "acai", "agir", "afre", "acru", "rsa"] },
+    { nombre: "Prevención fútbol 7: rodilla, isquios y aductores", m: "7", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["bajx", "pmu1", "copc", "glmd", "ater", "sole"] },
+    { nombre: "Arrancada fútbol 7: salidas cortas y reacción", m: "7", pro: 1, trabajo: 15, descanso: 45, series: 3, pausa: 90, est: ["acai", "a5m", "rbal", "rsa", "a20", "hor"] },
+    { nombre: "Prevención fútbol 11 (tipo 11+): isquios, aductores y rodilla", m: "11", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["f11p", "nord", "copc", "pmu1", "ninv", "ater"] },
+    { nombre: "Arrancada y velocidad fútbol 11: 10-30 m", m: "11", pro: 1, trabajo: 20, descanso: 60, series: 3, pausa: 120, est: ["acai", "a20", "cues", "boun", "a30", "rbal"] },
+    { nombre: "Fuerza de tren inferior: cuádriceps, glúteo e isquios", pro: 1, trabajo: 40, descanso: 20, series: 3, pausa: 90, est: ["span", "bulg", "bajx", "pisq", "glmd", "sole"] },
   ].map((p) => ({ ...p, est: p.est.map(ciEst) }));
+  const ciPlantLibre = (p) => !p.pro || esPro();
   /* Tiempos libres (en segundos): mínimo y máximo de cada uno */
   const CI_LIM = { trabajo: [5, 1800], descanso: [0, 600], pausa: [0, 900], t: [5, 1800] };
   const ciClamp = (v, f) => Math.min(CI_LIM[f][1], Math.max(CI_LIM[f][0], Math.round(+v || 0)));
@@ -4907,7 +5161,11 @@
     if (e.vista === "propio")
       return `<p>Escribe un ejercicio tuyo. Se guarda dentro de este circuito.</p><label class="ci-l">Nombre<input data-cip="n" maxlength="60" placeholder="Ej.: Saltos a la comba" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-cip="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras"></textarea></label><div class="stack"><button type="button" class="primary" data-ci="propiook">Añadir al circuito</button><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
     if (e.vista === "plant")
-      return `<p>Elige una plantilla o uno de tus circuitos. Se copian sus ejercicios y tiempos, y luego puedes cambiarlos.</p><h3 class="ci-h3">Plantillas</h3>${CI_PLANT.map((p, i) => `<button type="button" class="ci-opt" data-ci="usaplant" data-i="${i}"><b>${esc(p.nombre)}</b><small>${ciMeta(p)}</small></button>`).join("")}${state.circs.length ? `<h3 class="ci-h3">Mis circuitos</h3>${state.circs.map((x) => `<button type="button" class="ci-opt" data-ci="usamis" data-cid="${x.id}"><b>${esc(x.c.nombre)}</b><small>${ciMeta(x.c)}</small></button>`).join("")}` : ""}<div class="stack"><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
+      return `<p>Elige una plantilla o uno de tus circuitos. Se copian sus ejercicios y tiempos, y luego puedes cambiarlos.</p><h3 class="ci-h3">Plantillas</h3>${CI_PLANT.map((p, i) => [p, i])
+        .filter((x) => !x[0].m || x[0].m === state.mode)
+        .sort((a, b) => (b[0].m ? 1 : 0) - (a[0].m ? 1 : 0))
+        .map(([p, i]) => `<button type="button" class="ci-opt${ciPlantLibre(p) ? "" : " lock"}" data-ci="usaplant" data-i="${i}"><b>${p.m ? `<i class="ci-mod">${esc(MN(p.m))}</i> ` : ""}${esc(p.nombre)}${ciPlantLibre(p) ? "" : ' <i class="est-pro">PRO</i>'}</b><small>${ciMeta(p)}</small></button>`)
+        .join("")}${state.circs.length ? `<h3 class="ci-h3">Mis circuitos</h3>${state.circs.map((x) => `<button type="button" class="ci-opt" data-ci="usamis" data-cid="${x.id}"><b>${esc(x.c.nombre)}</b><small>${ciMeta(x.c)}</small></button>`).join("")}` : ""}<div class="stack"><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
     return `<label class="ci-l">Nombre del circuito<input data-cif="nombre" maxlength="60" value="${esc(c.nombre)}" autocomplete="off"></label><div class="ci-tiempos"><div class="ci-tl"><span>Trabajo de cada ejercicio</span>${ciMmss("trabajo", c.trabajo)}</div><div class="ci-tl"><span>Descanso</span>${ciMmss("descanso", c.descanso)}</div><label>Series${sel("series", [1, 2, 3, 4, 5, 6], "")}</label><div class="ci-tl"><span>Pausa entre series</span>${ciMmss("pausa", c.pausa)}</div></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras. Si un ejercicio necesita otro tiempo, cámbialo en su ⏱.</p><p class="muted" data-ci-meta>${c.est.length ? ciMeta(c) : "Añade ejercicios al circuito."}</p>${
       c.est.length
         ? `<ol class="ci-est">${c.est
@@ -4947,14 +5205,26 @@
   }
   function ciBiblioHtml(conAdd) {
     let cat = (ciEd && ciEd.cat) || ciCat;
-    return `<p>${conAdd ? "Toca «Añadir» para meter un ejercicio en el circuito." : "Ejercicios con el peso del cuerpo, aptos para fútbol base. Ajusta el tiempo a la edad: con los pequeños, menos tiempo y más descanso."}</p><div class="ci-cats" role="group" aria-label="Tipo de ejercicio">${CI_CAT.map((k) => `<button type="button" class="chip${k[0] === cat ? " on" : ""}" data-ci="cat" data-k="${k[0]}" aria-pressed="${k[0] === cat}">${k[1]}</button>`).join("")}</div><div class="ci-lib">${CI_EJ.filter((x) => x[1] === cat)
-      .map(
-        (x) =>
-          `<div class="ci-ej">${ciPic(x[2])}<div class="info"><strong>${esc(x[3])}</strong><small>${esc(x[4])}</small></div>${conAdd ? `<button type="button" class="secondary small" data-ci="add" data-e="${x[0]}">${ciEd.c.est.some((s) => s.e === x[0]) ? "✓ Otra vez" : "Añadir"}</button>` : ""}</div>`,
-      )
+    return `<p>${conAdd ? "Toca «Añadir» para meter un ejercicio en el circuito." : "Ejercicios con el peso del cuerpo, aptos para fútbol base. Ajusta el tiempo a la edad: con los pequeños, menos tiempo y más descanso."}</p><div class="ci-cats" role="group" aria-label="Tipo de ejercicio">${CI_CAT.map((k) => `<button type="button" class="chip${k[0] === cat ? " on" : ""}" data-ci="cat" data-k="${k[0]}" aria-pressed="${k[0] === cat}">${k[1]}</button>`).join("")}</div>${ciPrevIntro(cat)}<div class="ci-lib">${CI_EJ.filter((x) => x[1] === cat && ciMod(x[0]))
+      .map((x) => {
+        let M = CI_META[x[0]],
+          ok = ciLibre(x[0]);
+        return `<div class="ci-ej${ok ? "" : " lock"}">${ciPic(x[2])}<div class="info"><strong>${esc(x[3])}${M && M.top && !esPro() ? ' <i class="est-top">TOP</i>' : ""}${ok ? "" : ' <i class="est-pro">PRO</i>'}</strong>${M ? `<span class="ci-zona">${esc(M.z)}${M.m ? " · " + esc(M.m.split(" ").map((k) => MN(k)).join(", ")) : ""}</span>` : ""}<small>${ok ? esc(x[4]) : "Disponible con el plan Pro."}</small></div>${conAdd ? `<button type="button" class="secondary small" data-ci="add" data-e="${x[0]}">${ok ? (ciEd.c.est.some((s) => s.e === x[0]) ? "✓ Otra vez" : "Añadir") : "🔒 Pro"}</button>` : ""}</div>`;
+      })
       .join("")}</div>${conAdd ? `<div class="stack"><button type="button" class="primary" data-ci="volver">Volver al circuito (${ciEd.c.est.length})</button></div>` : ""}`;
   }
   let ciCat = "fuerza";
+  /* Cabecera de las categorías nuevas (v11.64): para qué modalidad son y qué es gratis. */
+  function ciPrevIntro(cat) {
+    if (cat !== "prev" && cat !== "arr") return "";
+    let L = CI_EJ.filter((x) => x[1] === cat && ciMod(x[0])),
+      top = L.filter((x) => CI_META[x[0]] && CI_META[x[0]].top).length;
+    return `<p class="hint ci-prev">${
+      cat === "prev"
+        ? `Ejercicios para <b>evitar lesiones</b> de rodilla, cuádriceps, aductores, isquios y tobillo, elegidos para <b>${esc(MN())}</b>. Haz 2 o 3 a la semana, mejor al principio del entreno o en el calentamiento.`
+        : `Ejercicios para <b>arrancar más rápido</b>, elegidos para <b>${esc(MN())}</b>${state.mode === "fs" ? ": salidas de 3-5 m, frenadas y cambios de dirección, como en la pista" : state.mode === "11" ? ": aceleraciones de 10 a 30 m y sprints repetidos" : ": salidas cortas, reacción y sprints repetidos"}. Siempre con el cuerpo fresco, después de calentar.`
+    }${esPro() ? "" : ` Gratis: los ${top} marcados TOP; con el plan Pro, los ${L.length}.`} Los de las otras modalidades salen al cambiar de modalidad.</p>`;
+  }
   function ciPinta(scroll) {
     let t = ciEd.dest === "tr" ? "Circuito del entreno" : ciEd.id ? "Editar circuito" : "Nuevo circuito";
     if (ciEd.vista === "lib") t = "Biblioteca de ejercicios";
@@ -5051,6 +5321,7 @@
       return ciPinta(true);
     }
     if (k === "add") {
+      if (!ciLibre(b.dataset.e)) return note(`«${ciEj(b.dataset.e)[3]}» es del plan Pro. Gratis tienes los marcados como TOP; con Pro, todos los de prevención y arrancada.`);
       if (c.est.length >= 20) return note("Un circuito puede tener hasta 20 ejercicios.");
       c.est.push(ciEst(b.dataset.e));
       ciPinta(false);
@@ -5068,6 +5339,7 @@
     if (k === "usaplant" || k === "usamis") {
       let src = k === "usaplant" ? CI_PLANT[i] : m && m.c;
       if (!src) return;
+      if (k === "usaplant" && !ciPlantLibre(src)) return note(`«${src.nombre}» es del plan Pro. En el plan gratuito tienes las plantillas de prevención de cada modalidad; con Pro, todas.`);
       ciEd.c = ciLimpio(ciCopia(src));
       ciEd.vista = "edit";
       return ciPinta(true);
@@ -7395,6 +7667,17 @@
 <div><h3>Convocatoria</h3><div style="height:8px"></div><div class="checkline muted"><span>Jugador</span><span>Conv.</span><span>Inicial</span><span>Min.</span><span>Goles</span></div>${choices || '<div class="blank">Añade primero jugadores en Plantilla.</div>'}<h3 style="margin-top:18px">Inicial</h3><div style="margin-top:6px">${start.map((x) => `<span class="badge">${esc(name(x.id))}</span>`).join("") || '<span class="muted">Selecciona titulares.</span>'}</div>${mdEditor(d, gk)}</div></div>
 <div class="savebar"><button class="primary" data-action="save" ${state.busy ? "disabled" : ""}>${ic("check", 20)}Guardar partido</button><button class="secondary" data-action="cancel">Cancelar</button></div></section>`;
   }
+  /* Minuto de los goles (v11.64): si el partido se llevó en Directo vienen de ahí; si no, se apuntan aquí. */
+  function mdGoles(d) {
+    let x = state.editing && liveRows[state.editing],
+      ev = x && Array.isArray(x.eventos) ? x.eventos.filter((z) => z && (z.t === "f" || z.t === "c" || !z.t)) : [],
+      mm = (L) => (L.length ? L.map((n) => n + "'").join(", ") : "ninguno");
+    if (ev.length)
+      return `<h4>Minuto de los goles</h4><p class="hint">Vienen del Directo: nuestros ${mm(ev.filter((z) => z.t !== "c").map((z) => Number(z.m) || 0))} · del rival ${mm(ev.filter((z) => z.t === "c").map((z) => Number(z.m) || 0))}. Salen en «Estadísticas › ¿En qué minutos marcamos?» y en los goles encajados de cada portero.</p>`;
+    let G = d.alineacion.gmin || {},
+      inp = (k, l) => `<label><small>${l}</small><input type="text" inputmode="decimal" data-mdg="${k}" value="${esc(gminLista(G[k]).join(", "))}" placeholder="Ej.: 12, 34, 78" maxlength="160" aria-label="${l}"></label>`;
+    return `<h4>Minuto de los goles</h4><div class="formgrid">${inp("f", "Nuestros goles (minutos)")}${inp("c", "Goles del rival (minutos)")}</div><p class="hint">Separa los minutos con comas. Sirven para ver en qué minutos marcáis y encajáis más y qué portero encajó cada gol (en «Estadísticas»). Si llevas el partido en el Directo se apuntan solos.</p>`;
+  }
   /* Capitán, portero, cambios y tarjetas del partido (también se rellenan solos desde el Directo) */
   function mdEditor(d, gk) {
     let al = d.alineacion,
@@ -7440,7 +7723,7 @@
         )
         .join(""),
       rv = esc(d.rival || "Rival");
-    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}${mdVent(d)}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div>${mdStats(d)}<h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><label class="mdparte">Tiros del rival<input type="number" min="0" max="999" inputmode="numeric" data-mdr="tir" value="${Number((al.estR || {}).tir) || ""}" placeholder="0"></label><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
+    return `<div class="mdata"><h3 style="margin-top:18px">Datos del partido</h3><label class="mdparte">Minutos por parte<input id="mdParte" type="number" min="5" max="60" inputmode="numeric" value="${mdParte(d, state.editing)}"></label><div class="formgrid"><label>Capitán<select id="mdCap">${opt(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="mdGk">${opt(gk, "—")}</select></label></div><p class="hint">Si no eliges portero, es el que pongas en la portería (POR).</p><h4>Cambios</h4>${cb || '<p class="muted">Sin cambios.</p>'}${mdVent(d)}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambios">${ic("plus", 18)}Añadir cambio</button>${cb ? `<button type="button" class="secondary small" data-mdcalc="1">Calcular minutos</button>` : ""}</div><h4>Tarjetas</h4>${tj || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetas">${ic("plus", 18)}Añadir tarjeta</button></div>${mdGoles(d)}${mdStats(d)}<h3 style="margin-top:18px">${rv} (rival)</h3><p class="hint">Del rival se apunta el dorsal y, si quieres, el nombre.</p><label class="mdparte">Tiros del rival<input type="number" min="0" max="999" inputmode="numeric" data-mdr="tir" value="${Number((al.estR || {}).tir) || ""}" placeholder="0"></label><h4>Cambios del rival</h4>${cbR || '<p class="muted">Sin cambios.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="cambiosR">${ic("plus", 18)}Añadir cambio del rival</button></div><h4>Tarjetas del rival</h4>${tjR || '<p class="muted">Sin tarjetas.</p>'}<div class="hbtns"><button type="button" class="secondary small" data-mdadd="tarjetasR">${ic("plus", 18)}Añadir tarjeta del rival</button></div></div>`;
   }
   /* Ventanas de cambios en el editor del partido: resumen por parte e interruptor */
   function mdVent(d) {
@@ -9607,6 +9890,7 @@
         "<b>Color de las fichas</b>: toca a un jugador del campo y, debajo, elige su color con las muestras o moviendo la barra de color (y la de claro u oscuro). «Poner este color a todo el equipo» pinta a todos igual y «Color normal» lo deja en verde (o en amarillo si es el portero); el portero no coge el color del equipo. El color sale también en la imagen para WhatsApp.",
         "Después del partido apunta los minutos, los goles y el resultado.",
         "En <b>Datos del partido</b> (al crear o editar un partido) eliges el <b>capitán</b> y el <b>portero</b>. El capitán lleva una «C» y el portero sale de otro color en el campo y en la imagen. Si no eliges portero, es el que pongas en la portería (POR).",
+        "<b>Minuto de los goles</b>: si no llevaste el partido en el Directo, al editarlo escribe en «Minuto de los goles» los minutos de vuestros goles y de los del rival, separados por comas (por ejemplo 12, 34, 78). Sirven para «¿En qué minutos marcamos?» y para los goles encajados de cada portero, en Estadísticas. Con el Directo se apuntan solos.",
         "En «Datos del partido» también están los <b>minutos por parte</b> de ese partido (salen de la categoría o del Directo). «Calcular minutos» los usa.",
         "Ahí mismo apuntas los <b>cambios</b> (minuto, quién sale y quién entra, con su dorsal) y las <b>tarjetas</b> amarillas y rojas. «Calcular minutos» rellena los minutos de cada jugador con los titulares, los cambios y las expulsiones.",
         "Más abajo está el apartado del <b>rival</b>: sus cambios (dorsal que sale y dorsal que entra) y sus tarjetas (dorsal y nombre opcional), cada uno con su minuto.",
@@ -9703,10 +9987,12 @@
       t: "Circuitos de fuerza y coordinación",
       p: [
         "Están en la pestaña <b>Entrenos</b>. Toca un día con entrenamiento y pulsa «Añadir circuito de fuerza o coordinación».",
-        "Puedes empezar con una <b>plantilla</b> (fuerza básica, coordinación con escalera y conos, velocidad y reacción, prevención de lesiones o calentamiento con balón) y luego cambiarla a tu gusto.",
+        "Puedes empezar con una <b>plantilla</b> (fuerza básica, coordinación con escalera y conos, velocidad y reacción, prevención de lesiones, calentamiento con balón, fuerza de tren inferior y las de prevención y arrancada de tu modalidad) y luego cambiarla a tu gusto.",
         "Escribe el tiempo de <b>trabajo</b> de cada ejercicio, el <b>descanso</b> y la pausa entre series en <b>minutos y segundos</b>, el que tú quieras (por ejemplo 0 min 45 s o 2 min 30 s; hasta 30 min por ejercicio), y elige cuántas <b>series</b>. La app te dice cuánto dura el circuito.",
         "Si un ejercicio necesita <b>otro tiempo</b>, escríbelo en su ⏱ Tiempo, debajo del ejercicio. Si lo dejas vacío usa el tiempo general. «Usar el general» le quita el tiempo propio.",
-        "«Ejercicio de la biblioteca»: hay 40 ejercicios con su dibujo y cómo se hacen, por tipos: fuerza, core, coordinación, velocidad y calentamiento. Todos con el peso del cuerpo, aptos para fútbol base.",
+        "«Ejercicio de la biblioteca»: hay 70 ejercicios con su dibujo y cómo se hacen, por tipos: fuerza, core, coordinación, velocidad, calentamiento, <b>prevención de lesiones</b> y <b>arrancada</b>. Todos con el peso del cuerpo, una goma o un compañero, aptos para fútbol base.",
+        "<b>Prevención de lesiones</b> (rodilla, cuádriceps, aductores, isquios y tobillo) y <b>Arrancada</b> (salir más rápido): cada ejercicio dice qué zona trabaja y para qué modalidad es, y solo te salen los de la modalidad en la que estás. En <b>fútbol sala</b>, salidas de 3-5 m, frenadas, cambios de dirección y aductores; en <b>fútbol 11</b>, aceleraciones de 10 a 30 m, sprints repetidos e isquios; en <b>fútbol 7</b>, una mezcla de los dos. Hay también plantillas de cada modalidad: «Prevención…» y «Arrancada…».",
+        "Plan gratuito: los ejercicios de prevención y arrancada marcados <b>TOP</b> (5 de prevención y 4 de arrancada) y la plantilla de prevención de tu modalidad. Con el <b>plan Pro</b>, los 30 y todas las plantillas (arrancada de cada modalidad y fuerza de tren inferior).",
         "«Ejercicio propio»: escribe uno tuyo con su explicación. Con las flechas cambias el orden y con la ✗ lo quitas.",
         "Pulsa <b>▶ Iniciar</b> en el campo: sale un cronómetro grande que pita al empezar cada ejercicio y en los 3 últimos segundos, y te dice qué ejercicio viene después. Tienes Pausa, Atrás y Saltar. La pantalla no se apaga mientras corre.",
         "Marca «Guardar también en Mis circuitos» para reutilizarlo otro día. Abajo, en <b>Circuitos</b>, tienes tus circuitos guardados y la biblioteca de ejercicios.",
@@ -9773,6 +10059,7 @@
         "En <b>Fútbol sala</b>, encima de la pizarra tienes el botón <b>«Estrategias de fútbol sala»</b>: una biblioteca de 34 jugadas a balón parado para ensayar en los entrenos.",
         "Están por tipos: <b>córners</b>, <b>saques de banda</b>, <b>faltas y doble penalti</b>, <b>saque de centro</b>, <b>saque del portero</b>, <b>5x4 con portero-jugador</b> y cómo <b>defender</b> el córner y el 5x4. Con «Las más usadas» ves solo las TOP.",
         "Toca una y se carga en la pizarra moviéndose sola, paso a paso. Encima del campo te dice qué pasa en cada paso, y en «Claves para que salga bien» tienes los detalles. Las letras de las fichas son los puestos: P portero, PJ portero-jugador, C cierre, AI y AD alas izquierdo y derecho, PV pívot.",
+        "Cada jugada dura unos <b>8-10 segundos</b> y es completa: primero se ve la colocación, luego el <b>amago</b> de los que se desmarcan (dan un paso hacia el lado contrario y su marca se va con ellos), la jugada, y al final qué pasa después del remate: quién entra al <b>rechace</b> y quién se queda atrás <b>vigilando la contra</b>. En las defensivas, cómo se sale a la contra al recuperar. El balón sale cuando el compañero ya está llegando, como en un partido. Lo mismo en las jugadas a balón parado (ABP) de fútbol 7 y 11.",
         "Con ‹ › vas paso a paso para explicarla con calma, y con ▶ la vuelves a ver. Puedes mover las fichas, cambiar colores o poner a tus jugadores, y sacar la <b>imagen</b> o el <b>vídeo</b> para mandarlo al grupo. Si cargas una estrategia y tenías otra jugada, con «Deshacer» la recuperas. La X de la explicación la quita.",
         "Las <b>10 más usadas</b> (TOP) son gratis para todos. Con el <b>plan Pro</b> tienes las 34.",
       ],
@@ -9783,6 +10070,9 @@
         "En <b>Estadísticas</b> ves el ranking de tus jugadores por goles, minutos, partidos y titularidades.",
         "En <b>Resultados</b> toca cualquier partido para ver su resumen (minutos, goles y estadísticas) y mandarlo por WhatsApp. Con «Resumen de la temporada» mandas todos los partidos de una vez.",
         "Debajo de cada jugador salen también sus <b>robos, pérdidas, tiros, paradas, asistencias y faltas</b> de toda la temporada (solo los que tenga apuntados).",
+        "<b>¿En qué minutos marcamos?</b>: cada parte se divide en tres tramos (en fútbol 11, 0-15', 16-30', 31-45'…; en fútbol 7 y sala según los minutos de tu categoría) y ves cuántos goles marcáis y encajáis en cada tramo, con su <b>porcentaje</b>, y dónde más marcáis y más encajáis. Salen los goles con minuto: los del Directo se apuntan solos; si no llevaste el partido en el Directo, al editarlo escribe los minutos en «Minuto de los goles».",
+        "<b>Porteros</b>: de cada portero, los partidos y minutos en la portería, sus <b>paradas</b>, los <b>goles encajados</b>, los encajados por partido, el <b>% de paradas</b> (paradas ÷ paradas + goles encajados) y las porterías a cero. Elige el portero en «Datos del partido» o en el Directo y apunta sus paradas con el botón «Parada». Si cambias de portero en el partido, pon el cambio: cada gol en contra cuenta para el que estaba en la portería en ese minuto.",
+        "Las dos cosas salen también en el <b>Excel</b> (hojas «Porteros» y «Goles por minutos», con fórmulas). Plan gratuito: con tus <b>últimos 5 partidos</b>; con el plan Pro, toda la temporada.",
         "<b>Distancia recorrida</b>: no la medimos. Hace falta un GPS o un reloj deportivo puesto en cada jugador; con el móvil del entrenador no se puede saber.",
         "Con la lupa buscas cualquier jugador o partido de todas tus modalidades.",
       ],
@@ -9791,8 +10081,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», enviar por WhatsApp <b>3 jugadas de la pizarra al mes</b> (guardarlas en el móvil es gratis siempre), en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, y las fases del juego de la semana actual. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11 y las fases del juego de las 6 últimas semanas.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», enviar por WhatsApp <b>3 jugadas de la pizarra al mes</b> (guardarlas en el móvil es gratis siempre), en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, las fases del juego de la semana actual, los <b>porteros y los goles por minutos</b> de tus <b>últimos 5 partidos</b>, y los ejercicios de <b>prevención y arrancada</b> TOP (9) con la plantilla de prevención de tu modalidad. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11, las fases del juego de las 6 últimas semanas, porteros y goles por minutos de toda la temporada, y los 30 ejercicios de prevención y arrancada con todas las plantillas de cada modalidad.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -9983,6 +10273,126 @@
     ftBorrador = true;
   }
   const FTUT = {
+    porteros: {
+      t: "Porteros y goles por minutos",
+      v: "11.64",
+      p: "Paradas y goles encajados de cada portero, y en qué minutos marcáis y encajáis más, con porcentajes.",
+      pasos: [
+        {
+          t: "Porteros y goles por minutos",
+          p: "Te enseño dónde ver las paradas y los goles encajados de cada portero, y en qué tramos del partido marcáis más. No se cambia nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft) return;
+            state.live = null;
+            state.tab = "resumen";
+            render();
+          },
+        },
+        {
+          el: "#view .tr-p",
+          t: "1. ¿En qué minutos marcamos?",
+          p: "En «Estadísticas», cada parte va en tres tramos (en fútbol 11: 0-15', 16-30', 31-45'…). Ves los goles a favor y en contra de cada tramo con su %, y arriba dónde más marcáis y más encajáis.",
+        },
+        {
+          t: "2. ¿De dónde sale el minuto?",
+          p: "Los goles del Directo llevan su minuto solos. Si un partido no lo llevaste en el Directo, edítalo (lápiz ✏️) y en «Datos del partido › Minuto de los goles» escribe los minutos separados por comas.",
+        },
+        {
+          el: "#view .gk-p",
+          t: "3. Porteros",
+          p: "De cada portero: partidos y minutos en la portería, paradas, goles encajados, encajados por partido, % de paradas y porterías a cero. El portero se elige en «Datos del partido» o en el Directo, y las paradas con el botón «Parada».",
+        },
+        {
+          t: "4. Si cambias de portero",
+          p: "Pon el cambio en el partido (minuto, sale y entra). Cada gol en contra cuenta para el portero que estaba en la portería en ese minuto.",
+        },
+        {
+          el: '#view [data-xl="go"]',
+          t: "5. También en Excel",
+          p: "«Exportar a Excel» trae las hojas «Porteros» y «Goles por minutos», con fórmulas: si cambias un número, se recalculan los porcentajes.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Plan gratuito: con tus últimos 5 partidos. Con el plan Pro, toda la temporada.",
+        },
+      ],
+    },
+    prevencion: {
+      t: "Ejercicios de prevención y arrancada",
+      v: "11.64",
+      p: "Ejercicios para evitar lesiones (rodilla, cuádriceps, aductores…) y para arrancar más rápido, por modalidad.",
+      si: () => entrenosOn() && state.ciOk,
+      pasos: [
+        {
+          t: "Prevención y arrancada",
+          p: "Te enseño dónde están los nuevos ejercicios para evitar lesiones y para la arrancada, elegidos para tu modalidad. No se cambia nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft) return;
+            state.live = null;
+            state.tab = "entrenos";
+            render();
+          },
+        },
+        {
+          el: "#view .ci-panel",
+          t: "1. En «Entrenos › Circuitos»",
+          p: "Abre la biblioteca de ejercicios desde el apartado «Circuitos», o al crear un circuito en un entreno con «Ejercicio de la biblioteca».",
+        },
+        {
+          t: "2. Dos tipos nuevos",
+          p: "«Prevención de lesiones»: rodilla, cuádriceps, aductores, isquios y tobillo. «Arrancada»: salidas cortas, frenadas, cambios de dirección y sprints. Cada ejercicio dice qué zona trabaja y para qué modalidad es.",
+        },
+        {
+          t: "3. Según tu modalidad",
+          p: "Solo te salen los de la modalidad en la que estás: en fútbol sala, salidas de 3-5 m y aductores; en fútbol 11, aceleraciones de 10-30 m e isquios; en fútbol 7, una mezcla.",
+        },
+        {
+          t: "4. Plantillas listas",
+          p: "Al crear un circuito, arriba tienes «Prevención…» y «Arrancada…» de tu modalidad: 6 ejercicios con sus tiempos, que luego puedes cambiar. Haz 2 o 3 sesiones de prevención a la semana.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Plan gratuito: los marcados TOP y la plantilla de prevención de tu modalidad. Con el plan Pro, los 30 ejercicios y todas las plantillas.",
+        },
+      ],
+    },
+    jugadas: {
+      t: "Jugadas de balón parado más largas",
+      v: "11.64",
+      p: "Las estrategias de fútbol sala y las ABP duran ahora 8-10 s: colocación, amago, jugada, rechace y contra.",
+      pasos: [
+        {
+          t: "Jugadas más completas",
+          p: "Te enseño las jugadas a balón parado nuevas: más largas y más reales. No se cambia nada de tu pizarra mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (state.draft) return;
+            state.live = null;
+            state.tab = "pizarra";
+            render();
+          },
+        },
+        {
+          el: '#view [data-b="est"]',
+          t: "1. Abre la biblioteca",
+          p: "Encima del campo: «Estrategias de fútbol sala» en sala o «Jugadas a balón parado (ABP)» en fútbol 7 y 11. Toca una y se mueve sola.",
+        },
+        {
+          t: "2. Más despacio y completa",
+          p: "Primero ves la colocación, luego el amago de los que se desmarcan (su marca se va con ellos), la jugada y, al final, quién entra al rechace y quién se queda vigilando la contra. Dura unos 8-10 segundos.",
+        },
+        {
+          t: "3. Paso a paso",
+          p: "Encima del campo se explica cada paso. Con ‹ › vas paso a paso para explicarla con calma en el entreno, y con ▶ la vuelves a ver.",
+        },
+        {
+          t: "¡Listo!",
+          p: "Gratis: las 10 estrategias TOP de sala y las 5 ABP TOP. Con el plan Pro, las 34 y las 14.",
+        },
+      ],
+    },
     enviar: {
       t: "Enviar la jugada por WhatsApp",
       v: "11.61",
@@ -11202,6 +11612,15 @@
       delete F.lv;
       F[ds.mdfal] = v;
       d.alineacion.faltas = F;
+    }
+    if (ds.mdg) {
+      let L = (String(e.target.value).match(/\d+/g) || []).map(Number).filter((n) => n <= 130).sort((a, b) => a - b).slice(0, 40),
+        G = { ...(d.alineacion.gmin || {}) };
+      if (L.length) G[ds.mdg] = L;
+      else delete G[ds.mdg];
+      if (G.f || G.c) d.alineacion.gmin = G;
+      else delete d.alineacion.gmin;
+      e.target.value = L.join(", ");
     }
     if (ds.mdr) {
       let v = Math.min(999, Math.max(0, parseInt(e.target.value) || 0));
@@ -15337,20 +15756,46 @@
   const ease = (f) => (f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2);
   const ANIM_D = 1100,
     ANIM_H = 350;
+  /* v11.64: las estrategias de fútbol sala y las ABP duran unos 8-10 s (antes 3-5 s): se ve la
+     colocación un momento, cada paso va más despacio y el balón sale cuando el compañero ya
+     está llegando (como en un partido de verdad), no a la vez que todos. Las jugadas propias, igual. */
+  const EST_T0 = 1000,
+    EST_TOT = 9300;
+  function animT(b) {
+    if (!b.est) return { t0: 0, D: ANIM_D, H: ANIM_H, est: false };
+    let n = Math.max(1, b.steps - 1),
+      paso = Math.min(2450, Math.max(1500, (EST_TOT - EST_T0) / n));
+    return { t0: EST_T0, D: Math.round(paso * 0.78), H: Math.round(paso * 0.22), est: true };
+  }
+  /* Paso que se está viendo a los t ms (para el texto de la explicación). */
+  function animPaso(b, t) {
+    let T = animT(b),
+      u = t - T.t0;
+    if (u < 0) return 0;
+    let seg = Math.floor(u / (T.D + T.H));
+    return Math.min(b.steps - 1, seg + (u % (T.D + T.H) > T.D * 0.5 ? 1 : 0));
+  }
   /* Posición de cada ficha a los t ms de reproducir la jugada. */
   function animPos(b, t) {
-    t = Math.max(0, t);
-    let seg = Math.floor(t / (ANIM_D + ANIM_H)),
+    let T = animT(b);
+    t = Math.max(0, t - T.t0);
+    let seg = Math.floor(t / (T.D + T.H)),
       last = b.steps - 1;
     if (seg >= last) return (it) => it.p[last];
-    let f = ease(Math.min(1, (t - seg * (ANIM_D + ANIM_H)) / ANIM_D));
+    let r = Math.min(1, (t - seg * (T.D + T.H)) / T.D),
+      f = ease(r),
+      fb = T.est ? ease(Math.min(1, Math.max(0, (r - 0.3) / 0.7))) : f;
     return (it) => {
       let a = it.p[seg],
-        c = it.p[seg + 1];
-      return [a[0] + (c[0] - a[0]) * f, a[1] + (c[1] - a[1]) * f];
+        c = it.p[seg + 1],
+        g = it.k === "ball" ? fb : f;
+      return [a[0] + (c[0] - a[0]) * g, a[1] + (c[1] - a[1]) * g];
     };
   }
-  const animTotal = (b) => (b.steps - 1) * (ANIM_D + ANIM_H);
+  const animTotal = (b) => {
+    let T = animT(b);
+    return T.t0 + (b.steps - 1) * (T.D + T.H);
+  };
   /* Campo en horizontal cuando la pantalla es más ancha que alta (tablet, PC, móvil girado). */
   function boardLand() {
     return window.innerWidth > window.innerHeight;
@@ -15462,7 +15907,7 @@
       }
       let t = Math.max(0, now - t0);
       if (boardRedraw) boardRedraw(animPos(b, t));
-      if (b.est) estStepTxt(Math.min(b.steps - 1, Math.floor(t / (ANIM_D + ANIM_H)) + (t % (ANIM_D + ANIM_H) > ANIM_D * 0.5 ? 1 : 0)));
+      if (b.est) estStepTxt(animPaso(b, t));
       if (t >= animTotal(b) + 250) {
         b.step = b.steps - 1;
         saveBoard();
@@ -15538,7 +15983,142 @@
   const estG = () => (state.mode === "fs" ? { W: 20, H: 40, s: 1 } : { W: 68, H: 105, s: 2.6 });
   let EST = EST_FS;
   const estLib = () => (EST = state.mode === "fs" ? EST_FS : EST_ABP);
-  const estDe = (id) => estLib().list.find((e) => e.id === id);
+  const estDe = (id) => {
+    let e = estLib().list.find((x) => x.id === id);
+    return e && estAmplia(e);
+  };
+  /* v11.64 (un entrenador: «las jugadas son muy cortas, no sirven; 8-10 s y más completas»):
+     cada estrategia y ABP se alarga con dos pasos más, calculados de la propia jugada:
+     · Amago: antes de arrancar, los que se desmarcan dan un paso hacia el lado contrario y su marca
+       se va con ellos (así se ve por qué quedan libres).
+     · Final: tras el remate, los de cerca entran al rechace y el más retrasado se queda vigilando
+       la contra; en las defensivas, el equipo sale hacia arriba y el balón busca al más adelantado. */
+  const estAmpC = {};
+  function estAmplia(e) {
+    let key = state.mode + ":" + e.id;
+    if (estAmpC[key]) return estAmpC[key];
+    let G = estG(),
+      k = G.s,
+      n = estPasos(e),
+      def = e.cat === "defensa",
+      atk = def ? "r" : "o",
+      dfn = def ? "o" : "r",
+      cl = (q) => [Math.round(Math.min(G.W - 0.3, Math.max(0.3, q[0])) * 10) / 10, Math.round(Math.min(G.H + 0.6, Math.max(-0.6, q[1])) * 10) / 10],
+      P = e.it.map((i) => {
+        let p = i[2].map((q) => q.slice());
+        while (p.length < n) p.push(p[p.length - 1].slice());
+        return p;
+      }),
+      bi = e.it.findIndex((i) => i[0] === "b"),
+      ball0 = bi >= 0 ? P[bi][0] : [G.W / 2, G.H / 2],
+      gk = (i) => i[1] === "P" && (i[0] === "o" ? i[2][0][1] > G.H * 0.8 : i[2][0][1] < G.H * 0.2),
+      d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]),
+      nom = (L) => {
+        let t = L.map((x) => (state.mode === "fs" || x === "P" ? x : "el " + x));
+        return t.length > 1 ? t.slice(0, -1).join(", ") + " y " + t[t.length - 1] : t[0] || "";
+      },
+      S = e.s.slice();
+    /* Amago (nuevo paso, antes de la primera arrancada) */
+    let run = [],
+      j = 0;
+    for (; j < n - 1 && !run.length; j++) {
+      let bj = bi >= 0 ? P[bi][j] : ball0;
+      e.it.forEach((i, x) => {
+        if (i[0] !== atk || gk(i)) return;
+        let a = P[x][j],
+          b = P[x][j + 1];
+        if (d(a, b) > 1.4 * k && d(a, bj) > 1.2 * k) run.push(x);
+      });
+    }
+    j--;
+    if (run.length) {
+      let am = P.map((p) => p[j].slice()),
+        mv = {};
+      run.forEach((x) => {
+        let a = P[x][j],
+          b = P[x][j + 1],
+          l = d(a, b),
+          u = [(b[0] - a[0]) / l, (b[1] - a[1]) / l],
+          s2 = 0.9 * k;
+        am[x] = cl([a[0] - u[0] * s2 + u[1] * 0.25 * k, a[1] - u[1] * s2 - u[0] * 0.25 * k]);
+        mv[x] = [am[x][0] - a[0], am[x][1] - a[1]];
+      });
+      e.it.forEach((i, x) => {
+        if (i[0] !== dfn || gk(i)) return;
+        let best = -1,
+          bd = 3.2 * k;
+        run.forEach((r) => {
+          let dd = d(P[x][j], P[r][j]);
+          if (dd < bd) (bd = dd), (best = r);
+        });
+        if (best >= 0) am[x] = cl([P[x][j][0] + mv[best][0] * 0.7, P[x][j][1] + mv[best][1] * 0.7]);
+      });
+      P.forEach((p, x) => p.splice(j + 1, 0, am[x]));
+      let qn = nom(run.map((x) => e.it[x][1]).filter(Boolean));
+      S.splice(
+        j + 1,
+        0,
+        def
+          ? `Los rivales amagan antes de arrancar${qn ? " (" + qn + ")" : ""}: no te lo creas, aguanta tu marca sin perder de vista el balón.`
+          : `Amago antes de arrancar: ${qn} ${run.length > 1 ? "dan" : "da"} un paso hacia el lado contrario y ${run.length > 1 ? "sus marcas se van" : "su marca se va"} detrás. Desde ahí, arrancada de verdad.`,
+      );
+    }
+    /* Paso final */
+    let m = P[0].length - 1,
+      L = P.map((p) => p[m].slice()),
+      fin = L.map((q) => q.slice()),
+      bl = bi >= 0 ? L[bi] : null;
+    if (def) {
+      let ours = e.it.map((i, x) => x).filter((x) => e.it[x][0] === "o" && !gk(e.it[x]));
+      ours.forEach((x) => (fin[x] = cl([L[x][0], L[x][1] - 5 * k])));
+      let up = ours.slice().sort((a, b) => L[a][1] - L[b][1])[0];
+      if (up !== undefined) {
+        fin[up] = cl([L[up][0] + (L[up][0] < G.W / 2 ? -1 : 1) * 1.5 * k, L[up][1] - 7 * k]);
+        if (bl) fin[bi] = cl([fin[up][0] + 0.4 * k, fin[up][1] - 0.6 * k]);
+      }
+      e.it.forEach((i, x) => {
+        if (i[0] === "r" && !gk(i)) fin[x] = cl([L[x][0], L[x][1] - 3 * k]);
+      });
+      S.push(`Balón recuperado: todo el equipo sale hacia arriba a la vez y el pase busca ${e.it[up] ? (state.mode === "fs" ? "a " : "al ") + e.it[up][1] : "al compañero más adelantado"} para salir a la contra.`);
+    } else {
+      let gol = bl && bl[1] < 1.2 * k && Math.abs(bl[0] - G.W / 2) < 3 * k,
+        ats = e.it.map((i, x) => x).filter((x) => e.it[x][0] === "o" && !gk(e.it[x])),
+        shooter = gol ? ats.slice().sort((a, b) => d(P[a][m - 1], P[bi][m - 1]) - d(P[b][m - 1], P[bi][m - 1]))[0] : -1,
+        cand = ats.filter((x) => x !== shooter),
+        back = cand.slice().sort((a, b) => L[b][1] - L[a][1])[0],
+        near = [],
+        mouth = [G.W / 2, 2.4 * k];
+      /* Los que la explicación ya deja atrás vigilando, no entran al rechace. */
+      let ult = e.s[e.s.length - 1] || "",
+        vigL = /vigila|contra|atrás/i.test(ult) ? ats.map((x) => e.it[x][1]).filter((l) => l && new RegExp("(^|[^0-9A-Za-z])" + l + "([^0-9A-Za-z]|$)").test(ult.replace(/^.*?(?=[^.]*(vigila|contra|atrás))/i, ""))) : [],
+        vig = vigL.length ? new RegExp("^(" + vigL.join("|") + ")$") : /^\b$/;
+      /* Si todos están en el área, el que vigila la contra es el que sacó. */
+      if (back !== undefined && L[back][1] < 6 * k) back = cand.slice().sort((a, b) => d(P[a][0], ball0) - d(P[b][0], ball0))[0];
+      ats.forEach((x) => {
+        if (x === back || x === shooter || vig.test(e.it[x][1])) return;
+        if (d(L[x], mouth) < 9 * k) {
+          near.push(x);
+          fin[x] = cl([L[x][0] + (mouth[0] - L[x][0]) * 0.4, L[x][1] + (mouth[1] - L[x][1]) * 0.4]);
+        }
+      });
+      if (back !== undefined) fin[back] = cl([L[back][0] + (G.W / 2 - L[back][0]) * 0.3, L[back][1] + (state.mode === "fs" ? 5 : 12)]);
+      e.it.forEach((i, x) => {
+        if (i[0] === "r" && !gk(i)) fin[x] = cl([L[x][0] + (mouth[0] - L[x][0]) * 0.2, L[x][1] + (mouth[1] - L[x][1]) * 0.2]);
+        if (i[0] === "r" && gk(i) && bl) fin[x] = cl([L[x][0] + (Math.min(Math.max(bl[0], G.W / 2 - 1.5 * k), G.W / 2 + 1.5 * k) - L[x][0]) * 0.6, L[x][1]]);
+      });
+      if (gol && bl) fin[bi] = cl([bl[0], -0.6]);
+      let qn = nom(near.map((x) => e.it[x][1]).filter(Boolean)),
+        qb = back !== undefined ? nom([e.it[back][1]]) : "";
+      S.push(
+        gol
+          ? `Después del remate: ${qn ? qn + (near.length > 1 ? " entran" : " entra") + " a por el rechace por si el portero la saca" : "todos atentos al rechace"}${qb ? " y " + qb + " se queda atrás vigilando la contra" : ""}.`
+          : `Sigue la jugada: ${qn ? qn + (near.length > 1 ? " atacan" : " ataca") + " el área" : "el equipo acompaña"}${qb ? " y " + qb + " se queda atrás por si hay que defender la contra" : ""}.`,
+      );
+    }
+    P.forEach((p, x) => p.push(fin[x]));
+    let r = { ...e, it: e.it.map((i, x) => [i[0], i[1], P[x]]), s: S };
+    return (estAmpC[key] = r);
+  }
   const estLibre = (e) => !!e.top || plan === "pro";
   const estCatN = (c) => (estLib().cats.find((x) => x[0] === c) || [c, c])[1];
   /* Fase del juego de una estrategia (para «Mis jugadas»): casi todas son ABP */

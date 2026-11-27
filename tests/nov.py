@@ -9,7 +9,7 @@ def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 VER=json.load(open(os.path.join(APP,'version.json'),encoding='utf-8'))
 SEED="window.__seed={futbol_personal_jugadores:[{id:'j1',user_id:'u1',nombre:'Leo',dorsal:10,modalidad:'f7'}],futbol_personal_partidos:[],perfiles:[{id:'u1',plan:'gratis'}]};"
 def abre(b,ctx=None,android=False,ls=None):
-    ls=dict({'mf_ftut:campo':'1','mf_ftut:liga':'1','mf_ftut:mapa':'1','mf_ftut:entdir':'1','mf_ftut:anograb':'1','mf_ftut:camext':'1','mf_ftut:sigue':'1','mf_ftut:enviar':'1'},**(ls or {}))  # el aviso de tutoriales se prueba en ftut.py
+    ls=dict({'mf_ftut:campo':'1','mf_ftut:liga':'1','mf_ftut:mapa':'1','mf_ftut:entdir':'1','mf_ftut:anograb':'1','mf_ftut:camext':'1','mf_ftut:sigue':'1','mf_ftut:enviar':'1','mf_ftut:porteros':'1','mf_ftut:prevencion':'1','mf_ftut:jugadas':'1'},**(ls or {}))  # el aviso de tutoriales se prueba en ftut.py
     ctx=ctx or b.new_context(viewport={'width':390,'height':844},service_workers='block')
     pg=ctx.new_page();pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.add_init_script("window.__probarNovedades=true;"+SEED+(("try{if(!sessionStorage.getItem('__ls')){sessionStorage.setItem('__ls','1');"+"".join("localStorage.setItem(%r,%r);"%kv for kv in ls.items())+"}}catch(e){}") if ls else "")+("Object.defineProperty(document,'referrer',{get:()=>'android-app://com.monetizaplus.mifutbol'});" if android else ""))
@@ -59,6 +59,7 @@ with sync_playwright() as p:
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.49 (mapa de calor después del partido)',all(w in body for w in ('Mapa de calor también después del partido','Dónde fue cada acción','2 partidos al mes')))
+    check('v11.64: jugadas más largas, porteros y prevención, con sus tutoriales',all(w in body for w in ('8-10 segundos','Porteros y goles por minutos','prevención de lesiones y de arrancada')) and all(pg.locator('#infoBody [data-ftut=%s]'%k).count()>=1 for k in ('jugadas','porteros','prevencion')))
     check('y la de la v11.63 (árbol del club sin textos encimados)',all(w in body for w in ('Árbol del club más claro','fila aparte')))
     check('y la de la v11.62 (seguir la jugada desde el anotador)',all(w in body for w in ('también desde el anotador','Ver todo el campo')))
     check('y la de la v11.59 (cámara que sigue la jugada)',all(w in body for w in ('Seguir la jugada','estilo Veo','2 partidos o entrenos al mes')) and pg.locator('#infoBody [data-ftut=sigue]').count()==1)

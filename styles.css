@@ -7516,3 +7516,159 @@ body.cam-on #info {
     height: 36px;
   }
 }
+/* v11.64: porteros y goles por minutos (Estadísticas) */
+.gk-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.gk-row {
+  background: var(--s2);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--draw);
+  border-radius: 14px;
+  padding: 12px;
+}
+.gk-n b {
+  display: block;
+  font-size: 17px;
+}
+.gk-n small {
+  color: var(--mut);
+}
+.gk-k {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.gk-k span {
+  text-align: center;
+}
+.gk-k b {
+  display: block;
+  font: 800 26px/1.1 var(--fd);
+}
+.gk-k small {
+  display: block;
+  color: var(--mut);
+  font-size: 11.5px;
+  line-height: 1.2;
+}
+.gk-k .gc b {
+  color: var(--loss);
+}
+.gk-k .pc b {
+  color: var(--lime);
+}
+.gk-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(251, 113, 133, 0.55);
+  overflow: hidden;
+  margin-top: 10px;
+}
+.gk-bar i {
+  display: block;
+  height: 100%;
+  background: var(--lime);
+}
+.gk-lim .linkb {
+  margin-left: 4px;
+}
+.tr-top {
+  margin: 10px 0 12px;
+  line-height: 1.5;
+}
+.tr-top b {
+  color: var(--lime);
+}
+.tr-t {
+  display: grid;
+  gap: 6px;
+}
+.tr-r {
+  display: grid;
+  grid-template-columns: 64px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.tr-h span {
+  color: var(--mut);
+  font-size: 12px;
+  font-weight: 600;
+}
+.tr-sep {
+  color: var(--mut);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+}
+.tr-c {
+  position: relative;
+  height: 28px;
+  background: var(--s2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tr-b {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 8px;
+}
+.tr-b.f {
+  background: rgba(43, 227, 106, 0.45);
+}
+.tr-b.c {
+  background: rgba(251, 113, 133, 0.45);
+}
+.tr-c em {
+  position: relative;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 28px;
+  padding-left: 8px;
+}
+.tr-pie {
+  margin-top: 10px;
+}
+@media (max-width: 380px) {
+  .gk-k {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* v11.64: prevención y arrancada en la biblioteca de ejercicios */
+.ci-zona {
+  display: inline-block;
+  margin: 2px 0 3px;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: rgba(43, 227, 106, 0.12);
+  color: var(--lime);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ci-ej.lock {
+  opacity: 0.75;
+}
+.ci-ej .est-top,
+.ci-ej .est-pro {
+  font-style: normal;
+}
+.ci-mod {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--lime);
+  color: var(--on-lime);
+  vertical-align: 2px;
+}
+.ci-opt.lock {
+  opacity: 0.75;
+}
