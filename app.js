@@ -5724,15 +5724,17 @@
   }
   /* Línea de la cámara: «Pantalla encendida» o, si el móvil aún no lo deja, que se toque la pantalla una vez */
   function luzAviso() {
-    let el = document.querySelector(".cam [data-camluz]");
+    let el = document.querySelector(".cam [data-camluz], .tri [data-camluz]");
     if (!el) return;
     let ok = luzOk(),
       c = cam,
       x = c && !c.tr && liveRows[c.id],
-      espera = c && !c.rec && !c.listo && x && x.anotador;
+      espera = (c && !c.rec && !c.listo && x && x.anotador) || tri;
     el.className = "cam-luz" + (ok ? "" : " no");
     el.textContent = ok
-      ? "🔆 Pantalla encendida: no se apagará mientras la cámara esté abierta" + (espera ? ". Deja el móvil en el trípode, el anotador puede empezar a grabar desde su enlace." : ".")
+      ? tri
+        ? "🔆 Pantalla encendida: no se apagará mientras esperas al anotador."
+        : "🔆 Pantalla encendida: no se apagará mientras la cámara esté abierta" + (espera ? ". Deja el móvil en el trípode, el anotador puede empezar a grabar desde su enlace." : ".")
       : "👆 Toca la pantalla una vez para que no se apague mientras esperas" + (espera ? " al anotador." : ".");
   }
   function luzQuita(k) {
@@ -9979,6 +9981,7 @@
         "El anotador tiene botones grandes: <b>«⚽ Gol nuestro»</b> (elige quién ha marcado), <b>«⚽ Gol rival»</b>, <b>«Falta nuestra»</b> y <b>«Falta del rival»</b> (en fútbol sala avisa del doble penalti), <b>«🔄 Cambio»</b> (quién sale y quién entra), <b>«Amarilla»</b> y <b>«Roja»</b>, de tu equipo o del rival (del rival, con el dorsal). El <b>minuto se pone solo</b> con tu reloj del partido.",
         "<b>Tiros desde el anotador</b>: también tiene <b>«🎯 Tiro a puerta»</b> y <b>«Tiro fuera»</b> (elige quién ha tirado; primero salen los que están en el campo) y <b>«Tiro del rival»</b>. En tu Directo se suman solos a las estadísticas de cada jugador y a los tiros del rival, y salen en el resumen, en su ficha y en el Excel. Si el anotador quita un tiro con la ✕, se resta. Plan gratuito: tiros desde el anotador en <b>2 partidos al mes</b> (el resto del anotador sigue igual y tú los puedes apuntar en tu Directo siempre). Con Pro, ilimitado.",
         "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
+        "<b>Móvil en el trípode, el anotador abre la cámara</b>: en el Directo (con el enlace del anotador ya creado), pulsa <b>«📱 Dejar en el trípode: el anotador abre la cámara»</b>. La primera vez el móvil te pide permiso para la cámara y el micro: pulsa «Permitir». Sale una pantalla negra «Esperando al anotador…» con la pantalla siempre encendida y la cámara todavía cerrada (así no gasta batería ni se calienta). Cuando empiece el partido, el anotador pulsa en su enlace <b>«🎥 Abrir la cámara»</b> o <b>«🎥 Abrir y emitir para la familia»</b> y en unos segundos se abre sola. Después, desde su enlace, también puede <b>«📡 Emitir para la familia»</b> o «Cortar el directo» (emitir es del plan Pro del entrenador). Si quieres abrirla tú, «🎥 Abrir la cámara ya»; para dejarlo, «Salir».",
         "<b>El anotador también lleva la grabación</b>: con la cámara abierta en el móvil que graba (Directo › «Cámara: grabar el partido»), en el enlace del anotador sale «Grabación» con <b>«● Empezar a grabar»</b>, <b>«⏸ Pausar grabación»</b> y <b>«▶ Reanudar grabación»</b> y <b>«■ Parar grabación»</b>. El móvil que graba lo hace solo en unos segundos y el anotador ve si está grabando o en pausa. Al pausar y reanudar sigue siendo un solo vídeo, sin el rato de la pausa. En el móvil que graba también tienes «⏸ Pausar» y «▶ Reanudar». <b>Guardar el vídeo se hace siempre en el móvil que graba</b> (el anotador no puede): cuando el anotador pulsa «■ Parar grabación», en el móvil del trípode sale «Guardar en Fotos» (iPhone) o «Guardar en el móvil». Si a la vez emites el directo para la familia (Pro), lo que se graba se queda igualmente guardado en ese móvil. Va con el anotador (plan gratuito: 3 partidos al mes; con Pro, ilimitado).",
         "<b>«🎯 Seguir la jugada» desde el anotador</b>: con la cámara abierta en el móvil que graba, en «Grabación» del enlace del anotador sale <b>«🎯 Seguir la jugada»</b>. Al pulsarlo, en unos segundos el móvil que graba empieza a acercar la imagen sola a donde están el balón y los jugadores; con <b>«Ver todo el campo»</b> lo quita. El anotador ve en todo momento si está puesto. También se puede poner o quitar en el propio móvil que graba. Cuenta para los 2 partidos o entrenos al mes del plan gratuito de «Seguir la jugada» del entrenador; con Pro, ilimitado.",
         "<b>Guardar el vídeo en iPhone o iPad</b>: al parar, pulsa <b>«Guardar en Fotos»</b> y elige <b>«Guardar vídeo»</b>: así sale en la galería. «Guardar en Archivos» lo descarga a la app <b>Archivos › Descargas</b> (no a Fotos), y solo si en el aviso de Safari pulsas «Descargar». No cierres la cámara ni pulses «Grabar otro trozo» hasta tenerlo guardado. Si un vídeo está en Archivos, ábrelo allí y con el botón de compartir elige «Guardar vídeo» para pasarlo a Fotos.",
@@ -10536,12 +10539,12 @@
           p: "En el Directo del partido (o en «Preparar enlaces del directo»), crea el enlace del anotador y mándaselo por WhatsApp a quien vaya a anotar.",
         },
         {
-          t: "2. Abre la cámara en el móvil que graba",
-          p: "En ese móvil, en el Directo, pulsa «Cámara: grabar el partido» y déjalo en horizontal en el trípode. No hace falta pulsar «● Grabar».",
+          t: "2. Deja el móvil en el trípode",
+          p: "En ese móvil, en el Directo, pulsa «📱 Dejar en el trípode: el anotador abre la cámara» y déjalo en horizontal en el trípode: la pantalla se queda encendida esperando. Cuando empiece el partido, el anotador pulsa «🎥 Abrir la cámara» (o «Abrir y emitir para la familia») y se abre sola. También vale abrir tú la cámara con «Cámara: grabar el partido».",
         },
         {
           t: "3. El anotador lleva la grabación",
-          p: "En el enlace del anotador sale «Grabación» con «● Empezar a grabar», «⏸ Pausar grabación» y «▶ Reanudar grabación». El móvil que graba lo hace solo en unos segundos. Al pausar y reanudar sigue siendo un solo vídeo.",
+          p: "En el enlace del anotador sale «Grabación» con «🎥 Abrir la cámara», «● Empezar a grabar», «⏸ Pausar grabación», «▶ Reanudar grabación» y «📡 Emitir para la familia» (Pro). El móvil que graba lo hace solo en unos segundos. Al pausar y reanudar sigue siendo un solo vídeo.",
         },
         {
           t: "¡Listo!",
@@ -12024,7 +12027,7 @@
       capgk = ids.length
         ? `<div class="formgrid lv-cg"><label>Capitán<select id="lvCap">${so(al.capitan || "", "Sin capitán")}</select></label><label>Portero<select id="lvGk">${so(gk, "—")}</select></label></div>`
         : "";
-    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${jorTxt(m.alineacion) ? esc(jorTxt(m.alineacion)) + " · " : ""}${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}${viendoHtml(x.id)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div>${vextHtml(x)}<div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? ventPanel(m, x) : ""}${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
+    return `<section class="panel live"><div class="bar"><div><div class="kicker">Directo</div><h2>${MN()}</h2><p class="muted">${jorTxt(m.alineacion) ? esc(jorTxt(m.alineacion)) + " · " : ""}${esc(fmtDate(m.fecha))}</p></div><button class="secondary small" data-live="close">${ic("back", 18)}Volver</button></div>${liveBoard(x, serverNow(), true)}${viendoHtml(x.id)}<div class="lv-ctl">${ctl}</div>${adj}<div class="lv-ctl">${B("cam", ic("live", 18) + "Cámara: grabar el partido", "secondary lv-cam")}</div>${x.anotador ? `<div class="lv-ctl">${B("tri", "📱 Dejar en el trípode: el anotador abre la cámara", "secondary lv-cam")}</div>` : ""}${vextHtml(x)}<div class="lv-goals">${B("gf", ic("plus", 18) + "Gol nuestro", "primary")}${B("gc", ic("plus", 18) + "Gol rival")}</div>${ids.length ? ventPanel(m, x) : ""}${ids.length ? `<div class="lv-ctl lv-more">${B("sub", "🔄 Cambio")}${B("ta", '<i class="tj a"></i>Amarilla')}${B("tr", '<i class="tj r"></i>Roja')}</div>` : ""}${pick}${capgk}${liveStats(m, x)}<h3 class="lv-h">Goles, cambios y tarjetas</h3>${liveEvents(x, true)}${anotHtml(x)}<div class="lv-share"><h3>Enlace para compartir</h3><p class="muted">Quien tenga el enlace verá los equipos, el marcador, el minuto, los goleadores, los cambios, las tarjetas y las faltas acumuladas, sin necesidad de cuenta. Las estadísticas de cada jugador solo las ves tú. Se actualiza solo.</p><input id="lvUrl" readonly value="${esc(liveUrl(x))}" aria-label="Enlace del directo"><div class="lv-ctl">${B("share", ic("share", 18) + "Compartir enlace", "primary")}${B("off", "Desactivar enlace", "danger")}</div></div></section>`;
   }
   /* Estadísticas en directo: eliges qué apuntar (robo, pérdida, tiro…) y tocas al jugador */
   function liveStats(m, x) {
@@ -13009,7 +13012,12 @@
         if (s && cam && cam.id === x.partido_id) {
           camEst(cam, camEstDe(cam));
           camSig(cam);
+          camEmi(cam);
           camOrden(s.cam_ord);
+        } else if (s && !cam && tri && tri.id === x.partido_id) {
+          /* v11.66: móvil en el trípode esperando a que el anotador abra la cámara */
+          triEst("espera");
+          triOrden(s.cam_ord);
         }
         if (!s || s.actualizado === x.actualizado) return;
         x._cambio = false;
@@ -13212,6 +13220,7 @@
       return render();
     }
     if (k === "cam") return camAbre(x.partido_id);
+    if (k === "tri") return triPon(x);
     if (k === "share") return liveShare(x);
     if (k === "anon" && m) return anotOn(x, m);
     if (k === "anoff") return anotOff(x);
@@ -13799,6 +13808,7 @@
     if (!c) return;
     camEst(c, camEstDe(c));
     camSig(c);
+    camEmi(c);
     let m = state.matches.find((z) => z.id === c.id),
       pick = c.pick && m
         ? `<div class="cam-pick">${entries(m)
@@ -13905,6 +13915,139 @@
         () => (x._camSig = undefined),
       );
   }
+  /* v11.66: el anotador ve si este móvil está emitiendo para la familia (directos.cam_emi).
+     Sin supabase-anotador-tripode.sql no se insiste. */
+  let camEmiNo = false;
+  function camEmi(c, v) {
+    let x = c && !c.tr && liveRows[c.id];
+    if (v === undefined) v = !!(c && c.emite);
+    if (!x || !x.anotador || camEmiNo || x._camEmi === v) return;
+    x._camEmi = v;
+    db.from("directos")
+      .update({ cam_emi: v })
+      .eq("id", x.id)
+      .then(
+        (r) => {
+          if (!r || !r.error) return;
+          x._camEmi = undefined;
+          if (/cam_emi|schema cache|column/i.test(String(r.error.message || r.error))) camEmiNo = true;
+        },
+        () => (x._camEmi = undefined),
+      );
+  }
+  /* ===== Móvil en el trípode (v11.66) =====
+     Idea de un entrenador: deja el móvil en el trípode con la app abierta y, cuando empieza el partido,
+     el anotador abre la cámara desde su enlace (y si quiere, emite para la familia y graba).
+     Mientras espera: pantalla encendida (luz «tri», pedida dentro del toque), la cámara cerrada (no gasta
+     batería ni se calienta) y directos.cam_est = 'espera'. El permiso de la cámara se pide ya, con el
+     entrenador delante, para que luego se abra sin preguntar. */
+  let tri = null,
+    triNo = false;
+  function triEst(e) {
+    let t = tri,
+      x = t && liveRows[t.id];
+    if (!x || !x.anotador || (triNo && e)) return;
+    if (x._camEst === e) return;
+    x._camEst = e;
+    db.from("directos")
+      .update({ cam_est: e })
+      .eq("id", x.id)
+      .then(
+        (r) => {
+          if (!r || !r.error) return;
+          x._camEst = undefined;
+          if (e && /cam_est|check|schema cache|column/i.test(String(r.error.message || r.error))) {
+            triNo = true;
+            let el = document.querySelector(".tri [data-trino]");
+            if (el) el.hidden = false;
+          }
+        },
+        () => (x._camEst = undefined),
+      );
+  }
+  async function triPon(x) {
+    if (tri || cam || !x) return;
+    if (!x.anotador) return note("Primero crea el enlace del anotador (más abajo, «Anotador»).");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream)
+      return note("Este móvil o navegador no permite grabar vídeo desde la app.");
+    /* Dentro del toque: así en iPhone el vídeo de la luz puede sonar y la pantalla no se apaga */
+    luzPon("tri");
+    let t = (tri = { id: x.partido_id });
+    try {
+      let s = await navigator.mediaDevices.getUserMedia({ video: camVideo(false), audio: true });
+      s.getTracks().forEach((k) => k.stop());
+    } catch (e) {
+      if (tri === t) triQuita();
+      return note(
+        e && e.name === "NotAllowedError"
+          ? "No hay permiso para usar la cámara. Actívalo en los ajustes del móvil (permisos de la app o de Chrome) y vuelve a intentarlo."
+          : "No se ha podido abrir la cámara.",
+      );
+    }
+    if (tri !== t || cam) return;
+    /* Las órdenes que ya había no se hacen: se apunta la última */
+    try {
+      let r = await db.from("directos").select("cam_ord").eq("id", x.id),
+        o = r && r.data && r.data[0] && r.data[0].cam_ord;
+      t.ordN = (o && +o.n) || 0;
+    } catch (e) {}
+    if (tri !== t || cam) return;
+    triCaja(t);
+    triEst("espera");
+  }
+  function triCaja(t) {
+    let box = (t.box = document.createElement("div"));
+    box.className = "tri";
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-label", "Móvil en el trípode");
+    box.innerHTML = `<div class="tri-in"><div class="tri-ic" aria-hidden="true">📱</div><h2>Móvil en el trípode</h2><p class="tri-big">Esperando al anotador…</p><p>Cuando el anotador pulse <b>«🎥 Abrir la cámara»</b> en su enlace, la cámara se abre sola aquí. Desde su enlace también puede <b>emitir para la familia</b> (Pro), <b>grabar</b>, pausar y seguir la jugada.</p><p class="cam-luz" data-camluz role="status"></p><p class="cam-luz no" data-trino ${triNo ? "" : "hidden"}>Falta un paso en el servidor para que el anotador abra la cámara desde su enlace (avisa a quien lleva la app). Mientras, ábrela tú con «Abrir la cámara ya».</p><p class="tri-tip">No bloquees el móvil ni salgas de la app. Pon el móvil en horizontal y, si vas a esperar mucho, conéctalo a una batería.</p><div class="tri-bt"><button class="primary" data-tri="abrir">🎥 Abrir la cámara ya</button><button class="secondary" data-tri="salir">Salir</button></div></div>`;
+    box.addEventListener("click", (e) => {
+      let b = e.target.closest("[data-tri]");
+      if (!b) return;
+      if (b.dataset.tri === "salir") triQuita();
+      else triAbre();
+    });
+    document.body.appendChild(box);
+    document.body.classList.add("tri-on");
+    luzAviso();
+  }
+  function triQuita() {
+    let t = tri;
+    if (!t) return;
+    triEst(null);
+    if (t.box) t.box.remove();
+    document.body.classList.remove("tri-on");
+    tri = null;
+    luzQuita("tri");
+  }
+  /* El anotador ha mandado una orden: «abrir» abre la cámara; «emit1» la abre y emite para la familia.
+     Como en la cámara, la primera vez solo se apunta la última orden que había */
+  function triOrden(o) {
+    let t = tri;
+    if (!t || !t.box) return;
+    let n = (o && +o.n) || 0,
+      ya = t.ordN;
+    if (ya === undefined || n <= ya) return void (t.ordN = Math.max(n, ya || 0));
+    t.ordN = n;
+    if (o.a === "abrir" || o.a === "emit1") triAbre(o.a === "emit1", true);
+  }
+  async function triAbre(emi, anot) {
+    let t = tri;
+    if (!t || t.abriendo) return;
+    t.abriendo = true;
+    await camAbre(t.id);
+    t.abriendo = false;
+    if (!cam) return;
+    /* Ya está la cámara (con su propia luz): fuera la espera */
+    if (t.box) t.box.remove();
+    document.body.classList.remove("tri-on");
+    if (tri === t) tri = null;
+    luzQuita("tri");
+    cam.ordN = t.ordN;
+    camEst(cam, camEstDe(cam));
+    if (anot) note(emi ? "El anotador ha abierto la cámara y enciende el directo para la familia." : "El anotador ha abierto la cámara.", true);
+    if (emi) camEmite();
+  }
   function camOrden(o) {
     let c = cam;
     if (!c || c.tr) return;
@@ -13913,6 +14056,23 @@
     /* La primera vez solo se apunta la última orden que había: las de antes de abrir la cámara no se hacen */
     if (ya === undefined || n <= ya) return void (c.ordN = Math.max(n, ya || 0));
     c.ordN = n;
+    /* v11.66: el anotador enciende o corta el vídeo en directo para la familia */
+    if (o.a === "abrir") return;
+    if (o.a === "emit1") {
+      if (!c.emite) {
+        camEmite();
+        if (c.emite) note("El anotador ha encendido el directo para la familia.", true);
+      }
+      return;
+    }
+    if (o.a === "emit0") {
+      if (c.emite) {
+        camCorta();
+        camBotones();
+        note("El anotador ha cortado el directo para la familia.", true);
+      }
+      return;
+    }
     if (o.a === "sig1" || o.a === "sig0") {
       if (o.a === "sig1" && !c.sg) {
         sgPon(c);
@@ -14024,6 +14184,7 @@
     if (cam.listo && !cam.guardado && !confirm("Aún no has guardado el vídeo. Si cierras, se pierde. ¿Cerrar?")) return;
     camEst(cam, null);
     camSig(cam, false);
+    camEmi(cam, false);
     if (cam.rec) {
       cam.rec.ondataavailable = cam.rec.onstop = null;
       try {
@@ -15046,6 +15207,8 @@
   const anMsg = (t) =>
     anCamOp === "stop" && /DATOS/.test(t)
       ? "Falta un paso en el servidor para parar la grabación desde aquí. Avisa al entrenador. Mientras, párala en el móvil que graba."
+      : /^(abrir|emit1|emit0)$/.test(anCamOp) && /DATOS/.test(t)
+      ? "Falta un paso en el servidor para abrir la cámara o emitir desde aquí. Avisa al entrenador."
       : /anotar_camara/i.test(t)
       ? "Falta un paso en el servidor para llevar la grabación desde aquí. Avisa al entrenador."
       : /SIN_CAMARA/.test(t)
@@ -15105,16 +15268,26 @@
     stop: "Orden enviada: la grabación se para en unos segundos. Después hay que guardar el vídeo en el móvil que graba.",
     sig1: "Orden enviada: el móvil que graba empieza a seguir la jugada en unos segundos.",
     sig0: "Orden enviada: el móvil que graba vuelve a todo el campo en unos segundos.",
+    abrir: "Orden enviada: la cámara se abre en el móvil del trípode en unos segundos.",
+    emit1: "Orden enviada: el directo para la familia empieza en unos segundos (si el entrenador tiene Pro).",
+    emit0: "Orden enviada: el directo para la familia se corta en unos segundos.",
   };
   function anCamHtml(x, d) {
     if (!("cam" in x)) return "";
     let e = x.cam || "",
       o = x.cam_ord,
       sigO = o && (o.a === "sig1" || o.a === "sig0"),
+      emiO = o && (o.a === "emit1" || o.a === "emit0"),
       falta =
         o &&
         Date.parse(x.ahora) - Date.parse(o.at) < 20000 &&
-        (sigO ? "sig" in x && !!x.sig !== (o.a === "sig1") && !!e && e !== "listo" : ({ rec: "rec", pause: "pausa", resume: "rec", stop: "listo" })[o.a] !== e && e !== "listo"),
+        (o.a === "abrir"
+          ? e === "espera"
+          : emiO
+            ? e === "espera" || ("emi" in x && !!x.emi !== (o.a === "emit1") && !!e)
+            : sigO
+              ? "sig" in x && !!x.sig !== (o.a === "sig1") && !!e && e !== "listo"
+              : ({ rec: "rec", pause: "pausa", resume: "rec", stop: "listo" })[o.a] !== e && e !== "listo"),
       C = (k, t, cl = "secondary") => `<button class="${cl}" data-anc="${k}" ${d || (falta ? "disabled" : "")}>${t}</button>`,
       st =
         e === "rec"
@@ -15123,17 +15296,26 @@
             ? ["⏸ <b>Grabación en pausa</b>", C("resume", "▶ Reanudar grabación", "primary") + C("stop", "■ Parar grabación", "danger")]
             : e === "lista"
               ? ["🎥 Cámara abierta, <b>sin grabar</b>", C("rec", "● Empezar a grabar", "primary")]
+              : e === "espera"
+                ? ["📱 El móvil del trípode está <b>preparado</b>: pantalla encendida y cámara cerrada.", C("abrir", "🎥 Abrir la cámara", "primary") + C("emit1", "🎥 Abrir y emitir para la familia")]
               : e === "listo"
                 ? ["🎥 En el móvil de la cámara hay un vídeo terminado <b>sin guardar</b>. El vídeo solo se puede guardar en ese móvil: que pulsen allí «Guardar en Fotos» (iPhone) o «Guardar en el móvil» y luego «Grabar otro trozo». Desde aquí no se puede guardar.", ""]
-                : ["🎥 La cámara no está abierta en el móvil que graba. Cuando la abran en el Directo («Cámara»), aquí podrás empezar, pausar y reanudar la grabación.", ""];
+                : ["🎥 La cámara no está abierta en el móvil que graba. Cuando la abran en el Directo («Cámara»), o dejen el móvil en «📱 Dejar en el trípode», aquí podrás abrir la cámara, empezar, pausar y reanudar la grabación.", ""];
     /* v11.62: «🎯 Seguir la jugada» desde el anotador (con supabase-anotador-sigue.sql) */
     let sg =
-      "sig" in x && e && e !== "listo"
+      "sig" in x && e && e !== "listo" && e !== "espera"
         ? `<p class="muted">${x.sig ? "🎯 <b>Siguiendo la jugada</b>: la imagen se acerca sola al balón y a los jugadores." : "🎯 Seguir la jugada: <b>no</b> (se ve todo el campo)."}</p><div class="lv-ctl">${
             x.sig ? C("sig0", "Ver todo el campo") : C("sig1", "🎯 Seguir la jugada", "primary")
           }</div>`
         : "";
-    return `<div class="an-cam"><h3 class="lv-h">Grabación</h3><p class="muted">${st[0]}</p>${st[1] ? `<div class="lv-ctl">${st[1]}</div>` : ""}${sg}${
+    /* v11.66: emitir para la familia desde el anotador (con supabase-anotador-tripode.sql) */
+    let em =
+      "emi" in x && e && e !== "espera"
+        ? `<p class="muted">${x.emi ? "📡 <b>En directo para la familia</b>: quien tenga el enlace del directo ve el vídeo." : "📡 Directo para la familia: <b>no</b> (el entrenador necesita Pro)."}</p><div class="lv-ctl">${
+            x.emi ? C("emit0", "Cortar el directo", "danger") : C("emit1", "📡 Emitir para la familia")
+          }</div>`
+        : "";
+    return `<div class="an-cam"><h3 class="lv-h">Grabación</h3><p class="muted">${st[0]}</p>${st[1] ? `<div class="lv-ctl">${st[1]}</div>` : ""}${sg}${em}${
       falta ? '<p class="hint">Orden enviada. El móvil que graba la hace en unos segundos…</p>' : ""
     }</div>`;
   }
@@ -15340,6 +15522,7 @@
         cm = e.target.closest("[data-anc]");
       if (anBusy) return;
       if (cm) {
+        if (cm.dataset.anc === "emit0" && !confirm("¿Cortar el directo para la familia? La grabación sigue.")) return;
         if (cm.dataset.anc === "stop" && !confirm("¿Parar la grabación? Después hay que guardar el vídeo en el móvil que graba (desde aquí no se puede).")) return;
         anCamOp = cm.dataset.anc;
         return anCall("anotar_camara", { accion: cm.dataset.anc }, () => AN_C[cm.dataset.anc]);
