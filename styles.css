@@ -7641,3 +7641,34 @@ body.cam-on #info {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+/* v11.64: prevención y arrancada en la biblioteca de ejercicios */
+.ci-zona {
+  display: inline-block;
+  margin: 2px 0 3px;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: rgba(43, 227, 106, 0.12);
+  color: var(--lime);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ci-ej.lock {
+  opacity: 0.75;
+}
+.ci-ej .est-top,
+.ci-ej .est-pro {
+  font-style: normal;
+}
+.ci-mod {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--lime);
+  color: var(--on-lime);
+  vertical-align: 2px;
+}
+.ci-opt.lock {
+  opacity: 0.75;
+}

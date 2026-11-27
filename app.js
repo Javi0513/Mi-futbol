@@ -2645,6 +2645,8 @@
     ["coord", "Coordinación"],
     ["veloc", "Velocidad"],
     ["movil", "Calentamiento"],
+    ["prev", "Prevención de lesiones"],
+    ["arr", "Arrancada"],
   ];
   /* [id, categoría, dibujo, nombre, cómo se hace] — todo con el peso del cuerpo, apto para fútbol base */
   const CI_EJ = [
@@ -2688,7 +2690,76 @@
     ["tobi", "movil", "equilibrio", "Tobillos y rodillas", "Círculos con los tobillos y con las rodillas juntas, hacia un lado y hacia el otro."],
     ["trot", "movil", "sprint", "Carrera suave con brazos", "Trote suave haciendo círculos con los brazos hacia delante y hacia atrás."],
     ["pata", "movil", "zancada", "Patadas al frente", "Andando, sube la pierna estirada al frente intentando tocar la punta del pie con la mano contraria."],
+    /* v11.64 (un entrenador de fútbol sala: «ejercicios específicos por modalidad para fortalecer el tren
+       inferior, rodilla, cuádriceps, aductores… para evitar lesiones, y para la arrancada»). La zona
+       y las modalidades de cada uno están en CI_META. Peso del cuerpo, goma o un compañero. */
+    ["isoq", "prev", "sentadilla", "Sentadilla isométrica en la pared", "Espalda apoyada en la pared y rodillas dobladas a 90°, como sentado en una silla invisible. Aguanta quieto. Fortalece el cuádriceps sin impacto y calma el dolor de rodilla."],
+    ["span", "prev", "sentadilla", "Sentadilla española con goma", "Una goma fuerte atada a un poste por detrás de las rodillas. Échate hacia atrás y baja con la espalda recta y las tibias verticales; aguanta abajo 30-45 s. Protege el tendón de la rodilla (rotuliano)."],
+    ["bajx", "prev", "equilibrio", "Bajada lenta de escalón", "De pie en un escalón con una pierna, baja el otro talón al suelo en 3-4 segundos, sin que la rodilla se vaya hacia dentro. Sube con las dos. Cuádriceps y rodilla."],
+    ["bulg", "prev", "zancada", "Sentadilla búlgara", "El pie de atrás apoyado en un banco. Baja hasta que el muslo de delante quede paralelo al suelo y sube. Cambia de pierna a mitad. Cuádriceps y glúteo."],
+    ["pmu1", "prev", "equilibrio", "Peso muerto a una pierna", "A una pierna, inclínate hacia delante con la espalda recta y lleva la otra pierna atrás hasta quedar como una «T». Vuelve despacio. Isquios y equilibrio."],
+    ["pisq", "prev", "puente", "Puente de isquios a una pierna", "Boca arriba, un talón en un banco y la otra pierna arriba. Sube la cadera empujando con el talón y baja despacio. Previene roturas de isquios en los sprints."],
+    ["copc", "prev", "lateral", "Copenhague corto (rodilla apoyada)", "Plancha lateral con la RODILLA de arriba sobre un banco o en las manos de un compañero y la otra pierna debajo. Aguanta recto. Versión fácil del Copenhague: aductores e ingle."],
+    ["adba", "prev", "puente", "Apretar el balón con las rodillas", "Boca arriba con las rodillas dobladas y un balón entre ellas. Apriétalo fuerte 5 segundos y suelta. Aductores y pubis, muy útil en fútbol sala."],
+    ["cosa", "prev", "zancada", "Zancada lateral", "Pies muy abiertos. Baja hacia un lado doblando esa rodilla y con la otra pierna estirada; vuelve al centro y al otro lado. Aductores y cadera."],
+    ["glmd", "prev", "equilibrio", "Paso lateral con goma", "Una goma alrededor de las rodillas o los tobillos. Medio agachado, da pasos laterales sin juntar los pies. Glúteo medio: evita que la rodilla se vaya hacia dentro."],
+    ["ater", "prev", "salto", "Aterrizaje de salto estable", "Salta hacia arriba y cae con las dos piernas, rodillas dobladas y alineadas con los pies, sin ruido. Aguanta 2 s quieto. Previene la rotura del ligamento cruzado."],
+    ["pivx", "prev", "conos", "Frenada y cambio de dirección controlado", "Corre 5 m, frena en dos apoyos cortos con la cadera baja y sal a 45° hacia el otro lado. Rodilla siempre encima del pie. Rodilla y tobillo en los giros."],
+    ["sole", "prev", "equilibrio", "Elevación de sóleo (rodilla doblada)", "Con las rodillas un poco dobladas, sube de puntillas y baja despacio. Mejor a una pierna. Gemelo profundo y tendón de Aquiles."],
+    ["tobq", "prev", "equilibrio", "Equilibrio a una pierna con ojos cerrados", "A una pierna, rodilla un poco doblada, cierra los ojos y aguanta. Más difícil: sobre un cojín o pasando un balón. Previene esguinces de tobillo."],
+    ["f11p", "prev", "sprint", "Carrera abriendo y cerrando la cadera", "Trote suave de un cono a otro. En cada cono sube la rodilla y ábrela hacia fuera (ida) y hacia dentro (vuelta). Calentamiento preventivo tipo «11+»."],
+    ["ninv", "prev", "nordico", "Nórdico inverso (cuádriceps)", "De rodillas con el cuerpo recto, échate hacia atrás despacio todo lo que puedas sin doblar la cadera y vuelve. Cuádriceps de la pierna de golpeo."],
+    ["a5m", "arr", "sprint", "Salida explosiva de 5 metros", "Desde parado, con un pie adelantado, arranca a tope 5 m. Pasos cortos y cuerpo inclinado los primeros 3 apoyos. Descansa 30 s entre salidas."],
+    ["acai", "arr", "sprint", "Salida en caída", "De pie y recto, déjate caer hacia delante y, justo antes de perder el equilibrio, arranca en sprint 10 m. Enseña la inclinación de la arrancada."],
+    ["aret", "arr", "sprint", "Arrancada con resistencia", "Un compañero te frena con una goma o una toalla por la cintura durante 5-10 m. Empuja el suelo hacia atrás con pasos cortos y potentes."],
+    ["agir", "arr", "sprint", "Giro de 180° y arrancada", "De espaldas a la dirección de carrera. A la señal, gira rápido y arranca 5-10 m. Como cuando te pasan la espalda en una contra."],
+    ["acru", "arr", "conos", "Arrancada lateral con paso cruzado", "De lado, a la señal cruza la pierna de fuera por delante y arranca hacia ese lado 5 m. La salida del defensor cuando le desbordan."],
+    ["afre", "arr", "conos", "Arrancar y frenar en 3 metros", "Sprint de 3 m, frena en seco, vuelve a arrancar 3 m. Seis veces seguidas. Típico de fútbol sala: aceleraciones cortas y muchas frenadas."],
+    ["a20", "arr", "sprint", "Aceleración de 20 metros", "Salida desde parado y aceleración progresiva hasta 20 m, sin frenar de golpe. Recupera andando 60-90 s."],
+    ["a30", "arr", "sprint", "Sprints repetidos de 30 metros", "6 sprints de 30 m saliendo cada 30 s. Mejora repetir esfuerzos máximos como en un partido de fútbol 11."],
+    ["rsa", "arr", "conos", "Sprints repetidos con cambio de dirección", "6 sprints de 15 m (7,5 m de ida, giro y vuelta) saliendo cada 25 s. Esfuerzos cortos y repetidos de fútbol sala y fútbol 7."],
+    ["hor", "arr", "salto", "Saltos horizontales encadenados", "Tres saltos seguidos hacia delante con los pies juntos, lo más lejos posible, cayendo suave. Potencia de piernas para la arrancada."],
+    ["boun", "arr", "zancada", "Zancadas saltadas", "Carrera exagerada con zancadas muy largas, empujando fuerte y quedando un momento en el aire en cada paso, 20-30 m."],
+    ["rbal", "arr", "balon", "Arrancada a balón suelto", "El entrenador lanza o pasa el balón a un lado sin avisar y el jugador arranca a por él. Reacción y arrancada con algo que buscar, como en el partido."],
+    ["cues", "arr", "sprint", "Arrancada en cuesta", "Sprint de 10-15 m cuesta arriba. La cuesta obliga a inclinarse y empujar como en la arrancada. Vuelve andando."],
+    ["skat", "arr", "salto", "Salto lateral a una pierna (patinador)", "Salta de lado de una pierna a la otra, cae y aguanta 1 s antes del siguiente. Fuerza para arrancar hacia los lados y rodilla estable."],
   ];
+  /* Zona del cuerpo, modalidades (fs, 7, 11; vacío = todas) y si es gratis (top) de los ejercicios de
+     prevención y arrancada (v11.64). Plan gratuito: los TOP; Pro: todos. */
+  const CI_META = {
+    isoq: { z: "Rodilla · cuádriceps", top: 1 },
+    span: { z: "Tendón de la rodilla" },
+    bajx: { z: "Rodilla · cuádriceps", top: 1 },
+    bulg: { z: "Cuádriceps · glúteo" },
+    pmu1: { z: "Isquios · equilibrio", top: 1 },
+    pisq: { z: "Isquios" },
+    copc: { z: "Aductores · ingle", top: 1 },
+    adba: { z: "Aductores · pubis", m: "fs 7" },
+    cosa: { z: "Aductores · cadera" },
+    glmd: { z: "Glúteo medio · rodilla" },
+    ater: { z: "Rodilla (cruzado)", top: 1 },
+    pivx: { z: "Rodilla · tobillo", m: "fs 7" },
+    sole: { z: "Gemelo · Aquiles" },
+    tobq: { z: "Tobillo" },
+    f11p: { z: "Calentamiento preventivo", m: "7 11" },
+    ninv: { z: "Cuádriceps de golpeo", m: "7 11" },
+    a5m: { z: "Primeros pasos", m: "fs 7", top: 1 },
+    acai: { z: "Inclinación de salida", top: 1 },
+    aret: { z: "Fuerza de empuje" },
+    agir: { z: "Giro y salida", m: "fs 7" },
+    acru: { z: "Salida lateral", m: "fs 7" },
+    afre: { z: "Acelerar y frenar", m: "fs", top: 1 },
+    a20: { z: "Aceleración larga", m: "7 11" },
+    a30: { z: "Sprint repetido", m: "11" },
+    rsa: { z: "Sprint repetido", m: "fs 7" },
+    hor: { z: "Potencia de piernas" },
+    boun: { z: "Zancada", m: "7 11" },
+    rbal: { z: "Reacción", top: 1 },
+    cues: { z: "Empuje", m: "7 11" },
+    skat: { z: "Salida lateral · rodilla" },
+  };
+  const ciMod = (id) => !CI_META[id] || !CI_META[id].m || CI_META[id].m.split(" ").includes(state.mode);
+  const ciLibre = (id) => !CI_META[id] || !!CI_META[id].top || esPro();
   const ciEj = (id) => CI_EJ.find((x) => x[0] === id);
   const ciEst = (id) => {
     let e = ciEj(id);
@@ -2701,7 +2772,16 @@
     { nombre: "Velocidad y reacción", trabajo: 20, descanso: 40, series: 3, pausa: 90, est: ["skip", "reac", "5105", "spr1", "ldef"] },
     { nombre: "Prevención de lesiones", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["nord", "cope", "plat", "equi", "geme", "puen"] },
     { nombre: "Calentamiento con balón", trabajo: 40, descanso: 10, series: 1, pausa: 0, est: ["trot", "cade", "pata", "talo", "slal", "toqu"] },
+    /* v11.64: por modalidad (m). Las de prevención son gratis; las demás, Pro. */
+    { nombre: "Prevención fútbol sala: rodilla, aductores y tobillo", m: "fs", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["isoq", "copc", "adba", "glmd", "pivx", "tobq"] },
+    { nombre: "Arrancada fútbol sala: 3-5 m y cambios de dirección", m: "fs", pro: 1, trabajo: 15, descanso: 45, series: 3, pausa: 90, est: ["a5m", "acai", "agir", "afre", "acru", "rsa"] },
+    { nombre: "Prevención fútbol 7: rodilla, isquios y aductores", m: "7", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["bajx", "pmu1", "copc", "glmd", "ater", "sole"] },
+    { nombre: "Arrancada fútbol 7: salidas cortas y reacción", m: "7", pro: 1, trabajo: 15, descanso: 45, series: 3, pausa: 90, est: ["acai", "a5m", "rbal", "rsa", "a20", "hor"] },
+    { nombre: "Prevención fútbol 11 (tipo 11+): isquios, aductores y rodilla", m: "11", trabajo: 30, descanso: 20, series: 2, pausa: 60, est: ["f11p", "nord", "copc", "pmu1", "ninv", "ater"] },
+    { nombre: "Arrancada y velocidad fútbol 11: 10-30 m", m: "11", pro: 1, trabajo: 20, descanso: 60, series: 3, pausa: 120, est: ["acai", "a20", "cues", "boun", "a30", "rbal"] },
+    { nombre: "Fuerza de tren inferior: cuádriceps, glúteo e isquios", pro: 1, trabajo: 40, descanso: 20, series: 3, pausa: 90, est: ["span", "bulg", "bajx", "pisq", "glmd", "sole"] },
   ].map((p) => ({ ...p, est: p.est.map(ciEst) }));
+  const ciPlantLibre = (p) => !p.pro || esPro();
   /* Tiempos libres (en segundos): mínimo y máximo de cada uno */
   const CI_LIM = { trabajo: [5, 1800], descanso: [0, 600], pausa: [0, 900], t: [5, 1800] };
   const ciClamp = (v, f) => Math.min(CI_LIM[f][1], Math.max(CI_LIM[f][0], Math.round(+v || 0)));
@@ -5081,7 +5161,10 @@
     if (e.vista === "propio")
       return `<p>Escribe un ejercicio tuyo. Se guarda dentro de este circuito.</p><label class="ci-l">Nombre<input data-cip="n" maxlength="60" placeholder="Ej.: Saltos a la comba" autocomplete="off"></label><label class="ci-l">Cómo se hace (opcional)<textarea data-cip="d" maxlength="300" rows="3" placeholder="Explícalo en pocas palabras"></textarea></label><div class="stack"><button type="button" class="primary" data-ci="propiook">Añadir al circuito</button><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
     if (e.vista === "plant")
-      return `<p>Elige una plantilla o uno de tus circuitos. Se copian sus ejercicios y tiempos, y luego puedes cambiarlos.</p><h3 class="ci-h3">Plantillas</h3>${CI_PLANT.map((p, i) => `<button type="button" class="ci-opt" data-ci="usaplant" data-i="${i}"><b>${esc(p.nombre)}</b><small>${ciMeta(p)}</small></button>`).join("")}${state.circs.length ? `<h3 class="ci-h3">Mis circuitos</h3>${state.circs.map((x) => `<button type="button" class="ci-opt" data-ci="usamis" data-cid="${x.id}"><b>${esc(x.c.nombre)}</b><small>${ciMeta(x.c)}</small></button>`).join("")}` : ""}<div class="stack"><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
+      return `<p>Elige una plantilla o uno de tus circuitos. Se copian sus ejercicios y tiempos, y luego puedes cambiarlos.</p><h3 class="ci-h3">Plantillas</h3>${CI_PLANT.map((p, i) => [p, i])
+        .filter((x) => !x[0].m || x[0].m === state.mode)
+        .map(([p, i]) => `<button type="button" class="ci-opt${ciPlantLibre(p) ? "" : " lock"}" data-ci="usaplant" data-i="${i}"><b>${p.m ? `<i class="ci-mod">${esc(MN(p.m))}</i> ` : ""}${esc(p.nombre)}${ciPlantLibre(p) ? "" : ' <i class="est-pro">PRO</i>'}</b><small>${ciMeta(p)}</small></button>`)
+        .join("")}${state.circs.length ? `<h3 class="ci-h3">Mis circuitos</h3>${state.circs.map((x) => `<button type="button" class="ci-opt" data-ci="usamis" data-cid="${x.id}"><b>${esc(x.c.nombre)}</b><small>${ciMeta(x.c)}</small></button>`).join("")}` : ""}<div class="stack"><button type="button" class="secondary" data-ci="volver">Volver al circuito</button></div>`;
     return `<label class="ci-l">Nombre del circuito<input data-cif="nombre" maxlength="60" value="${esc(c.nombre)}" autocomplete="off"></label><div class="ci-tiempos"><div class="ci-tl"><span>Trabajo de cada ejercicio</span>${ciMmss("trabajo", c.trabajo)}</div><div class="ci-tl"><span>Descanso</span>${ciMmss("descanso", c.descanso)}</div><label>Series${sel("series", [1, 2, 3, 4, 5, 6], "")}</label><div class="ci-tl"><span>Pausa entre series</span>${ciMmss("pausa", c.pausa)}</div></div><p class="muted ci-ayt">Escribe los minutos y segundos que quieras. Si un ejercicio necesita otro tiempo, cámbialo en su ⏱.</p><p class="muted" data-ci-meta>${c.est.length ? ciMeta(c) : "Añade ejercicios al circuito."}</p>${
       c.est.length
         ? `<ol class="ci-est">${c.est
@@ -5121,14 +5204,26 @@
   }
   function ciBiblioHtml(conAdd) {
     let cat = (ciEd && ciEd.cat) || ciCat;
-    return `<p>${conAdd ? "Toca «Añadir» para meter un ejercicio en el circuito." : "Ejercicios con el peso del cuerpo, aptos para fútbol base. Ajusta el tiempo a la edad: con los pequeños, menos tiempo y más descanso."}</p><div class="ci-cats" role="group" aria-label="Tipo de ejercicio">${CI_CAT.map((k) => `<button type="button" class="chip${k[0] === cat ? " on" : ""}" data-ci="cat" data-k="${k[0]}" aria-pressed="${k[0] === cat}">${k[1]}</button>`).join("")}</div><div class="ci-lib">${CI_EJ.filter((x) => x[1] === cat)
-      .map(
-        (x) =>
-          `<div class="ci-ej">${ciPic(x[2])}<div class="info"><strong>${esc(x[3])}</strong><small>${esc(x[4])}</small></div>${conAdd ? `<button type="button" class="secondary small" data-ci="add" data-e="${x[0]}">${ciEd.c.est.some((s) => s.e === x[0]) ? "✓ Otra vez" : "Añadir"}</button>` : ""}</div>`,
-      )
+    return `<p>${conAdd ? "Toca «Añadir» para meter un ejercicio en el circuito." : "Ejercicios con el peso del cuerpo, aptos para fútbol base. Ajusta el tiempo a la edad: con los pequeños, menos tiempo y más descanso."}</p><div class="ci-cats" role="group" aria-label="Tipo de ejercicio">${CI_CAT.map((k) => `<button type="button" class="chip${k[0] === cat ? " on" : ""}" data-ci="cat" data-k="${k[0]}" aria-pressed="${k[0] === cat}">${k[1]}</button>`).join("")}</div>${ciPrevIntro(cat)}<div class="ci-lib">${CI_EJ.filter((x) => x[1] === cat && ciMod(x[0]))
+      .map((x) => {
+        let M = CI_META[x[0]],
+          ok = ciLibre(x[0]);
+        return `<div class="ci-ej${ok ? "" : " lock"}">${ciPic(x[2])}<div class="info"><strong>${esc(x[3])}${M && M.top && !esPro() ? ' <i class="est-top">TOP</i>' : ""}${ok ? "" : ' <i class="est-pro">PRO</i>'}</strong>${M ? `<span class="ci-zona">${esc(M.z)}${M.m ? " · " + esc(M.m.split(" ").map((k) => MN(k)).join(", ")) : ""}</span>` : ""}<small>${ok ? esc(x[4]) : "Disponible con el plan Pro."}</small></div>${conAdd ? `<button type="button" class="secondary small" data-ci="add" data-e="${x[0]}">${ok ? (ciEd.c.est.some((s) => s.e === x[0]) ? "✓ Otra vez" : "Añadir") : "🔒 Pro"}</button>` : ""}</div>`;
+      })
       .join("")}</div>${conAdd ? `<div class="stack"><button type="button" class="primary" data-ci="volver">Volver al circuito (${ciEd.c.est.length})</button></div>` : ""}`;
   }
   let ciCat = "fuerza";
+  /* Cabecera de las categorías nuevas (v11.64): para qué modalidad son y qué es gratis. */
+  function ciPrevIntro(cat) {
+    if (cat !== "prev" && cat !== "arr") return "";
+    let L = CI_EJ.filter((x) => x[1] === cat && ciMod(x[0])),
+      top = L.filter((x) => CI_META[x[0]] && CI_META[x[0]].top).length;
+    return `<p class="hint ci-prev">${
+      cat === "prev"
+        ? `Ejercicios para <b>evitar lesiones</b> de rodilla, cuádriceps, aductores, isquios y tobillo, elegidos para <b>${esc(MN())}</b>. Haz 2 o 3 a la semana, mejor al principio del entreno o en el calentamiento.`
+        : `Ejercicios para <b>arrancar más rápido</b>, elegidos para <b>${esc(MN())}</b>${state.mode === "fs" ? ": salidas de 3-5 m, frenadas y cambios de dirección, como en la pista" : state.mode === "11" ? ": aceleraciones de 10 a 30 m y sprints repetidos" : ": salidas cortas, reacción y sprints repetidos"}. Siempre con el cuerpo fresco, después de calentar.`
+    }${esPro() ? "" : ` Gratis: los ${top} marcados TOP; con el plan Pro, los ${L.length}.`} Los de las otras modalidades salen al cambiar de modalidad.</p>`;
+  }
   function ciPinta(scroll) {
     let t = ciEd.dest === "tr" ? "Circuito del entreno" : ciEd.id ? "Editar circuito" : "Nuevo circuito";
     if (ciEd.vista === "lib") t = "Biblioteca de ejercicios";
@@ -5225,6 +5320,7 @@
       return ciPinta(true);
     }
     if (k === "add") {
+      if (!ciLibre(b.dataset.e)) return note(`«${ciEj(b.dataset.e)[3]}» es del plan Pro. Gratis tienes los marcados como TOP; con Pro, todos los de prevención y arrancada.`);
       if (c.est.length >= 20) return note("Un circuito puede tener hasta 20 ejercicios.");
       c.est.push(ciEst(b.dataset.e));
       ciPinta(false);
@@ -5242,6 +5338,7 @@
     if (k === "usaplant" || k === "usamis") {
       let src = k === "usaplant" ? CI_PLANT[i] : m && m.c;
       if (!src) return;
+      if (k === "usaplant" && !ciPlantLibre(src)) return note(`«${src.nombre}» es del plan Pro. En el plan gratuito tienes las plantillas de prevención de cada modalidad; con Pro, todas.`);
       ciEd.c = ciLimpio(ciCopia(src));
       ciEd.vista = "edit";
       return ciPinta(true);
