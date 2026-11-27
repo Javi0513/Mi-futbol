@@ -116,7 +116,7 @@ with sync_playwright() as p:
     check('Pro: ninguna bloqueada',pg.locator('#infoBody .est-item.lock').count()==0)
     pg.click('#infoBody [data-est=a-c1]');pg.wait_for_timeout(600)
     n=pg.evaluate("JSON.parse(localStorage.getItem('mf_pizarra_v1'))['7']")
-    check('se carga en la pizarra con sus pasos',n['est']=='a-c1' and n['steps']==5 and len(n['items'])==15 and n.get('f')=='abp',str((n['est'],n['steps'],len(n['items']),n.get('f'))))
+    check('se carga en la pizarra con sus pasos',n['est']=='a-c1' and n['steps']==7 and len(n['items'])==15 and n.get('f')=='abp',str((n['est'],n['steps'],len(n['items']),n.get('f'))))
     check('tarjeta con la explicación del paso',pg.locator('.est-card').count()==1 and 'Paso' in pg.locator('#estStep').inner_text())
     pg.wait_for_timeout(5500)
     pg.screenshot(path=OUT+'/abp_f7.png',full_page=True)

@@ -15531,20 +15531,46 @@
   const ease = (f) => (f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2);
   const ANIM_D = 1100,
     ANIM_H = 350;
+  /* v11.64: las estrategias de fútbol sala y las ABP duran unos 8-10 s (antes 3-5 s): se ve la
+     colocación un momento, cada paso va más despacio y el balón sale cuando el compañero ya
+     está llegando (como en un partido de verdad), no a la vez que todos. Las jugadas propias, igual. */
+  const EST_T0 = 1000,
+    EST_TOT = 9300;
+  function animT(b) {
+    if (!b.est) return { t0: 0, D: ANIM_D, H: ANIM_H, est: false };
+    let n = Math.max(1, b.steps - 1),
+      paso = Math.min(2450, Math.max(1500, (EST_TOT - EST_T0) / n));
+    return { t0: EST_T0, D: Math.round(paso * 0.78), H: Math.round(paso * 0.22), est: true };
+  }
+  /* Paso que se está viendo a los t ms (para el texto de la explicación). */
+  function animPaso(b, t) {
+    let T = animT(b),
+      u = t - T.t0;
+    if (u < 0) return 0;
+    let seg = Math.floor(u / (T.D + T.H));
+    return Math.min(b.steps - 1, seg + (u % (T.D + T.H) > T.D * 0.5 ? 1 : 0));
+  }
   /* Posición de cada ficha a los t ms de reproducir la jugada. */
   function animPos(b, t) {
-    t = Math.max(0, t);
-    let seg = Math.floor(t / (ANIM_D + ANIM_H)),
+    let T = animT(b);
+    t = Math.max(0, t - T.t0);
+    let seg = Math.floor(t / (T.D + T.H)),
       last = b.steps - 1;
     if (seg >= last) return (it) => it.p[last];
-    let f = ease(Math.min(1, (t - seg * (ANIM_D + ANIM_H)) / ANIM_D));
+    let r = Math.min(1, (t - seg * (T.D + T.H)) / T.D),
+      f = ease(r),
+      fb = T.est ? ease(Math.min(1, Math.max(0, (r - 0.3) / 0.7))) : f;
     return (it) => {
       let a = it.p[seg],
-        c = it.p[seg + 1];
-      return [a[0] + (c[0] - a[0]) * f, a[1] + (c[1] - a[1]) * f];
+        c = it.p[seg + 1],
+        g = it.k === "ball" ? fb : f;
+      return [a[0] + (c[0] - a[0]) * g, a[1] + (c[1] - a[1]) * g];
     };
   }
-  const animTotal = (b) => (b.steps - 1) * (ANIM_D + ANIM_H);
+  const animTotal = (b) => {
+    let T = animT(b);
+    return T.t0 + (b.steps - 1) * (T.D + T.H);
+  };
   /* Campo en horizontal cuando la pantalla es más ancha que alta (tablet, PC, móvil girado). */
   function boardLand() {
     return window.innerWidth > window.innerHeight;
@@ -15656,7 +15682,7 @@
       }
       let t = Math.max(0, now - t0);
       if (boardRedraw) boardRedraw(animPos(b, t));
-      if (b.est) estStepTxt(Math.min(b.steps - 1, Math.floor(t / (ANIM_D + ANIM_H)) + (t % (ANIM_D + ANIM_H) > ANIM_D * 0.5 ? 1 : 0)));
+      if (b.est) estStepTxt(animPaso(b, t));
       if (t >= animTotal(b) + 250) {
         b.step = b.steps - 1;
         saveBoard();
@@ -15732,7 +15758,142 @@
   const estG = () => (state.mode === "fs" ? { W: 20, H: 40, s: 1 } : { W: 68, H: 105, s: 2.6 });
   let EST = EST_FS;
   const estLib = () => (EST = state.mode === "fs" ? EST_FS : EST_ABP);
-  const estDe = (id) => estLib().list.find((e) => e.id === id);
+  const estDe = (id) => {
+    let e = estLib().list.find((x) => x.id === id);
+    return e && estAmplia(e);
+  };
+  /* v11.64 (un entrenador: «las jugadas son muy cortas, no sirven; 8-10 s y más completas»):
+     cada estrategia y ABP se alarga con dos pasos más, calculados de la propia jugada:
+     · Amago: antes de arrancar, los que se desmarcan dan un paso hacia el lado contrario y su marca
+       se va con ellos (así se ve por qué quedan libres).
+     · Final: tras el remate, los de cerca entran al rechace y el más retrasado se queda vigilando
+       la contra; en las defensivas, el equipo sale hacia arriba y el balón busca al más adelantado. */
+  const estAmpC = {};
+  function estAmplia(e) {
+    let key = state.mode + ":" + e.id;
+    if (estAmpC[key]) return estAmpC[key];
+    let G = estG(),
+      k = G.s,
+      n = estPasos(e),
+      def = e.cat === "defensa",
+      atk = def ? "r" : "o",
+      dfn = def ? "o" : "r",
+      cl = (q) => [Math.round(Math.min(G.W - 0.3, Math.max(0.3, q[0])) * 10) / 10, Math.round(Math.min(G.H + 0.6, Math.max(-0.6, q[1])) * 10) / 10],
+      P = e.it.map((i) => {
+        let p = i[2].map((q) => q.slice());
+        while (p.length < n) p.push(p[p.length - 1].slice());
+        return p;
+      }),
+      bi = e.it.findIndex((i) => i[0] === "b"),
+      ball0 = bi >= 0 ? P[bi][0] : [G.W / 2, G.H / 2],
+      gk = (i) => i[1] === "P" && (i[0] === "o" ? i[2][0][1] > G.H * 0.8 : i[2][0][1] < G.H * 0.2),
+      d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]),
+      nom = (L) => {
+        let t = L.map((x) => (state.mode === "fs" || x === "P" ? x : "el " + x));
+        return t.length > 1 ? t.slice(0, -1).join(", ") + " y " + t[t.length - 1] : t[0] || "";
+      },
+      S = e.s.slice();
+    /* Amago (nuevo paso, antes de la primera arrancada) */
+    let run = [],
+      j = 0;
+    for (; j < n - 1 && !run.length; j++) {
+      let bj = bi >= 0 ? P[bi][j] : ball0;
+      e.it.forEach((i, x) => {
+        if (i[0] !== atk || gk(i)) return;
+        let a = P[x][j],
+          b = P[x][j + 1];
+        if (d(a, b) > 1.4 * k && d(a, bj) > 1.2 * k) run.push(x);
+      });
+    }
+    j--;
+    if (run.length) {
+      let am = P.map((p) => p[j].slice()),
+        mv = {};
+      run.forEach((x) => {
+        let a = P[x][j],
+          b = P[x][j + 1],
+          l = d(a, b),
+          u = [(b[0] - a[0]) / l, (b[1] - a[1]) / l],
+          s2 = 0.9 * k;
+        am[x] = cl([a[0] - u[0] * s2 + u[1] * 0.25 * k, a[1] - u[1] * s2 - u[0] * 0.25 * k]);
+        mv[x] = [am[x][0] - a[0], am[x][1] - a[1]];
+      });
+      e.it.forEach((i, x) => {
+        if (i[0] !== dfn || gk(i)) return;
+        let best = -1,
+          bd = 3.2 * k;
+        run.forEach((r) => {
+          let dd = d(P[x][j], P[r][j]);
+          if (dd < bd) (bd = dd), (best = r);
+        });
+        if (best >= 0) am[x] = cl([P[x][j][0] + mv[best][0] * 0.7, P[x][j][1] + mv[best][1] * 0.7]);
+      });
+      P.forEach((p, x) => p.splice(j + 1, 0, am[x]));
+      let qn = nom(run.map((x) => e.it[x][1]).filter(Boolean));
+      S.splice(
+        j + 1,
+        0,
+        def
+          ? `Los rivales amagan antes de arrancar${qn ? " (" + qn + ")" : ""}: no te lo creas, aguanta tu marca sin perder de vista el balón.`
+          : `Amago antes de arrancar: ${qn} ${run.length > 1 ? "dan" : "da"} un paso hacia el lado contrario y ${run.length > 1 ? "sus marcas se van" : "su marca se va"} detrás. Desde ahí, arrancada de verdad.`,
+      );
+    }
+    /* Paso final */
+    let m = P[0].length - 1,
+      L = P.map((p) => p[m].slice()),
+      fin = L.map((q) => q.slice()),
+      bl = bi >= 0 ? L[bi] : null;
+    if (def) {
+      let ours = e.it.map((i, x) => x).filter((x) => e.it[x][0] === "o" && !gk(e.it[x]));
+      ours.forEach((x) => (fin[x] = cl([L[x][0], L[x][1] - 5 * k])));
+      let up = ours.slice().sort((a, b) => L[a][1] - L[b][1])[0];
+      if (up !== undefined) {
+        fin[up] = cl([L[up][0] + (L[up][0] < G.W / 2 ? -1 : 1) * 1.5 * k, L[up][1] - 7 * k]);
+        if (bl) fin[bi] = cl([fin[up][0] + 0.4 * k, fin[up][1] - 0.6 * k]);
+      }
+      e.it.forEach((i, x) => {
+        if (i[0] === "r" && !gk(i)) fin[x] = cl([L[x][0], L[x][1] - 3 * k]);
+      });
+      S.push(`Balón recuperado: todo el equipo sale hacia arriba a la vez y el pase busca ${e.it[up] ? (state.mode === "fs" ? "a " : "al ") + e.it[up][1] : "al compañero más adelantado"} para salir a la contra.`);
+    } else {
+      let gol = bl && bl[1] < 1.2 * k && Math.abs(bl[0] - G.W / 2) < 3 * k,
+        ats = e.it.map((i, x) => x).filter((x) => e.it[x][0] === "o" && !gk(e.it[x])),
+        shooter = gol ? ats.slice().sort((a, b) => d(P[a][m - 1], P[bi][m - 1]) - d(P[b][m - 1], P[bi][m - 1]))[0] : -1,
+        cand = ats.filter((x) => x !== shooter),
+        back = cand.slice().sort((a, b) => L[b][1] - L[a][1])[0],
+        near = [],
+        mouth = [G.W / 2, 2.4 * k];
+      /* Los que la explicación ya deja atrás vigilando, no entran al rechace. */
+      let ult = e.s[e.s.length - 1] || "",
+        vigL = /vigila|contra|atrás/i.test(ult) ? ats.map((x) => e.it[x][1]).filter((l) => l && new RegExp("(^|[^0-9A-Za-z])" + l + "([^0-9A-Za-z]|$)").test(ult.replace(/^.*?(?=[^.]*(vigila|contra|atrás))/i, ""))) : [],
+        vig = vigL.length ? new RegExp("^(" + vigL.join("|") + ")$") : /^\b$/;
+      /* Si todos están en el área, el que vigila la contra es el que sacó. */
+      if (back !== undefined && L[back][1] < 6 * k) back = cand.slice().sort((a, b) => d(P[a][0], ball0) - d(P[b][0], ball0))[0];
+      ats.forEach((x) => {
+        if (x === back || x === shooter || vig.test(e.it[x][1])) return;
+        if (d(L[x], mouth) < 9 * k) {
+          near.push(x);
+          fin[x] = cl([L[x][0] + (mouth[0] - L[x][0]) * 0.4, L[x][1] + (mouth[1] - L[x][1]) * 0.4]);
+        }
+      });
+      if (back !== undefined) fin[back] = cl([L[back][0] + (G.W / 2 - L[back][0]) * 0.3, L[back][1] + (state.mode === "fs" ? 5 : 12)]);
+      e.it.forEach((i, x) => {
+        if (i[0] === "r" && !gk(i)) fin[x] = cl([L[x][0] + (mouth[0] - L[x][0]) * 0.2, L[x][1] + (mouth[1] - L[x][1]) * 0.2]);
+        if (i[0] === "r" && gk(i) && bl) fin[x] = cl([L[x][0] + (Math.min(Math.max(bl[0], G.W / 2 - 1.5 * k), G.W / 2 + 1.5 * k) - L[x][0]) * 0.6, L[x][1]]);
+      });
+      if (gol && bl) fin[bi] = cl([bl[0], -0.6]);
+      let qn = nom(near.map((x) => e.it[x][1]).filter(Boolean)),
+        qb = back !== undefined ? nom([e.it[back][1]]) : "";
+      S.push(
+        gol
+          ? `Después del remate: ${qn ? qn + (near.length > 1 ? " entran" : " entra") + " a por el rechace por si el portero la saca" : "todos atentos al rechace"}${qb ? " y " + qb + " se queda atrás vigilando la contra" : ""}.`
+          : `Sigue la jugada: ${qn ? qn + (near.length > 1 ? " atacan" : " ataca") + " el área" : "el equipo acompaña"}${qb ? " y " + qb + " se queda atrás por si hay que defender la contra" : ""}.`,
+      );
+    }
+    P.forEach((p, x) => p.push(fin[x]));
+    let r = { ...e, it: e.it.map((i, x) => [i[0], i[1], P[x]]), s: S };
+    return (estAmpC[key] = r);
+  }
   const estLibre = (e) => !!e.top || plan === "pro";
   const estCatN = (c) => (estLib().cats.find((x) => x[0] === c) || [c, c])[1];
   /* Fase del juego de una estrategia (para «Mis jugadas»): casi todas son ABP */
