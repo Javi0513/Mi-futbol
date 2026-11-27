@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 # y hace las órdenes sig1 / sig0 del anotador (directos.cam_ord), como en supabase-anotador-sigue.sql.
 FAKE=re.search(r'FAKE=r"""(.*?)"""',open(os.path.join(TESTS,'anotador.py'),encoding='utf-8').read(),re.S).group(1)
 FAKE0=FAKE.replace("actualizado:d.actualizado,ahora:","cam:d.cam_est||'',cam_ord:d.cam_ord||null,actualizado:d.actualizado,ahora:")
-FAKE=FAKE.replace("actualizado:d.actualizado,ahora:","cam:d.cam_est||'',cam_ord:d.cam_ord||null,sig:!!d.cam_sig,actualizado:d.actualizado,ahora:")
+FAKE=FAKE.replace("actualizado:d.actualizado,ahora:","cam:d.cam_est||'',cam_ord:d.cam_ord||null,sig:!!d.cam_sig,enc:d.cam_enc||'a',actualizado:d.actualizado,ahora:")
 CAMARA="""   if(n==='anotar_camara'){let d=AN(a.codigo);if(!d)return{error:{message:'NO_EXISTE'}};if(!d.cam_est)return{error:{message:'SIN_CAMARA'}};
      d.cam_ord={a:a.accion,n:((d.cam_ord&&d.cam_ord.n)||0)+1,at:new Date().toISOString()};d.actualizado=NOW();return{data:VA(d),error:null}}
    if(n==='anotar_quitar')"""
@@ -67,6 +67,18 @@ with sync_playwright() as p:
     pasa(pg,an);an.wait_for_selector('#anData [data-anc=sig0]',timeout=9000)
     check('el anotador ve «Siguiendo la jugada» y «Ver todo el campo»','Siguiendo la jugada' in an.locator('.an-cam').inner_text() and 'todo el campo' in an.locator('[data-anc=sig0]').inner_text().lower())
     an.screenshot(path=OUT+'/anosigue_siguiendo.png',full_page=True)
+    # v11.69: el anotador elige el encuadre
+    check('v11.69: el anotador ve «🔍 Encuadre: Abierto» con sus tres botones','Encuadre: Abierto' in an.locator('.an-cam').inner_text() and all(an.locator('[data-anc=enc%s]'%k).count()==1 for k in 'amc'))
+    o=manda(pg,an,'encc')
+    check('v11.69: pulsar «Cerrado» manda la orden «encc»',o['a']=='encc' and 'Cerrado' in an.locator('.message').inner_text(),o)
+    pg.wait_for_function("()=>localStorage.getItem('mf_cam_enc')==='c'",timeout=9000)
+    check('v11.69: el móvil que graba pasa a «Encuadre: Cerrado»','Encuadre: Cerrado' in pg.locator('.cam [data-cam=encuadre]').text_content())
+    wait(pg,"d.cam_enc==='c'")
+    pasa(pg,an);an.wait_for_function("()=>/Encuadre: Cerrado/.test(document.querySelector('.an-cam').innerText)",timeout=9000)
+    check('v11.69: y el anotador ve que está en «Cerrado»',an.locator('[data-anc=encc].primary').count()==1)
+    an.screenshot(path=OUT+'/anosigue_encuadre.png',full_page=True)
+    pg.click('.cam [data-cam=encuadre]');wait(pg,"d.cam_enc==='a'")
+    check('v11.69: si lo cambia el entrenador en su móvil, el anotador lo sabe (cam_enc)',True)
     o=manda(pg,an,'sig0')
     pg.wait_for_function('()=>'+SIG+'===null',timeout=9000);wait(pg,'d.cam_sig===false')
     check('«Ver todo el campo» lo quita en el móvil que graba',o['a']=='sig0' and 'No' in pg.locator('.cam [data-cam=sigue]').text_content())
@@ -90,7 +102,7 @@ with sync_playwright() as p:
     an2=page(b,pg.evaluate('window.__db'),FAKE0);an2.goto(URL+'?anotar='+code);an2.wait_for_selector('#anData .lv-board')
     an2.evaluate('d=>{d[0].cam_est="lista"}',an2.evaluate('window.__db.directos'))
     an2.evaluate('()=>{window.__db.directos[0].cam_est="lista";window.__db.directos[0].actualizado=new Date(Date.now()+3e7).toISOString()}');an2.wait_for_selector('#anData [data-anc=rec]',timeout=9000)
-    check('sin supabase-anotador-sigue.sql el anotador no ve el botón (y grabar sigue igual)',an2.locator('[data-anc=sig1]').count()==0 and an2.locator('[data-anc=rec]').count()==1)
+    check('sin supabase-anotador-sigue.sql el anotador no ve el botón (y grabar sigue igual)',an2.locator('[data-anc=sig1]').count()==0 and an2.locator('[data-anc=enca]').count()==0 and an2.locator('[data-anc=rec]').count()==1)
     b.close()
 print('PASS' if all(res) and not errs else 'FAIL',sum(res),'/',len(res),errs)
 sys.exit(0 if all(res) and not errs else 1)

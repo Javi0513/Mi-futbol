@@ -9983,7 +9983,7 @@
         "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
         "<b>Móvil en el trípode, el anotador abre la cámara</b>: en el Directo (con el enlace del anotador ya creado), pulsa <b>«📱 Dejar en el trípode: el anotador abre la cámara»</b>. La primera vez el móvil te pide permiso para la cámara y el micro: pulsa «Permitir». Sale una pantalla negra «Esperando al anotador…» con la pantalla siempre encendida y la cámara todavía cerrada (así no gasta batería ni se calienta). Cuando empiece el partido, el anotador pulsa en su enlace <b>«🎥 Abrir la cámara»</b> o <b>«🎥 Abrir y emitir para la familia»</b> y en unos segundos se abre sola. Después, desde su enlace, también puede <b>«📡 Emitir para la familia»</b> o «Cortar el directo» (emitir es del plan Pro del entrenador). Si quieres abrirla tú, «🎥 Abrir la cámara ya»; para dejarlo, «Salir».",
         "<b>El anotador también lleva la grabación</b>: con la cámara abierta en el móvil que graba (Directo › «Cámara: grabar el partido»), en el enlace del anotador sale «Grabación» con <b>«● Empezar a grabar»</b>, <b>«⏸ Pausar grabación»</b> y <b>«▶ Reanudar grabación»</b> y <b>«■ Parar grabación»</b>. El móvil que graba lo hace solo en unos segundos y el anotador ve si está grabando o en pausa. Al pausar y reanudar sigue siendo un solo vídeo, sin el rato de la pausa. En el móvil que graba también tienes «⏸ Pausar» y «▶ Reanudar». <b>Guardar el vídeo se hace siempre en el móvil que graba</b> (el anotador no puede): cuando el anotador pulsa «■ Parar grabación», en el móvil del trípode sale «Guardar en Fotos» (iPhone) o «Guardar en el móvil». Si a la vez emites el directo para la familia (Pro), lo que se graba se queda igualmente guardado en ese móvil. Va con el anotador (plan gratuito: 3 partidos al mes; con Pro, ilimitado).",
-        "<b>«🎯 Seguir la jugada» desde el anotador</b>: con la cámara abierta en el móvil que graba, en «Grabación» del enlace del anotador sale <b>«🎯 Seguir la jugada»</b>. Al pulsarlo, en unos segundos el móvil que graba empieza a acercar la imagen sola a donde están el balón y los jugadores; con <b>«Ver todo el campo»</b> lo quita. El anotador ve en todo momento si está puesto. También se puede poner o quitar en el propio móvil que graba. Cuenta para los 2 partidos o entrenos al mes del plan gratuito de «Seguir la jugada» del entrenador; con Pro, ilimitado.",
+        "<b>«🎯 Seguir la jugada» desde el anotador</b>: con la cámara abierta en el móvil que graba, en «Grabación» del enlace del anotador sale <b>«🎯 Seguir la jugada»</b>. Al pulsarlo, en unos segundos el móvil que graba empieza a acercar la imagen sola a donde están el balón y los jugadores; con <b>«Ver todo el campo»</b> lo quita. El anotador ve en todo momento si está puesto. Con el seguimiento puesto, también elige el <b>«🔍 Encuadre»</b>: «Abierto» (se ve más campo), «Medio» o «Cerrado» (acerca más); el móvil que graba lo cambia en unos segundos. También se puede poner o quitar en el propio móvil que graba. Cuenta para los 2 partidos o entrenos al mes del plan gratuito de «Seguir la jugada» del entrenador; con Pro, ilimitado.",
         "<b>Guardar el vídeo en iPhone o iPad</b>: al parar, pulsa <b>«Guardar en Fotos»</b> y elige <b>«Guardar vídeo»</b>: así sale en la galería. «Guardar en Archivos» lo descarga a la app <b>Archivos › Descargas</b> (no a Fotos), y solo si en el aviso de Safari pulsas «Descargar». No cierres la cámara ni pulses «Grabar otro trozo» hasta tenerlo guardado. Si un vídeo está en Archivos, ábrelo allí y con el botón de compartir elige «Guardar vídeo» para pasarlo a Fotos.",
         "<b>No hace falta que tengas la app abierta</b>: si el anotador empieza, apunta y termina el partido él solo, al abrir la app el partido ya sale con el resultado, los goleadores, los cambios, las tarjetas y los minutos de cada jugador. Si la tienes abierta en otra pantalla (Inicio, Partidos…), se pone al día sola en unos segundos.",
         "En el <b>descanso</b>, el anotador apunta los cambios con «🔄 Cambio del descanso» y no gastan ventana. Si se le olvidó, en la 2ª parte tiene el botón «🔄 Cambio del descanso (no gasta ventana)».",
@@ -13016,6 +13016,7 @@
         if (s && cam && cam.id === x.partido_id) {
           camEst(cam, camEstDe(cam));
           camSig(cam);
+          camEnc(cam);
           camEmi(cam);
           camOrden(s.cam_ord);
         } else if (s && !cam && tri && tri.id === x.partido_id) {
@@ -13756,6 +13757,12 @@
     sgBtn = (c) =>
       `<button class="${c.sg ? "primary" : "secondary"} small" data-cam="sigue" aria-pressed="${c.sg ? "true" : "false"}">🎯 Seguir la jugada: ${c.sg ? "Sí" : "No" + sgQueda(c)}</button>` +
       (c.sg ? `<button class="secondary small" data-cam="encuadre" aria-label="Cuánto se acerca la imagen">🔍 Encuadre: ${SG_ENC[sgEnc()][0]}</button>` : "");
+  function sgPonEnc(n) {
+    try {
+      localStorage.setItem("mf_cam_enc", n);
+    } catch (e) {}
+    camBotones();
+  }
   async function sgPon(c) {
     if (c.sg) {
       sgApaga(c);
@@ -13912,6 +13919,7 @@
     if (!c) return;
     camEst(c, camEstDe(c));
     camSig(c);
+    camEnc(c);
     camEmi(c);
     let m = state.matches.find((z) => z.id === c.id),
       pick = c.pick && m
@@ -14017,6 +14025,26 @@
           if (/cam_sig|schema cache|column/i.test(String(r.error.message || r.error))) camSigNo = true;
         },
         () => (x._camSig = undefined),
+      );
+  }
+  /* v11.69: el anotador ve el encuadre de «Seguir la jugada» (directos.cam_enc: a, m o c) y lo cambia.
+     Sin supabase-anotador-encuadre.sql no se insiste. */
+  let camEncNo = false;
+  function camEnc(c) {
+    let x = c && !c.tr && liveRows[c.id],
+      v = sgEnc();
+    if (!x || !x.anotador || camEncNo || x._camEnc === v) return;
+    x._camEnc = v;
+    db.from("directos")
+      .update({ cam_enc: v })
+      .eq("id", x.id)
+      .then(
+        (r) => {
+          if (!r || !r.error) return;
+          x._camEnc = undefined;
+          if (/cam_enc|schema cache|column/i.test(String(r.error.message || r.error))) camEncNo = true;
+        },
+        () => (x._camEnc = undefined),
       );
   }
   /* v11.66: el anotador ve si este móvil está emitiendo para la familia (directos.cam_emi).
@@ -14174,6 +14202,15 @@
         camCorta();
         camBotones();
         note("El anotador ha cortado el directo para la familia.", true);
+      }
+      return;
+    }
+    /* v11.69: el anotador cambia el encuadre (enca / encm / encc) */
+    if (/^enc[amc]$/.test(o.a)) {
+      let n = o.a.slice(3);
+      if (sgEnc() !== n) {
+        sgPonEnc(n);
+        note("El anotador ha puesto el encuadre «" + SG_ENC[n][0] + "».", true);
       }
       return;
     }
@@ -14665,10 +14702,7 @@
     if (k === "encuadre") {
       /* v11.68: Abierto (se ve más campo, acerca poco) → Medio → Cerrado (acerca más) */
       let n = { a: "m", m: "c", c: "a" }[sgEnc()];
-      try {
-        localStorage.setItem("mf_cam_enc", n);
-      } catch (e) {}
-      camBotones();
+      sgPonEnc(n);
       return note(
         n === "a" ? "Encuadre abierto: se ve más campo y el balón, y acerca poco." : n === "m" ? "Encuadre medio: acerca algo más a la jugada." : "Encuadre cerrado: acerca mucho a la jugada (se ve menos campo y algo menos nítido).",
         true,
@@ -15387,6 +15421,9 @@
     abrir: "Orden enviada: la cámara se abre en el móvil del trípode en unos segundos.",
     emit1: "Orden enviada: el directo para la familia empieza en unos segundos (si el entrenador tiene Pro).",
     emit0: "Orden enviada: el directo para la familia se corta en unos segundos.",
+    enca: "Orden enviada: el encuadre pasa a «Abierto» en unos segundos.",
+    encm: "Orden enviada: el encuadre pasa a «Medio» en unos segundos.",
+    encc: "Orden enviada: el encuadre pasa a «Cerrado» en unos segundos.",
   };
   function anCamHtml(x, d) {
     if (!("cam" in x)) return "";
@@ -15394,11 +15431,14 @@
       o = x.cam_ord,
       sigO = o && (o.a === "sig1" || o.a === "sig0"),
       emiO = o && (o.a === "emit1" || o.a === "emit0"),
+      encO = o && /^enc[amc]$/.test(o.a),
       falta =
         o &&
         Date.parse(x.ahora) - Date.parse(o.at) < 20000 &&
         (o.a === "abrir"
           ? e === "espera"
+          : encO
+            ? "enc" in x && x.enc !== o.a.slice(3) && !!e && e !== "listo"
           : emiO
             ? e === "espera" || ("emi" in x && !!x.emi !== (o.a === "emit1") && !!e)
             : sigO
@@ -15422,7 +15462,14 @@
       "sig" in x && e && e !== "listo" && e !== "espera"
         ? `<p class="muted">${x.sig ? "🎯 <b>Siguiendo la jugada</b>: la imagen se acerca sola al balón y a los jugadores." : "🎯 Seguir la jugada: <b>no</b> (se ve todo el campo)."}</p><div class="lv-ctl">${
             x.sig ? C("sig0", "Ver todo el campo") : C("sig1", "🎯 Seguir la jugada", "primary")
-          }</div>`
+          }</div>${
+            /* v11.69: el encuadre también desde el anotador (con supabase-anotador-encuadre.sql) */
+            x.sig && "enc" in x
+              ? `<p class="muted">🔍 Encuadre: <b>${{ a: "Abierto", m: "Medio", c: "Cerrado" }[x.enc] || "Abierto"}</b> (Abierto: se ve más campo · Cerrado: acerca más).</p><div class="lv-ctl">${["a", "m", "c"]
+                  .map((k) => C("enc" + k, { a: "Abierto", m: "Medio", c: "Cerrado" }[k], (x.enc || "a") === k ? "primary" : "secondary"))
+                  .join("")}</div>`
+              : ""
+          }`
         : "";
     /* v11.66: emitir para la familia desde el anotador (con supabase-anotador-tripode.sql) */
     let em =
