@@ -59,6 +59,7 @@ with sync_playwright() as p:
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.49 (mapa de calor después del partido)',all(w in body for w in ('Mapa de calor también después del partido','Dónde fue cada acción','2 partidos al mes')))
+    check('v11.70: si no puedes entrar, la app dice por qué',all(w in body for w in ('Si no puedes entrar','Actualizar Chrome','Actualizar WebView','Reparar','tablet apaisada')))
     check('v11.69: el anotador también elige el encuadre',all(w in body for w in ('El anotador también elige el','Abierto','Medio','Cerrado','móvil del trípode')))
     check('v11.68: «Seguir la jugada» con más campo y encuadre',all(w in body for w in ('con más campo y mejor imagen','muy pillado','Encuadre','Abierto','Cerrado')))
     check('v11.67: «Seguir la jugada» más tranquilo',all(w in body for w in ('más tranquilo y certero','pasa pegada al móvil','últimos 2 segundos')))
