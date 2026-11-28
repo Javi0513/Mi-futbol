@@ -8828,6 +8828,11 @@
     $("loginmsg").innerHTML = t
       ? `<div class="message${ok ? " ok" : ""}" role="${ok ? "status" : "alert"}"><span>${esc(t)}</span></div>`
       : "";
+    /* v11.70: en tablet apaisada con el teclado abierto el aviso quedaba fuera de la pantalla y parecía que no pasaba nada */
+    if (t)
+      try {
+        $("loginmsg").scrollIntoView({ block: "center", behavior: "smooth" });
+      } catch (e) {}
   }
   function setAm(m) {
     amode = m;
@@ -9269,6 +9274,9 @@
       }
       loginNote("");
     });
+  /* v11.70: la pantalla de entrada ya funciona. arranque.js avisa en pantalla si esto no llega
+     (Chrome / Android System WebView antiguo o un archivo que no carga) en vez de no hacer nada. */
+  window.MF_LISTO = true;
   async function doLogout() {
     saliendo = true;
     try {
@@ -10140,6 +10148,15 @@
         "La app se actualiza sola. Al abrir una versión nueva verás un momento «Actualizando…» y después «¡App actualizada!».",
         "Si tienes la app abierta cuando sale una versión nueva, aparece un aviso con el botón «Actualizar».",
         "Lo que ha cambiado lo ves en «Mi cuenta › Novedades de esta versión».",
+      ],
+    },
+    {
+      t: "Si no puedes entrar",
+      p: [
+        "Si pones el email y la contraseña y la app te avisa de que el email o la contraseña no son correctos, pulsa «He olvidado mi contraseña» y te llega un enlace para poner una nueva.",
+        "Si sale el aviso <b>«navegador antiguo»</b> (pasa en algunas tablets y móviles Android que no se actualizan), pulsa «Actualizar Chrome» y «Actualizar WebView», o abre <b>Play Store</b> y actualiza «Google Chrome» y «Android System WebView». Después reinicia el dispositivo y vuelve a abrir la app. La app necesita Chrome 85 o más nuevo.",
+        "Si sale «La app no ha terminado de cargar», pulsa «Reparar»: vuelve a descargar la app sin borrar nada de tu cuenta. También tienes «¿Problemas? Reparar» abajo del todo en la pantalla de entrada.",
+        "Si sigue sin ir, manda una captura de la pantalla a mifutboljv32@gmail.com.",
       ],
     },
     {

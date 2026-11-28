@@ -7742,3 +7742,26 @@ body.tri-on {
 .tri-bt > * {
   flex: 1 1 auto;
 }
+/* v11.70: aviso de arranque (arranque.js) cuando la app no puede cargar: navegador antiguo o archivo que falla */
+#loginmsg .arr-aviso {
+  flex-direction: column;
+  align-items: stretch;
+  line-height: 1.4;
+}
+#loginmsg .arr-aviso .arr-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+#loginmsg .arr-aviso .lnk {
+  font-weight: 700;
+  color: #ffd36b;
+  text-decoration: underline;
+}
+#loginmsg .arr-aviso .arr-det {
+  display: block;
+  margin-top: 6px;
+  opacity: 0.75;
+  font-size: 12px;
+  word-break: break-word;
+}
