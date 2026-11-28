@@ -3049,7 +3049,7 @@
   });
   /* --- Límites del plan gratuito (v11.4) ---
      Lo nuevo tiene un tope en el plan gratuito y es ilimitado con el plan Pro. */
-  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3, etv: 2, ext: 2, sig: 2, je: 3 };
+  const LIM = { mp: 2, xl: 2, pe: 3, an: 3, vt: 3, cv: 3, tr: 3, vid: 2, pasos: 3, ej: 3, misEj: 5, disp: 3, espTr: 2, espVid: 2, jg: 3, esf: 1, cgSem: 1, rs: 3, rj: 3, at: 2, lg: 4, campos: 3, etv: 2, ext: 2, sig: 2, je: 3, lente: 3 };
   /* Con Pro no hay tope de pasos: este es solo de seguridad (la pizarra se guarda en el móvil) */
   const PASOS_MAX = 200;
   const esPro = () => plan === "pro";
@@ -3094,6 +3094,8 @@
           ? `En el plan gratuito puedes poner el vídeo de una <b>cámara externa</b> (YouTube, Veo, XbotGo…) en el enlace del directo en <b>${LIM.ext} partidos o entrenos al mes</b> y este mes ya los has usado. El marcador del enlace y el vídeo del móvil siguen igual. El mes que viene vuelves a tener ${LIM.ext}.`
           : tipo === "sig"
           ? `En el plan gratuito puedes usar <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca y sigue el balón) en <b>${LIM.sig} partidos o entrenos al mes</b> y este mes ya los has usado. Grabar y emitir con todo el campo sigue igual. El mes que viene vuelves a tener ${LIM.sig}.`
+          : tipo === "lente"
+          ? `En el plan gratuito puedes grabar o emitir con la <b>lente 0,5x</b> (todo el campo con el móvil fijo) en <b>${LIM.lente} partidos o entrenos al mes</b> y este mes ya los has usado. Con «🎯 Seguir la jugada» se pone sola, y la lente normal (1x) es siempre gratis. El mes que viene vuelves a tener ${LIM.lente}.`
           : tipo === "je"
           ? `En el plan gratuito puedes enviar por WhatsApp <b>${LIM.je} jugadas de la pizarra al mes</b> (imagen o vídeo; volver a mandar la misma no gasta) y este mes ya las has usado. <b>Guardarlas en el móvil sigue siendo gratis</b>: luego puedes mandarlas tú desde la galería. El mes que viene vuelves a tener ${LIM.je}.`
           : tipo === "etv"
@@ -9991,6 +9993,7 @@
         "<b>El anotador también lleva el reloj</b>: en su enlace tiene «Empezar partido», «Pausar» / «Reanudar», «Descanso», «Empezar 2ª parte» y «Terminar partido». El reloj es el mismo para los dos: lo que toque el anotador te sale al momento en tu Directo, y tú también puedes seguir tocándolo. Si lo tocáis los dos a la vez, vale lo que hagas tú.",
         "<b>Móvil en el trípode, el anotador abre la cámara</b>: en el Directo (con el enlace del anotador ya creado), pulsa <b>«📱 Dejar en el trípode: el anotador abre la cámara»</b>. La primera vez el móvil te pide permiso para la cámara y el micro: pulsa «Permitir». Sale una pantalla negra «Esperando al anotador…» con la pantalla siempre encendida y la cámara todavía cerrada (así no gasta batería ni se calienta). Cuando empiece el partido, el anotador pulsa en su enlace <b>«🎥 Abrir la cámara»</b> o <b>«🎥 Abrir y emitir para la familia»</b> y en unos segundos se abre sola. Después, desde su enlace, también puede <b>«📡 Emitir para la familia»</b> o «Cortar el directo» (emitir es del plan Pro del entrenador). Si quieres abrirla tú, «🎥 Abrir la cámara ya»; para dejarlo, «Salir».",
         "<b>El anotador también lleva la grabación</b>: con la cámara abierta en el móvil que graba (Directo › «Cámara: grabar el partido»), en el enlace del anotador sale «Grabación» con <b>«● Empezar a grabar»</b>, <b>«⏸ Pausar grabación»</b> y <b>«▶ Reanudar grabación»</b> y <b>«■ Parar grabación»</b>. El móvil que graba lo hace solo en unos segundos y el anotador ve si está grabando o en pausa. Al pausar y reanudar sigue siendo un solo vídeo, sin el rato de la pausa. En el móvil que graba también tienes «⏸ Pausar» y «▶ Reanudar». <b>Guardar el vídeo se hace siempre en el móvil que graba</b> (el anotador no puede): cuando el anotador pulsa «■ Parar grabación», en el móvil del trípode sale «Guardar en Fotos» (iPhone) o «Guardar en el móvil». Si a la vez emites el directo para la familia (Pro), lo que se graba se queda igualmente guardado en ese móvil. Va con el anotador (plan gratuito: 3 partidos al mes; con Pro, ilimitado).",
+        "<b>📐 Lente 0,5x o 1x</b>: en la cámara, el botón <b>«📐 Lente»</b> cambia entre la <b>1x</b> (la normal del móvil) y la <b>0,5x</b> (gran angular, más campo). Con el móvil fijo en el centro de la banda, en 0,5x deberían entrar las dos porterías. Se puede cambiar también mientras grabas o emites, sin cortar el vídeo. En Android usa el zoom de la cámara; en iPhone, la cámara ultra gran angular. El anotador también la cambia desde su enlace, en «Grabación» (botones «1x» y «0,5x (más campo)»), sin tocar el móvil del trípode. Si tu móvil no la tiene o no deja usarla desde la app, te avisa. Con «🎯 Seguir la jugada» la 0,5x se pone sola. Plan gratuito: <b>0,5x en 3 partidos o entrenos al mes</b> (la 1x siempre gratis); con Pro, ilimitado y se queda puesta para la próxima vez.",
         "<b>«🎯 Seguir la jugada» desde el anotador</b>: con la cámara abierta en el móvil que graba, en «Grabación» del enlace del anotador sale <b>«🎯 Seguir la jugada»</b>. Al pulsarlo, en unos segundos el móvil que graba empieza a acercar la imagen sola a donde están el balón y los jugadores; con <b>«Ver todo el campo»</b> lo quita. El anotador ve en todo momento si está puesto. Con el seguimiento puesto, también elige el <b>«🔍 Encuadre»</b>: «Abierto» (se ve más campo), «Medio» o «Cerrado» (acerca más); el móvil que graba lo cambia en unos segundos. También se puede poner o quitar en el propio móvil que graba. Cuenta para los 2 partidos o entrenos al mes del plan gratuito de «Seguir la jugada» del entrenador; con Pro, ilimitado.",
         "<b>Guardar el vídeo en iPhone o iPad</b>: al parar, pulsa <b>«Guardar en Fotos»</b> y elige <b>«Guardar vídeo»</b>: así sale en la galería. «Guardar en Archivos» lo descarga a la app <b>Archivos › Descargas</b> (no a Fotos), y solo si en el aviso de Safari pulsas «Descargar». No cierres la cámara ni pulses «Grabar otro trozo» hasta tenerlo guardado. Si un vídeo está en Archivos, ábrelo allí y con el botón de compartir elige «Guardar vídeo» para pasarlo a Fotos.",
         "<b>No hace falta que tengas la app abierta</b>: si el anotador empieza, apunta y termina el partido él solo, al abrir la app el partido ya sale con el resultado, los goleadores, los cambios, las tarjetas y los minutos de cada jugador. Si la tienes abierta en otra pantalla (Inicio, Partidos…), se pone al día sola en unos segundos.",
@@ -10115,8 +10118,8 @@
       t: "Plan gratuito y plan Pro",
       p: [
         "El plan gratuito tiene un límite de jugadores, partidos y entrenamientos en cada modalidad y un equipo por modalidad. En «Mi cuenta» ves cuánto llevas. Jugadores: <b>10 en fútbol 7</b>, <b>10 en fútbol sala</b> y <b>16 en fútbol 11</b>. Si ya tenías más antes de este cambio, no se borra ninguno: los sigues viendo y usando, pero para añadir otro necesitas el plan Pro.",
-        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», enviar por WhatsApp <b>3 jugadas de la pizarra al mes</b> (guardarlas en el móvil es gratis siempre), en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, las fases del juego de la semana actual, los <b>porteros y los goles por minutos</b> de tus <b>últimos 5 partidos</b>, y los ejercicios de <b>prevención y arrancada</b> TOP (9) con la plantilla de prevención de tu modalidad. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
-        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11, las fases del juego de las 6 últimas semanas, porteros y goles por minutos de toda la temporada, y los 30 ejercicios de prevención y arrancada con todas las plantillas de cada modalidad.",
+        "<b>Plan gratuito</b>, en cada modalidad: 1 equipo, 5 partidos, 5 entrenamientos y hasta 10 jugadores (16 en fútbol 11). Además: tu cuenta en <b>3 dispositivos</b>, <b>3 convocatorias</b> y <b>3 envíos de entreno</b> al mes, <b>2 entrenos en directo</b> al mes, el vídeo de una <b>cámara externa</b> (YouTube, Veo…) en el enlace del directo en <b>2 partidos o entrenos al mes</b>, <b>«🎯 Seguir la jugada»</b> (la cámara que se acerca sola a la jugada) en <b>2 partidos o entrenos al mes</b>, la <b>lente 0,5x</b> de la cámara (todo el campo con el móvil fijo) en <b>3 partidos o entrenos al mes</b> (la 1x siempre gratis), enlaces del directo preparados antes del partido en <b>3 partidos al mes</b>, <b>2 vídeos de jugadas</b>, jugadas de la pizarra de <b>3 pasos</b>, <b>3 ejercicios</b> por entreno, <b>5</b> en «Mis ejercicios», <b>3</b> circuitos guardados, <b>3</b> jugadas guardadas en «Mis jugadas», enviar por WhatsApp <b>3 jugadas de la pizarra al mes</b> (guardarlas en el móvil es gratis siempre), en el enlace del equipo el próximo partido, <b>2</b> entrenos, <b>2</b> vídeos y el esfuerzo de la <b>última sesión</b>, el <b>anotador del directo en 3 partidos al mes</b> (con los tiros de cada jugador en <b>2</b>), el <b>control de ventanas de cambios en 3 partidos al mes</b> (los cambios de varios a la vez son gratis), <b>3 resúmenes de partido compartidos al mes</b> y <b>3 resúmenes de jugador</b> (verlos es gratis siempre), la ficha del jugador con sus <b>3 últimos partidos</b>, el <b>mapa de calor y el campograma de tiro en 2 partidos al mes</b>, <b>3 campos</b> en «Mis campos» (buscar el campo en el mapa y «Cómo llegar» es gratis siempre), pegar la <b>clasificación de la liga</b> o sus resultados <b>4 días al mes</b> (verla y apuntar a mano es gratis), <b>2 exportaciones a Excel al mes</b>, el enlace del preparador físico con la <b>semana actual</b>, las 10 estrategias TOP de fútbol sala, las 5 jugadas de ABP TOP en fútbol 7 y 11, las fases del juego de la semana actual, los <b>porteros y los goles por minutos</b> de tus <b>últimos 5 partidos</b>, y los ejercicios de <b>prevención y arrancada</b> TOP (9) con la plantilla de prevención de tu modalidad. El contexto de la carga (edad, días, horario y periodo) es gratis para todos.",
+        "<b>Plan Pro</b>: todo <b>ilimitado</b> (dispositivos, equipos, jugadores, partidos, entrenos, entrenos en directo con vídeo, cámara externa en el enlace del directo, seguir la jugada con la cámara, lente 0,5x de la cámara, convocatorias, envíos, resúmenes de partido y de cada jugador compartidos, exportaciones a Excel, ficha del jugador con todos sus partidos, mapa de calor y campograma de tiro, campos guardados en «Mis campos», vídeos, ejercicios por entreno, «Mis ejercicios», pasos de cada jugada, circuitos, jugadas guardadas, anotador del directo (también los tiros de cada jugador), enlaces del directo preparados antes del partido, y todo lo del enlace del equipo), <b>pizarra limpia</b>, gráfico de carga física (también en el enlace del preparador físico, 6 semanas), emitir vídeo en el Directo, las 34 estrategias de fútbol sala, las 14 jugadas de ABP de fútbol 7 y 11, las fases del juego de las 6 últimas semanas, porteros y goles por minutos de toda la temporada, y los 30 ejercicios de prevención y arrancada con todas las plantillas de cada modalidad.",
         "<b>Aviso antes de que termine el Pro</b>: si estás en la prueba gratis, has cancelado tu suscripción o el pack de tu club está cancelado, <b>2 días antes</b> te sale un aviso arriba en la app con el día en que termina. Pulsa «Entendido» para quitarlo (vuelve a salir al día siguiente). Al terminar pasas al plan gratuito sin perder nada de lo guardado. Si tu suscripción se renueva sola, no sale ningún aviso porque no termina. Si estás en la prueba gratis, en el aviso tienes el botón «Seguir con Pro», que te lleva directamente al pago, y también te llega un <b>email</b> con el enlace para pagar.",
         "<b>Código promocional</b>: si te han pasado un código, ve a «Mi cuenta › Tengo un código promocional», escríbelo y pulsa «Canjear el código». Tendrás el plan Pro gratis los días que dé el código (por ejemplo, <b>JV32PLAY</b> da 7 días), <b>sin tarjeta</b>. En «Mi cuenta» verás «Pro · modo prueba» y hasta qué día te dura; 2 días antes te sale el aviso y al acabar vuelves solo al plan gratuito sin perder nada. Cada código se puede usar una vez por cuenta y solo si estás en el plan gratuito.",
         { texto: "<b>Dónde se paga:</b> el Pro y los packs de club se contratan en la web, en «Mi cuenta». Una vez contratado, el Pro funciona en todos tus dispositivos, también en la app de Android.", soloWeb: true },
@@ -10508,6 +10511,33 @@
         {
           t: "¡Listo!",
           p: "Graba o emite como siempre, con el marcador dentro. Para ver todo el campo otra vez, toca el botón y queda en «No». Si hay anotador, también lo puede poner o quitar desde su enlace, en «Grabación». Plan gratuito: 2 partidos o entrenos al mes; con Pro, ilimitado y se queda puesto para la próxima vez.",
+        },
+      ],
+    },
+    lente: {
+      t: "Lente 0,5x: todo el campo",
+      v: "11.71",
+      p: "Con el móvil fijo en la banda, la lente 0,5x mete las dos porterías.",
+      pasos: [
+        {
+          t: "Lente 0,5x",
+          p: "Te enseño a grabar o emitir con la lente 0,5x (gran angular) para que, con el móvil fijo en la banda, entren las dos porterías. No se cambia nada mientras miras.",
+          go: () => {
+            $("info").classList.add("hidden");
+            if (!state.draft) ftPartidos();
+          },
+        },
+        {
+          t: "1. Abre la cámara",
+          p: "En «Partidos», abre el Directo del partido y pulsa «Cámara: grabar el partido». En «Entrenos» vale «Grabar el entreno» o «📡 Emitir en directo».",
+        },
+        {
+          t: "2. Toca «📐 Lente»",
+          p: "Está al lado de «🔄 Imagen». Pasa de «1x» (la normal del móvil) a «0,5x (más campo)». Se puede cambiar también mientras grabas, sin cortar el vídeo. Si hay anotador, también la cambia desde su enlace, en «Grabación».",
+        },
+        {
+          t: "¡Listo!",
+          p: "Pon el móvil fijo, alto y en el centro de la banda. Si tu móvil no tiene la 0,5x o no deja usarla desde la app, te avisa. Con «🎯 Seguir la jugada» la 0,5x se pone sola. Plan gratuito: 0,5x en 3 partidos o entrenos al mes (la 1x siempre gratis); con Pro, ilimitado y se queda puesta para la próxima vez.",
         },
       ],
     },
@@ -13034,6 +13064,7 @@
           camEst(cam, camEstDe(cam));
           camSig(cam);
           camEnc(cam);
+          camLen(cam);
           camEmi(cam);
           camOrden(s.cam_ord);
         } else if (s && !cam && tri && tri.id === x.partido_id) {
@@ -13741,34 +13772,86 @@
       if (t && !c.rec && (navigator.hardwareConcurrency || 2) >= 4 && (t.getSettings().width || 0) < 1920)
         await t.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } });
     } catch (e) {}
+    if (c.frente) return false;
+    return camLente(c, true);
+  }
+  /* v11.71: lente 0,5x (gran angular) o 1x también sin «Seguir la jugada». Un entrenador deja el móvil fijo
+     en la banda y con la 1x no le entraban las dos porterías. Primero el zoom de la propia cámara (Android);
+     si no, la cámara ultra gran angular (iPhone). Se cambia sin cortar la grabación ni el directo. */
+  async function camPista(c, video) {
+    let n = await navigator.mediaDevices.getUserMedia({ video });
+    if (cam !== c) {
+      n.getTracks().forEach((k) => k.stop());
+      return false;
+    }
+    c.s.getVideoTracks().forEach((k) => {
+      k.stop();
+      c.s.removeTrack(k);
+    });
+    n.getVideoTracks().forEach((k) => (c.s.addTrack(k), camVigila(k)));
+    c.v.srcObject = new MediaStream(n.getVideoTracks());
+    c.v.play().catch(() => {});
+    return true;
+  }
+  async function camLente(c, ancha) {
+    let t = c.s.getVideoTracks()[0],
+      st = (t && t.getSettings && t.getSettings()) || {},
+      res = { width: { ideal: st.width || 1280 }, height: { ideal: st.height || 720 }, frameRate: { ideal: 30 } };
+    if (c.frente) return false;
     try {
       let cap = t && typeof t.getCapabilities === "function" ? t.getCapabilities() : null;
-      if (cap && cap.zoom && cap.zoom.min < (t.getSettings().zoom || 1)) {
-        await t.applyConstraints({ advanced: [{ zoom: cap.zoom.min }] });
+      if (cap && cap.zoom && cap.zoom.min < 1) {
+        let z = ancha ? cap.zoom.min : Math.max(cap.zoom.min, Math.min(cap.zoom.max, 1));
+        if (Math.abs((st.zoom || 1) - z) > 0.01) await t.applyConstraints({ advanced: [{ zoom: z }] });
+        c.lente = ancha ? "05" : "1";
         return true;
       }
     } catch (e) {}
-    if (c.frente || c.rec || !navigator.mediaDevices.enumerateDevices) return false;
+    if (!navigator.mediaDevices.enumerateDevices) return false;
     try {
-      let ds = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"),
-        u = ds.find((d) => /ultra|gran angular|0[.,]5/i.test(d.label) && !/front|frontal|delantera/i.test(d.label));
-      if (!u || (t && t.getSettings().deviceId === u.deviceId)) return false;
-      let n = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: u.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } } });
-      if (cam !== c || c.rec) {
-        n.getTracks().forEach((k) => k.stop());
-        return false;
+      if (!ancha) {
+        if (c.lente !== "05") return true;
+        if (!(await camPista(c, Object.assign({ facingMode: "environment" }, res)))) return false;
+        c.lente = "1";
+        return true;
       }
-      c.s.getVideoTracks().forEach((k) => {
-        k.stop();
-        c.s.removeTrack(k);
-      });
-      n.getVideoTracks().forEach((k) => (c.s.addTrack(k), camVigila(k)));
-      c.v.srcObject = new MediaStream(n.getVideoTracks());
-      c.v.play().catch(() => {});
+      let ds = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"),
+        tras = ds.filter((d) => !/front|frontal|delantera/i.test(d.label)),
+        /* Primero la «ultra» (iPhone: «Cámara ultra gran angular trasera»); la «gran angular dual» empieza en 1x */
+        u = tras.find((d) => /ultra|0[.,]5/i.test(d.label));
+      if (!u) return false;
+      if (st.deviceId !== u.deviceId && !(await camPista(c, Object.assign({ deviceId: { exact: u.deviceId } }, res)))) return false;
+      c.lente = "05";
       return true;
     } catch (e) {
       return false;
     }
+  }
+  const lenteBtn = (c) =>
+    c.frente
+      ? ""
+      : `<button class="secondary small" data-cam="lente" aria-label="Cambiar de lente">📐 Lente: ${c.lente === "05" ? "0,5x (más campo)" : "1x" + (esPro() || (envLee().lente || []).includes(c.id) ? "" : ` · 0,5x: ${Math.max(0, LIM.lente - envUsados("lente"))} gratis este mes`)}</button>`;
+  async function lentePon(c) {
+    let ancha = c.lente !== "05";
+    /* Plan gratuito: si ya ha gastado los del mes, se le enseña el Pro; si no, solo cuenta si la 0,5x funciona */
+    if (ancha && !esPro() && !(envLee().lente || []).includes(c.id) && envUsados("lente") >= LIM.lente) return envPuede("lente", c.id);
+    if (c.lenteVa) return;
+    c.lenteVa = true;
+    let ok = await camLente(c, ancha);
+    c.lenteVa = false;
+    if (cam !== c) return;
+    if (ok && ancha) envPuede("lente", c.id);
+    try {
+      localStorage.setItem("mf_cam_lente", c.lente === "05" ? "05" : "1");
+    } catch (e) {}
+    camBotones();
+    if (!ok)
+      return note(
+        ancha
+          ? "Este móvil no deja usar la lente 0,5x desde la app (o no la tiene). Para que entre todo el campo, separa un poco el trípode o súbelo más."
+          : "No se ha podido volver a la lente 1x.",
+      );
+    note(ancha ? "📐 Lente 0,5x: se ve más campo. Con el móvil fijo en el centro de la banda deberían entrar las dos porterías." : "📐 Lente 1x: la normal del móvil.", true);
   }
   const sgQueda = (c) => (esPro() || (envLee().sig || []).includes(c.id) ? "" : ` (${Math.max(0, LIM.sig - envUsados("sig"))} gratis este mes)`),
     sgBtn = (c) =>
@@ -13795,6 +13878,7 @@
     } catch (e) {}
     camBotones();
     let an = await sgAncha(c);
+    camBotones();
     note(
       "🎯 Siguiendo la jugada: la imagen se acerca y se mueve sola hacia donde están el balón y los jugadores. Pon el móvil quieto en el trípode, alto y en el centro de la banda, viendo todo el campo" +
         (an ? " (ya está puesta la cámara más abierta)." : "; si tu móvil tiene la cámara 0,5x, usa esa.") +
@@ -13937,6 +14021,7 @@
     camEst(c, camEstDe(c));
     camSig(c);
     camEnc(c);
+    camLen(c);
     camEmi(c);
     let m = state.matches.find((z) => z.id === c.id),
       pick = c.pick && m
@@ -13963,13 +14048,13 @@
         vd = xt && (c.emite || c.tr.live) ? viendoHtml(xt.id) : "";
       c.box.querySelector(".cam-ui").innerHTML = c.listo
         ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? emt : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-        : `${av}${vd}<p class="cam-luz" data-camluz role="status"></p><div class="cam-row">${emt}${lnk}</div><div class="cam-row">${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
+        : `${av}${vd}<p class="cam-luz" data-camluz role="status"></p><div class="cam-row">${emt}${lnk}</div><div class="cam-row">${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${lenteBtn(c)}${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Grabar el entreno: el vídeo se guarda solo en tu móvil, no se sube a internet. «📡 Emitir en directo» hace que quien tenga el enlace (la familia, el cuerpo técnico o el coordinador) vea el entreno en vivo, sin cuenta; puedes emitir y grabar a la vez. Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». Consejo: graba cada ejercicio por separado, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); si vas a grabar mucho rato, conecta el móvil al cargador y no lo dejes al sol.</p>'}`;
       luzAviso();
       return;
     }
     c.box.querySelector(".cam-ui").innerHTML = c.listo
       ? `<div class="cam-fin">${camFinHtml(c)}<button class="secondary" data-cam="again">Grabar otro trozo</button>${c.emite ? em : ""}<button class="danger" data-cam="close">Cerrar</button></div>`
-      : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<p class="cam-luz" data-camluz role="status"></p><div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «🎯 Seguir la jugada» acerca la imagen sola a donde están el balón y los jugadores (pon el móvil quieto viendo todo el campo). «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
+      : `${av}${liveRows[c.id] ? viendoHtml(liveRows[c.id].id) : ""}${pick}<p class="cam-luz" data-camluz role="status"></p><div class="cam-row"><button class="cam-g" data-cam="gf">+ Gol nuestro</button><button class="cam-g" data-cam="gc">+ Gol rival</button></div><div class="cam-row">${em}${camRecBtns(c)}<button class="secondary" data-cam="flip" aria-label="Cambiar de cámara">Girar cámara</button></div><div class="cam-row"><button class="secondary small" data-cam="giro" aria-label="Enderezar la imagen">🔄 Imagen: ${camGiroTxt(c.giro)}</button>${lenteBtn(c)}${sgBtn(c)}</div>${c.rec || c.emite ? "" : '<p class="cam-tip">Pon el móvil en horizontal; si la imagen sale de lado, toca «🔄 Imagen». El marcador y el minuto se graban dentro del vídeo. «🎯 Seguir la jugada» acerca la imagen sola a donde están el balón y los jugadores (pon el móvil quieto viendo todo el campo). «Emitir» hace que quien tenga el enlace del directo vea el vídeo en vivo; puedes emitir y grabar a la vez. Consejo: para y guarda en el descanso, los archivos más pequeños se guardan mejor. La pantalla se queda encendida sola mientras la cámara está abierta (si en tu iPhone se apaga igualmente, pon Ajustes › Pantalla y brillo › Bloqueo automático › Nunca); para un partido entero, conecta el móvil a una batería externa y no lo dejes al sol.</p>'}`;
     luzAviso();
   }
   /* v11.53: «⏸ Pausar» / «▶ Reanudar» la grabación (en el móvil que graba o desde el anotador) */
@@ -14062,6 +14147,26 @@
           if (/cam_enc|schema cache|column/i.test(String(r.error.message || r.error))) camEncNo = true;
         },
         () => (x._camEnc = undefined),
+      );
+  }
+  /* v11.71: el anotador ve la lente del móvil que graba (directos.cam_len: 05 o 1) y la cambia.
+     Sin supabase-anotador-lente.sql no se insiste. */
+  let camLenNo = false;
+  function camLen(c) {
+    let x = c && !c.tr && liveRows[c.id],
+      v = c && c.frente ? "f" : c && c.lente === "05" ? "05" : "1";
+    if (!x || !x.anotador || camLenNo || x._camLen === v) return;
+    x._camLen = v;
+    db.from("directos")
+      .update({ cam_len: v })
+      .eq("id", x.id)
+      .then(
+        (r) => {
+          if (!r || !r.error) return;
+          x._camLen = undefined;
+          if (/cam_len|schema cache|column/i.test(String(r.error.message || r.error))) camLenNo = true;
+        },
+        () => (x._camLen = undefined),
       );
   }
   /* v11.66: el anotador ve si este móvil está emitiendo para la familia (directos.cam_emi).
@@ -14222,6 +14327,14 @@
       }
       return;
     }
+    /* v11.71: el anotador cambia la lente (len05 / len1) */
+    if (o.a === "len05" || o.a === "len1") {
+      if ((o.a === "len05") !== (c.lente === "05")) {
+        let c0 = c;
+        lentePon(c).then(() => cam === c0 && (c0.lente === "05") === (o.a === "len05") && note(c0.lente === "05" ? "El anotador ha puesto la lente 0,5x." : "El anotador ha puesto la lente 1x.", true));
+      }
+      return;
+    }
     /* v11.69: el anotador cambia el encuadre (enca / encm / encc) */
     if (/^enc[amc]$/.test(o.a)) {
       let n = o.a.slice(3);
@@ -14297,6 +14410,13 @@
     camLuz();
     camPinta();
     camBotones();
+    /* v11.71: si la última vez se usó la lente 0,5x, se pone sola (Pro, o si este partido ya cuenta) */
+    try {
+      if (!frente && localStorage.getItem("mf_cam_lente") === "05" && (esPro() || (envLee().lente || []).includes(cam.id))) {
+        let c = cam;
+        if (await camLente(c, true)) cam === c && camBotones();
+      }
+    } catch (e) {}
     /* v11.59: con Pro, si la última vez se dejó «Seguir la jugada» puesto, se pone solo */
     try {
       if (esPro() && localStorage.getItem("mf_cam_sigue") === "1") sgPon(cam);
@@ -14325,6 +14445,8 @@
     c.v.srcObject = new MediaStream(n.getVideoTracks());
     c.v.play().catch(() => {});
     c.frente = !c.frente;
+    c.lente = "1";
+    camBotones();
   }
   function camSuelta() {
     if (!cam) return;
@@ -14742,6 +14864,7 @@
       return camBotones();
     }
     if (k === "flip") return camGira();
+    if (k === "lente") return lentePon(cam);
     if (k === "nopick") cam.pick = false;
     if (k === "gf" && x) {
       if (m && entries(m).length) cam.pick = true;
@@ -15441,6 +15564,8 @@
     enca: "Orden enviada: el encuadre pasa a «Abierto» en unos segundos.",
     encm: "Orden enviada: el encuadre pasa a «Medio» en unos segundos.",
     encc: "Orden enviada: el encuadre pasa a «Cerrado» en unos segundos.",
+    len05: "Orden enviada: el móvil que graba pasa a la lente 0,5x en unos segundos (si la tiene).",
+    len1: "Orden enviada: el móvil que graba vuelve a la lente 1x en unos segundos.",
   };
   function anCamHtml(x, d) {
     if (!("cam" in x)) return "";
@@ -15449,11 +15574,14 @@
       sigO = o && (o.a === "sig1" || o.a === "sig0"),
       emiO = o && (o.a === "emit1" || o.a === "emit0"),
       encO = o && /^enc[amc]$/.test(o.a),
+      lenO = o && (o.a === "len05" || o.a === "len1"),
       falta =
         o &&
         Date.parse(x.ahora) - Date.parse(o.at) < 20000 &&
         (o.a === "abrir"
           ? e === "espera"
+          : lenO
+            ? "len" in x && x.len !== o.a.slice(3) && !!e && e !== "listo"
           : encO
             ? "enc" in x && x.enc !== o.a.slice(3) && !!e && e !== "listo"
           : emiO
@@ -15488,6 +15616,11 @@
               : ""
           }`
         : "";
+    /* v11.71: la lente del móvil que graba, desde el anotador (con supabase-anotador-lente.sql) */
+    let ln =
+      "len" in x && x.len !== "f" && e && e !== "listo" && e !== "espera"
+        ? `<p class="muted">📐 Lente: <b>${x.len === "05" ? "0,5x" : "1x"}</b> (0,5x: se ve más campo, con el móvil fijo entran las dos porterías).</p><div class="lv-ctl">${C("len1", "1x", x.len === "05" ? "secondary" : "primary")}${C("len05", "0,5x (más campo)", x.len === "05" ? "primary" : "secondary")}</div>`
+        : "";
     /* v11.66: emitir para la familia desde el anotador (con supabase-anotador-tripode.sql) */
     let em =
       "emi" in x && e && e !== "espera"
@@ -15495,7 +15628,7 @@
             x.emi ? C("emit0", "Cortar el directo", "danger") : C("emit1", "📡 Emitir para la familia")
           }</div>`
         : "";
-    return `<div class="an-cam"><h3 class="lv-h">Grabación</h3><p class="muted">${st[0]}</p>${st[1] ? `<div class="lv-ctl">${st[1]}</div>` : ""}${sg}${em}${
+    return `<div class="an-cam"><h3 class="lv-h">Grabación</h3><p class="muted">${st[0]}</p>${st[1] ? `<div class="lv-ctl">${st[1]}</div>` : ""}${ln}${sg}${em}${
       falta ? '<p class="hint">Orden enviada. El móvil que graba la hace en unos segundos…</p>' : ""
     }</div>`;
   }
