@@ -9,7 +9,7 @@ def check(n,c,x=''):res.append(bool(c));print(('OK   ' if c else 'FALLA'),n,x)
 VER=json.load(open(os.path.join(APP,'version.json'),encoding='utf-8'))
 SEED="window.__seed={futbol_personal_jugadores:[{id:'j1',user_id:'u1',nombre:'Leo',dorsal:10,modalidad:'f7'}],futbol_personal_partidos:[],perfiles:[{id:'u1',plan:'gratis'}]};"
 def abre(b,ctx=None,android=False,ls=None):
-    ls=dict({'mf_ftut:campo':'1','mf_ftut:liga':'1','mf_ftut:mapa':'1','mf_ftut:entdir':'1','mf_ftut:anograb':'1','mf_ftut:camext':'1','mf_ftut:sigue':'1','mf_ftut:enviar':'1','mf_ftut:porteros':'1','mf_ftut:prevencion':'1','mf_ftut:jugadas':'1'},**(ls or {}))  # el aviso de tutoriales se prueba en ftut.py
+    ls=dict({'mf_ftut:campo':'1','mf_ftut:liga':'1','mf_ftut:mapa':'1','mf_ftut:entdir':'1','mf_ftut:anograb':'1','mf_ftut:camext':'1','mf_ftut:sigue':'1','mf_ftut:lente':'1','mf_ftut:enviar':'1','mf_ftut:porteros':'1','mf_ftut:prevencion':'1','mf_ftut:jugadas':'1'},**(ls or {}))  # el aviso de tutoriales se prueba en ftut.py
     ctx=ctx or b.new_context(viewport={'width':390,'height':844},service_workers='block')
     pg=ctx.new_page();pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.add_init_script("window.__probarNovedades=true;"+SEED+(("try{if(!sessionStorage.getItem('__ls')){sessionStorage.setItem('__ls','1');"+"".join("localStorage.setItem(%r,%r);"%kv for kv in ls.items())+"}}catch(e){}") if ls else "")+("Object.defineProperty(document,'referrer',{get:()=>'android-app://com.monetizaplus.mifutbol'});" if android else ""))
@@ -59,6 +59,7 @@ with sync_playwright() as p:
     check('y las de la v11.45 (campo desde la federación)',all(tiene(body,x) for x in de('11.45')))
     check('y las de la v11.48 (si te llaman no se corta nada)',all(w in body for w in ('Si te llaman, no se corta nada','Cámara o sonido en pausa','No molestar')))
     check('y las de la v11.49 (mapa de calor después del partido)',all(w in body for w in ('Mapa de calor también después del partido','Dónde fue cada acción','2 partidos al mes')))
+    check('v11.71: lente 0,5x con su tutorial',all(w in body for w in ('Lente 0,5x o 1x','más campo','3 partidos o entrenos al mes','desde su enlace')) and pg.locator('#infoBody [data-ftut=lente]').count()>=1)
     check('v11.70: si no puedes entrar, la app dice por qué',all(w in body for w in ('Si no puedes entrar','Actualizar Chrome','Actualizar WebView','Reparar','tablet apaisada')))
     check('v11.69: el anotador también elige el encuadre',all(w in body for w in ('El anotador también elige el','Abierto','Medio','Cerrado','móvil del trípode')))
     check('v11.68: «Seguir la jugada» con más campo y encuadre',all(w in body for w in ('con más campo y mejor imagen','muy pillado','Encuadre','Abierto','Cerrado')))
